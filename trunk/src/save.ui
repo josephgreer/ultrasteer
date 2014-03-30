@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>dPropelloStore</class>
+ <widget class="QDialog" name="dPropelloStore">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>228</width>
+    <height>510</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Ultrasteer Storage</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="propello.qrc">
+    <normaloff>:/res/u.ico</normaloff>:/res/u.ico</iconset>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <widget class="QTableWidget" name="wSaveOptions">
+       <property name="minimumSize">
+        <size>
+         <width>200</width>
+         <height>360</height>
+        </size>
+       </property>
+       <property name="rowCount">
+        <number>9</number>
+       </property>
+       <property name="columnCount">
+        <number>1</number>
+       </property>
+       <row>
+        <property name="text">
+         <string>Formats</string>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>Pre-Scan</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>Post-Scan</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>RF</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>Color V/V</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>Color Post</string>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>Ulterius Header</string>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>Save Individual Frame</string>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+       </row>
+       <row>
+        <property name="text">
+         <string>Volumes</string>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+       </row>
+       <column>
+        <property name="text">
+         <string>Selection</string>
+        </property>
+       </column>
+       <item row="0" column="0">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="flags">
+         <set>NoItemFlags</set>
+        </property>
+       </item>
+       <item row="1" column="0">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checkState">
+         <enum>Unchecked</enum>
+        </property>
+        <property name="flags">
+         <set>ItemIsSelectable|ItemIsUserCheckable|ItemIsEnabled</set>
+        </property>
+       </item>
+       <item row="2" column="0">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checkState">
+         <enum>Unchecked</enum>
+        </property>
+        <property name="flags">
+         <set>ItemIsSelectable|ItemIsUserCheckable|ItemIsEnabled</set>
+        </property>
+       </item>
+       <item row="3" column="0">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checkState">
+         <enum>Unchecked</enum>
+        </property>
+        <property name="flags">
+         <set>ItemIsSelectable|ItemIsUserCheckable|ItemIsEnabled</set>
+        </property>
+       </item>
+       <item row="4" column="0">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checkState">
+         <enum>Unchecked</enum>
+        </property>
+        <property name="flags">
+         <set>ItemIsSelectable|ItemIsUserCheckable|ItemIsEnabled</set>
+        </property>
+       </item>
+       <item row="5" column="0">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checkState">
+         <enum>Unchecked</enum>
+        </property>
+        <property name="flags">
+         <set>ItemIsSelectable|ItemIsUserCheckable|ItemIsEnabled</set>
+        </property>
+       </item>
+       <item row="6" column="0">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checkState">
+         <enum>Unchecked</enum>
+        </property>
+        <property name="flags">
+         <set>ItemIsUserCheckable|ItemIsEnabled</set>
+        </property>
+       </item>
+       <item row="7" column="0">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checkState">
+         <enum>Unchecked</enum>
+        </property>
+        <property name="flags">
+         <set>ItemIsUserCheckable|ItemIsEnabled</set>
+        </property>
+       </item>
+       <item row="8" column="0">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="flags">
+         <set>ItemIsEnabled</set>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QPushButton" name="wDirectory">
+         <property name="text">
+          <string>Directory</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="wFilePath"/>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QPushButton" name="wSave">
+       <property name="text">
+        <string>Save</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="wCancel">
+       <property name="text">
+        <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="propello.qrc"/>
+ </resources>
+ <connections>
+  <connection>
+   <sender>wDirectory</sender>
+   <signal>clicked()</signal>
+   <receiver>dPropelloStore</receiver>
+   <slot>onChangeDirectory()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>113</x>
+     <y>487</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>113</x>
+     <y>282</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wCancel</sender>
+   <signal>clicked()</signal>
+   <receiver>dPropelloStore</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>113</x>
+     <y>488</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>113</x>
+     <y>254</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wSave</sender>
+   <signal>clicked()</signal>
+   <receiver>dPropelloStore</receiver>
+   <slot>onSave()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>113</x>
+     <y>459</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>113</x>
+     <y>254</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>onSave()</slot>
+  <slot>onChangeDirectory()</slot>
+  <slot>onSaveSelection()</slot>
+ </slots>
+</ui>

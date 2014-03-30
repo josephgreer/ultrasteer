@@ -1,0 +1,1858 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <author>Ultrasonix Medical Corporation</author>
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>974</width>
+    <height>778</height>
+   </rect>
+  </property>
+  <property name="font">
+   <font>
+    <family>Verdana</family>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Propello</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="propello.qrc">
+    <normaloff>:/res/u.ico</normaloff>:/res/u.ico</iconset>
+  </property>
+  <property name="windowOpacity">
+   <double>1.000000000000000</double>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="QGroupBox" name="wNeedleControlLayout">
+      <property name="title">
+       <string>Needle Control</string>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="QPushButton" name="r_initRoll">
+         <property name="text">
+          <string>Initialize Roll</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="r_incRollPos">
+         <property name="text">
+          <string>10 deg. Positive Roll</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="r_incRollNeg">
+         <property name="text">
+          <string>10 deg. Negative Roll</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="r_maxRollPos">
+         <property name="text">
+          <string>Max. Positive Roll</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="r_maxRollNeg">
+         <property name="text">
+          <string>Max. Negative Roll</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="r_stopRoll">
+         <property name="text">
+          <string>Stop Roll</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="r_homeRoll">
+         <property name="text">
+          <string>Home Roll</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="r_initInsertion">
+         <property name="text">
+          <string>Initialize Insert.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="r_incInsPos">
+         <property name="text">
+          <string>Insert 10 mm</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="r_incInsNeg">
+         <property name="text">
+          <string>Retract 10 mm</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="r_maxInsPos">
+         <property name="text">
+          <string>Insert 30 rpm</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="r_maxInsNeg">
+         <property name="text">
+          <string>Retract 30 rpm</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="r_stopIns">
+         <property name="text">
+          <string>Stop Insertion</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="r_homeIns">
+         <property name="text">
+          <string>Home Insertion</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="Line" name="line_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="r_scanNeedle">
+         <property name="text">
+          <string>Scan Needle</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="r_applyControl">
+         <property name="text">
+          <string>Apply Control</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="resetTrials">
+         <property name="text">
+          <string>Reset Trials</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="kalmanFilter">
+         <property name="text">
+          <string>Apply Kalman Filter</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="Line" name="line_3">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="wSetupLayout">
+      <item>
+       <widget class="QGroupBox" name="wSetupGroup">
+        <property name="minimumSize">
+         <size>
+          <width>130</width>
+          <height>220</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="title">
+         <string>Setup</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QPushButton" name="wDetect">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>50</width>
+             <height>50</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>150</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Detect</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+           <property name="autoDefault">
+            <bool>false</bool>
+           </property>
+           <property name="default">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="wProbeAttributes">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Probe Attributes</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="wCaptureMethodLabel">
+           <property name="text">
+            <string>Capture Method</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="wCaptureMethod">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>110</width>
+             <height>0</height>
+            </size>
+           </property>
+           <item>
+            <property name="text">
+             <string>Auto</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Manual</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="wDataSelectLabel">
+           <property name="text">
+            <string>Data Selection</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="wDataSelect">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>110</width>
+             <height>0</height>
+            </size>
+           </property>
+           <item>
+            <property name="text">
+             <string>B</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>RF</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>B/RF</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>M</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>CDI</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="wHomeMotor">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Motor to Home</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Needle Target</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_5">
+        <item>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>X (mm)</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="target_y">
+            <property name="minimum">
+             <number>10</number>
+            </property>
+            <property name="maximum">
+             <number>200</number>
+            </property>
+            <property name="singleStep">
+             <number>10</number>
+            </property>
+            <property name="value">
+             <number>30</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Z (mm)</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="target_x">
+            <property name="minimum">
+             <number>-100</number>
+            </property>
+            <property name="maximum">
+             <number>100</number>
+            </property>
+            <property name="singleStep">
+             <number>10</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Y (mm)</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QSpinBox" name="target_z">
+            <property name="minimum">
+             <number>-500</number>
+            </property>
+            <property name="maximum">
+             <number>500</number>
+            </property>
+            <property name="singleStep">
+             <number>10</number>
+            </property>
+            <property name="value">
+             <number>40</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <spacer name="verticalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="wStoreGroup">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>200</height>
+         </size>
+        </property>
+        <property name="title">
+         <string>Capture</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QPushButton" name="wStoreVolumes">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Store...</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSlider" name="wCine">
+           <property name="maximumSize">
+            <size>
+             <width>150</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="maximum">
+            <number>1</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="tickPosition">
+            <enum>QSlider::TicksAbove</enum>
+           </property>
+           <property name="tickInterval">
+            <number>10</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QGridLayout" name="wImageLayout">
+      <item row="0" column="1">
+       <layout class="QVBoxLayout" name="wParamsLayout">
+        <item>
+         <widget class="QPushButton" name="wApply">
+          <property name="text">
+           <string>Apply</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTableWidget" name="wParams">
+          <property name="minimumSize">
+           <size>
+            <width>165</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>220</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="mouseTracking">
+           <bool>false</bool>
+          </property>
+          <property name="gridStyle">
+           <enum>Qt::SolidLine</enum>
+          </property>
+          <property name="sortingEnabled">
+           <bool>false</bool>
+          </property>
+          <property name="columnCount">
+           <number>1</number>
+          </property>
+          <attribute name="horizontalHeaderVisible">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="horizontalHeaderCascadingSectionResizes">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="verticalHeaderVisible">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="verticalHeaderDefaultSectionSize">
+           <number>20</number>
+          </attribute>
+          <row>
+           <property name="text">
+            <string>Automatic</string>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Deg/Frame</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Frames/Volume</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>FOV</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Manual</string>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Motor Start</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Motor Location</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>B-Mode</string>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Depth (mm)</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Focus (mm)</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Doppler</string>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Mode</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>PRF (Hz)</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>WF (Hz)</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Tx (kHz)</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Doppler Box</string>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Top</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Bottom</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Left</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Right</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Pixel Resolution</string>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Microns X</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Microns Y</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Image Center</string>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Center X</string>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string>Center Y</string>
+           </property>
+          </row>
+          <column>
+           <property name="text">
+            <string>Param</string>
+           </property>
+          </column>
+          <item row="0" column="0">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+          </item>
+          <item row="1" column="0">
+           <property name="text">
+            <string>0</string>
+           </property>
+           <property name="flags">
+            <set>ItemIsSelectable|ItemIsEnabled</set>
+           </property>
+          </item>
+          <item row="2" column="0">
+           <property name="text">
+            <string>0</string>
+           </property>
+          </item>
+          <item row="3" column="0">
+           <property name="text">
+            <string>0</string>
+           </property>
+           <property name="flags">
+            <set>ItemIsSelectable|ItemIsEnabled</set>
+           </property>
+          </item>
+          <item row="4" column="0">
+           <property name="text">
+            <string/>
+           </property>
+          </item>
+          <item row="5" column="0">
+           <property name="text">
+            <string>0</string>
+           </property>
+           <property name="flags">
+            <set>ItemIsSelectable|ItemIsEnabled</set>
+           </property>
+          </item>
+          <item row="6" column="0">
+           <property name="text">
+            <string>0</string>
+           </property>
+           <property name="flags">
+            <set>NoItemFlags</set>
+           </property>
+          </item>
+          <item row="7" column="0">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="font">
+            <font>
+             <weight>50</weight>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="flags">
+            <set>ItemIsSelectable|ItemIsEditable|ItemIsEnabled</set>
+           </property>
+          </item>
+          <item row="8" column="0">
+           <property name="text">
+            <string>0</string>
+           </property>
+           <property name="flags">
+            <set>ItemIsSelectable|ItemIsEditable|ItemIsEnabled</set>
+           </property>
+          </item>
+          <item row="9" column="0">
+           <property name="text">
+            <string>0</string>
+           </property>
+          </item>
+          <item row="10" column="0">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>8</pointsize>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="flags">
+            <set>NoItemFlags</set>
+           </property>
+          </item>
+          <item row="11" column="0">
+           <property name="text">
+            <string>N/A</string>
+           </property>
+          </item>
+          <item row="12" column="0">
+           <property name="text">
+            <string>N/A</string>
+           </property>
+          </item>
+          <item row="13" column="0">
+           <property name="text">
+            <string>N/A</string>
+           </property>
+          </item>
+          <item row="14" column="0">
+           <property name="text">
+            <string>N/A</string>
+           </property>
+          </item>
+          <item row="16" column="0">
+           <property name="text">
+            <string>N/A</string>
+           </property>
+          </item>
+          <item row="17" column="0">
+           <property name="text">
+            <string>N/A</string>
+           </property>
+          </item>
+          <item row="18" column="0">
+           <property name="text">
+            <string>N/A</string>
+           </property>
+          </item>
+          <item row="19" column="0">
+           <property name="text">
+            <string>N/A</string>
+           </property>
+          </item>
+          <item row="20" column="0">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+             <underline>false</underline>
+            </font>
+           </property>
+           <property name="flags">
+            <set>ItemIsSelectable|ItemIsEditable|ItemIsDragEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
+           </property>
+          </item>
+          <item row="21" column="0">
+           <property name="text">
+            <string>N/A</string>
+           </property>
+          </item>
+          <item row="22" column="0">
+           <property name="text">
+            <string>N/A</string>
+           </property>
+          </item>
+          <item row="23" column="0">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+          </item>
+          <item row="24" column="0">
+           <property name="text">
+            <string>N/A</string>
+           </property>
+          </item>
+          <item row="25" column="0">
+           <property name="text">
+            <string>N/A</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="wInc">
+          <property name="text">
+           <string>Increment</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="wDec">
+          <property name="text">
+           <string>Decrement</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="0" column="0">
+       <widget class="PropelloBDisplay" name="wBImage">
+        <property name="minimumSize">
+         <size>
+          <width>480</width>
+          <height>400</height>
+         </size>
+        </property>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="foregroundBrush">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="wMenu">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>974</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="mInit">
+    <property name="title">
+     <string>Initialize</string>
+    </property>
+    <widget class="QMenu" name="mMainBoard">
+     <property name="windowIcon">
+      <iconset>
+       <normaloff>u.ico</normaloff>u.ico</iconset>
+     </property>
+     <property name="windowOpacity">
+      <double>1.000000000000000</double>
+     </property>
+     <property name="title">
+      <string>Main Board</string>
+     </property>
+     <addaction name="mMain2"/>
+     <addaction name="mMain3"/>
+     <addaction name="mMain4"/>
+    </widget>
+    <widget class="QMenu" name="mPCI">
+     <property name="title">
+      <string>PCI Card</string>
+     </property>
+     <addaction name="mPCI2"/>
+     <addaction name="mPCI3"/>
+    </widget>
+    <widget class="QMenu" name="mPaths">
+     <property name="title">
+      <string>Paths</string>
+     </property>
+     <addaction name="mFirmwarePath"/>
+     <addaction name="mSettingsPath"/>
+    </widget>
+    <addaction name="mMainBoard"/>
+    <addaction name="mPCI"/>
+    <addaction name="separator"/>
+    <addaction name="mPaths"/>
+    <addaction name="mCine"/>
+    <addaction name="separator"/>
+    <addaction name="mSystemID"/>
+    <addaction name="separator"/>
+   </widget>
+   <addaction name="mInit"/>
+  </widget>
+  <widget class="QStatusBar" name="wStatus"/>
+  <widget class="QToolBar" name="wTool">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonIconOnly</enum>
+   </property>
+   <property name="floatable">
+    <bool>true</bool>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="aInit"/>
+   <addaction name="aRun"/>
+   <addaction name="aStop"/>
+  </widget>
+  <action name="mMain2">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>2</string>
+   </property>
+  </action>
+  <action name="mMain3">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>3</string>
+   </property>
+  </action>
+  <action name="mMain4">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>4</string>
+   </property>
+  </action>
+  <action name="mPCI2">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>2</string>
+   </property>
+  </action>
+  <action name="mPCI3">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>3</string>
+   </property>
+  </action>
+  <action name="mFirmwarePath">
+   <property name="text">
+    <string>Firmware</string>
+   </property>
+  </action>
+  <action name="mSettingsPath">
+   <property name="text">
+    <string>Settings</string>
+   </property>
+  </action>
+  <action name="mSystemID">
+   <property name="text">
+    <string>System ID...</string>
+   </property>
+  </action>
+  <action name="mCine">
+   <property name="text">
+    <string>Cine...</string>
+   </property>
+  </action>
+  <action name="aInit">
+   <property name="icon">
+    <iconset resource="propello.qrc">
+     <normaloff>:/res/init.png</normaloff>:/res/init.png</iconset>
+   </property>
+   <property name="text">
+    <string>Init</string>
+   </property>
+   <property name="toolTip">
+    <string>Initialize system</string>
+   </property>
+  </action>
+  <action name="aRun">
+   <property name="icon">
+    <iconset resource="propello.qrc">
+     <normaloff>:/res/run.png</normaloff>:/res/run.png</iconset>
+   </property>
+   <property name="text">
+    <string>Run</string>
+   </property>
+   <property name="toolTip">
+    <string>Start imaging</string>
+   </property>
+  </action>
+  <action name="aStop">
+   <property name="icon">
+    <iconset resource="propello.qrc">
+     <normaloff>:/res/stop.png</normaloff>:/res/stop.png</iconset>
+   </property>
+   <property name="text">
+    <string>Stop</string>
+   </property>
+   <property name="toolTip">
+    <string>Stop imaging</string>
+   </property>
+  </action>
+  <action name="mStoreAll">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Store All</string>
+   </property>
+  </action>
+  <action name="mStoreForward">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Store Forward Sweep</string>
+   </property>
+  </action>
+  <action name="mStoreBackward">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Store Backward Sweep</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PropelloBDisplay</class>
+   <extends>QGraphicsView</extends>
+   <header>PropelloBDisplay.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="propello.qrc"/>
+ </resources>
+ <connections>
+  <connection>
+   <sender>mFirmwarePath</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>getFirmwarePath()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>388</x>
+     <y>288</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>mSettingsPath</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>getSettingsPath()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>388</x>
+     <y>288</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wCine</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>cineScroll(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>200</x>
+     <y>451</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>388</x>
+     <y>288</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>mSystemID</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>showSystemID()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>388</x>
+     <y>288</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wInc</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>incParam()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>823</x>
+     <y>470</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>388</x>
+     <y>288</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wDec</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>decParam()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>823</x>
+     <y>499</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>388</x>
+     <y>288</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>mCine</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>setCineSize()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>388</x>
+     <y>288</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aInit</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>initHardware()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>388</x>
+     <y>288</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aRun</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>runImage()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>388</x>
+     <y>288</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aStop</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>stopImage()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>388</x>
+     <y>288</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wCaptureMethod</sender>
+   <signal>activated(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>onCaptureChange(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>205</x>
+     <y>209</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>409</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wDataSelect</sender>
+   <signal>activated(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>onDataSelection(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>205</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>409</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wDetect</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>onDetect()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>206</x>
+     <y>136</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>409</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wProbeAttributes</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>onProbeAttributes()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>206</x>
+     <y>164</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>409</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wHomeMotor</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>onHomeMotor()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>206</x>
+     <y>283</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>409</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wApply</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>onApply()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>823</x>
+     <y>86</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>409</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wStoreVolumes</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>onStoreVolume()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>205</x>
+     <y>382</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>409</x>
+     <y>273</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_scanNeedle</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>scanNeedle()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>61</x>
+     <y>97</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>460</x>
+     <y>263</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_initRoll</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>InitializeRoll()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>67</x>
+     <y>97</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>460</x>
+     <y>263</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_initInsertion</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>InitializeInsertion()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>67</x>
+     <y>126</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>460</x>
+     <y>263</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_applyControl</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>applyControl()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>67</x>
+     <y>184</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>467</x>
+     <y>268</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_stopRoll</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>StopRoll()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>83</x>
+     <y>221</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>467</x>
+     <y>268</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_homeRoll</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>homeRoll()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>83</x>
+     <y>247</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>467</x>
+     <y>268</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_maxRollNeg</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>SetMaxNegVelocity()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>83</x>
+     <y>196</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>467</x>
+     <y>268</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_maxRollPos</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>SetMaxPosVelocity()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>83</x>
+     <y>171</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>467</x>
+     <y>268</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_incRollPos</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>RotPosInc()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>83</x>
+     <y>121</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>467</x>
+     <y>268</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_incRollNeg</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>RotNegInc()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>83</x>
+     <y>146</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>467</x>
+     <y>268</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_homeIns</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>homeInsertion()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>83</x>
+     <y>432</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>467</x>
+     <y>268</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_stopIns</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>StopInsertion()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>83</x>
+     <y>407</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>467</x>
+     <y>268</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_incInsNeg</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>Retract2mm()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>83</x>
+     <y>331</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>467</x>
+     <y>268</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_incInsPos</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>Insert2mm()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>83</x>
+     <y>306</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>467</x>
+     <y>268</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_maxInsNeg</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>Retract30rpm()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>83</x>
+     <y>382</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>467</x>
+     <y>268</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_maxInsPos</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>Insert30rpm()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>83</x>
+     <y>357</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>467</x>
+     <y>268</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>target_x</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>setTargetX(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>117</x>
+     <y>606</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>486</x>
+     <y>388</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>target_y</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>setTargetY(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>117</x>
+     <y>632</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>486</x>
+     <y>388</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>target_z</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>setTargetZ(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>117</x>
+     <y>658</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>486</x>
+     <y>388</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>kalmanFilter</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>enableKalmanFilter(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>85</x>
+     <y>684</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>486</x>
+     <y>388</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>resetTrials</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>resetSystem()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>85</x>
+     <y>674</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>486</x>
+     <y>388</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <designerdata>
+  <property name="gridDeltaX">
+   <number>10</number>
+  </property>
+  <property name="gridDeltaY">
+   <number>10</number>
+  </property>
+  <property name="gridSnapX">
+   <bool>true</bool>
+  </property>
+  <property name="gridSnapY">
+   <bool>true</bool>
+  </property>
+  <property name="gridVisible">
+   <bool>true</bool>
+  </property>
+ </designerdata>
+ <slots>
+  <slot>getFirmwarePath()</slot>
+  <slot>getSettingsPath()</slot>
+  <slot>onDetect()</slot>
+  <slot>initHardware()</slot>
+  <slot>runImage()</slot>
+  <slot>stopImage()</slot>
+  <slot>cineScroll(int)</slot>
+  <slot>showSystemID()</slot>
+  <slot>incParam()</slot>
+  <slot>decParam()</slot>
+  <slot>setCineSize()</slot>
+  <slot>onCaptureChange(int)</slot>
+  <slot>onDataSelection(int)</slot>
+  <slot>onProbeAttributes()</slot>
+  <slot>onHomeMotor()</slot>
+  <slot>onApply()</slot>
+  <slot>onStoreVolume()</slot>
+  <slot>scanNeedle()</slot>
+  <slot>InitializeInsertion()</slot>
+  <slot>InitializeRoll()</slot>
+  <slot>applyControl()</slot>
+  <slot>Insert2mm()</slot>
+  <slot>Retract2mm()</slot>
+  <slot>Insert30rpm()</slot>
+  <slot>Retract30rpm()</slot>
+  <slot>StopInsertion()</slot>
+  <slot>SetMaxPosVelocity()</slot>
+  <slot>SetMaxNegVelocity()</slot>
+  <slot>StopRoll()</slot>
+  <slot>RotPosInc()</slot>
+  <slot>RotNegInc()</slot>
+  <slot>homeRoll()</slot>
+  <slot>homeInsertion()</slot>
+  <slot>setTargetX(int)</slot>
+  <slot>setTargetY(int)</slot>
+  <slot>setTargetZ(int)</slot>
+  <slot>enableKalmanFilter(bool)</slot>
+  <slot>callFunctionDebug()</slot>
+  <slot>resetSystem()</slot>
+ </slots>
+</ui>
