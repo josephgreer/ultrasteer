@@ -6,9 +6,9 @@ IF(COMMAND CMAKE_POLICY)
 	   CMAKE_POLICY(SET CMP0003 NEW)
 ENDIF(COMMAND CMAKE_POLICY)
 
+
+SET(VTK_DIR "D:/Build/VTK")
 SET(ITK_DIR "D:/Build/ITK")
-SET(VTK_DIR "C:/Build/VTK")
-SET(VTK_GLUE_INCLUDE "D:/ITK/src/InsightToolkit-4.1.0/Modules/Bridge/VtkGlue/include")
 
 FIND_PACKAGE(ITK)
 IF(ITK_FOUND)
@@ -30,7 +30,6 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_BINARY_DIR} #this is where ui_ImageViewerUI.h is generated
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/../inc/
-  ${VTK_GLUE_INCLUDE}
 ) 
 
 SET(ultrasteerSrcs main.cpp Propello.cpp PropelloDisplay.cpp PropelloBDisplay.cpp SaveDlg.cpp StdAfx.cpp RobotControl.cpp UnscentedKalmanFilter.cpp MotionController.cpp SerialBuffer.cpp SerialCommHelper.cpp RollDevice.cpp InsertionDevice.cpp DeviceNotification.cpp NeedleSteeringRobot.cpp)
