@@ -1,0 +1,9 @@
+<RCC>
+  <qresource>
+    <file>res/run.png</file>
+    <file>res/stop.png</file>
+    <file>res/init.png</file>
+    <file>res/u.ico</file>
+	<file>res/map.bmp</file>
+  </qresource>
+</RCC>
