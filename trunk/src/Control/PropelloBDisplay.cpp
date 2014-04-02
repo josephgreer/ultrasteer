@@ -29,8 +29,6 @@ bool PropelloBDisplay::setImgData()
         return false;
     }
 
-	qDebug("setImgData\n");
-
     unsigned char* buffer = m_image->bits();
 	unsigned char* colorbuffer = m_colorimage->bits();
     int mode = portaGetCurrentMode();
