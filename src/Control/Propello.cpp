@@ -24,11 +24,11 @@
 #define CTRY_ROW 25
 
 #ifndef FIRMWARE_PATH
-    #define FIRMWARE_PATH "D:/Users/Troy Adebar/Ultrasteer/fw/"
+    #define FIRMWARE_PATH "D:/Users/Joey Greer/ultra/trunk/fw/"
 #endif
 
 #ifndef SETTINGS_PATH
-    #define SETTINGS_PATH "D:/Users/Troy Adebar/Ultrasteer/dat/"
+    #define SETTINGS_PATH "D:/Users/Joey Greer/ultra/trunk/dat/"
 #endif
 
 #define PRESETS_PATH (SETTINGS_PATH "presets/imaging/")
