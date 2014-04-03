@@ -1,6 +1,6 @@
 #include "RPFileReader.h"
 
-namespace Ct
+namespace Nf
 {
   typedef std::map < RP_TYPE, RPFileReader * >::iterator rpcol_it;
 
@@ -21,7 +21,7 @@ namespace Ct
         for(int i=0; i<header->height; i++) {
           rvc = fread(dst, 1, header->width, f);
           if(rvc != header->width)
-            OutputDebugString(L"Failed to read");
+            OutputDebugString("Failed to read");
           dst += rv.b8->widthStep;
         }
       }
@@ -35,7 +35,7 @@ namespace Ct
         for(int i=0; i<header->height; i++) {
           rvc = fread(dst, 1, header->width*4, f);
           if(rvc != header->width*4)
-            OutputDebugString(L"Failed to read");
+            OutputDebugString("Failed to read");
           dst += rv.color->widthStep;
         }
       }
@@ -52,7 +52,7 @@ namespace Ct
         for(int i=0; i<header->height; i++) {
           rvc = fread(rdst, 1, header->width*1, f);
           if(rvc != header->width*1)
-            OutputDebugString(L"Failed to read\n");
+            OutputDebugString("Failed to read\n");
           //for(int j=0; j<header->width; j+=2) {
           //  rdst[j>>1] = temp[j+1];
           //  vdst[j>>1] = temp[j+1];
@@ -62,7 +62,7 @@ namespace Ct
         for(int i=0; i<header->height; i++) {
           rvc = fread(vdst, 1, header->width*1, f);
           if(rvc != header->width*1)
-            OutputDebugString(L"Failed to read\n");
+            OutputDebugString("Failed to read\n");
           //for(int j=0; j<header->width; j+=2) {
           //  rdst[j>>1] = temp[j+1];
           //  vdst[j>>1] = temp[j+1];
@@ -89,7 +89,7 @@ namespace Ct
     int rvc = 0;
     rvc = fread(&raw[0], sizeof(char), 168, f);
     if(rvc != 168)
-      OutputDebugString(L"Failed to read GPS\n");
+      OutputDebugString("Failed to read GPS\n");
 
     int idx = 0;
     data->pos.x = *(double *)&raw[idx];  idx += sizeof(double);
@@ -109,10 +109,13 @@ namespace Ct
     //  m[0*3+1], m[1*3+1], m[2*3+1], 0,
     //  m[0*3+2], m[1*3+2], m[2*3+2], 0,
     //  0,        0,        0,        1);
-    data->pose = Matrix44d(m[0], m[1], m[2], 0, 
-                           m[3], m[4], m[5], 0, 
-                           m[6], m[7], m[8], 0, 
-                           0,    0,    0,    1);
+	double me[16] = {m[0], m[1], m[2], 0, 
+					 m[3], m[4], m[5], 0, 
+					 m[6], m[7], m[8], 0, 
+					 0,    0,    0,    1};
+
+
+	data->pose = cv::Mat(4,4,CV_64F,me);
 
     for(int i=0; i<5; i++) {
       data->offset[i] = *(double *)&raw[idx];  idx += sizeof(double);
