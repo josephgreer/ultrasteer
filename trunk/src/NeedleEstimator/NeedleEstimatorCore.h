@@ -187,6 +187,8 @@ namespace Nf
   typedef Vec3<f32> Vec3f;
   typedef Vec2<s32> Vec2i;
   typedef Vec3<s32> Vec3i;
+  typedef Vec2<f64> Vec2d;
+  typedef Vec3<f64> Vec3d;
 
 
   //Structure representing a connected square of pixels that are of the color being tracked.
@@ -203,10 +205,10 @@ namespace Nf
     Square(const Vec2 < T > & xy, int weight = 0) : ul(xy), lr(xy), weight(weight) {}
     Square(const Vec2 < T > & ul, const Vec2 < T > & lr, int weight = 0)
     {
-      this->ul.x = std::min(ul.x, lr.x);
-      this->ul.y = std::min(ul.y, lr.y);
-      this->lr.x = std::max(ul.x, lr.x);
-      this->lr.y = std::max(ul.y, lr.y);
+      this->ul.x = min(ul.x, lr.x);
+      this->ul.y = min(ul.y, lr.y);
+      this->lr.x = max(ul.x, lr.x);
+      this->lr.y = max(ul.y, lr.y);
       this->weight = weight;
     }
 

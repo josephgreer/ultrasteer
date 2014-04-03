@@ -1,22 +1,13 @@
 #define _CRT_SECURE_NO_DEPRECATE
 #pragma once
 #include <Windows.h>
-#include "cinder/Cinder.h"
-#include "cinder/app/AppBasic.h"
-#include "cinder/Capture.h"
-#include "cinder/params/Params.h"
-#include "cinder/Camera.h"
-#include "Core.h"
-#include "Algorithms.h"
+#include "NeedleEstimatorCore.h"
 
 #include <cv.h>
 #include <cxcore.h>
 #include <highgui.h>
 
-using namespace ci;
-using namespace ci::app;
-
-namespace Ct
+namespace Nf
 {
   typedef enum {
     RPF_NULL_TYPE = -1,
@@ -68,7 +59,7 @@ namespace Ct
 #pragma pack(pop)
 
   struct GPS_Data {
-    Matrix44d pose;
+    cv::Mat pose;
     Vec3d pos;
     Vec3d posaer;
     double offset[5];
