@@ -222,7 +222,7 @@ else()
 		${_req_check})
 
 	if(OPENCV_FOUND)
-		set(OPENCV_LIBRARY_DIRS)
+		set(OPENCV_LIBRARY_DIRS CACHE)
 		foreach(lib ${_req_libs})
 			get_filename_component(dir "${lib}" PATH)
 			list(APPEND OPENCV_LIBRARY_DIRS "${dir}")
@@ -239,7 +239,5 @@ else()
 	mark_as_advanced(OPENCV_BASE_DIR)
 	foreach(component ${OPENCV_NEW_COMPONENTS} ${OPENCV_OLD_COMPONENTS})
 		mark_as_advanced(OPENCV_${component}_LIBRARY OPENCV_${component}_INCLUDE_DIR)
-	endforeach()
+	endforeach() 
 endif()
-
-
