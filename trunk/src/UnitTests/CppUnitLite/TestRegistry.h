@@ -20,15 +20,15 @@ class TestRegistry
 public:
 	static void addTest (Test *test);
 	static void runAllTests (TestResult& result);
+	static void runSpecificTest(TestResult& result, SimpleString &testName);
+
+	Test					*tests;
 
 private:
 
 	static TestRegistry&	instance ();
 	void					add (Test *test);
 	void					run (TestResult& result);
-
-	
-	Test					*tests;
 
 };
 
