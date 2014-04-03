@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-PROJECT(Control)
+PROJECT(RealTimeUltrasteer)
 
 IF(COMMAND CMAKE_POLICY)
 	   CMAKE_POLICY(SET CMP0003 NEW)
@@ -29,7 +29,7 @@ INCLUDE( ${QT_USE_FILE} )
 INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_BINARY_DIR} #this is where ui_ImageViewerUI.h is generated
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/../inc/
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../inc/
 ) 
 
 SET(ultrasteerSrcs main.cpp Propello.cpp PropelloDisplay.cpp PropelloBDisplay.cpp SaveDlg.cpp StdAfx.cpp RobotControl.cpp UnscentedKalmanFilter.cpp MotionController.cpp SerialBuffer.cpp SerialCommHelper.cpp RollDevice.cpp InsertionDevice.cpp DeviceNotification.cpp NeedleSteeringRobot.cpp)
@@ -58,7 +58,7 @@ SOURCE_GROUP("Generated" FILES
   ${MOCSrcs}
 )
 
-ADD_EXECUTABLE(Control WIN32
+ADD_EXECUTABLE(RealTimeUltrasteer WIN32
 	${ultrasteerSrcs}
 	${ultrasteerHeaders}
 	${UISrcs}
@@ -67,13 +67,13 @@ ADD_EXECUTABLE(Control WIN32
 	${ResourcesRCC}
 	)
 
-SET_TARGET_PROPERTIES(Control PROPERTIES LINK_FLAGS_DEBUG /SUBSYSTEM:windows)
+SET_TARGET_PROPERTIES(RealTimeUltrasteer PROPERTIES LINK_FLAGS_DEBUG /SUBSYSTEM:windows)
  #Must be lowercase windows
 
-SET_TARGET_PROPERTIES(Control PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:windows)
+SET_TARGET_PROPERTIES(RealTimeUltrasteer PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:windows)
  #Must be lowercase windows
 
-TARGET_LINK_LIBRARIES(Control NeedleEstimator ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${CMAKE_CURRENT_SOURCE_DIR}/../lib/porta.lib ${ITK_LIBRARIES} ${VTK_LIBRARIES})
+TARGET_LINK_LIBRARIES(RealTimeUltrasteer NeedleEstimator ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${CMAKE_CURRENT_SOURCE_DIR}/../lib/porta.lib ${ITK_LIBRARIES} ${VTK_LIBRARIES})
 #${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} 
 
 
