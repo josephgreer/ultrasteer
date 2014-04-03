@@ -2,6 +2,7 @@
 #include "NeedleEstimatorCore.h"
 #include "NeedleFitter.h"
 
+#include <iostream>
 #include <cv.h>
 #include <cxcore.h>
 #include <highgui.h>
@@ -30,4 +31,44 @@ TEST(Basics, NeedleEstimator)
 	for(s32 n=0; n<sizeof(tests)/sizeof(tests[0]); n++) {
 
 	}
+}
+
+TEST(Matrix, NeedleEstimator)
+{
+	f64 A[16] = {
+					1, 2, 3, 4, 
+					5, 6, 7, 8,
+					9, 10, 11, 12,
+					13, 14, 15, 16
+	};
+
+	f64 B[16] = {
+					16, 15, 14, 13,
+					12, 11, 10, 9,
+					8, 7, 6, 5,
+					4, 3, 2, 1
+	};
+
+	cv::Mat mA(4, 4, CV_64F, A);
+	mA = mA.t();
+	cv::Mat mB(4, 4, CV_64F, B);
+	mB = mB.t();
+
+	cv::Mat mC = mA*mB;
+	
+	std::stringstream temp;
+	temp << "A= " << mA << std::endl;
+	temp << "B= " << mB << std::endl;
+	temp << "A*B= " << mC << std::endl;
+
+	f64 dRes[64] = {386, 274, 162, 50,
+					444, 316, 188, 60,
+					502, 358, 214, 70,
+					560, 400, 240, 80,
+	};
+
+	temp << "Desired = " << cv::Mat(4,4,CV_64F,dRes) << std::endl;
+
+	//Match cinder matrices
+	Nf::NTrace(temp.str().c_str());
 }
