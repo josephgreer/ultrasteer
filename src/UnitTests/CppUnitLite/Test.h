@@ -29,6 +29,8 @@ public:
 	void			setNext(Test *test);
 	Test			*getNext () const;
 
+	SimpleString getName();
+
 protected:
 
 	bool check (long expected, long actual, TestResult& result, const SimpleString& fileName, long lineNumber);
@@ -42,7 +44,7 @@ protected:
 
 #define TEST(testName, testGroup)\
   class testGroup##testName##Test : public Test \
-	{ public: testGroup##testName##Test () : Test (#testName "Test") {} \
+{ public: testGroup##testName##Test () : Test (#testGroup #testName) {} \
             void run (TestResult& result_); } \
     testGroup##testName##Instance; \
 	void testGroup##testName##Test::run (TestResult& result_) 

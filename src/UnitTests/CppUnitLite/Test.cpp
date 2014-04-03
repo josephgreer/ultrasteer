@@ -57,3 +57,8 @@ bool Test::check(const SimpleString& expected, const SimpleString& actual, TestR
 
 }
 
+
+SimpleString Test::getName()
+{
+	return this->name_;
+}\
