@@ -113,13 +113,12 @@ namespace Nf
     std::vector < NeedlePoint > GetUsedNeedlePoints();
   };
 
-  //Structure contains paramters needed to map
-  //image coordinates to world coordinates.
-  typedef struct 
+  //Class needed to transform image coordinates to world coordinates
+  class ImageCoordTransform
   {
-    f32 angle; //image plane angle
-    f32 mpp;   //microns per pixel
-  } ImageCoordTransformParams;
+  public:
+	  virtual Vec3d Transform(const Vec2d &image) const = 0;
+  };
 
   typedef enum
   {
@@ -152,8 +151,8 @@ namespace Nf
 
   public:
     NeedleEstimator(s32 width, s32 height);
-    void ProcessColor(const IplImage *color, IplImage *bmode, const ImageCoordTransformParams *transform);
-    s32 UpdateModel(PolyCurve *model, IplImage *display, const IplImage *doppler, const IplImage *bmode, const ImageCoordTransformParams *transform);
+    void ProcessColor(const IplImage *color, IplImage *bmode, const ImageCoordTransform *transform);
+    s32 UpdateModel(PolyCurve *model, IplImage *display, const IplImage *doppler, const IplImage *bmode, const ImageCoordTransform *transform);
     void InitZeroLut();
     void MaskColor(IplImage *dst, const IplImage *src);
     void ThresholdBmodeROIs(const std::vector < Squarei > rects[], IplImage *colorMask, IplImage *bmode);

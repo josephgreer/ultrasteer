@@ -1,6 +1,7 @@
 #include "CppUnitLite/Test.h"
 #include "NeedleEstimatorCore.h"
 #include "NeedleFitter.h"
+#include "RPFileReader.h"
 
 #include <iostream>
 #include <cv.h>
@@ -8,13 +9,50 @@
 #include <highgui.h>
 
 typedef struct {
-	char bDirectory[100];
-	char dDirectory[100];
-	u8 padding;
-	char extension[10];
-	s32 startFrame;
-	s32 endFrame;
+	char bFile[100];
+	char dFile[100];
+	char gFile[100];
 } BasicsNeedleEstimatorTest;
+
+using namespace Nf;
+
+#if 0
+class RPTransform : ImageCoordTransform
+{
+protected:
+	Vec2d m_mpp;
+	Vec2d m_start;
+	cv::Mat m_cal;
+	GPS_Data m_gps;
+
+public:
+	RPTransform(Vec2d mpp, Vec2d start, cv::Mat &calibration, GPS_Data &gps)
+		: m_mpp(mpp)
+		, m_start(start)
+		, m_cal(calibration)
+		, m_gps(gps)
+	{
+	}
+
+	Vec3d Transform(const Vec2d &image) const
+	{
+		Vec2d scale(m_mpp.x/1000.0, m_mpp.y/1000.0);
+		
+		f64 coordData[4] = {1, (image.y-m_start.y)*scale.y, (image.x-m_start.x)*scale.x, 1};
+		cv::Mat imCoord(4, 1, CV_64F,coordData);
+		
+		cv::Mat sensor = m_cal*imCoord;
+		cv::Mat world = m_gps.pose*sensor;
+		
+		f64 posData[4] = {m_gps.pos.x, m_gps.pos.y, m_gps.pos.z, 0};
+
+		world = world+cv::Mat(4,1,CV_64F,posData);
+
+		return Vec3d(world.x, world.y, world.z);
+
+	}
+};
+#endif
 
 TEST(Basics, NeedleEstimator)
 {
@@ -24,12 +62,21 @@ TEST(Basics, NeedleEstimator)
 		//Doppler:  dDirectory/%0xd.extension 
 		//where x = padding
 
-		//bmode directory							//Doppler Directory								//padding	//extension		//startFrame   //endFrame			//expected result
-		{"D:/Users/Joey Greer/NeedleTests/Bmode/",	"D:/Users/Joey Greer/NeedleTests/Doppler/",		6,			"png",			0,				10000000							},
+		//Bmode file										//Doppler File											//GPS File	
+		{"D:/Users/Joey Greer/NeedleTests/Scan 5/scan.b8",	"D:/Users/Joey Greer/NeedleTests/Scan 5/scan.b32",		"D:/Users/Joey Greer/NeedleTests/Scan 5/scan.gps1"},
 	};
 
-	for(s32 n=0; n<sizeof(tests)/sizeof(tests[0]); n++) {
+	for(s32 n=0; n<sizeof(tests)/sizeof(tests[0]); n++){
+		RPFileReaderCollection reader;
 
+		reader.AddReader(RPF_BPOST8, (RPReader *)new RPFileReader(tests[n].bFile));
+		reader.AddReader(RPF_BPOST32, (RPReader *)new RPFileReader(tests[n].dFile));
+		reader.AddGPSReader((RPGPSReaderBasic *)new RPGPSReader(tests[n].gFile));
+
+		RPData curr = reader.GetNextRPData();
+		while(curr.color) {
+
+		}
 	}
 }
 
