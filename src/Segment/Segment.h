@@ -11,7 +11,7 @@
 #include <cxcore.h>
 #include <highgui.h>
 
-#include "NeedleEstimatorCore.h"
+#include "SegmentCore.h"
 
 #define INITIAL_MODEL_POINTS 30
 
