@@ -420,11 +420,6 @@ namespace Nf
   //////////////////////////////////////////////////
   //Begin static image processing helper functions
   //////////////////////////////////////////////////
-  static Vec3f imageCoordsToWorldCoords(Vec2f pt, const ImageCoordTransformParams *transform)
-  {
-    return Vec3f(0,0,0);
-  }
-
   static CvRect SquareiToCvRect(const Squarei &sq)
   {
     return cvRect(sq.ul.x, sq.ul.y, sq.lr.x-sq.ul.x, sq.lr.y-sq.ul.y);
@@ -778,7 +773,7 @@ namespace Nf
 #define BMODE_SUM_SCALE 100.0
 #define BMODE_DOPPLER_COMBINE_SCALE 1000.0 //final score computed as DOPPLER_SUM/DOPPLER_SUM_SCALE+
 
-  void NeedleEstimator::ProcessColor(const IplImage *color, IplImage *bmode, const ImageCoordTransformParams *transform)
+  void NeedleEstimator::ProcessColor(const IplImage *color, IplImage *bmode, const ImageCoordTransform *transform)
   {
 
     //Mask color
@@ -807,7 +802,8 @@ namespace Nf
     NeedlePoint npt;
     NeedleSeg segment;
     npt.imagePoint = centroid;
-    npt.point = imageCoordsToWorldCoords(centroid, transform);
+    //npt.point = transform->Transform(centroid);
+	ASSERT(0);
     npt.imageScore = (f32)(dopplerSum.val[0]/DOPPLER_SUM_SCALE);
     segment.pts.push_back(npt);
     m_dopplerCentroid.segments.clear();
@@ -922,7 +918,8 @@ namespace Nf
         f32 yy = el.cenY+axis.y*hop*elDel;
         cvDrawCircle(m_disImage, cvPoint(xx, yy), 4, cvScalar(255, 0, 0), 2);
 
-        npt.point = imageCoordsToWorldCoords(Vec2f(xx, yy), transform);
+		//npt.point = transform->Transform(Vec2d(xx,yy));
+		ASSERT(0);
         npt.imageScore = (f32)(sum.val[0]/DOPPLER_SUM_SCALE);
         npt.imagePoint = Vec2f(el.cenX, el.cenY);
         if(rStage == 1) {
@@ -948,7 +945,7 @@ namespace Nf
   }
 
   s32 NeedleEstimator::UpdateModel(PolyCurve *model, IplImage *display, const IplImage *doppler, const IplImage *bmode, 
-    const ImageCoordTransformParams *transform)
+    const ImageCoordTransform *transform)
   {
     return -1;
   }

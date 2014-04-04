@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-INCLUDE_DIRECTORIES(${OPENCV_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../NeedleEstimator ${CMAKE_CURRENT_SOURCE_DIR}/../Control ${CMAKE_CURRENT_SOURCE_DIR}/../../external/alglib/src)
+INCLUDE_DIRECTORIES(${OPENCV_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../NeedleEstimator ${CMAKE_CURRENT_SOURCE_DIR}/../Control ${CMAKE_CURRENT_SOURCE_DIR}/../RPFileReader ${CMAKE_CURRENT_SOURCE_DIR}/../../external/alglib/src)
 
 FILE(GLOB cppUnitFiles
     "${CMAKE_CURRENT_SOURCE_DIR}/CppUnitLite/*.cpp"
