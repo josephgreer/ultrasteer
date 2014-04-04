@@ -1,4 +1,4 @@
-#include "NeedleFitter.h"
+#include "Segment.h"
 
 using namespace std;
 using namespace alglib;

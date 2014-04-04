@@ -1,7 +1,7 @@
 #define _CRT_SECURE_NO_DEPRECATE
 #pragma once
 #include <Windows.h>
-#include "NeedleEstimatorCore.h"
+#include "SegmentCore.h"
 
 #include <cv.h>
 #include <cxcore.h>
