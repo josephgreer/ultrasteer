@@ -1,6 +1,6 @@
 #include "CppUnitLite/Test.h"
-#include "NeedleEstimatorCore.h"
-#include "NeedleFitter.h"
+#include "SegmentCore.h"
+#include "Segment.h"
 #include "RPFileReader.h"
 
 #include <iostream>
