@@ -28,6 +28,7 @@ public:
 	void HomeInsertion(void);
 	void setVibration(bool);
 	double getRollAngle(void);
+	double getInsMM(void);
 
 private:
 	RollDevice m_RollDevice;
