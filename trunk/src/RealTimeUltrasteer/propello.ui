@@ -45,46 +45,58 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="r_incRollPos">
-         <property name="text">
-          <string>10 deg. Positive Roll</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QPushButton" name="r_incRollPos">
+           <property name="text">
+            <string>+10 deg. </string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="r_incRollNeg">
+           <property name="text">
+            <string>-10 deg.</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
-        <widget class="QPushButton" name="r_incRollNeg">
-         <property name="text">
-          <string>10 deg. Negative Roll</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <widget class="QPushButton" name="r_maxRollPos">
+           <property name="text">
+            <string>+Max V</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="r_maxRollNeg">
+           <property name="text">
+            <string>-Max V</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
-        <widget class="QPushButton" name="r_maxRollPos">
-         <property name="text">
-          <string>Max. Positive Roll</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="r_maxRollNeg">
-         <property name="text">
-          <string>Max. Negative Roll</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="r_stopRoll">
-         <property name="text">
-          <string>Stop Roll</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="r_homeRoll">
-         <property name="text">
-          <string>Home Roll</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <item>
+          <widget class="QPushButton" name="r_stopRoll">
+           <property name="text">
+            <string>Stop Roll</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="r_homeRoll">
+           <property name="text">
+            <string>Home Roll</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
         <widget class="Line" name="line">
@@ -96,51 +108,63 @@
        <item>
         <widget class="QPushButton" name="r_initInsertion">
          <property name="text">
-          <string>Initialize Insert.</string>
+          <string>Initialize Ins.</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="r_incInsPos">
-         <property name="text">
-          <string>Insert 10 mm</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <item>
+          <widget class="QPushButton" name="r_incInsPos">
+           <property name="text">
+            <string>+10 mm</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="r_incInsNeg">
+           <property name="text">
+            <string>-10 mm</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
-        <widget class="QPushButton" name="r_incInsNeg">
-         <property name="text">
-          <string>Retract 10 mm</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_6">
+         <item>
+          <widget class="QPushButton" name="r_maxInsPos">
+           <property name="text">
+            <string>+30 rpm</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="r_maxInsNeg">
+           <property name="text">
+            <string>-30 rpm</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
-        <widget class="QPushButton" name="r_maxInsPos">
-         <property name="text">
-          <string>Insert 30 rpm</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="r_maxInsNeg">
-         <property name="text">
-          <string>Retract 30 rpm</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="r_stopIns">
-         <property name="text">
-          <string>Stop Insertion</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="r_homeIns">
-         <property name="text">
-          <string>Home Insertion</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_7">
+         <item>
+          <widget class="QPushButton" name="r_stopIns">
+           <property name="text">
+            <string>Stop Ins.</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="r_homeIns">
+           <property name="text">
+            <string>Home Ins.</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
         <widget class="Line" name="line_2">
@@ -150,39 +174,124 @@
         </widget>
        </item>
        <item>
+        <spacer name="verticalSpacer_4">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="Line" name="line_4">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="r_scanNeedle">
          <property name="text">
-          <string>Scan Needle</string>
+          <string>Single Scan</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QPushButton" name="r_applyControl">
          <property name="text">
-          <string>Apply Control</string>
+          <string>Steer to Target</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="resetTrials">
+        <widget class="QLabel" name="label_4">
          <property name="text">
-          <string>Reset Trials</string>
+          <string>Target Point (t):</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QRadioButton" name="kalmanFilter">
-         <property name="text">
-          <string>Apply Kalman Filter</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="Line" name="line_3">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>X (mm)</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QSpinBox" name="target_y">
+           <property name="minimum">
+            <number>10</number>
+           </property>
+           <property name="maximum">
+            <number>200</number>
+           </property>
+           <property name="singleStep">
+            <number>10</number>
+           </property>
+           <property name="value">
+            <number>30</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_3">
+           <property name="text">
+            <string>Z (mm)</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QSpinBox" name="target_x">
+           <property name="minimum">
+            <number>-100</number>
+           </property>
+           <property name="maximum">
+            <number>100</number>
+           </property>
+           <property name="singleStep">
+            <number>10</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Y (mm)</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QSpinBox" name="target_z">
+           <property name="minimum">
+            <number>-500</number>
+           </property>
+           <property name="maximum">
+            <number>500</number>
+           </property>
+           <property name="singleStep">
+            <number>10</number>
+           </property>
+           <property name="value">
+            <number>40</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </widget>
@@ -344,112 +453,6 @@
       </item>
       <item>
        <spacer name="verticalSpacer">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>40</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item>
-       <widget class="QLabel" name="label_4">
-        <property name="text">
-         <string>Needle Target</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <layout class="QVBoxLayout" name="verticalLayout_5">
-        <item>
-         <layout class="QGridLayout" name="gridLayout">
-          <item row="0" column="0">
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>X (mm)</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QSpinBox" name="target_y">
-            <property name="minimum">
-             <number>10</number>
-            </property>
-            <property name="maximum">
-             <number>200</number>
-            </property>
-            <property name="singleStep">
-             <number>10</number>
-            </property>
-            <property name="value">
-             <number>30</number>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_3">
-            <property name="text">
-             <string>Z (mm)</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QSpinBox" name="target_x">
-            <property name="minimum">
-             <number>-100</number>
-            </property>
-            <property name="maximum">
-             <number>100</number>
-            </property>
-            <property name="singleStep">
-             <number>10</number>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>Y (mm)</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QSpinBox" name="target_z">
-            <property name="minimum">
-             <number>-500</number>
-            </property>
-            <property name="maximum">
-             <number>500</number>
-            </property>
-            <property name="singleStep">
-             <number>10</number>
-            </property>
-            <property name="value">
-             <number>40</number>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <spacer name="verticalSpacer_2">
         <property name="orientation">
          <enum>Qt::Vertical</enum>
         </property>
@@ -1221,22 +1224,6 @@
    </hints>
   </connection>
   <connection>
-   <sender>wCine</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>cineScroll(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>200</x>
-     <y>451</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>388</x>
-     <y>288</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>mSystemID</sender>
    <signal>triggered()</signal>
    <receiver>MainWindow</receiver>
@@ -1349,86 +1336,6 @@
    </hints>
   </connection>
   <connection>
-   <sender>wCaptureMethod</sender>
-   <signal>activated(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>onCaptureChange(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>205</x>
-     <y>209</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>409</x>
-     <y>299</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>wDataSelect</sender>
-   <signal>activated(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>onDataSelection(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>205</x>
-     <y>254</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>409</x>
-     <y>299</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>wDetect</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>onDetect()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>206</x>
-     <y>136</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>409</x>
-     <y>299</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>wProbeAttributes</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>onProbeAttributes()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>206</x>
-     <y>164</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>409</x>
-     <y>299</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>wHomeMotor</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>onHomeMotor()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>206</x>
-     <y>283</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>409</x>
-     <y>299</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>wApply</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
@@ -1441,22 +1348,6 @@
     <hint type="destinationlabel">
      <x>409</x>
      <y>299</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>wStoreVolumes</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>onStoreVolume()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>205</x>
-     <y>382</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>409</x>
-     <y>273</y>
     </hint>
    </hints>
   </connection>
@@ -1505,22 +1396,6 @@
     <hint type="destinationlabel">
      <x>460</x>
      <y>263</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>r_applyControl</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>applyControl()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>67</x>
-     <y>184</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>467</x>
-     <y>268</y>
     </hint>
    </hints>
   </connection>
@@ -1765,34 +1640,130 @@
    </hints>
   </connection>
   <connection>
-   <sender>kalmanFilter</sender>
-   <signal>clicked(bool)</signal>
+   <sender>wCine</sender>
+   <signal>valueChanged(int)</signal>
    <receiver>MainWindow</receiver>
-   <slot>enableKalmanFilter(bool)</slot>
+   <slot>cineScroll(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>85</x>
-     <y>684</y>
+     <x>200</x>
+     <y>451</y>
     </hint>
     <hint type="destinationlabel">
-     <x>486</x>
-     <y>388</y>
+     <x>388</x>
+     <y>288</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>resetTrials</sender>
-   <signal>clicked()</signal>
+   <sender>wCaptureMethod</sender>
+   <signal>activated(int)</signal>
    <receiver>MainWindow</receiver>
-   <slot>resetSystem()</slot>
+   <slot>onCaptureChange(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>85</x>
-     <y>674</y>
+     <x>205</x>
+     <y>209</y>
     </hint>
     <hint type="destinationlabel">
-     <x>486</x>
-     <y>388</y>
+     <x>409</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wStoreVolumes</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>onStoreVolume()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>205</x>
+     <y>382</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>409</x>
+     <y>273</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wHomeMotor</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>onHomeMotor()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>206</x>
+     <y>283</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>409</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wDataSelect</sender>
+   <signal>activated(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>onDataSelection(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>205</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>409</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wDetect</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>onDetect()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>206</x>
+     <y>136</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>409</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>wProbeAttributes</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>onProbeAttributes()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>206</x>
+     <y>164</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>409</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>r_applyControl</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>applyControl()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>67</x>
+     <y>184</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>467</x>
+     <y>268</y>
     </hint>
    </hints>
   </connection>

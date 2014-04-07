@@ -28,6 +28,7 @@ private:
     void refreshParams();
     void stepMotor(bool fwd);
     QString getParamStringValue(QString);
+	bool startScanningNeedle();
 	void stopScanningNeedle();
 	void enableRobotControls(bool);
 
@@ -41,6 +42,7 @@ private:
     probeInfo m_probeInfo;
     imagingMode mode;
 	bool m_needleScanning;
+	bool m_closedLoopSteering;
 	bool m_rollInit;
 	bool m_insInit;
 	RobotControl m_robotcontrol;

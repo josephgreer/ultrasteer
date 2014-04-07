@@ -166,3 +166,9 @@ double NeedleSteeringRobot::getRollAngle(void)
 	// Returns the current angle of the needle
 	return m_RollDevice.GetAngle();
 }
+
+double NeedleSteeringRobot::getInsMM(void)
+{
+	// Returns the current angle of the needle
+	return m_InsertionDevice.GetMM();
+}

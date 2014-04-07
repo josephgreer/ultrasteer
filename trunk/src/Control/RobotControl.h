@@ -1,24 +1,6 @@
 #pragma once
 #include "stdafx.h"
-#include "vtkQImageToImageSource.h"
-#include "vtkSmartPointer.h"
-#include "itkImage.h"
-#include "itkImageFileReader.h"
-#include "itkThresholdImageFilter.h"
-#include "itkImageRegionIterator.h"
-#include "itkLabelMapToLabelImageFilter.h"
-#include "itkScalarToRGBColormapImageFilter.h"
-#include "itkBinaryThresholdImageFilter.h"
-#include "itkBinaryStatisticsOpeningImageFilter.h"
-#include "itkMaskImageFilter.h"
-#include "itkRGBToLuminanceImageFilter.h"
-#include "itkImageRegionIterator.h"
-#include "itkLabelGeometryImageFilter.h"
-#include "itkBinaryImageToLabelMapFilter.h"
-#include "itkVTKImageToImageFilter.h"
-#include "vtkImageLuminance.h"
 #include "NeedleSteeringRobot.h"
-#include "itkAccumulateImageFilter.h"
 #include <QDebug>
 #include <time.h>
 #include <vnl/vnl_vector.h>
@@ -44,33 +26,27 @@ public:
 	void setTargetX(int);
 	void setTargetY(int);
 	void setTargetZ(int);	
-	void enableKalmanFilter(bool);
 	void callFunctionDebug();
 	void resetSystem();
+	void beginClosedLoopSteering();
+	bool runControlLoop(vnl_vector<double> z);
 	
 private:
-	int processDopplerFrame(double&,double&);
-	int processBandDopplerFrames(double&,double&);
 	int determineRadiusAndAngle(std::vector<double> &v_scX, std::vector<double> &v_scY, std::vector<double> &v_scZ, double &R, double &del_theta);
-	void steeringPlanner(vnl_vector<double> x_est, vnl_vector<double> t, vnl_vector<double> &u);
-	void scanConvertPoints(double &scX,double &scY,double &scZ, double imgX, double imgY, int frame);
+	bool applyController(vnl_vector<double> x, vnl_vector<double> t);	
+	void executeControl(vnl_vector<double> u);
 	void mapRadiusToDC( double RadiusMM, double &DC);
-	void measureNeedleTipPose(std::vector<double> &v_scX, std::vector<double> &v_scY, std::vector<double> &v_scZ, vnl_vector<double> &z, vnl_vector<double> &a, vnl_vector<double> &b);
-
+	void updateU(void);
+	
 private:
 	int m_index;
 	int fpV;
 	int volumes;
-	QImage *m_colorimage;
-	QImage *m_Bimage;
-	double thetas[100];
 	NeedleSteeringRobot m_robot;
 	Propello* ParentWindow;
-	vnl_vector<double> T;
-	bool m_useUKF;
-	UnscentedKalmanFilter UKF;
-	vnl_vector<double> u;
+	vnl_vector<double> m_t;
+	UnscentedKalmanFilter m_UKF;
+	vnl_vector<double> m_u;
 	int m_stepNumber;
+	double m_lastInsPos;
 };
-
-
