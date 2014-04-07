@@ -47,10 +47,18 @@ void RobotControl::InitializeInsertion(QString Com)
 
 void RobotControl::beginClosedLoopSteering()
 {
-	// Reset the system for a new steering sequence
-	resetSystem();
 	// Home the roll stage
 	homeRoll();
+	// Reset the system for a new steering sequence
+	resetSystem();
+}
+
+void RobotControl::stopClosedLoopSteering()
+{
+	// Stop the insertion stage
+	SetInsertionVelocity(0);
+	// Cancel duty cycling 
+	m_robot.cancelDutyCycling();
 }
 
 bool RobotControl::runControlLoop(vnl_vector<double> z)

@@ -29,6 +29,7 @@ public:
 	void callFunctionDebug();
 	void resetSystem();
 	void beginClosedLoopSteering();
+	void stopClosedLoopSteering();
 	bool runControlLoop(vnl_vector<double> z);
 	
 private:

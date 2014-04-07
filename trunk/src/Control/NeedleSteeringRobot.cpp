@@ -172,3 +172,12 @@ double NeedleSteeringRobot::getInsMM(void)
 	// Returns the current angle of the needle
 	return m_InsertionDevice.GetMM();
 }
+
+void NeedleSteeringRobot::cancelDutyCycling(void)
+{
+	// Cancel DC timers if necessary
+	if( polling_timer.isActive() )
+		polling_timer.stop();
+	if( dwell_timer.isActive() )
+		dwell_timer.stop();
+}
