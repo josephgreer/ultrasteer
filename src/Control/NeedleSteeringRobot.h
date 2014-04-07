@@ -29,6 +29,8 @@ public:
 	void setVibration(bool);
 	double getRollAngle(void);
 	double getInsMM(void);
+	void cancelDutyCycling(void);
+
 
 private:
 	RollDevice m_RollDevice;

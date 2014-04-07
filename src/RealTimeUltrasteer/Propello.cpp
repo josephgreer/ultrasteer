@@ -170,7 +170,7 @@ void Propello::processRawFrame(unsigned char* addr, int blockIndex, int header)
 			if(steeringComplete)
 			{
 				stopScanningNeedle();
-				m_robotcontrol.SetInsertionVelocity(0);
+				m_robotcontrol.stopClosedLoopSteering();
 				DisplayErrorBox(1);
 			}
 		}
@@ -829,7 +829,6 @@ void Propello::applyControl()
 	bool scanningStarted = startScanningNeedle();
 	if( scanningStarted )
 		m_closedLoopSteering = true;
-	
 	// Set robot to closed-loop steering
 	m_robotcontrol.beginClosedLoopSteering();
 }
