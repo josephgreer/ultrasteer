@@ -60,8 +60,8 @@ namespace Nf
 
   struct GPS_Data {
     cv::Mat pose;
-    Vec3d pos;
-    Vec3d posaer;
+    cv::Vec3d pos;
+    cv::Vec3d posaer;
     double offset[5];
     unsigned short quality;
     u8 valid;

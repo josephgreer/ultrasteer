@@ -108,9 +108,9 @@ namespace Nf
     }
   }
 
-  Vec3f EvaluatePoly(const PolyCurve *src, f32 t)
+  cv::Vec3f EvaluatePoly(const PolyCurve *src, f32 t)
   {
-    Vec3f res(0,0,0);
+    cv::Vec3f res(0,0,0);
     ASSERT(src->rmsError < 200);
 #ifdef USE_BARYCENTRIC
     f64 x = alglib::barycentriccalc(src->x, (f64)t);
@@ -121,19 +121,19 @@ namespace Nf
 #else
     f32 _t = 1;
     for(s32 i=0; i<=src->degree; i++) {
-      res += Vec3f(src->coefX[i]*_t, src->coefY[i]*_t, src->coefZ[i]*_t);
+      res += cv::Vec3f(src->coefX[i]*_t, src->coefY[i]*_t, src->coefZ[i]*_t);
       _t = t*_t;
     }
 #endif
     return res;
   }
 
-  Vec2f GenerateRange(const real_1d_array &t)
+  cv::Vec2f GenerateRange(const real_1d_array &t)
   {
-    Vec2f range(1000000, -1000000);
+    cv::Vec2f range(1000000, -1000000);
     for(s32 i=0; i<(s32)t.length(); i++) {
-      range.x = (f32)MIN(t[i], range.x);
-      range.y = (f32)MAX(t[i], range.y);
+      range[0] = (f32)MIN(t[i], range[0]);
+      range[1] = (f32)MAX(t[i], range[1]);
     }
     return range;
   }
@@ -142,7 +142,7 @@ namespace Nf
   // End ransac stuff
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  static void generateArrays(std::vector < Vec3f > & usedPoints,  std::vector < NeedlePoint > & usedNPoints, real_1d_array &t, real_1d_array &x, real_1d_array &y, real_1d_array &z, real_1d_array &w, 
+  static void generateArrays(std::vector < cv::Vec3f > & usedPoints,  std::vector < NeedlePoint > & usedNPoints, real_1d_array &t, real_1d_array &x, real_1d_array &y, real_1d_array &z, real_1d_array &w, 
     const std::vector < NeedlePoint > &flat, const PolyCurveParams *params, const PolyCurve *src)
   {
     usedPoints.clear();
@@ -155,8 +155,9 @@ namespace Nf
       f32 _t = flat[i].point.dot(params->descriptor);
       f32 distSq = 1;
       if(src) {
-        Vec3f opt = EvaluatePoly(src, _t);
-        distSq = opt.distanceSquared(flat[i].point);
+        cv::Vec3f opt = EvaluatePoly(src, _t);
+		cv::Vec3f delta = (opt-flat[i].point);
+		distSq = (delta.t()*delta)(0);
         if(distSq > mThreshSq ) {
           continue;
         }
@@ -173,9 +174,9 @@ namespace Nf
     z.setlength(usedPoints.size());
     w.setlength(usedPoints.size());
     for(s32 i=0; i<(s32)usedPoints.size(); i++) {
-      x[i] = usedPoints[i].x;
-      y[i] = usedPoints[i].y;
-      z[i] = usedPoints[i].z;
+      x[i] = usedPoints[i][0];
+      y[i] = usedPoints[i][1];
+      z[i] = usedPoints[i][2];
 
       t[i] = ts[i];
       w[i] = ws[i];//(params->imageWeight*flat[i].imageScore + params->modelWeight/(flat[i].modelScore))*flat[i].youth;
@@ -184,7 +185,7 @@ namespace Nf
       int x = 0;
     if(false) {
       for(s32 i=0; i<(s32)usedPoints.size(); i++) {
-        NTrace("(%f %f %f %f %f)\n", usedPoints[i].x, usedPoints[i].y, usedPoints[i].z, ts[i], ws[i]);
+        NTrace("(%f %f %f %f %f)\n", usedPoints[i][0], usedPoints[i][1], usedPoints[i][2], ts[i], ws[i]);
       }
       NTrace("===============================================================\n");
       for(s32 i=0; i<x.length(); i++) {
@@ -194,7 +195,7 @@ namespace Nf
     ASSERT(t.length() == x.length() && x.length() == y.length() && y.length() == z.length() && z.length() == usedPoints.size());
   }
 
-  static s32 fitWeightedPolyCurve(PolyCurve *out, std::vector < Vec3f > &usedPoints, std::vector < NeedlePoint > & usedNPoints, std::vector < NeedlePoint > & flat, const PolyCurveParams *params, const PolyCurve *src = NULL)
+  static s32 fitWeightedPolyCurve(PolyCurve *out, std::vector < cv::Vec3f > &usedPoints, std::vector < NeedlePoint > & usedNPoints, std::vector < NeedlePoint > & flat, const PolyCurveParams *params, const PolyCurve *src = NULL)
   {
     real_1d_array t,x,y,z,w;
 
@@ -247,7 +248,7 @@ namespace Nf
 
   }
 
-  static s32 fitPolyCurve(PolyCurve *out, std::vector < Vec3f > &usedPoints, std::vector < NeedlePoint > & usedNPoints, std::vector < NeedlePoint > & flat, const PolyCurveParams *params, const PolyCurve *src = NULL)
+  static s32 fitPolyCurve(PolyCurve *out, std::vector < cv::Vec3f > &usedPoints, std::vector < NeedlePoint > & usedNPoints, std::vector < NeedlePoint > & flat, const PolyCurveParams *params, const PolyCurve *src = NULL)
   {
     real_1d_array t,x,y,z,w;
 
@@ -299,7 +300,7 @@ namespace Nf
 
   }
 
-  static void fitPointsToNeedle(PolyCurve *dst, PolyCurveParams *pParams, std::vector < Vec3f > &usedPoints,  std::vector < NeedlePoint > &usedNPoints, std::vector < NeedlePoint > &pts, const NeedleFrame & incoming, const PolyCurve *src = NULL)
+  static void fitPointsToNeedle(PolyCurve *dst, PolyCurveParams *pParams, std::vector < cv::Vec3f > &usedPoints,  std::vector < NeedlePoint > &usedNPoints, std::vector < NeedlePoint > &pts, const NeedleFrame & incoming, const PolyCurve *src = NULL)
   {
     usedPoints.clear();
     usedNPoints.clear();
@@ -348,7 +349,7 @@ namespace Nf
     m_data.pParams.youthWeight = youthWeight;
     m_data.pParams.timeDecay = timeDecay;
     m_data.pParams.min_youth = minYouth;
-    m_data.pParams.descriptor = Vec3f(1.0f, 0, 0);
+    m_data.pParams.descriptor = cv::Vec3f(1.0f, 0, 0);
 
     m_data.pParams.modelThresh = modelThresh*INIT_MODEL_THRESH_FACTOR;
     m_data.pParams.minModelThresh = modelThresh;
@@ -402,7 +403,7 @@ namespace Nf
     return &m_pts;
   }
 
-  std::vector < Vec3f > * CurveFitter::GetUsedPoints()
+  std::vector < cv::Vec3f > * CurveFitter::GetUsedPoints()
   {
     return &m_usedPoints;
   }
@@ -422,12 +423,12 @@ namespace Nf
   //////////////////////////////////////////////////
   static CvRect SquareiToCvRect(const Squarei &sq)
   {
-    return cvRect(sq.ul.x, sq.ul.y, sq.lr.x-sq.ul.x, sq.lr.y-sq.ul.y);
+    return cvRect(sq.ul[0], sq.ul[1], sq.lr[0]-sq.ul[0], sq.lr[1]-sq.ul[1]);
   }
 
   static Squarei CvRectToSquarei(const CvRect &rect)
   {
-    return Squarei(Vec2i(rect.x, rect.y), Vec2i(rect.x+rect.width, rect.y+rect.height));
+    return Squarei(cv::Vec2i(rect.x, rect.y), cv::Vec2i(rect.x+rect.width, rect.y+rect.height));
   }
 
 
@@ -463,7 +464,7 @@ namespace Nf
   }
 
 
-  static Vec2f dopplerCentroid(const IplImage *im)
+  static cv::Vec2f dopplerCentroid(const IplImage *im)
   {
     u32 sx, sum, rsum;
     sum = sx = 0;
@@ -488,7 +489,7 @@ namespace Nf
       }
     }
 
-    Vec2f res((f32)sx/(f32)sum, (f32)rcen);
+    cv::Vec2f res((f32)sx/(f32)sum, (f32)rcen);
     return res;
   }
 
@@ -608,8 +609,8 @@ namespace Nf
     rv.majorLen = major*.65f;
     rv.minorLen = minor*.65f;
     rv.orientation = theta;
-    rv.cenX = rect.ul.x+xc;
-    rv.cenY = rect.ul.y+yc;
+    rv.cenX = rect.ul[0]+xc;
+    rv.cenY = rect.ul[1]+yc;
     return rv;
   }
 
@@ -639,7 +640,7 @@ namespace Nf
 #define BMODE_SUM_SCALE 100.0
 #define BMODE_DOPPLER_COMBINE_SCALE 1000.0 //final score computed as DOPPLER_SUM/DOPPLER_SUM_SCALE+
 
-  static void chooseNBestBmodeROIs(std::vector < Squarei > & bRects, f32 bSums[], f32 bDists[], Vec2f centroid, IplImage *analyzeImage)
+  static void chooseNBestBmodeROIs(std::vector < Squarei > & bRects, f32 bSums[], f32 bDists[], cv::Vec2f centroid, IplImage *analyzeImage)
   {
     if(bRects.size() > 0) {
       //Find top N_BEST bmode candidates based on:
@@ -648,10 +649,10 @@ namespace Nf
       s32 best[N_BEST];  for(s32 i=0; i<N_BEST; i++) best[i] = -1;
       f32 bestDist[N_BEST];  for(s32 i=0; i<N_BEST; i++) bestDist[i] = 100000.0f;
       for(s32 i=0; i<(s32)bRects.size(); i++) {
-        if(((Vec2f)(bRects[i])).y < 10)
+        if(((cv::Vec2f)(bRects[i]))[1] < 10)
           continue;
-        Vec2f delta = Vec2f((f32)bRects[i].DistX((s32)centroid.x), (f32)bRects[i].DistY((s32)centroid.y));
-        f32 dist = delta.magnitudeSquared();
+        cv::Vec2f delta = cv::Vec2f((f32)bRects[i].DistX((s32)centroid[0]), (f32)bRects[i].DistY((s32)centroid[1]));
+        f32 dist = (delta.t()*delta)(0);
 
         cvSetImageROI(analyzeImage, SquareiToCvRect(bRects[i]));
         CvScalar sum = cvSum(analyzeImage);
@@ -794,16 +795,15 @@ namespace Nf
     // 2) Scoring of b-mode candidates
     CvMoments moment;
     cvMoments(m_colorMask[0], &moment);
-    Vec2f centroidComp = Vec2f((f32)(moment.m10/moment.m00), (f32)(moment.m01/moment.m00));
-    Vec2f centroid = dopplerCentroid(m_colorMask[0]);//Vec2f((f32)(moment.m10/moment.m00), (f32)(moment.m01/moment.m00));
+    cv::Vec2f centroidComp = cv::Vec2f((f32)(moment.m10/moment.m00), (f32)(moment.m01/moment.m00));
+    cv::Vec2f centroid = dopplerCentroid(m_colorMask[0]);//cv::Vec2f((f32)(moment.m10/moment.m00), (f32)(moment.m01/moment.m00));
     CvScalar dopplerSum = cvScalar(moment.m00);
 
     //Store off doppler centroid for initial model
     NeedlePoint npt;
     NeedleSeg segment;
     npt.imagePoint = centroid;
-    //npt.point = transform->Transform(centroid);
-	ASSERT(0);
+    npt.point = transform->Transform(centroid);
     npt.imageScore = (f32)(dopplerSum.val[0]/DOPPLER_SUM_SCALE);
     segment.pts.push_back(npt);
     m_dopplerCentroid.segments.clear();
@@ -820,7 +820,7 @@ namespace Nf
     rects[0] = findExpandAndClusterContours(m_colorMask[1], m_dopplerClusterExpand, true, false);
 
     //big rect is used for later scoring
-    Squarei bigRect(Vec2i(0,0), Vec2i(0,0), 0);
+    Squarei bigRect(cv::Vec2i(0,0), cv::Vec2i(0,0), 0);
     if(rects[0].size() > 0) {
       bigRect = rects[0][0];
       for(s32 i=1; i<(s32)rects[0].size(); i++) {
@@ -832,7 +832,7 @@ namespace Nf
     if(false) {
       cvCopyImage(color, m_disImage);
       for(s32 i=0; i<rects[0].size(); i++) {
-        cvDrawRect(m_disImage, cvPoint(rects[0][i].ul.x, rects[0][i].ul.y), cvPoint(rects[0][i].lr.x, rects[0][i].lr.y),
+        cvDrawRect(m_disImage, cvPoint(rects[0][i].ul[0], rects[0][i].ul[1]), cvPoint(rects[0][i].lr[0], rects[0][i].lr[1]),
           cvScalar(0, 255, 0));
       }
       cvSaveImage("C:/test.bmp", m_disImage);
@@ -908,26 +908,26 @@ namespace Nf
       //break up the ellipse along its major axis...
       f32 elDel = 40.0f;
       s32 nHops = (s32)((el.majorLen)/elDel);
-      Vec2f axis(1.0f,tan(el.orientation*PI/180.0f));
-      axis = axis.normalized();
-      Vec2f startPoint = Vec2f(el.cenX, el.cenY)-axis*el.majorLen;
-      Vec2f endPoint = Vec2f(el.cenX, el.cenY)+axis*el.majorLen;
+      cv::Vec2f axis(1.0f,tan(el.orientation*PI/180.0f));
+      cv::normalize((cv::Mat &)axis,(cv::Mat &)axis);
+	  ASSERT(0);  //check that cv::normalize works like we expect it to!
+      cv::Vec2f startPoint = cv::Vec2f(el.cenX, el.cenY)-axis*el.majorLen;
+      cv::Vec2f endPoint = cv::Vec2f(el.cenX, el.cenY)+axis*el.majorLen;
       //cvDrawLine(m_disImage, cvPoint(startPoint.x, startPoint.y), cvPoint(endPoint.x, endPoint.y), cvScalar(0, 0, 255), 1);
       for(s32 hop=-nHops; hop<=nHops; hop++) {
-        f32 xx = el.cenX+axis.x*hop*elDel;
-        f32 yy = el.cenY+axis.y*hop*elDel;
+        f32 xx = el.cenX+axis[0]*hop*elDel;
+        f32 yy = el.cenY+axis[1]*hop*elDel;
         cvDrawCircle(m_disImage, cvPoint(xx, yy), 4, cvScalar(255, 0, 0), 2);
 
-		//npt.point = transform->Transform(Vec2d(xx,yy));
-		ASSERT(0);
+		npt.point = transform->Transform(cv::Vec2d(xx,yy));
         npt.imageScore = (f32)(sum.val[0]/DOPPLER_SUM_SCALE);
-        npt.imagePoint = Vec2f(el.cenX, el.cenY);
+        npt.imagePoint = cv::Vec2f(el.cenX, el.cenY);
         if(rStage == 1) {
           npt.imageScore = (npt.imageScore+bSums[i])/(bDists[i] > 1.0f ? bDists[i] : 1.0f);
           npt.cDist = bDists[i];
           npt.bResp = bSums[i];
-          npt.dResp = (f32)dopplerSum.val[0]/(f32)((bigRect.ul.x - bigRect.lr.x + 1) * (bigRect.ul.y - bigRect.lr.y + 1));//(f32)(sum.val[0]/DOPPLER_SUM_SCALE);
-          npt.dResp = npt.dResp*sqrtf((f32)((bigRect.ul.x - bigRect.lr.x + 1) * (bigRect.ul.y - bigRect.lr.y + 1)));
+          npt.dResp = (f32)dopplerSum.val[0]/(f32)((bigRect.ul[1] - bigRect.lr[1] + 1) * (bigRect.ul[2] - bigRect.lr[2] + 1));//(f32)(sum.val[0]/DOPPLER_SUM_SCALE);
+          npt.dResp = npt.dResp*sqrtf((f32)((bigRect.ul[1] - bigRect.lr[1] + 1) * (bigRect.ul[2] - bigRect.lr[2] + 1)));
         }
         npt.used = 0;
         npt.youth = 1;
