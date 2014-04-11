@@ -118,6 +118,13 @@ namespace Nf
   {
   public:
 	  virtual Vec3d Transform(const Vec2d &image) const = 0;
+
+    virtual Vec3f Transform(const Vec2f &image) const 
+    {
+      Vec2d imd((f64)image.x, (f64)image.y);
+      Vec3d res = Transform(imd);
+      return Vec3f((f32)res.x, (f32)res.y, (f32)res.z);
+    }
   };
 
   typedef enum
@@ -154,7 +161,7 @@ namespace Nf
     NeedleSegmenter(s32 width, s32 height);
     ~NeedleSegmenter();
     void ProcessColor(const IplImage *color, IplImage *bmode, const ImageCoordTransform *transform);
-    s32 UpdateModel(PolyCurve *model, IplImage *display, IplImage *doppler, IplImage *bmode, const ImageCoordTransform *transform);
+    IplImage * UpdateModel(PolyCurve *model, IplImage *doppler, IplImage *bmode, const ImageCoordTransform *transform);
     void InitZeroLut();
     void MaskColor(IplImage *dst, const IplImage *src);
     void ThresholdBmodeROIs(const std::vector < Squarei > rects[], IplImage *colorMask, IplImage *bmode);

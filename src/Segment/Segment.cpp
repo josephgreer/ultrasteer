@@ -813,8 +813,7 @@ namespace Nf
     NeedlePoint npt;
     NeedleSeg segment;
     npt.imagePoint = centroid;
-    //npt.point = transform->Transform(centroid);
-	ASSERT(0);
+    npt.point = transform->Transform(centroid);
     npt.imageScore = (f32)(dopplerSum.val[0]/DOPPLER_SUM_SCALE);
     segment.pts.push_back(npt);
     m_dopplerCentroid.segments.clear();
@@ -929,8 +928,7 @@ namespace Nf
         f32 yy = el.cenY+axis.y*hop*elDel;
         cvDrawCircle(m_disImage, cvPoint(xx, yy), 4, cvScalar(255, 0, 0), 2);
 
-		//npt.point = transform->Transform(Vec2d(xx,yy));
-		ASSERT(0);
+		    npt.point = transform->Transform(Vec2f(xx,yy));
         npt.imageScore = (f32)(sum.val[0]/DOPPLER_SUM_SCALE);
         npt.imagePoint = Vec2f(el.cenX, el.cenY);
         if(rStage == 1) {
@@ -955,7 +953,7 @@ namespace Nf
     m_frame.used = 0;
   }
 
-  s32 NeedleSegmenter::UpdateModel(PolyCurve *model, IplImage *display, IplImage *doppler, IplImage *bmode, 
+  IplImage * NeedleSegmenter::UpdateModel(PolyCurve *model, IplImage *doppler, IplImage *bmode, 
     const ImageCoordTransform *transform)
   {
     ProcessColor(doppler, bmode, transform);
@@ -973,7 +971,7 @@ namespace Nf
       m_model.ClearPoints();
       m_initialModel.ClearPoints();
     }
-    return 0;
+    return m_disImage;
   }
 
   ////////////////////////////////////////////////////////////////////////
