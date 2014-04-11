@@ -82,27 +82,26 @@ TEST(Basics, NeedleEstimator)
 		reader.AddGPSReader((RPGPSReaderBasic *)new RPGPSReader(tests[n].gFile));
 
 		RPData curr = reader.GetNextRPData();
-		s32 window = cvNamedWindow("Segment test");
 
     NeedleSegmenter segmenter(curr.color->width, curr.color->height);
-    IplImage *display = cvCreateImage(cvSize(curr.color->width, curr.color->height),curr.color->depth, curr.color->nChannels);
 
     f64 calibData[16] = {14.8449, 15.0061, .1638, 0, .9477, .0016, .0166, 0, -.0018, 1, .0052, 0, 0, 0, 0, 1};
     cv::Mat calibration(4,4,CV_64F,calibData);
     PolyCurve model;
 
 		while(curr.color) {
-      RPTransform transform(Vec2d(curr.mpp, curr.mpp), Vec2d(curr.roi.ul.x, curr.roi.ul.y),
+      RPTransform transform(Vec2d(curr.mpp, curr.mpp), Vec2d(320.0, 0),
         calibration, curr.gps);
-      segmenter.UpdateModel(&model, display, curr.color, curr.b8, (ImageCoordTransform *)&transform);
+      IplImage *display = segmenter.UpdateModel(&model, curr.color, curr.b8, (ImageCoordTransform *)&transform);
 
-      cvShowImage("Segment test", display);
-
+      if(display) {
+        //cvShowImage("Yep", display); 
+        cv::imshow("Yep", cv::Mat(display));
+        cvWaitKey(0);
+      }
 			releaseRPData(&curr);
 			curr = reader.GetNextRPData();
 		}
-
-    cvReleaseImage(&display);
 	}
 }
 
