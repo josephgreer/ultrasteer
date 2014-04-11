@@ -5,7 +5,6 @@
 #include <stdarg.h>
 #include <math.h>
 #include "windows.h"
-#include <cv.h>
 
 typedef unsigned char u8;
 typedef char s8;
@@ -35,7 +34,6 @@ namespace Nf
     OutputDebugString(str);
   }
 
-#if 0
   template <class T>
   class Vec2
   {
@@ -191,7 +189,7 @@ namespace Nf
   typedef Vec3<s32> Vec3i;
   typedef Vec2<f64> Vec2d;
   typedef Vec3<f64> Vec3d;
-#endif
+
 
   //Structure representing a connected square of pixels that are of the color being tracked.
   //Distance from a vector to a square is defined as the minimum distance over the coordinates
@@ -200,40 +198,40 @@ namespace Nf
   struct Square
   {
   public:
-    cv::Vec< T, 2 >ul, lr;
+    Vec2 < T > ul, lr;
     int weight;
 
-    Square() : ul(cv::Vec < T, 2 >(0, 0)), lr(cv::Vec < T, 2 >(0, 0)), weight(-1) {}
-    Square(const cv::Vec< T, 2 >& xy, int weight = 0) : ul(xy), lr(xy), weight(weight) {}
-    Square(const cv::Vec< T, 2 >& ul, const cv::Vec< T, 2 >& lr, int weight = 0)
+    Square() : ul(Vec2 < T >(0, 0)), lr(Vec2 < T >(0, 0)), weight(-1) {}
+    Square(const Vec2 < T > & xy, int weight = 0) : ul(xy), lr(xy), weight(weight) {}
+    Square(const Vec2 < T > & ul, const Vec2 < T > & lr, int weight = 0)
     {
-      this->ul[0] = min(ul[0], lr[0]);
-      this->ul[1] = min(ul[1], lr[1]);
-      this->lr[0] = max(ul[0], lr[0]);
-      this->lr[1] = max(ul[1], lr[1]);
+      this->ul.x = min(ul.x, lr.x);
+      this->ul.y = min(ul.y, lr.y);
+      this->lr.x = max(ul.x, lr.x);
+      this->lr.y = max(ul.y, lr.y);
       this->weight = weight;
     }
 
-    int Area() const { return weight != 0 ? weight : (ul[0] - lr[0] + 1) * (ul[1] - lr[1] + 1); }
+    int Area() const { return weight != 0 ? weight : (ul.x - lr.x + 1) * (ul.y - lr.y + 1); }
 
     int DistX(int x) const
     {
-      if(x < ul[0])
-        return ul[0] - x;
-      if(ul[0] <= x && x <= lr[0])
+      if(x < ul.x)
+        return ul.x - x;
+      if(ul.x <= x && x <= lr.x)
         return 0;
       else
-        return x - lr[0];
+        return x - lr.x;
     }
 
     int DistY(int y) const
     {
-      if(y < ul[1])
-        return ul[1] - y;
-      if(ul[1] <= y && y <= lr[1])
+      if(y < ul.y)
+        return ul.y - y;
+      if(ul.y <= y && y <= lr.y)
         return 0;
       else
-        return y - lr[1];
+        return y - lr.y;
     }
 
     static bool less(const Square & l, const Square & r)
@@ -243,15 +241,15 @@ namespace Nf
 
     int DistX(const Square & s) const
     {
-      int d1 = std::min(DistX(s.ul[0]), DistX(s.lr[0]));
-      int d2 = std::min(s.DistX(ul[0]), s.DistX(lr[0]));
+      int d1 = std::min(DistX(s.ul.x), DistX(s.lr.x));
+      int d2 = std::min(s.DistX(ul.x), s.DistX(lr.x));
       return std::min(d1, d2);
     }
 
     int DistY(const Square & s) const
     {
-      int d1 = std::min(DistY(s.ul[1]), DistY(s.lr[1]));
-      int d2 = std::min(s.DistY(ul[1]), s.DistY(lr[1]));
+      int d1 = std::min(DistY(s.ul.y), DistY(s.lr.y));
+      int d2 = std::min(s.DistY(ul.y), s.DistY(lr.y));
       return std::min(d1, d2);
     }
 
@@ -264,22 +262,22 @@ namespace Nf
       return std::sqrt(dx * dx + dy * dy);
     }
 
-    Square & operator += (const cv::Vec< T, 2 >& r)
+    Square & operator += (const Vec2 < T > & r)
     {
-      ul[0] = std::min(ul[0], r[0]);
-      ul[1] = std::min(ul[1], r[1]);
-      lr[0] = std::max(lr[0], r[0]);
-      lr[1] = std::max(lr[1], r[1]);
+      ul.x = std::min(ul.x, r.x);
+      ul.y = std::min(ul.y, r.y);
+      lr.x = std::max(lr.x, r.x);
+      lr.y = std::max(lr.y, r.y);
       weight += 1;
       return *this;
     }
 
     Square & operator += (const Square & r)
     {
-      ul[0] = std::min(ul[0], r.ul[0]);
-      ul[1] = std::min(ul[1], r.ul[1]);
-      lr[0] = std::max(lr[0], r.lr[0]);
-      lr[1] = std::max(lr[1], r.lr[1]);
+      ul.x = std::min(ul.x, r.ul.x);
+      ul.y = std::min(ul.y, r.ul.y);
+      lr.x = std::max(lr.x, r.lr.x);
+      lr.y = std::max(lr.y, r.lr.y);
       weight += 1;
       return *this;
     }
@@ -289,25 +287,25 @@ namespace Nf
       return (DistX(r) == 0) && (DistY(r) == 0);
     }
 
-    operator cv::Vec2f() const
+    operator Vec2f() const
     {
-      return cv::Vec2f(0.5f * (ul[0] + lr[0]), 0.5f * (ul[1] + lr[1]));
+      return Vec2f(0.5f * (ul.x + lr.x), 0.5f * (ul.y + lr.y));
     }
 
-    operator cv::Vec2i() const
+    operator Vec2i() const
     {
-      return cv::Vec2 < T >((ul[0] + lr[0]) / 2, (ul[1] + lr[1]) / 2);
+      return Vec2 < T >((ul.x + lr.x) / 2, (ul.y + lr.y) / 2);
     }
 
-    operator cv::Vec3f() const
+    operator Vec3f() const
     {
-      return Vec3f(0.5f * (ul[0] + lr[0]), 0.5f * (ul[1] + lr[1]), 0.0f);
+      return Vec3f(0.5f * (ul.x + lr.x), 0.5f * (ul.y + lr.y), 0.0f);
     }
 
     template < class U > 
-    bool Inside(const cv::Vec < U, 2 > v, float error = 0.0f) const
+    bool Inside(const Vec2 < U > v, float error = 0.0f) const
     {
-      if(ul[0] - error <= v[0] && v[0] <= lr[0] + error && ul[1] - error <= v[1] && v[1] <= lr[1] + error)
+      if(ul.x - error <= v.x && v.x <= lr.x + error && ul.y - error <= v.y && v.y <= lr.y + error)
         return true;
       return false;
     }
