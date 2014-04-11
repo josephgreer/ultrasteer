@@ -148,12 +148,13 @@ namespace Nf
     f32 m_dopplerClusterExpand;
     f32 m_bmodeClusterExpand;
     f32 m_threshFrac;
+    s32 m_initialModelPoints;
 
   public:
     NeedleSegmenter(s32 width, s32 height);
     ~NeedleSegmenter();
     void ProcessColor(const IplImage *color, IplImage *bmode, const ImageCoordTransform *transform);
-    s32 UpdateModel(PolyCurve *model, IplImage *display, const IplImage *doppler, const IplImage *bmode, const ImageCoordTransform *transform);
+    s32 UpdateModel(PolyCurve *model, IplImage *display, IplImage *doppler, IplImage *bmode, const ImageCoordTransform *transform);
     void InitZeroLut();
     void MaskColor(IplImage *dst, const IplImage *src);
     void ThresholdBmodeROIs(const std::vector < Squarei > rects[], IplImage *colorMask, IplImage *bmode);
