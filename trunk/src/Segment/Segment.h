@@ -19,8 +19,8 @@ namespace Nf
 {
 
   typedef struct {
-    cv::Vec3f point;
-    cv::Vec2f imagePoint;
+    Vec3f point;
+    Vec2f imagePoint;
     f32 imageScore;       //image analysis score.  assumed to be roughly correlated with probability of being a needle point based on image analysis alone
     f32 dResp;            //Dopler response
     f32 bResp;            //B-mode response
@@ -55,8 +55,8 @@ namespace Nf
 
     s32 degree;
     f32 rmsError;
-    cv::Vec3f descriptor;
-    cv::Vec2f dRange;
+    Vec3f descriptor;
+    Vec2f dRange;
   } PolyCurve;
 
   typedef struct {
@@ -74,7 +74,7 @@ namespace Nf
     f32 youthWeight;
     f32 timeDecay;                                //needle point youth decays as youth*timeDecay^(num_steps)
     f32 min_youth;                                //if needle point youth < min_youth remove from list'
-    cv::Vec3f descriptor;                             //descriptor axis
+    Vec3f descriptor;                             //descriptor axis
     f32 modelThresh;
     f32 minModelThresh;
   } PolyCurveParams;
@@ -83,13 +83,13 @@ namespace Nf
     PolyCurve res;                                //polynomial curve representing our needle
     PolyCurveParams pParams;                      //weighted polynomial curve paramters
 
-    std::vector < cv::Vec3f > usedPoints;
+    std::vector < Vec3f > usedPoints;
     std::vector < NeedlePoint > usedNpoints;
     std::vector < NeedleFrame > incomingPts;      //new points to add to our list of points to fit to
   } NeedleData; 
 
 
-  cv::Vec3f EvaluatePoly(const PolyCurve *src, f32 t);
+  Vec3f EvaluatePoly(const PolyCurve *src, f32 t);
 
   class CurveFitter
   {
@@ -97,7 +97,7 @@ namespace Nf
     NeedleData m_data;
     PolyCurve m_lastModel;
     std::vector < NeedlePoint > m_pts;
-    std::vector < cv::Vec3f > m_usedPoints;
+    std::vector < Vec3f > m_usedPoints;
     std::vector < NeedlePoint > m_usedNPoints;
     s32 m_maxDegree;
 
@@ -109,7 +109,7 @@ namespace Nf
     void SetInitialModel(const PolyCurve *src);
     void ClearPoints();
     std::vector < NeedlePoint > * GetPoints();
-    std::vector < cv::Vec3f > * GetUsedPoints();
+    std::vector < Vec3f > * GetUsedPoints();
     std::vector < NeedlePoint > GetUsedNeedlePoints();
   };
 
@@ -117,7 +117,7 @@ namespace Nf
   class ImageCoordTransform
   {
   public:
-	  virtual cv::Vec3d Transform(const cv::Vec2d &image) const = 0;
+	  virtual Vec3d Transform(const Vec2d &image) const = 0;
   };
 
   typedef enum

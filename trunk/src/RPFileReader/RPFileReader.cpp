@@ -92,13 +92,13 @@ namespace Nf
       OutputDebugString("Failed to read GPS\n");
 
     int idx = 0;
-    data->pos[0] = *(double *)&raw[idx];  idx += sizeof(double);
-    data->pos[1] = *(double *)&raw[idx];   idx += sizeof(double);
-    data->pos[2] = *(double *)&raw[idx];   idx += sizeof(double);
+    data->pos.x = *(double *)&raw[idx];  idx += sizeof(double);
+    data->pos.y = *(double *)&raw[idx];   idx += sizeof(double);
+    data->pos.z = *(double *)&raw[idx];   idx += sizeof(double);
 
-    data->posaer[0] = *(double *)&raw[idx];  idx += sizeof(double);
-    data->posaer[1] = *(double *)&raw[idx];   idx += sizeof(double);
-    data->posaer[2] = *(double *)&raw[idx];   idx += sizeof(double);
+    data->posaer.x = *(double *)&raw[idx];  idx += sizeof(double);
+    data->posaer.y = *(double *)&raw[idx];   idx += sizeof(double);
+    data->posaer.z = *(double *)&raw[idx];   idx += sizeof(double);
 
     double m[9];
     for(int i=0; i<9; i++) {
@@ -332,7 +332,7 @@ namespace Nf
       header = m_readers[RPF_BPOST32]->GetHeader();
     else
       header = m_readers[RPF_COLOR]->GetHeader();
-    rv.roi = Squarei(cv::Vec2i(header.ul[0], header.ul[1]), cv::Vec2i(header.br[0], header.br[1]));
+    rv.roi = Squarei(Vec2i(header.ul[0], header.ul[1]), Vec2i(header.br[0], header.br[1]));
 
     return rv;
   }
@@ -377,7 +377,7 @@ namespace Nf
       header = m_readers[RPF_BPOST32]->GetHeader();
     else
       header = m_readers[RPF_COLOR]->GetHeader();
-    rv.roi = Squarei(cv::Vec2i(header.ul[0], header.ul[1]), cv::Vec2i(header.br[0], header.br[1]));
+    rv.roi = Squarei(Vec2i(header.ul[0], header.ul[1]), Vec2i(header.br[0], header.br[1]));
     
     return rv;
   }
@@ -423,7 +423,7 @@ namespace Nf
       header = m_readers[RPF_BPOST32]->GetHeader();
     else
       header = m_readers[RPF_COLOR]->GetHeader();
-    rv.roi = Squarei(cv::Vec2i(header.ul[0], header.ul[1]), cv::Vec2i(header.br[0], header.br[1]));
+    rv.roi = Squarei(Vec2i(header.ul[0], header.ul[1]), Vec2i(header.br[0], header.br[1]));
     
     return rv;
   }
