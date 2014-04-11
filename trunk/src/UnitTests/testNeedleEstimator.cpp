@@ -16,7 +16,18 @@ typedef struct {
 
 using namespace Nf;
 
-#if 0
+static void releaseRPData(RPData *rp)
+{
+	if(rp->b8)
+		cvReleaseImage(&rp->b8);
+	if(rp->color)
+		cvReleaseImage(&rp->color);
+	if(rp->sig)
+		cvReleaseImage(&rp->sig);
+	if(rp->var)
+		cvReleaseImage(&rp->var);
+}
+
 class RPTransform : ImageCoordTransform
 {
 protected:
@@ -29,9 +40,10 @@ public:
 	RPTransform(Vec2d mpp, Vec2d start, cv::Mat &calibration, GPS_Data &gps)
 		: m_mpp(mpp)
 		, m_start(start)
-		, m_cal(calibration)
 		, m_gps(gps)
+    , m_cal(4,4,CV_64F)
 	{
+    calibration.copyTo(m_cal);
 	}
 
 	Vec3d Transform(const Vec2d &image) const
@@ -42,17 +54,13 @@ public:
 		cv::Mat imCoord(4, 1, CV_64F,coordData);
 		
 		cv::Mat sensor = m_cal*imCoord;
-		cv::Mat world = m_gps.pose*sensor;
-		
-		f64 posData[4] = {m_gps.pos.x, m_gps.pos.y, m_gps.pos.z, 0};
+		cv::Vec4d world = (cv::Vec4d &)(m_gps.pose*sensor);
 
-		world = world+cv::Mat(4,1,CV_64F,posData);
+		world = world+cv::Vec4d(m_gps.pos.x, m_gps.pos.y, m_gps.pos.z, 0);
 
-		return Vec3d(world.x, world.y, world.z);
-
+		return Vec3d(world(0), world(1), world(2));
 	}
 };
-#endif
 
 TEST(Basics, NeedleEstimator)
 {
@@ -74,9 +82,27 @@ TEST(Basics, NeedleEstimator)
 		reader.AddGPSReader((RPGPSReaderBasic *)new RPGPSReader(tests[n].gFile));
 
 		RPData curr = reader.GetNextRPData();
-		while(curr.color) {
+		s32 window = cvNamedWindow("Segment test");
 
+    NeedleSegmenter segmenter(curr.color->width, curr.color->height);
+    IplImage *display = cvCreateImage(cvSize(curr.color->width, curr.color->height),curr.color->depth, curr.color->nChannels);
+
+    f64 calibData[16] = {14.8449, 15.0061, .1638, 0, .9477, .0016, .0166, 0, -.0018, 1, .0052, 0, 0, 0, 0, 1};
+    cv::Mat calibration(4,4,CV_64F,calibData);
+    PolyCurve model;
+
+		while(curr.color) {
+      RPTransform transform(Vec2d(curr.mpp, curr.mpp), Vec2d(curr.roi.ul.x, curr.roi.ul.y),
+        calibration, curr.gps);
+      segmenter.UpdateModel(&model, display, curr.color, curr.b8, (ImageCoordTransform *)&transform);
+
+      cvShowImage("Segment test", display);
+
+			releaseRPData(&curr);
+			curr = reader.GetNextRPData();
 		}
+
+    cvReleaseImage(&display);
 	}
 }
 

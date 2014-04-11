@@ -126,7 +126,7 @@ namespace Nf
     NDT_COLOR = 1,
   } NEEDLE_DISPLAY_TYPE;
 
-  class NeedleEstimator
+  class NeedleSegmenter
   {
   protected:
     bool m_mainModelInit;
@@ -150,7 +150,8 @@ namespace Nf
     f32 m_threshFrac;
 
   public:
-    NeedleEstimator(s32 width, s32 height);
+    NeedleSegmenter(s32 width, s32 height);
+    ~NeedleSegmenter();
     void ProcessColor(const IplImage *color, IplImage *bmode, const ImageCoordTransform *transform);
     s32 UpdateModel(PolyCurve *model, IplImage *display, const IplImage *doppler, const IplImage *bmode, const ImageCoordTransform *transform);
     void InitZeroLut();

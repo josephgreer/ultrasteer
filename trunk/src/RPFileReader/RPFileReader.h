@@ -66,6 +66,36 @@ namespace Nf
     unsigned short quality;
     u8 valid;
     u32 tick;
+
+    GPS_Data(const GPS_Data &rhs)
+    : pos(rhs.pos)
+    , posaer(rhs.posaer)
+    , quality(rhs.quality)
+    , valid(rhs.valid)
+    , tick(rhs.tick)
+    , pose(4,4,CV_64F)
+    {
+      rhs.pose.copyTo(pose);
+      memcpy(&this->offset[0], &rhs.offset[0], sizeof(f64)*5);
+    }
+
+    GPS_Data()
+      : pose(4,4,CV_64F)
+    {
+      this->valid = 0;
+    }
+
+    GPS_Data operator=(const GPS_Data &rhs)
+    {
+      rhs.pose.copyTo(this->pose);
+      this->pos = rhs.pos;
+      this->posaer = rhs.posaer;
+      memcpy(&this->offset[0], &rhs.offset[0], sizeof(double)*5);
+      this->quality = rhs.quality;
+      this->valid = rhs.valid;
+      this->tick = rhs.tick;
+      return *this;
+    }
   };
 
   //NOTE:  WE CO-OPT alphaEnabled to store clock tick when image arrived from ulterius.
@@ -88,6 +118,27 @@ namespace Nf
       mpp = 0;
       gps.valid = 0;
     }
+
+    RPData(const RPData &rp)
+    {
+      this->b8 = rp.b8;
+      this->color = rp.color;
+      this->sig = rp.sig;
+      this->var = rp.var;
+      this->mpp = rp.mpp;
+      this->gps = rp.gps;
+    }
+
+    RPData operator=(const RPData &rhs)
+    {
+      this->b8 = rhs.b8;
+      this->color = rhs.color;
+      this->sig = rhs.sig;
+      this->var = rhs.var;
+      this->mpp = rhs.mpp;
+      this->gps = rhs.gps;
+      return *this;
+    }
   };
 
   class RPGPSReaderBasic {
@@ -104,7 +155,7 @@ namespace Nf
   public:
     RPGPSReader(const char *path);
     virtual ~RPGPSReader();
-  
+
     //Responsibility of recipient to free image
     GPS_Data GetNextGPSDatum();
     GPS_Data GetPreviousGPSDatum();
@@ -128,7 +179,7 @@ namespace Nf
   public:
     RPFileReader(const char *path);
     virtual ~RPFileReader();
-  
+
     //Responsibility of recipient to free image
     RPData GetNextRPData();
     RPData GetPreviousRPData();
