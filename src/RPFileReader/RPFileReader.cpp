@@ -1,4 +1,5 @@
 #include "RPFileReader.h"
+#include <iostream>
 
 namespace Nf
 {
@@ -115,7 +116,7 @@ namespace Nf
 					 0,    0,    0,    1};
 
 
-	data->pose = cv::Mat(4,4,CV_64F,me);
+	cv::Mat(4,4,CV_64F,me).copyTo(data->pose);
 
     for(int i=0; i<5; i++) {
       data->offset[i] = *(double *)&raw[idx];  idx += sizeof(double);
@@ -220,8 +221,7 @@ namespace Nf
   RPData RPFileReader::GetNextRPData()
   {
     if(!m_file || m_idx < 0 || m_idx+1 >= m_header.frames) { 
-      RPData rv;  memset(&rv, 0, sizeof(RPData));
-      return rv;
+      return RPData();
     }
 
     m_idx++;
@@ -239,8 +239,7 @@ namespace Nf
   {
     m_idx = frame;
     if(!m_file || m_idx < 0 || m_idx >= m_header.frames) {
-      RPData rv;  memset(&rv, 0, sizeof(RPData));
-      return rv;
+      return RPData();
     }
 
     fseek(m_file, sizeof(m_header)+m_idx*m_bytesPerIm, SEEK_SET);
@@ -295,7 +294,6 @@ namespace Nf
   RPData RPFileReaderCollection::GetNextRPData()
   {
     RPData rv;
-    memset(&rv, 0, sizeof(RPData));
     for(std::map < RP_TYPE, RPFileReader * >::iterator i = m_readers.begin(); i != m_readers.end(); i++) {
       if(i->first == RPF_COLOR_CVV_VAR)
         continue;
@@ -323,7 +321,7 @@ namespace Nf
     if(m_gps)
       rv.gps = m_gps->GetNextGPSDatum();
     else 
-      memset(&rv.gps, 0, sizeof(GPS_Data));
+	  rv.gps = GPS_Data();
 
     RPFileHeader header;
     if(m_readers.find(RPF_BPOST8) != m_readers.end())
@@ -340,7 +338,6 @@ namespace Nf
   RPData RPFileReaderCollection::GetPreviousRPData()
   {
     RPData rv;
-    memset(&rv, 0, sizeof(RPData));
     for(std::map < RP_TYPE, RPFileReader * >::iterator i = m_readers.begin(); i != m_readers.end(); i++) {
       if(i->first == RPF_COLOR_CVV_VAR)
         continue;
@@ -368,7 +365,7 @@ namespace Nf
     if(m_gps)
       rv.gps = m_gps->GetPreviousGPSDatum();
     else 
-      memset(&rv.gps, 0, sizeof(GPS_Data));
+      rv.gps = GPS_Data();
 
     RPFileHeader header;
     if(m_readers.find(RPF_BPOST8) != m_readers.end())
@@ -386,7 +383,6 @@ namespace Nf
   {
     frame = frame-1;
     RPData rv;
-    memset(&rv, 0, sizeof(RPData));
     for(std::map < RP_TYPE, RPFileReader * >::iterator i = m_readers.begin(); i != m_readers.end(); i++) {
       if(i->first == RPF_COLOR_CVV_VAR)
         continue;
@@ -414,7 +410,7 @@ namespace Nf
     if(m_gps)
       rv.gps = m_gps->GetGPSDatum(frame);
     else 
-      memset(&rv.gps, 0, sizeof(GPS_Data));
+      rv.gps = GPS_Data();
 
     RPFileHeader header;
     if(m_readers.find(RPF_BPOST8) != m_readers.end())

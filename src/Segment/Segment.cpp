@@ -696,7 +696,7 @@ namespace Nf
   ////////////////////////////////////////////////////////////////////////
   //Begin Needle Estimator
   ////////////////////////////////////////////////////////////////////////
-  NeedleEstimator::NeedleEstimator(s32 width, s32 height)
+  NeedleSegmenter::NeedleSegmenter(s32 width, s32 height)
     : m_mainModelInit(false)
     , m_initialModel(3, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1.5f)
     , m_model(2, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000000.0f)
@@ -715,8 +715,18 @@ namespace Nf
     m_type = NDT_BMODE;
   }
 
+  NeedleSegmenter::~NeedleSegmenter()
+  {
+    if(m_colorMask[0])
+      cvReleaseImage(&m_colorMask[0]);
+    if(m_colorMask[1])
+      cvReleaseImage(&m_colorMask[1]);
+    if(m_disImage)
+      cvReleaseImage(&m_disImage);
+  }
 
-  void NeedleEstimator::InitZeroLut()
+
+  void NeedleSegmenter::InitZeroLut()
   {
     memset(&m_zeroLut[0], 1, sizeof(m_zeroLut));
     m_zeroLut[256] = 0;
@@ -725,7 +735,7 @@ namespace Nf
   }
 
   //Takes Doppler Image and returns grayscale image with intensity given by color intensity
-  void NeedleEstimator::MaskColor(IplImage *dst, const IplImage *src)
+  void NeedleSegmenter::MaskColor(IplImage *dst, const IplImage *src)
   {
     ASSERT(dst->nChannels == 1);
     ASSERT(src->nChannels == 4);
@@ -744,7 +754,7 @@ namespace Nf
     }
   }
 
-  void NeedleEstimator::ThresholdBmodeROIs(const std::vector < Squarei > rects[], IplImage *colorMask, IplImage *bmode)
+  void NeedleSegmenter::ThresholdBmodeROIs(const std::vector < Squarei > rects[], IplImage *colorMask, IplImage *bmode)
   {
     //Now find a threshold value for each region in the b-mode data.
     cvZero(colorMask);
@@ -773,7 +783,7 @@ namespace Nf
 #define BMODE_SUM_SCALE 100.0
 #define BMODE_DOPPLER_COMBINE_SCALE 1000.0 //final score computed as DOPPLER_SUM/DOPPLER_SUM_SCALE+
 
-  void NeedleEstimator::ProcessColor(const IplImage *color, IplImage *bmode, const ImageCoordTransform *transform)
+  void NeedleSegmenter::ProcessColor(const IplImage *color, IplImage *bmode, const ImageCoordTransform *transform)
   {
 
     //Mask color
@@ -944,7 +954,7 @@ namespace Nf
     m_frame.used = 0;
   }
 
-  s32 NeedleEstimator::UpdateModel(PolyCurve *model, IplImage *display, const IplImage *doppler, const IplImage *bmode, 
+  s32 NeedleSegmenter::UpdateModel(PolyCurve *model, IplImage *display, const IplImage *doppler, const IplImage *bmode, 
     const ImageCoordTransform *transform)
   {
     return -1;
