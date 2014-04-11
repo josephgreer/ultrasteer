@@ -704,6 +704,7 @@ namespace Nf
     , m_threshFrac(.02f)
     , m_dopplerClusterExpand(2.0f)
     , m_bmodeClusterExpand(1.1f)
+    , m_initialModelPoints(30)
   {
     for(s32 i=0; i<2; i++) 
       m_colorMask[i] = cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, 1);
@@ -954,10 +955,25 @@ namespace Nf
     m_frame.used = 0;
   }
 
-  s32 NeedleSegmenter::UpdateModel(PolyCurve *model, IplImage *display, const IplImage *doppler, const IplImage *bmode, 
+  s32 NeedleSegmenter::UpdateModel(PolyCurve *model, IplImage *display, IplImage *doppler, IplImage *bmode, 
     const ImageCoordTransform *transform)
   {
-    return -1;
+    ProcessColor(doppler, bmode, transform);
+    s32 initSize = (s32)m_initialModel.GetUsedPoints()->size();
+    if(!m_mainModelInit) {
+      m_initialModel.AddNeedleFrame(m_dopplerCentroid);
+    }
+    if(initSize >= m_initialModelPoints && !m_mainModelInit) {
+      m_model.SetInitialModel(&m_initialModel.GetModel());
+      m_mainModelInit = true;
+    }
+    m_model.AddNeedleFrame(m_frame);
+    if(m_mainModelInit && m_model.GetUsedPoints()->size() < INITIAL_MODEL_POINTS) {
+      m_mainModelInit = false;
+      m_model.ClearPoints();
+      m_initialModel.ClearPoints();
+    }
+    return 0;
   }
 
   ////////////////////////////////////////////////////////////////////////
