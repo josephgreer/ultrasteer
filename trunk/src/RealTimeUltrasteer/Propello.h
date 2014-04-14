@@ -88,7 +88,4 @@ private slots:
 	void setTargetX(int);
 	void setTargetY(int);
 	void setTargetZ(int);
-	void enableKalmanFilter(bool);
-	void callFunctionDebug();
-	void resetSystem();
 };
