@@ -10,7 +10,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>974</width>
+    <width>995</width>
     <height>778</height>
    </rect>
   </property>
@@ -972,7 +972,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>974</width>
+     <width>995</width>
      <height>20</height>
     </rect>
    </property>
@@ -1822,8 +1822,5 @@
   <slot>setTargetX(int)</slot>
   <slot>setTargetY(int)</slot>
   <slot>setTargetZ(int)</slot>
-  <slot>enableKalmanFilter(bool)</slot>
-  <slot>callFunctionDebug()</slot>
-  <slot>resetSystem()</slot>
  </slots>
 </ui>
