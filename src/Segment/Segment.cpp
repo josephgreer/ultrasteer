@@ -698,8 +698,8 @@ namespace Nf
   ////////////////////////////////////////////////////////////////////////
   NeedleSegmenter::NeedleSegmenter(s32 width, s32 height)
     : m_mainModelInit(false)
-    , m_initialModel(3, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1.5f)
-    , m_model(2, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000000.0f)
+    , m_model(3, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1.5f)
+    , m_initialModel(2, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000000.0f)
     , m_showColorMask(false)
     , m_threshFrac(.02f)
     , m_dopplerClusterExpand(2.0f)
@@ -971,6 +971,7 @@ namespace Nf
       m_model.ClearPoints();
       m_initialModel.ClearPoints();
     }
+    *model = m_model.GetModel();
     return m_disImage;
   }
 

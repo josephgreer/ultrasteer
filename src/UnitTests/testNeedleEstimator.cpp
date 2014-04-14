@@ -7,6 +7,7 @@
 #include <cv.h>
 #include <cxcore.h>
 #include <highgui.h>
+#include <Windows.h>
 
 typedef struct {
 	char bFile[100];
@@ -44,6 +45,7 @@ public:
     , m_cal(4,4,CV_64F)
 	{
     calibration.copyTo(m_cal);
+    m_cal = m_cal.t();
 	}
 
 	Vec3d Transform(const Vec2d &image) const
@@ -54,7 +56,8 @@ public:
 		cv::Mat imCoord(4, 1, CV_64F,coordData);
 		
 		cv::Mat sensor = m_cal*imCoord;
-		cv::Vec4d world = (cv::Vec4d &)(m_gps.pose*sensor);
+    cv::Mat wrld = (m_gps.pose*sensor);
+		cv::Vec4d world(wrld.at<f64>(0),wrld.at<f64>(1),wrld.at<f64>(2),wrld.at<f64>(3));
 
 		world = world+cv::Vec4d(m_gps.pos.x, m_gps.pos.y, m_gps.pos.z, 0);
 
@@ -90,18 +93,19 @@ TEST(Basics, NeedleEstimator)
     PolyCurve model;
 
 		while(curr.color) {
-      RPTransform transform(Vec2d(curr.mpp, curr.mpp), Vec2d(320.0, 0),
+      RPTransform transform(Vec2d(83, 83), Vec2d(320.0, 0),
         calibration, curr.gps);
       IplImage *display = segmenter.UpdateModel(&model, curr.color, curr.b8, (ImageCoordTransform *)&transform);
 
       if(display) {
         //cvShowImage("Yep", display); 
         cv::imshow("Yep", cv::Mat(display));
-        cvWaitKey(0);
+        cvWaitKey(5);
       }
 			releaseRPData(&curr);
 			curr = reader.GetNextRPData();
 		}
+    int x = 0;
 	}
 }
 
