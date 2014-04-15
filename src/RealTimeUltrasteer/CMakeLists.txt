@@ -30,7 +30,8 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_BINARY_DIR} #this is where ui_ImageViewerUI.h is generated
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/../../inc/
-  ${CMAKE_CURRENT_SOURCE_DIR}/../Control/
+  ${CMAKE_CURRENT_SOURCE_DIR}/../Control/  
+  ${CMAKE_CURRENT_SOURCE_DIR}/../Segment/
 ) 
 
 SET(ultrasteerSrcs main.cpp Propello.cpp PropelloDisplay.cpp PropelloBDisplay.cpp SaveDlg.cpp StdAfx.cpp)

@@ -13,6 +13,9 @@ typedef struct {
 	char bFile[100];
 	char dFile[100];
 	char gFile[100];
+  f32 polyX[4];
+  f32 polyY[4];
+  f32 polyZ[4];
 } BasicsNeedleEstimatorTest;
 
 using namespace Nf;
@@ -65,6 +68,8 @@ public:
 	}
 };
 
+#define FLOATS_EQUAL(x,y,thresh) (ABS(x-y) < thresh)
+
 TEST(Basics, NeedleEstimator)
 {
 	BasicsNeedleEstimatorTest tests[] = {
@@ -74,7 +79,7 @@ TEST(Basics, NeedleEstimator)
 		//where x = padding
 
 		//Bmode file										//Doppler File											//GPS File	
-		{"D:/Users/Joey Greer/NeedleTests/Scan 5/scan.b8",	"D:/Users/Joey Greer/NeedleTests/Scan 5/scan.b32",		"D:/Users/Joey Greer/NeedleTests/Scan 5/scan.gps1"},
+    {"D:/Users/Joey Greer/NeedleTests/Scan 5/scan.b8",	"D:/Users/Joey Greer/NeedleTests/Scan 5/scan.b32",		"D:/Users/Joey Greer/NeedleTests/Scan 5/scan.gps1", {0,1,0,0},{115.02738f, -.084888972f,.0004524991},{-112.32117,-.022931162,.00011182049}},
 	};
 
 	for(s32 n=0; n<sizeof(tests)/sizeof(tests[0]); n++){
@@ -105,8 +110,21 @@ TEST(Basics, NeedleEstimator)
 			releaseRPData(&curr);
 			curr = reader.GetNextRPData();
 		}
-    int x = 0;
-	}
+    for(s32 i=0; i<4; i++) {
+      if(!FLOATS_EQUAL(tests[n].polyX[i],model.coefX[i],1e-4f)) {
+        NTrace("Fail X i: %d test:  %f  model:  %f\n", i, (f32)tests[n].polyX[i], (f32)model.coefX[i]);
+        ASSERT(0);
+      }
+      if(!FLOATS_EQUAL(tests[n].polyY[i],model.coefY[i],1e-4f)) {
+        NTrace("Fail Y i: %d test:  %f  model:  %f\n", i, (f32)tests[n].polyY[i], (f32)model.coefY[i]);
+        ASSERT(0);
+      }
+      if(!FLOATS_EQUAL(tests[n].polyZ[i],model.coefZ[i],1e-4f)) {
+        NTrace("Fail Z i: %d test:  %f  model:  %f\n", i, (f32)tests[n].polyZ[i], (f32)model.coefZ[i]);
+        ASSERT(0);
+      }
+    }
+  }
 }
 
 TEST(Matrix, NeedleEstimator)
