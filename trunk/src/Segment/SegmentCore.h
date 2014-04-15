@@ -18,6 +18,7 @@ typedef double f64;
 #define ASSERT(x) if(!(x)) { int a = 0;  int b = 1/a; } 
 #define MIN(x,y) ((x)<(y) ? (x) : (y))
 #define MAX(x,y) ((x)>(y) ? (x) : (y))
+#define ABS(x) ((x)>0?(x):(-(x)))
 
 #define PI 3.14159265359f
 

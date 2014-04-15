@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "PropelloDisplay.h"
+#include "SegmentCore.h"
 
 int newFrameInterrupt(void* param, int /*id*/, int /*header*/)
 {

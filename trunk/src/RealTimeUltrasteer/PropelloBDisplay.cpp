@@ -1,5 +1,8 @@
 #include "stdafx.h"
 #include "PropelloBDisplay.h"
+#include "SegmentCore.h"
+
+using namespace Nf;
 
 PropelloBDisplay::PropelloBDisplay(QWidget* parent) : PropelloDisplay(parent)
 {
@@ -22,31 +25,31 @@ bool PropelloBDisplay::loadColorMap(const QString file)
 
 bool PropelloBDisplay::setImgData()
 {
-    bool ret = false;
+  bool ret = false;
 
-    if (!m_colorimage || !m_image || m_index < 0)
-    {
-        return false;
-    }
+  if (!m_colorimage || !m_image || m_index < 0)
+  {
+    return false;
+  }
 
-    unsigned char* buffer = m_image->bits();
-	unsigned char* colorbuffer = m_colorimage->bits();
-    int mode = portaGetCurrentMode();
+  unsigned char* buffer = m_image->bits();
+  unsigned char* colorbuffer = m_colorimage->bits();
+  int mode = portaGetCurrentMode();
 
-    if (mode == ColourMode || mode == DualColourMode || mode == TriplexMode)
-    {
-        ret = portaGetColorImage(m_index, buffer);
-		ret = portaGetColorImageOnly (m_index, colorbuffer);
-    }
-    else
-    {
-        ret = portaGetBwImage(m_index, buffer, true);
-    }
+  if (mode == ColourMode || mode == DualColourMode || mode == TriplexMode)
+  {
+    ret = portaGetColorImage(m_index, buffer);
+    ret = portaGetColorImageOnly (m_index, colorbuffer);
+  }
+  else
+  {
+    ret = portaGetBwImage(m_index, buffer, true);
+  }
 
-    if (ret)
-    {
-        scene()->invalidate();
-    }
+  if (ret)
+  {
+    scene()->invalidate();
+  }
 
-    return true;
+  return true;
 }

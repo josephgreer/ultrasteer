@@ -2,6 +2,7 @@
 #include "Propello.h"
 #include "SaveDlg.h"
 #include <QtGui>
+#include "SegmentCore.h"
 
 #define DEGFRM_ROW 1
 #define FRMVOL_ROW 2
@@ -307,7 +308,7 @@ void Propello::onDetect()
 			}
 
 			// the 3D/4D probe is always connected to port 0
-			portaActivateProbeConnector(0);
+			int rv = portaActivateProbeConnector(0);
 
 			// find and load master preset
 			if (loadMasterPreset())
