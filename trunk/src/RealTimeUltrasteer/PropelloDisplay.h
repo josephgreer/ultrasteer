@@ -24,5 +24,5 @@ protected:
 
     int m_index;
     QImage* m_image;
-	QImage* m_colorimage;
+    QImage* m_colorimage;
 };

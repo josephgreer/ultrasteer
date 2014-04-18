@@ -57,16 +57,13 @@ void PropelloDisplay::drawForeground(QPainter* painter, const QRectF& r)
 
 	if (m_image)
 	{
-		painter->drawImage(0, 0, *m_image, 0, 0);
+    	imagingMode mode = portaGetCurrentMode();
+		painter->drawImage(0, 0, mode == ColourMode ? *m_colorimage : *m_image, 0, 0);
 	}
 }
 
 void PropelloDisplay::setupBuffer(int w, int h)
 {
-	int sz;
-
-	sz = w * h * 4;
-
 	if (m_image)
 	{
 		delete m_image;
@@ -76,7 +73,10 @@ void PropelloDisplay::setupBuffer(int w, int h)
 		delete m_colorimage;
 	}
 
-	m_image = new QImage(w, h, QImage::Format_RGB32);
+  m_image = new QImage(w, h, QImage::Format_Indexed8);
+  //set up grayscale indexing to identity map
+  for(s32 i=0; i<256; i++)
+    m_image->setColor(i, qRgb(i,i,i));
 	m_colorimage = new QImage(w, h, QImage::Format_RGB32);
 }
 

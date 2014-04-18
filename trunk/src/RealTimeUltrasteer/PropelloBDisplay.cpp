@@ -38,12 +38,12 @@ bool PropelloBDisplay::setImgData()
 
   if (mode == ColourMode || mode == DualColourMode || mode == TriplexMode)
   {
-    ret = portaGetColorImage(m_index, buffer);
-    ret = portaGetColorImageOnly (m_index, colorbuffer);
+    ret = portaGetBwImage(m_index, buffer, false);
+    ret = portaGetColorImage(m_index, colorbuffer);
   }
   else
   {
-    ret = portaGetBwImage(m_index, buffer, true);
+    ret = portaGetBwImage(m_index, buffer, false);
   }
 
   if (ret)
