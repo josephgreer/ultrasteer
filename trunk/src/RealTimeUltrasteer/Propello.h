@@ -18,7 +18,6 @@ class Propello : public QMainWindow, private Ui::MainWindow
 public:
     Propello(QWidget* parent = 0);
     virtual ~Propello();
-    void processRawFrame(unsigned char* addr, int blockIndex, int header);
 	void DisplayErrorBox(int i);
 
 private:
@@ -88,4 +87,5 @@ private slots:
 	void setTargetX(int);
 	void setTargetY(int);
 	void setTargetZ(int);
+	void onTick(int framenum);
 };

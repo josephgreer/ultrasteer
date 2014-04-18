@@ -36,9 +36,9 @@ INCLUDE_DIRECTORIES(
 
 SET(ultrasteerSrcs main.cpp Propello.cpp PropelloDisplay.cpp PropelloBDisplay.cpp SaveDlg.cpp StdAfx.cpp)
 
-SET(ultrasteerHeaders Propello.h SaveDlg.h)
+SET(ultrasteerHeaders Propello.h SaveDlg.h PropelloBDisplay.h)
 
-SET(ultrasteerOtherHeaders stdafx.h SaveDlg.h PropelloDisplay.h PropelloBDisplay.h Propello.h)
+SET(ultrasteerOtherHeaders stdafx.h SaveDlg.h PropelloDisplay.h Propello.h)
 
 SET(ultrasteerUI save.ui propello.ui)
 

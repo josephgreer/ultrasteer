@@ -40,6 +40,7 @@ bool PropelloBDisplay::setImgData()
   {
     ret = portaGetBwImage(m_index, buffer, false);
     ret = portaGetColorImage(m_index, colorbuffer);
+	tick(portaGetDisplayFrameCount(m_index));
   }
   else
   {
