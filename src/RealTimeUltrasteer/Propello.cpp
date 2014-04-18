@@ -57,6 +57,7 @@ Propello::Propello(QWidget* parent) : QMainWindow(parent), m_robotcontrol(this)
 	m_robotcontrol.setTargetZ(target_z->value());
 
 	connect(this, SIGNAL(showInfo(int)), this, SLOT(onShowInfo(int)));
+	connect(wBImage, SIGNAL(tick(int)), this, SLOT(onTick(int)));
 }
 
 Propello::~Propello()
@@ -130,19 +131,14 @@ void Propello::showSystemID()
 	mb.exec();
 }
 
-int newAcqInterrupt(void* param, unsigned char* addr, int blockIndex, int header)
+void Propello::onTick(int framenum)
 {
-	((Propello*)param)->processRawFrame(addr, blockIndex, header);
-
-	return 0;
-}
-
-void Propello::processRawFrame(unsigned char* addr, int blockIndex, int header)
-{
+#if 0
 	if (header && m_probeInfo.motorized && m_probeInfo.motorHomeSensor)
 	{
 		showInfo(header);
 	}
+#endif
 
 	// In needle scanning we only want to capture a single volume, so stop the probe if 
 	// this is the case.
@@ -210,8 +206,6 @@ void Propello::initHardware()
 
 	//uncheck the probe selection button
 	wDetect->setChecked(false);
-
-	portaSetRawDataCallback(newAcqInterrupt, (void*)this);
 }
 
 // start automatic imaging
