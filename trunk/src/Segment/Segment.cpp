@@ -713,7 +713,7 @@ namespace Nf
 
     InitZeroLut();
 
-    m_type = NDT_BMODE;
+    m_type = NDT_COLOR;
   }
 
   NeedleSegmenter::~NeedleSegmenter()
@@ -795,7 +795,7 @@ namespace Nf
 
     if(m_type == NDT_BMODE && !m_showColorMask)
       B82BGRA(bmode, m_disImage);
-    else if(m_type == NDT_BMODE && !m_showColorMask)
+    else if(m_type == NDT_COLOR && !m_showColorMask)
       cvCopyImage(color, m_disImage);
     else
       B82BGRA(m_colorMask[0], m_disImage);
@@ -805,6 +805,9 @@ namespace Nf
     // 2) Scoring of b-mode candidates
     CvMoments moment;
     cvMoments(m_colorMask[0], &moment);
+	if(moment.m00 == 0)
+		return;
+
     Vec2f centroidComp = Vec2f((f32)(moment.m10/moment.m00), (f32)(moment.m01/moment.m00));
     Vec2f centroid = dopplerCentroid(m_colorMask[0]);//Vec2f((f32)(moment.m10/moment.m00), (f32)(moment.m01/moment.m00));
     CvScalar dopplerSum = cvScalar(moment.m00);
@@ -956,6 +959,9 @@ namespace Nf
   IplImage * NeedleSegmenter::UpdateModel(PolyCurve *model, IplImage *doppler, IplImage *bmode, 
     const ImageCoordTransform *transform)
   {
+	m_dopplerCentroid.segments.clear();
+	m_frame.segments.clear();
+
     ProcessColor(doppler, bmode, transform);
     s32 initSize = (s32)m_initialModel.GetUsedPoints()->size();
     if(!m_mainModelInit) {

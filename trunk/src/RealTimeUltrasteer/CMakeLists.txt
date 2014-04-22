@@ -32,6 +32,7 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_SOURCE_DIR}/../../inc/
   ${CMAKE_CURRENT_SOURCE_DIR}/../Control/  
   ${CMAKE_CURRENT_SOURCE_DIR}/../Segment/
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/alglib/src
 ) 
 
 SET(ultrasteerSrcs main.cpp Propello.cpp PropelloDisplay.cpp PropelloBDisplay.cpp SaveDlg.cpp StdAfx.cpp)
