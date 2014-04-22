@@ -3,6 +3,7 @@
 #include "ui_propello.h"
 #include "stdafx.h"
 #include "RobotControl.h"
+#include "Segment.h"
 
 #define prmColor_Mode "color mode"
 #define prmColor_PRP "color-prp"
@@ -45,6 +46,10 @@ private:
 	bool m_rollInit;
 	bool m_insInit;
 	RobotControl m_robotcontrol;
+
+	Nf::NeedleSegmenter *m_ns;
+
+	QMutex m_mutex;
 
 signals:
     void showInfo(int);

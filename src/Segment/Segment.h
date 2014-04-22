@@ -161,6 +161,8 @@ namespace Nf
     NeedleSegmenter(s32 width, s32 height);
     ~NeedleSegmenter();
     void ProcessColor(const IplImage *color, IplImage *bmode, const ImageCoordTransform *transform);
+	//Returned IplImage is an image meant for display.
+	//Caller is not responsible for freeing the returned image.
     IplImage * UpdateModel(PolyCurve *model, IplImage *doppler, IplImage *bmode, const ImageCoordTransform *transform);
     void InitZeroLut();
     void MaskColor(IplImage *dst, const IplImage *src);

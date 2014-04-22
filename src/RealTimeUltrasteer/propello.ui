@@ -14,6 +14,18 @@
     <height>551</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>995</width>
+    <height>551</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>995</width>
+    <height>551</height>
+   </size>
+  </property>
   <property name="font">
    <font>
     <family>Verdana</family>

@@ -4,6 +4,11 @@
 #include <QtGui>
 #include "SegmentCore.h"
 
+#include <cv.h>
+#include <cxcore.h>
+#include <highgui.h>
+
+
 #define DEGFRM_ROW 1
 #define FRMVOL_ROW 2
 #define FOV_ROW    3
@@ -37,7 +42,59 @@
 #define MSG_TIMEOUT  3000    // ms
 #define CINE_SIZE    512     // MB
 
-Propello::Propello(QWidget* parent) : QMainWindow(parent), m_robotcontrol(this)
+namespace Nf
+{
+	class ProbeImageCoordTransform : ImageCoordTransform
+	{
+	public:
+		Vec3d Transform(const Vec2d &image) const
+		{
+			return Vec3d(image.x, image.y, 0);  //temporary!
+		}
+	};
+}
+
+static IplImage * QImageToIplImage(QImage *im)
+{
+	IplImage *res = cvCreateImage(cvSize(im->width(), im->height()), IPL_DEPTH_8U, im->depth()/8);
+	u8 *psrc = im->scanLine(0);
+	for(s32 r=0; r<im->height(); r++) {
+		u8 *dst = (u8 *)res->imageDataOrigin+res->widthStep*r;
+		u8 *src = psrc+r*im->bytesPerLine();
+
+		memcpy(dst, src, im->width()*(im->depth()/8));
+	}
+	return res;
+}
+
+static QImage * IplImageToQImage(IplImage *im)
+{
+	QImage *res = NULL;
+	if(im->nChannels == 4) {
+		res = new QImage(im->width, im->height, QImage::Format::Format_RGB32);
+	} else if(im->nChannels == 1) {
+		res = new QImage(im->width, im->height, QImage::Format::Format_Indexed8);
+		//set up grayscale indexing to identity map
+		for(s32 i=0; i<256; i++)
+			res->setColor(i, qRgb(i,i,i));
+	} else {
+		Nf::NTrace("Unrecognized IplImage type\n");
+		ASSERT(0); 
+	}
+
+	u8 *pdst = res->scanLine(0);
+	for(s32 r=0; r<im->height; r++) {
+		u8 *dst = pdst+r*res->bytesPerLine();
+		u8 *src = (u8 *)im->imageDataOrigin+r*im->widthStep;
+		memcpy(dst, src, im->width*im->nChannels);
+	}
+	return res;
+}
+
+Propello::Propello(QWidget* parent) 
+	: QMainWindow(parent)
+	, m_robotcontrol(this)
+	, m_ns(NULL)
 {
 	setupUi(this);
 	setupControls();
@@ -58,11 +115,17 @@ Propello::Propello(QWidget* parent) : QMainWindow(parent), m_robotcontrol(this)
 
 	connect(this, SIGNAL(showInfo(int)), this, SLOT(onShowInfo(int)));
 	connect(wBImage, SIGNAL(tick(int)), this, SLOT(onTick(int)));
+
+	wBImage->setMutex(&m_mutex);
+
+	m_porta = (porta *)0xFFFFFFFF;  //m_porta is never assigned, yet it is checked for some reason
 }
 
 Propello::~Propello()
 {
 	portaShutdown();
+	if(m_ns)
+		delete m_ns;
 }
 
 // create action groups so menus can be checkable
@@ -138,6 +201,30 @@ void Propello::onTick(int framenum)
 	{
 		showInfo(header);
 	}
+#endif
+
+#if 1 //this is a temp test
+	if(!m_mutex.tryLock())
+		return;
+
+	//QImageToIplImage creates a deep copy of bmode/doppler image data
+	//therefore we can unlock after these functions are called.
+	IplImage *bmode = QImageToIplImage(wBImage->getBmode());
+	IplImage *doppler = QImageToIplImage(wBImage->getDoppler());
+
+	m_mutex.unlock();
+
+	if(m_ns) {
+		Nf::ProbeImageCoordTransform transform;
+		Nf::PolyCurve model;
+		IplImage *dis = m_ns->UpdateModel(&model, doppler, bmode, (Nf::ImageCoordTransform *)&transform);
+		wBImage->SetDisplayImage(IplImageToQImage(dis));
+	} else {
+		wBImage->SetDisplayImage(IplImageToQImage(doppler));
+	}
+
+	cvReleaseImage(&bmode);
+	cvReleaseImage(&doppler);
 #endif
 
 	// In needle scanning we only want to capture a single volume, so stop the probe if 
@@ -287,14 +374,17 @@ void Propello::onDetect()
 {
 	int code;
 	char name[80];
-
+	
+	Nf::NTrace("here we are porta %d portaIsConnected %d\n", m_porta, portaIsConnected());
 	if (m_porta && portaIsConnected())
 	{
 		code = (char)portaGetProbeID(0);
 
+		Nf::NTrace("here we are again\n");
 		// select the code read, and see if it is motorized
 		if (portaSelectProbe(code) && portaGetProbeInfo(m_probeInfo) && m_probeInfo.motorized)
 		{
+			Nf::NTrace("here we are again again\n");
 			if (portaGetProbeName(name, 80, code))
 			{
 				wDetect->setText(name);
@@ -372,6 +462,16 @@ void Propello::onCaptureChange(int index)
 	{
 		portaStopImage();
 	}
+
+	s32 width, height;
+	if(!portaGetDisplayDimensions(0, width, height)) {
+		Nf::NTrace("Error getting display dimensions\n");
+		ASSERT(0);
+	}
+
+	if(m_ns) 
+		delete m_ns;
+	m_ns = new Nf::NeedleSegmenter(width, height);
 
 	portaSetParamI(prmMotorStatus, index == 0 ? 1 : 0);
 	wStoreVolumes->setEnabled(true);

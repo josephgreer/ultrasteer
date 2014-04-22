@@ -31,6 +31,8 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/../../inc/
   ${CMAKE_CURRENT_SOURCE_DIR}/../RealTimeUltrasteer
+  ${CMAKE_CURRENT_SOURCE_DIR}/../Segment
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/alglib/src
 ) 
 
 SET(ControlSrcs RobotControl.cpp UnscentedKalmanFilter.cpp MotionController.cpp SerialBuffer.cpp SerialCommHelper.cpp RollDevice.cpp InsertionDevice.cpp DeviceNotification.cpp NeedleSteeringRobot.cpp)
