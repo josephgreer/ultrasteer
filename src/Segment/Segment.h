@@ -175,4 +175,8 @@ namespace Nf
     void MaskColor(IplImage *dst, const IplImage *src);
     void ThresholdBmodeROIs(const std::vector < Squarei > rects[], IplImage *colorMask, IplImage *bmode);
   };
+
+#ifdef VNL_INCLUDE
+  vnl_vector < f64 > PolyCurveToNeedleTip(const PolyCurve *curve);
+#endif
 }
