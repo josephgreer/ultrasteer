@@ -1,12 +1,14 @@
 #include "stdafx.h"
-#include "Propello.h"
-#include "SaveDlg.h"
-#include <QtGui>
-#include "SegmentCore.h"
 
 #include <vnl/vnl_cross.h>
 #include <vnl/vnl_vector.h>
 #include <vnl/vnl_quaternion.h>
+
+#define VNL_INCLUDE
+#include "Propello.h"
+#include "SaveDlg.h"
+#include <QtGui>
+#include "SegmentCore.h"
 
 #include <cv.h>
 #include <cxcore.h>
@@ -270,7 +272,7 @@ void Propello::onTick(int framenum)
 		bool zUpdateAvail, steeringComplete; 
 
 		zUpdateAvail = false;
-		if(m_mutex.tryLock()) {
+		if(m_mutex.tryLock() && m_ns) {
 
 			//QImageToIplImage creates a deep copy of bmode/doppler image data
 			//therefore we can unlock after these functions are called.
@@ -279,26 +281,28 @@ void Propello::onTick(int framenum)
 
 			m_mutex.unlock();
 
-			if(m_ns) {
-				probeInfo nfo; portaGetProbeInfo(nfo);
-				s32 fpv = portaGetParam(prmMotorFrames);
-				Nf::ProbeImageCoordTransform transform(framenum, fpv, portaGetParam(prmMotorSteps), nfo);
-				Nf::PolyCurve model;
-				IplImage *dis = m_ns->UpdateModel(&model, doppler, bmode, (Nf::ImageCoordTransform *)&transform);
-				wBImage->SetDisplayImage(IplImageToQImage(dis));
+			probeInfo nfo; portaGetProbeInfo(nfo);
+			s32 fpv = portaGetParam(prmMotorFrames);
+			Nf::ProbeImageCoordTransform transform(framenum, fpv, portaGetParam(prmMotorSteps), nfo);
+			Nf::PolyCurve model;
+			IplImage *dis = m_ns->UpdateModel(&model, doppler, bmode, (Nf::ImageCoordTransform *)&transform);
+			wBImage->SetDisplayImage(IplImageToQImage(dis));
 
-				//For now, update is available every sweep.
-				zUpdateAvail = framenum > 0 && ((framenum%fpv)==0);
-			} else {
-				wBImage->SetDisplayImage(IplImageToQImage(doppler));
-			}
+
+			//For now, update is available every sweep.
+			zUpdateAvail = framenum > 0 && ((framenum%fpv)==0);
+
+			//Translate tip estimate to vector of form
+			//[tipPos tipOrientation] where tipOrientation is axis-angle representation
+			if(zUpdateAvail)
+				z = PolyCurveToNeedleTip(&model);
 
 			cvReleaseImage(&bmode);
 			cvReleaseImage(&doppler);
+		} else if(!m_ns){
+			wBImage->SetDisplayImage(wBImage->getDoppler());
+			m_mutex.unlock();
 		}
-
-		// JOEY: ADD YOUR CODE TO HANDLE THE FRAME HERE
-		// zUpdateAvail = JoeyFcn(&z <- tip frame measurement, ... bullshit);
 
 		if( zUpdateAvail )
 		{
