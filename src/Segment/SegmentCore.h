@@ -100,6 +100,16 @@ namespace Nf
 
       return Vec2<T>(this->x/mag, this->y/mag);
     }
+
+#ifdef VNL_INCLUDE
+	operator vnl_vector < T > ()
+	{
+	0	vnl_vector < T > res(2);
+		res[0] = this->x;
+		res[1] = this->y;
+		return res;
+	}
+#endif
   };
 
   template <class T>
@@ -167,14 +177,14 @@ namespace Nf
 
     T magnitude() const
     {
-      return sqrt(magnitudeSquared);
+      return sqrt(magnitudeSquared());
     }
 
-    Vec2<T> normalized()
+    Vec3<T> normalized()
     {
       T mag = this->magnitude();
 
-      return Vec2<T>(this->x/mag, this->y/mag);
+      return Vec3<T>(this->x/mag, this->y/mag, this->z/mag);
     }
 
     T distanceSquared(const Vec3<T> &b) const
@@ -182,6 +192,17 @@ namespace Nf
       Vec3<T> delta = *this-b;
       return delta.magnitudeSquared();
     }
+
+#ifdef VNL_INCLUDE
+	operator vnl_vector < T > ()
+	{
+		vnl_vector < T > res(3);
+		res[0] = this->x;
+		res[1] = this->y;
+		res[2] = this->z;
+		return res;
+	}
+#endif
   };
 
   typedef Vec2<f32> Vec2f;

@@ -4,6 +4,10 @@
 #include <QtGui>
 #include "SegmentCore.h"
 
+#include <vnl/vnl_cross.h>
+#include <vnl/vnl_vector.h>
+#include <vnl/vnl_quaternion.h>
+
 #include <cv.h>
 #include <cxcore.h>
 #include <highgui.h>
@@ -46,10 +50,54 @@ namespace Nf
 {
 	class ProbeImageCoordTransform : ImageCoordTransform
 	{
+	private:
+		s32 m_frameNum;
+		s32 m_fpv;
+		s32 m_steps;
+		probeInfo m_nfo;
+
 	public:
+		ProbeImageCoordTransform(s32 framenum, s32 fpv, s32 steps, probeInfo nfo)
+			: m_frameNum(framenum)
+			, m_fpv(fpv)
+			, m_steps(steps)
+			, m_nfo(nfo)
+		{
+		}
+
+		//adapted from RobotControl.cpp in original version of incremental ultrasteer
 		Vec3d Transform(const Vec2d &image) const
 		{
-			return Vec3d(image.x, image.y, 0);  //temporary!
+			// Determine the incremental frame position in number of frames
+			s32 position = m_frameNum % (2*m_fpv);
+
+			// Calculate degrees between frames
+			f64 degPerStep = (f64)m_nfo.motorFov / (f64)m_nfo.motorSteps / 1000.0;
+			f64 degPerFrm = f64(m_steps)*degPerStep;
+
+			// Calculate angular position in degrees; 0 deg is straight down
+			f64 theta;
+			s32 middleFrm = ceil(f64(m_fpv)/2.0); 
+			//are we sweeping forward or back?  that will dictate theta.
+			if (position < m_fpv)
+				theta = (position - middleFrm)*degPerFrm; 
+			else
+				theta = (middleFrm - (position-m_fpv) )*degPerFrm;
+
+			// Get origin and pixel size for image
+			s32 mX,mY,oX,oY;
+			portaGetMicronsPerPixel(0,mX,mY);
+			//this image coordinate corresponds to the middle top pixel of the utlrasound data
+			portaGetPixelCoordinates(0, 64, 1, oX, oY, 0);
+
+			Vec3d res;
+			res.x = (image.x-oX)*f64(-mX/1000.0);
+			f64 imgY_mm = (image.y-oY)*f64(mY/1000.0);
+			f64 probeRadius = m_nfo.motorRadius / 1000.0;
+			res.y = (probeRadius + imgY_mm)*cos(theta*PI/180);
+			res.z = (probeRadius + imgY_mm)*sin(theta*PI/180);
+
+			return res;
 		}
 	};
 }
@@ -203,28 +251,7 @@ void Propello::onTick(int framenum)
 	}
 #endif
 
-#if 1 //this is a temp test
-	if(!m_mutex.tryLock())
-		return;
-
-	//QImageToIplImage creates a deep copy of bmode/doppler image data
-	//therefore we can unlock after these functions are called.
-	IplImage *bmode = QImageToIplImage(wBImage->getBmode());
-	IplImage *doppler = QImageToIplImage(wBImage->getDoppler());
-
-	m_mutex.unlock();
-
-	if(m_ns) {
-		Nf::ProbeImageCoordTransform transform;
-		Nf::PolyCurve model;
-		IplImage *dis = m_ns->UpdateModel(&model, doppler, bmode, (Nf::ImageCoordTransform *)&transform);
-		wBImage->SetDisplayImage(IplImageToQImage(dis));
-	} else {
-		wBImage->SetDisplayImage(IplImageToQImage(doppler));
-	}
-
-	cvReleaseImage(&bmode);
-	cvReleaseImage(&doppler);
+#if 1
 #endif
 
 	// In needle scanning we only want to capture a single volume, so stop the probe if 
@@ -240,7 +267,35 @@ void Propello::onTick(int framenum)
 	if( m_closedLoopSteering )
 	{
 		vnl_vector<double> z(6);
-		bool zUpdateAvail, steeringComplete;
+		bool zUpdateAvail, steeringComplete; 
+
+		zUpdateAvail = false;
+		if(m_mutex.tryLock()) {
+
+			//QImageToIplImage creates a deep copy of bmode/doppler image data
+			//therefore we can unlock after these functions are called.
+			IplImage *bmode = QImageToIplImage(wBImage->getBmode());
+			IplImage *doppler = QImageToIplImage(wBImage->getDoppler());
+
+			m_mutex.unlock();
+
+			if(m_ns) {
+				probeInfo nfo; portaGetProbeInfo(nfo);
+				s32 fpv = portaGetParam(prmMotorFrames);
+				Nf::ProbeImageCoordTransform transform(framenum, fpv, portaGetParam(prmMotorSteps), nfo);
+				Nf::PolyCurve model;
+				IplImage *dis = m_ns->UpdateModel(&model, doppler, bmode, (Nf::ImageCoordTransform *)&transform);
+				wBImage->SetDisplayImage(IplImageToQImage(dis));
+
+				//For now, update is available every sweep.
+				zUpdateAvail = framenum > 0 && ((framenum%fpv)==0);
+			} else {
+				wBImage->SetDisplayImage(IplImageToQImage(doppler));
+			}
+
+			cvReleaseImage(&bmode);
+			cvReleaseImage(&doppler);
+		}
 
 		// JOEY: ADD YOUR CODE TO HANDLE THE FRAME HERE
 		// zUpdateAvail = JoeyFcn(&z <- tip frame measurement, ... bullshit);
@@ -375,16 +430,13 @@ void Propello::onDetect()
 	int code;
 	char name[80];
 	
-	Nf::NTrace("here we are porta %d portaIsConnected %d\n", m_porta, portaIsConnected());
 	if (m_porta && portaIsConnected())
 	{
 		code = (char)portaGetProbeID(0);
 
-		Nf::NTrace("here we are again\n");
 		// select the code read, and see if it is motorized
 		if (portaSelectProbe(code) && portaGetProbeInfo(m_probeInfo) && m_probeInfo.motorized)
 		{
-			Nf::NTrace("here we are again again\n");
 			if (portaGetProbeName(name, 80, code))
 			{
 				wDetect->setText(name);

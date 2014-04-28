@@ -1,3 +1,7 @@
+#include <vnl/vnl_cross.h>
+#include <vnl/vnl_vector.h>
+#include <vnl/vnl_quaternion.h>
+#define VNL_INCLUDE
 #include "Segment.h"
 
 using namespace std;
@@ -981,6 +985,80 @@ namespace Nf
     return m_disImage;
   }
 
+
+  PolyCurve::PolyCurve() 
+	  : degree(0)
+  {
+	  memset(coefX, 0, sizeof(f32)*(MAX_POLY_DEGREE+1));
+	  memset(coefY, 0, sizeof(f32)*(MAX_POLY_DEGREE+1));
+	  memset(coefZ, 0, sizeof(f32)*(MAX_POLY_DEGREE+1));
+  }
+
+  PolyCurve PolyCurve::Derivative() const
+  {
+	  PolyCurve res;
+	  for(s32 i=MAX_POLY_DEGREE; i>0; i--) {
+		  res.coefX[i-1] = i*this->coefX[i];
+		  res.coefY[i-1] = i*this->coefY[i];
+		  res.coefZ[i-1] = i*this->coefZ[i];
+	  }
+
+	  return res;
+  }
+
+  Vec3d PolyCurve::Evaluate(f32 t) const
+  {
+	  Vec3d res(0,0,0);
+	  for(s32 i=MAX_POLY_DEGREE; i>=0; i--) {
+		  f64 tPow = pow(t,i);
+		  res += Vec3d(this->coefX[i]*tPow, this->coefY[i]*tPow, this->coefZ[i]*tPow);
+	  }
+	  return res;
+  }
+
+
+  vnl_vector < f64 > PolyCurveToNeedleTip(const PolyCurve *curve)
+  {
+
+	  // Find the first derivative at the tip, this is the z-axis of the tip frame
+	  Vec3d z_axis = curve->Derivative().Evaluate(curve->dRange.y).normalized();
+
+	  
+	  // Find the second derivative at the tip, this is the y-axis and z-axis combined
+	  Vec3d y_axis = curve->Derivative().Derivative().Evaluate(curve->dRange.y).normalized();
+
+	  // Remove z-axis component
+	  y_axis = y_axis-z_axis*z_axis.dot(y_axis);
+	  y_axis = y_axis.normalized();
+
+	  // Finish right-handed coordinate system
+	  Vec3d x_axis = y_axis.cross(z_axis);
+	  
+	  //Now create rotation matrix from these basis vectors
+	  vnl_matrix<f64> R(3,3);
+ 	  R.set_column(0,x_axis);
+	  R.set_column(1,y_axis);
+	  R.set_column(2,z_axis);
+
+
+	  // Create quaternion and axis-angle representation
+	  vnl_quaternion<f64> q(R.transpose());
+	  vnl_vector<f64> r = q.axis();
+	  r = r*q.angle();
+
+	  vnl_vector<f64> p = curve->Evaluate(curve->dRange.y);
+
+	  vnl_vector<f64> res(6);
+	  // Format the final output
+	  for( int i = 0; i < 3; i++)
+	  {
+		  res[i] = p[i];
+		  res[i+3] = r[i];
+	  }
+
+	  return res;
+
+  }
   ////////////////////////////////////////////////////////////////////////
   //End Needle Estimator
   ////////////////////////////////////////////////////////////////////////

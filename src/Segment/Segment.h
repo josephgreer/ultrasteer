@@ -42,7 +42,11 @@ namespace Nf
   //#define USE_BARYCENTRIC
 
 #define MAX_POLY_DEGREE 10
-  typedef struct {
+
+  class PolyCurve {
+  public:
+	PolyCurve();
+
 #ifdef USE_BARYCENTRIC
     alglib::barycentricinterpolant x;
     alglib::barycentricinterpolant y;
@@ -57,7 +61,10 @@ namespace Nf
     f32 rmsError;
     Vec3f descriptor;
     Vec2f dRange;
-  } PolyCurve;
+
+	Vec3d Evaluate(f32 t) const;
+	PolyCurve Derivative() const;
+  };
 
   typedef struct {
     u8 enforceFrameConsistency;                   //do we choose one needle segment per frame?  
