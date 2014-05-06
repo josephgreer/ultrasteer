@@ -103,7 +103,7 @@ bool PropelloBDisplay::setImgData(bool usePorta)
 			ret = portaGetBwImage(m_index, buffer, false);
 			ret = portaGetColorImage(m_index, colorbuffer);
 			if(m_mutex) m_mutex->unlock();
-			tick(portaGetDisplayFrameCount(m_index));
+			tick(m_frameCount++);
 		}
 		else
 		{

@@ -291,6 +291,7 @@ void Propello::onTick(int framenum)
 
 			//For now, update is available every sweep.
 			zUpdateAvail = framenum > 0 && ((framenum%fpv)==0);
+			Nf::NTrace("Framenum %d fpv %d\n", framenum, fpv);
 
 			//Translate tip estimate to vector of form
 			//[tipPos tipOrientation] where tipOrientation is axis-angle representation
@@ -300,12 +301,15 @@ void Propello::onTick(int framenum)
 			cvReleaseImage(&bmode);
 			cvReleaseImage(&doppler);
 		} else if(!m_ns){
-			wBImage->SetDisplayImage(wBImage->getDoppler());
+			IplImage *temp = QImageToIplImage(wBImage->getDoppler());
+			wBImage->SetDisplayImage(IplImageToQImage(temp));
+			cvReleaseImage(&temp);
 			m_mutex.unlock();
 		}
 
 		if( zUpdateAvail )
 		{
+			Nf::NTrace("Sending update\n");
 			// Run the control loop (includes UKF and control loop)
 			steeringComplete = m_robotcontrol.runControlLoop(z);
 
@@ -317,6 +321,11 @@ void Propello::onTick(int framenum)
 				DisplayErrorBox(1);
 			}
 		}
+	} else {
+		IplImage *temp = QImageToIplImage(wBImage->getDoppler());
+		wBImage->SetDisplayImage(IplImageToQImage(temp));
+		cvReleaseImage(&temp);
+		m_mutex.unlock();
 	}
 }
 
@@ -539,6 +548,52 @@ void Propello::onCaptureChange(int index)
 	}
 }
 
+void Propello::setDopplerSettings(f64 prf, f64 wf, s32 colorMode)
+{
+	f64 PRF_Hz = 1000000/portaGetParam(prmColor_PRP);
+
+	if(PRF_Hz < prf) {
+		while(PRF_Hz < prf) {
+			portaCycleParam(prmColor_PRP, 1);
+			PRF_Hz = 1000000/portaGetParam(prmColor_PRP);
+		}
+	} else {
+		while(PRF_Hz > wf) {
+			portaCycleParam(prmColor_PRP, 0);
+			PRF_Hz = 1000000/portaGetParam(prmColor_PRP);
+		}
+	}
+
+	f64 WF_Hz = portaGetParam(prmColor_WF)*PRF_Hz/1000.0;
+
+	if(WF_Hz < wf) {
+		while(WF_Hz < wf) {
+			portaCycleParam(prmColor_WF, 1);
+			WF_Hz = portaGetParam(prmColor_WF)*PRF_Hz/1000.0;
+		}
+	} else {
+		while(WF_Hz > wf) {
+			portaCycleParam(prmColor_WF, 0);
+			WF_Hz = portaGetParam(prmColor_WF)*PRF_Hz/1000.0;
+		}
+	}
+
+	s32 mode = portaGetParam(prmColor_Mode);
+	//if(mode < colorMode) {
+	//	while(mode < colorMode) {
+	//		portaCycleParam(prmColor_Mode, 1);
+	//		mode = portaGetParam(prmColor_Mode);
+	//	}
+	//} else {
+	//	while(mode > colorMode) {
+	//		portaCycleParam(prmColor_Mode, 0);
+	//		mode = portaGetParam(prmColor_Mode);
+	//	}
+	//}
+
+	refreshParams();
+}
+
 // user selected a new mode
 void Propello::onDataSelection(int index)
 {
@@ -556,6 +611,7 @@ void Propello::onDataSelection(int index)
 	else if (index == 4)
 	{
 		mode = ColourMode;
+		setDopplerSettings(1400, 550, 1);
 	}
 
 	loadMode(mode, 0);

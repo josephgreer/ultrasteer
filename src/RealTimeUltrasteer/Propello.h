@@ -31,6 +31,7 @@ private:
 	bool startScanningNeedle();
 	void stopScanningNeedle();
 	void enableRobotControls(bool);
+	void setDopplerSettings(f64 prf, f64 wf, s32 colorMode);
 
 private:
     QString m_firmwarePath;
