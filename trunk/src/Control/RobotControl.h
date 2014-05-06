@@ -31,6 +31,7 @@ public:
 	void beginClosedLoopSteering();
 	void stopClosedLoopSteering();
 	bool runControlLoop(vnl_vector<double> z);
+	vnl_vector < double > getUKFEstimate();
 	
 private:
 	int determineRadiusAndAngle(std::vector<double> &v_scX, std::vector<double> &v_scY, std::vector<double> &v_scZ, double &R, double &del_theta);
@@ -50,4 +51,7 @@ private:
 	vnl_vector<double> m_u;
 	int m_stepNumber;
 	double m_lastInsPos;
+
+	//used for logging
+	FILE *m_file;
 };

@@ -29,6 +29,7 @@ RobotControl::RobotControl(Propello* theParent): ParentWindow(theParent)
 	m_u.put(1,NEEDLE_MIN_R);
 	m_u.put(2,0);
 	m_stepNumber = 1;
+	m_file = NULL;
 }
 
 RobotControl::~RobotControl()
@@ -86,6 +87,20 @@ bool RobotControl::runControlLoop(vnl_vector<double> z)
 		steeringComplete = applyController(x_est, m_t);
 		// Execute control actions based on input vector u
 		executeControl(m_u);
+
+
+		if(!m_file) {
+			QDateTime tm = QDateTime::currentDateTime();
+			char fname[100] = "";
+			sprintf(fname, "C:/%s.log", tm.toString("mm"));
+			m_file = fopen(fname, "w");
+		}
+
+		//output is [z xest u]
+		vnl_vector < f64 > xest = getUKFEstimate();
+		fprintf(m_file, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", z[0], z[1], z[2], z[3], z[4], z[5],
+			xest[0], xest[1], xest[2], xest[3], xest[4], xest[5], m_u[0], m_u[1], m_u[2]);
+		fflush(m_file);
 	}
 	// Increment the count of scan steps
 	m_stepNumber = m_stepNumber + 1;
@@ -157,6 +172,13 @@ void RobotControl::setVibration(bool OnOff)
 {
 	// Activates or deactivates vibration coil using digital output of roll controller
 	m_robot.setVibration(OnOff);
+}
+
+vnl_vector < double > RobotControl::getUKFEstimate()
+{
+	vnl_vector < double > res;
+	m_UKF.getCurrentStateEstimate(res);
+	return res;
 }
 
 void RobotControl::InsertIncremental(double inc)
