@@ -15,6 +15,8 @@ class PropelloBDisplay : public PropelloDisplay
 public:
     PropelloBDisplay(QWidget* parent = 0);
     virtual ~PropelloBDisplay();
+	
+	void resetFrameCount();
 
     bool loadColorMap(const QString file);
     virtual bool setImgData(bool usePorta);

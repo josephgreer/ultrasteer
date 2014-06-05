@@ -617,6 +617,9 @@ HRESULT MotionController::CanProcess(void)
 ///	\post		FAULT output pin is set based on OnOff
 void  MotionController::setDigitalOutput(bool OnOff)
 {
+	if(!IsInitialized())
+		return;
+
 	if( FAILED(CanProcess()) ) throw MotionControllerException("Cannot control output");;
 	
 	// Construct the string to send with the appropriate command

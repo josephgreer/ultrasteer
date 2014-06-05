@@ -78,6 +78,11 @@ bool PropelloBDisplay::loadColorMap(const QString file)
 	return portaImportColorMap(0, (unsigned int*)img.constBits());
 }
 
+void PropelloBDisplay::resetFrameCount()
+{
+	m_frameCount = 0;
+}
+
 bool PropelloBDisplay::setImgData(bool usePorta)
 {
 	bool ret = false;

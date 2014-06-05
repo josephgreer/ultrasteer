@@ -259,9 +259,10 @@ void Propello::onTick(int framenum)
 	// In needle scanning we only want to capture a single volume, so stop the probe if 
 	// this is the case.
 	int disp = 0;
-	if (m_needleScanning && portaGetDisplayFrameCount(disp) == portaGetParam(prmMotorFrames))
+	s32 fpv = portaGetParam(prmMotorFrames);
+	if (m_needleScanning && framenum == fpv)
 	{
-		stopScanningNeedle();
+		stopImage();
 	}
 
 	// In closed loop steering we have to process each frame, and run control loop after 
@@ -282,7 +283,6 @@ void Propello::onTick(int framenum)
 			m_mutex.unlock();
 
 			probeInfo nfo; portaGetProbeInfo(nfo);
-			s32 fpv = portaGetParam(prmMotorFrames);
 			Nf::ProbeImageCoordTransform transform(framenum, fpv, portaGetParam(prmMotorSteps), nfo);
 			Nf::PolyCurve model;
 			IplImage *dis = m_ns->UpdateModel(&model, doppler, bmode, (Nf::ImageCoordTransform *)&transform);
@@ -316,7 +316,7 @@ void Propello::onTick(int framenum)
 			// If the controller reports steering is complete, stop closed-loop steering
 			if(steeringComplete)
 			{
-				stopScanningNeedle();
+				stopImage();
 				m_robotcontrol.stopClosedLoopSteering();
 				DisplayErrorBox(1);
 			}
@@ -389,6 +389,17 @@ void Propello::stopImage()
 		wCine->setRange(0, portaGetFrameCount(0));
 		wCine->setValue(wCine->maximum());
 
+		wBImage->resetFrameCount();
+
+		// Deactivate vibration 
+		m_robotcontrol.setVibration(false);
+
+		m_robotcontrol.stopClosedLoopSteering();
+
+		wCine->setRange(0, portaGetFrameCount(0));
+		wCine->setValue(wCine->maximum());
+		m_needleScanning = false;
+		m_closedLoopSteering = false;
 	}
 }
 
@@ -419,22 +430,6 @@ bool Propello::startScanningNeedle()
 	{
 		return false;
 	}
-}
-
-
-
-// after a single scan has been completed, process and apply control law
-void Propello::stopScanningNeedle()
-{
-	// Deactivate vibration 
-	m_robotcontrol.setVibration(false);
-	// Deactivate scanning
-	portaStopImage();
-	wCine->setRange(0, portaGetFrameCount(0));
-	wCine->setValue(wCine->maximum());
-	m_needleScanning = false;
-	m_closedLoopSteering = false;
-	int disp = 0, vols = portaGetDisplayFrameCount(disp) / portaGetParam(prmMotorFrames);
 }
 
 // detect a motorized probe
@@ -525,7 +520,7 @@ void Propello::onCaptureChange(int index)
 	// ensure we are stopped
 	if (running)
 	{
-		portaStopImage();
+		stopImage();
 	}
 
 	s32 width, height;
@@ -821,7 +816,7 @@ void Propello::onHomeMotor()
 
 	if (running)
 	{
-		portaStopImage();
+		stopImage();
 	}
 
 	m_motorpos = portaGoToPosition(m_motorstart);
@@ -847,7 +842,7 @@ void Propello::stepMotor(bool fwd)
 
 		if (running)
 		{
-			portaStopImage();
+			stopImage();
 		}
 
 		stepamt = portaStepMotor(!fwd, steps);
