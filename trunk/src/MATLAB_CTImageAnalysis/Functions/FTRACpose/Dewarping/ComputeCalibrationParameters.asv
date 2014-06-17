@@ -1,0 +1,132 @@
+% $Id: ComputeCalibrationParameters.m,v 1.7 2007/07/18 19:50:58 anton Exp $
+function [focalLength, sourcePosition, lineEndPoints] = ComputeCalibrationParameters(im, pixelRes, orientation, origin, gridPts, thresh, resRatioToNTSC)
+
+% function [focalLength, sourcePosition] = ComputeCalibrationParameters(im,
+% thresh, pixelRes, orientation, origin, gridPts) computes the intrinsic
+% parameters of the X-ray source.
+% @param im - dewarp image of the calibration phantom
+% @param thresh - threshold value to eliminate the BBs from the image.
+% Typical value ranges from 0 -1
+% @param pixelRes - mmPerPixel value
+% @param orientation - orientation of the dewarp grid, this parameter is
+% an output of the dewarp step
+% @param origin - location of the center BB, this parameter is an output
+% of the dewarp step
+% @param gridPts - location of the BB centers, this parameter is an output
+% of the dewarp step
+% @output focalLength - focal length of the X-ray optical system in mm
+% @output sourcePosition - (x,y) coordinates of the optical center in
+% pixels and the z-coordinate represents the focal length in mm
+
+% extract the lines from the input image
+
+
+if nargin < 6
+    [N,X] = hist(double(im(:)), 5);
+    thresh = X(4);
+end
+
+labelIm = ExtractLines(im, gridPts, thresh, resRatioToNTSC);
+numLines = max(max(labelIm));
+if (numLines ~= 12)
+    error(' Not all the lines are extracted, try changing the threshold values ');
+end
+% fit the line equations
+imgCenter = size(im)/2;
+for i = 1:numLines
+    [x, y] = find(labelIm ==i);
+%     x = x - imgCenter(1);
+%     y = y - imgCenter(2);
+%     x = x * pixelRes(1);
+%     y = y * pixelRes(2);
+    z = zeros(size(x));
+    ptsOnImageInGridCoords = [x, y, z];
+    line(i,:) = least_squares_line(ptsOnImageInGridCoords(:,1:2));
+end
+
+% compute the end points of lines on the input image to overlay
+lineEndPoints = ComputeCalibrationLineEndPoints(im, labelIm);
+
+
+% find the orientation of the physical grid w.r.t the image
+angleInDegrees = ComputeTransformationFromGridToImage(im, origin, pixelRes) ;
+angle = angleInDegrees * pi/180;
+RGridToImage = [cos(angle), sin(angle); -sin(angle), cos(angle)];
+
+% read the physical coordinates of the lines from the file
+lineEndPts = ReadPtsFromFile('CalibrationLineEndPts.txt');
+
+% find the correspondences between the lines in the image and the lines on
+% the calibration phantom
+focalLength = 950;
+[ptsInMMGrid, transformedGridPts] = ProjectPtsOnGrid(lineEndPts, RGridToImage, focalLength);
+ptsInMMGrid(:,1) = ptsInMMGrid(:,1) ./pixelRes(1) + imgCenter(1);
+ptsInMMGrid(:,2) = ptsInMMGrid(:,2) ./pixelRes(2) + imgCenter(2);
+ptsInMMGrid(:,3) = ptsInMMGrid(:,3) ./pixelRes(1) + imgCenter(1);
+ptsInMMGrid(:,4) = ptsInMMGrid(:,4) ./pixelRes(2) + imgCenter(2);
+
+C = GenerateCostMatrix(line, ptsInMMGrid);
+[assignmentMatrix, T] = hungarian(C);
+
+% find the extrinsic parameters
+[R, T] = ReadPhantomRegistrationData('PhantomOptotrakRegistrationTransformation.txt');
+
+% fit 3d line to the points on the calibration phantom and the lines in the
+% image and fit a plane to the corresponding lines
+for i = 1:numLines
+    % calibration phantom line
+    ptsOnPhantom = [transformedGridPts(i,1:2),0; transformedGridPts(i,3:4), 0];
+    num_pts = size(ptsOnPhantom, 1);
+    ptsOnPhantomInGridCoords = ptsOnPhantom * R + repmat(T, num_pts, 1);
+    [lineOnPhantom, resErr] = fit_least_square_3dline(ptsOnPhantomInGridCoords);
+    
+    label = assignmentMatrix(i);
+    [x,y] = find(labelIm == label);
+    x = x - imgCenter(1);
+    y = y - imgCenter(2);
+    x = x * pixelRes(1);
+    y = y * pixelRes(2);
+    z = zeros(size(x));
+    ptsOnImageInGridCoords = [x, y, z];
+    [lineOnImage, resErr] = fit_least_square_3dline(ptsOnImageInGridCoords);
+    
+    lines(:,:,1) = lineOnPhantom;
+    lines(:,:,2) = lineOnImage;
+    [lsq_plane, res_err] = fit_least_square_plane(lines);
+    plane(i,:) = lsq_plane';
+
+end
+
+% find the intersection point of all the planes
+A = plane(:, 1:3);
+b = -plane(:,4);
+sourcePosition = (A'*A)^-1*A'*b;
+sourcePosition(1:2) = sourcePosition(1:2) .* pixelRes' + imgCenter';
+focalLength = sourcePosition(3);
+
+
+% $Log: ComputeCalibrationParameters.m,v $
+% Revision 1.7  2007/07/18 19:50:58  anton
+% ComputeCalibrationParameters: Check for exact number of lines (i.e. 12)
+%
+% Revision 1.6  2006/09/27 15:49:29  gouthami
+% ComputeCalibrationParameters: This function now uses the registration transformation between the
+% calibration phantom plates using optotrak.
+% The projection on to the distortion plate now uses the lines computed on pixels rather in mm grid
+%
+% Revision 1.5  2006/09/21 20:47:08  anton
+% ComputeCalibrationParameters: Bug in source position computation (as corrected
+% by Gouthami).
+%
+% Revision 1.4  2006/09/21 11:19:45  gouthami
+% Added the automatic threshold value computation
+%
+% Revision 1.3  2006/08/14 20:09:30  anton
+% Dewarping: Match cases for algorithms (to avoid warnings on recent Matlab).
+%
+% Revision 1.2  2006/07/15 21:25:02  gouthami
+% added the functionality to overlay the lines on the dewarp image
+%
+% Revision 1.1  2006/07/15 17:58:59  gouthami
+% Adding to CVS
+%

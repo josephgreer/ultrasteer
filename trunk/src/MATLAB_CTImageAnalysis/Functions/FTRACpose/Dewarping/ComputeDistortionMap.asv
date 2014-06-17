@@ -1,0 +1,102 @@
+% $Id: ComputeDistortionMap.m,v 1.8 2006/10/02 17:42:53 anton Exp $
+
+function [ dewarpIm, Xmap, Ymap, polyOrder, polyCoeff, orientation, origin, gridPts, pixelSize] = ComputeDistortionMap(im, morphIm, thresh, pixelSize)
+% function [ dewarpIm, Xmap, Ymap, polyOrder, polyCoeff, orientation,
+% origin, gridPts] = ComputeDistortionMap(im, thresh, pixelRes) computes
+% the polynomial distortion map of an Xray image
+% @param im - input image in byte format (intensity values from 0-255)
+% @param thresh - threshold value to extract BBs, range: 0-255, typical
+% value 40
+% @param pixelRes - scale of the xray imaging system(sx,sy). Usually,
+% [0.44, 0.44] for the OEC 9600Carm
+% @output dewarpIm - distortion corrected image
+% @output Xmap - mapping of the xpixels from distorted image to the undistorted
+% image
+% @output Ymap - mapping of the ypixels from distorted image to the undistorted
+% image
+% @output polyOrder - degree of the bernstein polynomial
+% @output polyCoeff - polynomial coefficients
+% @output orientation - orientation of the grid
+% @output origin - location of the center BB in pixel units
+% @output gridPts - location of the BB centers in pixel units
+
+[rows,cols] = size(im);
+% step 1: do the morphological processing
+% is now provided as input.  morphIm = PerformMorphologicalOperation(im);
+% step 2: compute automatic threshold
+[labelIm, origin] = ProcessImage(morphIm, thresh);
+
+%Origin = [rows/2, cols/2];
+im = im2double(im);
+
+% calculate the centers - 
+method = 2; % method can take values from 1-4 
+centers = CalculateCentroid(im, labelIm, method);
+clear labelIm;
+
+% find the orientation of the grid
+% disp('Finding the orientation of the grid');
+entropy = FindEntropy(centers, 0);
+index = 1;
+for i = -90:89
+    entropy(index, 1) = i;
+    entropy(index,2) = FindEntropy(centers, i);
+    index = index + 1;
+end
+% find the orientation for which the entropy is minimum
+orientation = entropy(find(entropy(:,2) == min(entropy(:,2))), 1) ;
+% change theta from degrees to radians
+theta = orientation *pi/180;
+
+% calculate the x,y pixel sizes
+if nargin < 4
+    pixelSize = ComputePixelSize(centers, origin, theta);
+end
+
+% find correspondences between the segmented points and the physical
+% grid points
+% disp('Computing the correspondences');
+
+[segPts, gridPts] = FindCorrespondences(centers, origin, theta, pixelSize);
+
+% compute the polynomial coefficients
+% disp('Computing the polynomial' );
+polyOrder = 4;  % was 5 for NTSC resolution
+normalizedGridPts = NormalizeToImageBox(gridPts, rows, cols);
+% normalizedSegPts = NormalizeToImageBox(segPts, rows, cols);
+polyCoeff = ComputeBernsteinCoefficients(segPts, normalizedGridPts, polyOrder);
+% PolyCoeff = ComputeBernsteinCoefficients(normalizedSegPts, normalizedGridPts, PolyOrder);
+% undistort/dewarp the image
+% disp('Dewarping the image');
+% profile on;
+[dewarpIm, Xmap, Ymap] = DewarpImage(im,  polyOrder, polyCoeff);
+% profile report;
+
+%$Log: ComputeDistortionMap.m,v $
+%Revision 1.8  2006/10/02 17:42:53  anton
+%ComputeDistortionMap: Modified signature to allow user defined resolution
+%
+%Revision 1.7  2006/09/27 17:54:17  gouthami
+%ComputeDistortionMap: Pixel sizes are calculated after finding the orientation of
+%the grid
+%
+%Revision 1.6  2006/09/21 20:50:22  anton
+%ComputeDistortionMap: Modified signature to require morphological image
+%as input (to allow a user threshold)
+%
+%Revision 1.5  2006/09/19 00:32:02  gouthami
+%Added functionality to compute automatic threshold and pixel sizes
+%
+%Revision 1.4  2006/08/14 20:26:08  anton
+%Dewarping: Match cases for algorithms (to avoid warnings on recent Matlab).
+%
+%Revision 1.3  2006/08/14 20:09:30  anton
+%Dewarping: Match cases for algorithms (to avoid warnings on recent Matlab).
+%
+%Revision 1.2  2006/07/15 18:35:52  gouthami
+%change in the "processImage" function interface
+%
+%Revision 1.1  2006/07/15 18:05:02  gouthami
+%Adding to CVS
+%
+

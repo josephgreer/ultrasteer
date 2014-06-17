@@ -1,0 +1,673 @@
+function varargout = rufMainGUI(varargin)
+% RUFMAINGUI M-file for rufMainGUI.fig
+%      RUFMAINGUI, by itself, creates a new RUFMAINGUI or raises the existing
+%      singleton*.
+%
+%      H = RUFMAINGUI returns the handle to a new RUFMAINGUI or the handle to
+%      the existing singleton*.
+%
+%      RUFMAINGUI('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in RUFMAINGUI.M with the given input arguments.
+%
+%      RUFMAINGUI('Property','Value',...) creates a new RUFMAINGUI or raises the
+%      existing singleton*.  Starting from the left, property value pairs are
+%      applied to the GUI before rufMainGUI_OpeningFunction gets called.  An
+%      unrecognized property name or invalid value makes property application
+%      stop.  All inputs are passed to rufMainGUI_OpeningFcn via varargin.
+%
+%      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
+%      instance to run (singleton)".
+%
+% See also: GUIDE, GUIDATA, GUIHANDLES
+
+% Edit the above text to modify the response to help rufMainGUI
+
+% Last Modified by GUIDE v2.5 28-Sep-2007 17:54:32
+
+% CVS ID: $Id: rufMainGUI.m,v 1.31 2007/10/01 20:09:47 anton Exp $
+
+% Begin initialization code - DO NOT EDIT
+gui_Singleton = 1;
+gui_State = struct('gui_Name',       mfilename, ...
+                   'gui_Singleton',  gui_Singleton, ...
+                   'gui_OpeningFcn', @rufMainGUI_OpeningFcn, ...
+                   'gui_OutputFcn',  @rufMainGUI_OutputFcn, ...
+                   'gui_LayoutFcn',  [] , ...
+                   'gui_Callback',   []);
+if nargin && ischar(varargin{1})
+    gui_State.gui_Callback = str2func(varargin{1});
+end
+
+if nargout
+    [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
+else
+    gui_mainfcn(gui_State, varargin{:});
+end
+% End initialization code - DO NOT EDIT
+
+    path(path, '../Dewarping');
+    path(path, '../Segmentation');
+    path(path, '../Clinical_System');
+    path(path, '../FTRAC');
+    path(path, '../Marshal_Hidden_Int');
+    path(path, '../Registration/FTRAC_to_Template');
+    
+    % ANN ADDED - Point to the path where Antons code is.
+   % path(path, '/Users/annmajewicz/Documents/Johns Hopkins_2008-20xx/Graduate Research/Needle Steering/AnimalStudyProposal/080825_matlab_from Anton/Dewarping');
+   % path(path, '/Users/annmajewicz/Documents/Johns Hopkins_2008-20xx/Graduate Research/Needle Steering/AnimalStudyProposal/080825_matlab_from Anton/Segmentation');
+   % path(path, '/Users/annmajewicz/Documents/Johns Hopkins_2008-20xx/Graduate Research/Needle Steering/AnimalStudyProposal/080825_matlab_from Anton/Clinical_System');
+   % path(path, '/Users/annmajewicz/Documents/Johns Hopkins_2008-20xx/Graduate Research/Needle Steering/AnimalStudyProposal/080825_matlab_from Anton/FTRAC');
+   % path(path, '/Users/annmajewicz/Documents/Johns Hopkins_2008-20xx/Graduate Research/Needle Steering/AnimalStudyProposal/080825_matlab_from Anton/Marshal_Hidden_Int');
+   % path(path, '/Users/annmajewicz/Documents/Johns Hopkins_2008-20xx/Graduate Research/Needle Steering/AnimalStudyProposal/080825_matlab_from Anton/Registration/FTRAC_to_Template');
+end
+
+
+
+
+% find the latest session in a given directory
+function rufUpdateCalibDataFromDirectory(handles, rootDirectory)
+    calibDirectory = strcat(rootDirectory, '/calibrations/');
+    allFiles = dir(strcat(calibDirectory, '/20*'));
+    %allFiles = dir(strcat(calibDirectory, '20*'));
+    last = size(allFiles, 1);
+    if last ~= 0
+        sessionID = allFiles(last).name;
+        rufUpdateCalibDataFromSessionID(handles, rootDirectory, sessionID);
+    else
+        rufUpdateCalibData(handles, rootDirectory, '', 0, 0);
+        set(handles.CalibImageSelect, 'Enable', 'off');
+    end
+end
+
+    
+% find the latest image given a session directory
+function rufUpdateCalibDataFromSessionID(handles, rootDirectory, sessionID)
+    directory = rufCalibRawDirectory(rootDirectory, sessionID);
+    if ~isdir(directory)
+        mkdir(directory);
+    end
+    imageID = -1;
+    allFiles = dir(strcat(directory, '/*.tiff'));
+    last = size(allFiles, 1);
+    if last ~= 0
+        imageID = allFiles(last).name;
+    else
+        last = -1
+        imageID = 'No image available';
+    end
+    rufUpdateCalibData(handles, rootDirectory, sessionID, imageID, last);
+end
+
+    
+% set all the values in data struct and update the GUI
+function rufUpdateCalibData(handles, rootDirectory, sessionID, imageID, imageIndex)
+    global rufMainGUIData;
+    rufMainGUIData.CalibRootDirectory = rootDirectory;
+    rufMainGUIData.CalibSession = sessionID;
+    rufMainGUIData.CalibImage = imageID;
+    rufMainGUIData.CalibImageIndex = imageIndex;
+    set(handles.CalibRootText, 'String', rootDirectory);
+    set(handles.CalibSessionText, 'String', sessionID);
+    set(handles.CalibImageText, 'String', imageID);
+end
+
+
+
+
+
+% find the latest patient in a given directory
+function rufUpdateDataFromDirectory(handles, rootDirectory)
+    patientsDirectory = strcat(rootDirectory, '/patients/');
+    allFiles = dir(strcat(patientsDirectory, '/20*'));
+    last = size(allFiles, 1);
+    if last ~= 0
+        patientID = allFiles(last).name;
+        rufUpdateDataFromPatientID(handles, rootDirectory, patientID);
+    else
+        rufUpdateData(handles, rootDirectory, '', 000);
+        set(handles.BatchSelect, 'Enable', 'off');
+    end
+end
+
+    
+% find the latest batch given a patient directory
+function rufUpdateDataFromPatientID(handles, rootDirectory, patientID)
+    directory = rufPatientRawDirectory(rootDirectory, patientID);
+    if ~isdir(directory)
+        mkdir(directory);
+    end
+    allFiles = dir(strcat(directory, '/batch-*'));
+    last = size(allFiles, 1);
+    if last ~= 0
+        batch = allFiles(last).name;
+    else
+        mkdir(strcat(directory, '/batch-000'));
+        batch = 'batch-000';
+    end
+    rufUpdateData(handles, rootDirectory, patientID, batch);
+end
+
+    
+% set all the values in data struct and update the GUI
+function rufUpdateData(handles, rootDirectory, patientID, batch)
+    global rufMainGUIData;
+    rufMainGUIData.RootDirectory = rootDirectory;
+    rufMainGUIData.PatientID = patientID;
+    rufMainGUIData.Batch = batch;
+    set(handles.PatientIDText, 'String', patientID);
+    set(handles.RawDataDirectoryText, 'String', rootDirectory);
+    set(handles.BatchText, 'String', batch);
+end
+
+    
+% turn on/off all buttons when another window is opened
+function rufEnableAllButtons(handles, value)
+    set(handles.CalibSessionSelect, 'Enable', value);
+    set(handles.CalibImageSelect, 'Enable', value);
+    set(handles.CalibrateButton, 'Enable', value);
+    set(handles.PatientIDSelect, 'Enable', value);
+    set(handles.SpacersSelect, 'Enable', value);
+    set(handles.BatchSelect, 'Enable', value);
+    set(handles.AcquireButton, 'Enable', value);
+    set(handles.DewarpButton, 'Enable', value);
+    set(handles.SegmentationButton, 'Enable', value);
+    set(handles.FTRACButton, 'Enable', value);
+    set(handles.MarshalButton, 'Enable', value);
+    set(handles.MarshalResultsButton, 'Enable', value);
+end
+
+
+% --- Executes just before rufMainGUI is made visible.
+function rufMainGUI_OpeningFcn(hObject, eventdata, handles, varargin)
+% This function has no output args, see OutputFcn.
+% hObject    handle to figure
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% varargin   command line arguments to rufMainGUI (see VARARGIN)
+
+    % Choose default command line output for rufMainGUI
+    handles.output = hObject;
+    clear global rufMainGUIData;
+    global rufMainGUIData;
+    rufMainGUIData.SkipMask = false;
+    % TESTING WITH ANTONS DATA
+ %   rufUpdateDataFromDirectory(handles, '/Users/annmajewicz/Documents/Johns Hopkins_2008-20xx/Graduate Research/Needle Steering/AnimalStudyProposal/080825_matlab_from Anton/DATA');
+ %   rufUpdateCalibDataFromDirectory(handles, '/Users/annmajewicz/Documents/Johns Hopkins_2008-20xx/Graduate Research/Needle Steering/AnimalStudyProposal/080825_matlab_from Anton/DATA');
+    % TESTING WITH NEEDLE STEERING DATA
+    rufUpdateDataFromDirectory(handles, '/Users/annmajewicz/Documents/Johns Hopkins_2008-20xx/Graduate Research/Needle Steering/AnimalStudyProposal/DATA/Robot Set Up Testing/FTRAC Tests/FTRAC_DATA');
+    rufUpdateCalibDataFromDirectory(handles, '/Users/annmajewicz/Documents/Johns Hopkins_2008-20xx/Graduate Research/Needle Steering/AnimalStudyProposal/DATA/Robot Set Up Testing/FTRAC Tests/FTRAC_DATA');   
+    rufCheckCalibrationPatientDates();
+    rufUpdateSpacerInfo(hObject, handles);
+    % Update handles structure
+    guidata(hObject, handles);
+end
+
+
+function rufUpdateSpacerInfo(hObject, handles)
+    global rufMainGUIData;
+    % spacer used for this user
+    spacerPreference = strcat(rufMainGUIData.RootDirectory, 'patients/', rufMainGUIData.PatientID, '/spacerUsed.txt');
+    if length(dir(spacerPreference)) == 1
+        fid = fopen(spacerPreference, 'rt');
+        spacer = fgetl(fid);
+        fclose(fid);
+        set(handles.SpacersText, 'String', spacer);
+        filenameSpacer = strcat('./FTRAC2Template/', spacer);
+        rufMainGUIData.FTRAC2Template = load(filenameSpacer);
+        rufMainGUIData.SpacerDefined = 1;
+    else
+        rufMainGUIData.SpacerDefined = 0;
+        rufMainGUIData.FTRAC2Template = 0;
+        set(handles.SpacersText, 'String', 'Needs to be selected');
+    end
+    % Update handles structure
+    guidata(hObject, handles);
+end
+
+
+% check that both patient and calibration selected start with the same date
+% to avoid obvious errors.
+function rufCheckCalibrationPatientDates()
+    global rufMainGUIData;
+    patient = rufMainGUIData.PatientID;
+    calib = rufMainGUIData.CalibSession;
+    patientDate = patient(1:10);
+    calibDate = calib(1:10);
+    if strcmp(patientDate, calibDate) == 0
+        h = warndlg(['Dates for calibration and patient differ (' calibDate ' and ' patientDate ')'], ...
+                    'Different calibration and patient dates');
+    end
+end
+
+
+% --- Outputs from this function are returned to the command line.
+function varargout = rufMainGUI_OutputFcn(hObject, eventdata, handles) 
+% varargout  cell array for returning output args (see VARARGOUT);
+% hObject    handle to figure
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+    % Get default command line output from handles structure
+    varargout{1} = handles.output;
+end
+
+
+function PatientIDText_Callback(hObject, eventdata, handles)
+% hObject    handle to PatientIDText (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of PatientIDText as text
+%        str2double(get(hObject,'String')) returns contents of PatientIDText as a double
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function PatientIDText_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to PatientIDText (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+end
+
+
+% --- Executes on button press in CalibSessionSelect.
+function CalibSessionSelect_Callback(hObject, eventdata, handles)
+% hObject    handle to CalibSessionSelect (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    global rufMainGUIData;
+    calibrationsDirectory = strcat(rufMainGUIData.RootDirectory, 'calibrations/');
+    if ~isdir(calibrationsDirectory)
+        mkdir(calibrationsDirectory);
+    end
+    % list all directories starting wit 20* (e.g. 2006-02-05-Patient-tests)
+    allFiles = dir(strcat(calibrationsDirectory, '20*'));
+    clear allSessions;
+    nbSessions = 0;
+    for currentSession = 1:length(allFiles)
+       if isdir(strcat(calibrationsDirectory, '/', allFiles(currentSession).name))
+           nbSessions = nbSessions + 1;
+           allSessions{nbSessions} = allFiles(currentSession).name; 
+       end
+    end
+    % add option to create a new session
+    allSessions{nbSessions + 1} = 'Add a new session';
+    [sessionNb, status] = listdlg('SelectionMode', 'single', 'ListString', allSessions, 'Name', 'Select a session', 'InitialValue', nbSessions, 'ListSize', [800 500]);
+    if status
+       if sessionNb == nbSessions + 1
+           % compute prefix
+           prefix = strcat(datestr(now, 'yyyy-mm-dd'), '-');
+           answer = inputdlg(prefix, 'Patient ID', 1);
+           session = strcat(prefix, answer{1});
+           newDirectory = strcat(calibrationsDirectory, session);
+           if ~isdir(newDirectory)
+               mkdir(newDirectory);
+           else
+               msgbox('This session already exists');
+           end
+       else
+           session = allSessions{sessionNb};
+       end
+    end
+    rufUpdateCalibDataFromSessionID(handles, rufMainGUIData.RootDirectory, session);
+    set(handles.BatchSelect, 'Enable', 'on');
+    rufCheckCalibrationPatientDates();
+    guidata(hObject, handles);
+end
+
+
+% --- Executes on button press in CalibImageSelect.
+function CalibImageSelect_Callback(hObject, eventdata, handles)
+% hObject    handle to CalibImageSelect (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    global rufMainGUIData;
+    rufEnableAllButtons(handles, 'off');
+    selectionHandle = rufCalibImageSelectionGUI();
+    uiwait(selectionHandle);
+    rufEnableAllButtons(handles, 'on');
+    rufUpdateCalibData(handles, rufMainGUIData.RootDirectory, rufMainGUIData.CalibSession, rufMainGUIData.CalibImage, rufMainGUIData.CalibImageIndex);
+end
+
+
+% --- Executes on button press in PatientIDSelect.
+function PatientIDSelect_Callback(hObject, eventdata, handles)
+% hObject    handle to PatientIDSelect (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    global rufMainGUIData;
+    patientsDirectory = strcat(rufMainGUIData.RootDirectory, 'patients/');
+    if ~isdir(patientsDirectory)
+        mkdir(patientsDirectory);
+    end
+    % list all directories starting wit 20* (e.g. 2006-02-05-Patient-tests)
+    allFiles = dir(strcat(patientsDirectory, '20*'));
+    clear allPatients;
+    nbPatients = 0;
+    for currentPatient = 1:length(allFiles)
+       if isdir(strcat(patientsDirectory, '/', allFiles(currentPatient).name))
+           nbPatients = nbPatients + 1;
+           allPatients{nbPatients} = allFiles(currentPatient).name; 
+       end
+    end
+    % add option to create a new patient
+    allPatients{nbPatients + 1} = 'Add a new patient';
+    [patientNb, status] = listdlg('SelectionMode', 'single', 'ListString', allPatients, 'Name', 'Select a patient', 'InitialValue', nbPatients, 'ListSize', [800 500]);
+    if status
+       if patientNb == nbPatients + 1
+           % compute prefix
+           prefix = strcat(datestr(now, 'yyyy-mm-dd'), '-');
+           answer = inputdlg(prefix, 'Patient ID', 1);
+           patient = strcat(prefix, answer{1});
+           newDirectory = strcat(patientsDirectory, patient);
+           if ~isdir(newDirectory)
+               mkdir(newDirectory);
+           else
+               msgbox('This patient already exists');
+           end
+       else
+           patient = allPatients{patientNb};
+       end
+    end
+    rufUpdateDataFromPatientID(handles, rufMainGUIData.RootDirectory, patient);
+    set(handles.BatchSelect, 'Enable', 'on');
+    rufCheckCalibrationPatientDates();
+    rufUpdateSpacerInfo(hObject, handles);
+    guidata(hObject, handles);
+end
+
+
+% --- Executes on button press in BatchSelect.
+function BatchSelect_Callback(hObject, eventdata, handles)
+% hObject    handle to BatchSelect (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    global rufMainGUIData;
+    rufEnableAllButtons(handles, 'off');
+    selectionHandle = rufBatchSelectionGUI();
+    uiwait(selectionHandle);
+    rufEnableAllButtons(handles, 'on');
+    rufUpdateData(handles, rufMainGUIData.RootDirectory, rufMainGUIData.PatientID, rufMainGUIData.Batch);
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function RawDataDirectoryText_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to RawDataDirectoryText (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+end
+
+
+% --- Executes on button press in AcquireButton.
+function AcquireButton_Callback(hObject, eventdata, handles)
+% hObject    handle to AcquireButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    global rufMainGUIData;
+    rufEnableAllButtons(handles, 'off');
+    directory = strcat(rufPatientRawDirectory(rufMainGUIData.RootDirectory, rufMainGUIData.PatientID), '/', rufMainGUIData.Batch, '/');
+    acquisitionHandle = rufAcquisitionGUI(directory);
+    uiwait(acquisitionHandle);
+    rufEnableAllButtons(handles, 'on');
+end
+
+
+% --- Executes on button press in DewarpButton.
+function DewarpButton_Callback(hObject, eventdata, handles)
+% hObject    handle to DewarpButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    global rufMainGUIData;
+    rufEnableAllButtons(handles, 'off');
+    inputDirectory = strcat(rufPatientRawDirectory(rufMainGUIData.RootDirectory, rufMainGUIData.PatientID), '/', rufMainGUIData.Batch, '/');
+    outputDirectory = strcat(rufPatientProcessedDirectory(rufMainGUIData.RootDirectory, rufMainGUIData.PatientID), '/', rufMainGUIData.Batch, '/');
+    acquisitionHandle = rufDewarpGUI(inputDirectory, outputDirectory);
+    uiwait(acquisitionHandle);
+    rufEnableAllButtons(handles, 'on');
+end
+
+
+% --- Executes on button press in SegmentationButton.
+function SegmentationButton_Callback(hObject, eventdata, handles)
+% hObject    handle to SegmentationButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    global rufMainGUIData;
+    rufEnableAllButtons(handles, 'off');
+    directory = strcat(rufPatientProcessedDirectory(rufMainGUIData.RootDirectory, rufMainGUIData.PatientID), '/', rufMainGUIData.Batch, '/');
+    segmentationSelectionHandle = rufSegmentationSelectionGUI(directory);
+    uiwait(segmentationSelectionHandle);
+    rufEnableAllButtons(handles, 'on');
+end
+
+
+% --- Executes on button press in QuitButton.
+function QuitButton_Callback(hObject, eventdata, handles)
+% hObject    handle to QuitButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    clear global rufMainGUIData;
+    delete(handles.rufMainGUI);
+end
+
+
+% --- Executes on button press in MarshalButton.
+function MarshalButton_Callback(hObject, eventdata, handles)
+% hObject    handle to MarshalButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    global rufMainGUIData;
+    rufEnableAllButtons(handles, 'off');
+    if rufMainGUIData.SpacerDefined == 1
+        directory = strcat(rufPatientProcessedDirectory(rufMainGUIData.RootDirectory, rufMainGUIData.PatientID), '/', rufMainGUIData.Batch, '/');
+        marshalSelectionHandle = rufMarshalSelectionGUI(directory);
+        uiwait(marshalSelectionHandle);
+    else
+        warndlg({'No FTRAC to template transformation defined';'You must select a spacer for this patient'});
+    end
+    rufEnableAllButtons(handles, 'on');
+end
+
+
+
+
+
+% --- Executes on button press in CalibrateButton.
+function CalibrateButton_Callback(hObject, eventdata, handles)
+% hObject    handle to CalibrateButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    global rufMainGUIData;
+    rufEnableAllButtons(handles, 'off');
+    calibrationHandle = rufCalibrationGUI();
+    uiwait(calibrationHandle);
+    rufEnableAllButtons(handles, 'on');
+end
+
+
+
+% --- Executes on button press in FTRACButton.
+function FTRACButton_Callback(hObject, eventdata, handles)
+% hObject    handle to FTRACButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+    global rufMainGUIData;
+
+    % load camera calibration parameters
+    calibImage = strcat(rufCalibrationProcessedDirectory(rufMainGUIData.RootDirectory, rufMainGUIData.CalibSession), rufMainGUIData.CalibImage);
+    [pathstr, name, ext, versn] = fileparts(calibImage);
+    filename = strcat(pathstr, '/', name, '-focal-length.txt');
+    fileId = fopen(filename, 'rt');
+    focalLength = fscanf(fileId, '%f', 1);
+    fclose(fileId);
+    filename = strcat(pathstr, '/', name, '-pixel-size.txt');
+    fileId = fopen(filename, 'rt');
+    pixelResolution = fscanf(fileId, '%f', 2);
+    pixel_ratio = [1 / pixelResolution(1), 1 / pixelResolution(2)];
+    fclose(fileId);
+    filename = strcat(pathstr, '/', name, '-origin.txt');
+    fileId = fopen(filename, 'rt');
+    sourcePosition = fscanf(fileId, '%f', 2);
+    fclose(fileId);
+
+    % find files to use
+    directory = strcat(rufPatientProcessedDirectory(rufMainGUIData.RootDirectory, rufMainGUIData.PatientID), '/', rufMainGUIData.Batch, '/');
+    message{1} = 'FTRAC Pose estimation for images in ';
+    message{2} = directory;
+    messageCounter = 3;
+    
+    allFiles = dir(strcat(directory, '*-dewarp.*'));
+    nbFiles = length(allFiles);
+    for index = 1:nbFiles
+        imageName = allFiles(index).name;
+        [pathstr, imagePrefix] = fileparts(imageName);
+    
+        if rufFiducialIsSegmented(directory, imagePrefix)
+            
+            BBsFile = strcat(directory, '/FTRAC_Segmentation/BBs_', imagePrefix, '.txt');
+            Line1_EqFile = strcat(directory, '/FTRAC_Segmentation/Line1_', imagePrefix, '.txt');
+            Line2_EqFile = strcat(directory, '/FTRAC_Segmentation/Line2_', imagePrefix, '.txt');
+            Line3_EqFile = strcat(directory, '/FTRAC_Segmentation/Line3_', imagePrefix, '.txt');
+            Ellipse1_EqFile = strcat(directory, '/FTRAC_Segmentation/Ellipse1_', imagePrefix, '.txt');
+            Ellipse2_EqFile = strcat(directory, '/FTRAC_Segmentation/Ellipse2_', imagePrefix, '.txt');
+        
+            BBs = load(BBsFile, '-ascii');
+            Line1_Eq = load(Line1_EqFile, '-ascii');
+            Line2_Eq = load(Line2_EqFile, '-ascii');
+            Line3_Eq = load(Line3_EqFile, '-ascii');
+            Ellipse1_Eq = load(Ellipse1_EqFile, '-ascii');
+            Ellipse2_Eq = load(Ellipse2_EqFile, '-ascii');
+  
+            % This is killing me, do we really need this? screen_size = size(image);
+            screen_size = [];
+        
+            initial_estimate = [ 
+                0  0 -1  0; 
+                1  0  0  0;
+                0 -1  0  700;
+                0  0  0  1   
+            ];
+
+            warning off;
+            [FTRAC_Pose FTRAC_Error] = evaluate_pose_ftrac(BBs, Line1_Eq, Line2_Eq, Line3_Eq, Ellipse1_Eq, Ellipse2_Eq, pixel_ratio, screen_size, sourcePosition', focalLength, initial_estimate);
+            warning on;
+        
+            if(isempty(FTRAC_Pose))
+                message{messageCounter} = strcat(imageName, ': Failed');
+            else
+                message{messageCounter} = strcat(imageName, ': Success (mean residual error: ', num2str(mean(FTRAC_Error)), ')');
+                % Save.
+                save(strcat(directory, '/Carm_Poses/Pose_', imagePrefix, '.txt'), 'FTRAC_Pose', '-ascii');
+                save(strcat(directory, '/Carm_Poses/Residual_Error_', imagePrefix, '.txt'), 'FTRAC_Error', '-ascii');
+            end
+        else
+            message{messageCounter} = strcat(imageName, ': Fiducial not segmented');
+        end
+        messageCounter = messageCounter + 1;
+
+    end
+    msgbox(message, 'FTRAC') ;
+end
+
+
+% --- Executes on button press in MarshalResultsButton.
+function MarshalResultsButton_Callback(hObject, eventdata, handles)
+% hObject    handle to MarshalResultsButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    global rufMainGUIData;
+    rufEnableAllButtons(handles, 'off');
+    directory = strcat(rufPatientProcessedDirectory(rufMainGUIData.RootDirectory, rufMainGUIData.PatientID), '/', rufMainGUIData.Batch, '/');
+    % list all lists of inputs
+    allFiles = dir(strcat(directory, '3D_Seed_Locations/*.input'));
+    if (length(allFiles) == 0)
+        msgbox('No result found, make sure you run Marshal first!');
+    else
+        clear allResults;
+        % reformat list for selection
+        for currentResult = 1:length(allFiles)
+           allResults{currentResult} = allFiles(currentResult).name; 
+        end
+        [resultNb, status] = listdlg('SelectionMode', 'single', 'ListString', allResults, 'Name', 'Select a file', 'ListSize', [800 500]);
+        if (status == 1)
+            marshalResultsHandle = rufMarshalResultsGUI(directory, allFiles(resultNb).name);
+            uiwait(marshalResultsHandle);
+        end
+    end
+    rufEnableAllButtons(handles, 'on');
+end
+
+
+
+
+% --- Executes on button press in SpacersSelect.
+function SpacersSelect_Callback(hObject, eventdata, handles)
+% hObject    handle to SpacersSelect (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    global rufMainGUIData;
+    % list all files in template directory
+    allFiles = dir(strcat('./FTRAC2Template/', '*.txt'));
+    clear allSpacers;
+    for currentFile = 1:length(allFiles)
+       allSpacers{currentFile} = allFiles(currentFile).name; 
+    end
+    [spacerNb, status] = listdlg('SelectionMode', 'single', 'ListString', allSpacers, 'Name', 'Select a spacer', 'InitialValue', 1, 'ListSize', [800 500]);
+    if status
+       spacer = allSpacers{spacerNb};
+    end
+    
+    % compare to current one if any
+    useNew = 0;
+    spacerPreference = strcat(rufMainGUIData.RootDirectory, 'patients/', rufMainGUIData.PatientID, '/spacerUsed.txt');
+    if length(dir(spacerPreference)) == 1
+        fid = fopen(spacerPreference, 'rt');
+        oldSpacer = fgetl(fid);
+        fclose(fid);
+        % if different settings
+        if strcmp(oldSpacer, spacer) == 0
+            answer = questdlg('New spacer values will overwrite existing', 'Warning', 'Replace', 'Keep old', 'Keep old');
+            if strcmp(answer, 'Replace') == 1
+                useNew = 1;
+            else
+                useNew = 0;
+            end
+        end
+    else
+        % no existing spacer preference
+        useNew = 1;
+    end
+    
+    % use newly chosen spacer settings
+    if useNew == 1
+        % load spacer info
+        filenameSpacer = strcat('./FTRAC2Template/', spacer);
+        rufMainGUIData.FTRAC2Template = load(filenameSpacer);
+        rufMainGUIData.SpacerDefined = 1;
+        % save select spacer in patient tree
+        fid = fopen(spacerPreference, 'wt');
+        fprintf(fid, '%s\n', spacer); 
+        fclose(fid);
+        set(handles.SpacersText, 'String', spacer);
+    end
+    
+    guidata(hObject, handles);
+end
+
+
+%
+% CVS Log:
+% $Log: rufMainGUI.m,v $
+% Revision 1.31  2007/10/01 20:09:47  anton
+% MainGUI: Added code and GUI to keep the FTRAC to template transformation
+% filename in a configuration file and load the transformation from this file.
+%
+% Revision 1.30  2007/09/28 20:42:26  anton
+% MainGUI: Added code to check that calibration and patients have the same
+% date and display a warning message otherwise.
+%
+%
+
+

@@ -1,0 +1,122 @@
+function [vertLinesPixels, horzLinesPixels] = ...
+    FindWireGridLinesInGrayImageWithCluePixels(image, convMaskSize, captureThresh, ...
+    vertCluePixels, horzCluePixels, showPixels, pauseCallbackHandle)
+% function [vertLinesPixels, horzLinesPixels] = ...
+%     FindWireGridLinesInGrayImageWithCluePixels(image, convMaskSize, captureThresh, ...
+%     vertCluePixels, horzCluePixels, showPixels)
+%
+% This function finds the pixels on vertical and horizontal lines in a dark
+% pattern on bright backround.  The lines are found first through
+% template-matching convolution, and matched with "clue" pixels provided
+% as parameters.  The clue pixels specify regions that are expected to
+% contain the lines sought after.  This function gets called from
+% TwoStepDewarp.m
+%
+% \param image a grayscale image that contains the pattern as dark lines on
+% bright background.  Eg., and x-ray image.
+% \param maskSize the size of convolution mask to find candidates for line
+% pixels.  See the code for more information.
+% \param captureThresh a threshold (between 0 and 1) on the response to the
+% line-pattern convolution filter.  The maximum response of the image,
+% times this threshold, determined which pixels are identified as belonging
+% to the line.
+% \param vertCluePixels, horzCluePixels object arrays, where each element
+% is a set (vector) of pixel indexes (obtained via sub2ind) in the image.
+% The intersection of this set with the thresholded convolution response is
+% determined as the actual set of pixels that belong to the line.
+% \param showPixels if true then the program displayes each of the
+% detected features.
+%
+% \output vertLinesPixels an object array where each element is an array of
+% pixel coordinates with respect to the image center, which are detected as
+% being on one of the vertical lines.  The positive X direction is from
+% left to right.
+% \output horzLinesPixels an object array where each element is an array of
+% pixel coordinates on the horizontal lines.  The positive Y direction is
+% from top to bottom.
+% \output vertRadii the *signed* radii, that is, estimated distances, of
+% the vertical lines from the image center, in pixel units.
+% \output horzRadii the signed estimated of the horizontal lines from the
+% image center, in pixel units.
+
+
+[numRows, numCols] = size(image);
+imgRadius = min(numRows / 2, numCols / 2);
+centerRow = (numRows + 1) / 2;
+centerCol = (numCols + 1) / 2;
+
+maskVert = VertWireConvFilter(convMaskSize, 1);
+maskHorz = maskVert';
+
+%img1 = conv2(image, maskVert, 'samesize');
+img1 = conv2(single(image), single(maskVert), 'samesize');
+localMaxImg1 = [zeros(numRows, 2), ( (img1(:,3:(numCols-2)) > img1(:,1:(numCols-4))) & ...
+    (img1(:,3:(numCols-2)) > img1(:,5:numCols)) ), zeros(numRows, 2)];
+maxVert = max(max(img1));
+threshVert = maxVert * captureThresh;
+binImg1 = (img1 > threshVert) .* localMaxImg1;
+
+%img2 = conv2(image, maskHorz, 'samesize');
+img2 = conv2(single(image), single(maskHorz), 'samesize');
+localMaxImg2 = [zeros(2, numCols); ( (img2(3:(numRows-2),:) > img2(1:(numRows-4),:)) & ...
+    (img2(3:(numRows-2),:) > img2(5:numRows,:)) ); zeros(2, numCols)];
+maxHorz = max(max(img2));
+threshHorz = maxHorz * captureThresh;
+binImg2 = (img2 > threshHorz) .* localMaxImg2;
+
+img1PixelsInd = find(binImg1);
+img2PixelsInd = find(binImg2);
+
+numVertLines = length(vertCluePixels);
+for lineCounter = 1:numVertLines
+    pixelIndForLine = intersect(img1PixelsInd, vertCluePixels{lineCounter});
+    [pixRows, pixCols] = ind2sub([numRows, numCols], pixelIndForLine);
+    vertLinesPixels{lineCounter} = [pixCols - centerCol, pixRows - centerRow];
+end
+
+numHorzLines = length(horzCluePixels);
+for lineCounter = 1:numHorzLines
+    pixelIndForLine = intersect(img2PixelsInd, horzCluePixels{lineCounter});
+    [pixRows, pixCols] = ind2sub([numRows, numCols], pixelIndForLine);
+    horzLinesPixels{lineCounter} = [pixCols - centerCol, pixRows - centerRow];
+end
+
+if (~showPixels)
+    return
+end
+
+if (~exist('pauseCallbackHandle'))
+    pauseCallbackHandle = @pause;
+end
+
+hfig = figure;
+
+colorTable = [1, 0, 0; ...
+    0, 1, 0; ...
+    0, 0, 1; ...
+    0, 1, 1; ...
+    1, 0, 1; ...
+    1, 1, 0; ...
+    ];
+numColors = size(colorTable, 1);
+
+lineImg = mat2gray(image);
+for lineCounter = 1:numVertLines
+    linePixels = vertLinesPixels{lineCounter};
+    colorIndex = mod(lineCounter - 1, numColors) + 1;
+    lineImg = PutPixelsOnImage(lineImg, linePixels, [centerCol, centerRow], colorTable(colorIndex,:));
+end
+
+imshow(lineImg);
+pauseCallbackHandle();
+lineImg = mat2gray(image);
+
+for lineCounter = 1:numHorzLines
+    linePixels = horzLinesPixels{lineCounter};
+    colorIndex = mod(lineCounter - 1, numColors) + 1;
+    lineImg = PutPixelsOnImage(lineImg, linePixels, [centerCol, centerRow], colorTable(colorIndex,:));
+end
+
+imshow(lineImg);
+pauseCallbackHandle();
+close(hfig);

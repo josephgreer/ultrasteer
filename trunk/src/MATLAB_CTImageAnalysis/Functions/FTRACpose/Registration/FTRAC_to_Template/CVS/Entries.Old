@@ -1,0 +1,37 @@
+/ball_tip_compensation.m/1.2/Fri Sep 22 16:56:30 2006//
+/establish_line_correspondence.m/1.2/Fri Sep 22 16:56:32 2006//
+/extract_lines.m/1.2/Fri Sep 22 16:56:32 2006//
+/find_allpoints_on_line.m/1.3/Fri Sep 22 16:56:32 2006//
+/fit_least_square_3dline.m/1.2/Fri Sep 22 16:56:32 2006//
+/fit_least_square_plane.m/1.2/Fri Sep 22 16:56:32 2006//
+/ruf-template-001-Anton-Post.txt/1.1/Fri Mar 31 20:58:42 2006//
+/ruf-template-001-anton.txt/1.1/Thu Mar 23 21:45:02 2006//
+/ruf-template-002-Anton-Post.txt/1.1/Fri Mar 31 20:58:42 2006//
+/ruf-template-002-ameet.txt/1.1/Thu Mar 23 21:45:02 2006//
+/ruf-template-003-Anton-Post.txt/1.1/Fri Mar 31 20:58:42 2006//
+/ruf-template-003-ameet.txt/1.1/Thu Mar 23 21:45:02 2006//
+/ruf-template-004-Anton-Post.txt/1.1/Fri Mar 31 20:58:42 2006//
+/ruf-template-004-ameet.txt/1.1/Thu Mar 23 21:45:02 2006//
+/ruf-template-005-Ameet-Post.txt/1.1/Fri Mar 31 20:58:42 2006//
+/ruf-template-005-anton.txt/1.1/Thu Mar 23 21:45:02 2006//
+/ruf-template-006-Ameet-Post.txt/1.1/Fri Mar 31 20:58:42 2006//
+/ruf-template-006-anton.txt/1.1/Thu Mar 23 21:45:02 2006//
+/ruf-template-007-Ameet-Post.txt/1.1/Fri Mar 31 20:58:42 2006//
+/ruf-template-008-Ameet-Post.txt/1.1/Fri Mar 31 20:58:42 2006//
+/FTRAC_to_Template_Calibration.m/1.4/Wed Jan 10 05:17:35 2007//
+/Line_registration.m/1.4/Wed Jan 10 05:17:35 2007//
+/ftraclines_to_templatelines.m/1.3/Wed Jan 10 05:17:35 2007//
+/generate_ground_truth.m/1.3/Wed Jan 10 05:17:35 2007//
+D/20070116-Pre-clinical////
+/2007-09-18-All-00.txt/1.1/Wed Sep 19 13:10:44 2007//
+/2007-09-18-All-15.txt/1.1/Wed Sep 19 13:10:44 2007//
+/2007-09-18-All-30.txt/1.1/Wed Sep 19 13:10:44 2007//
+/2007-09-18-Anton-00.txt/1.1/Wed Sep 19 13:10:45 2007//
+/2007-09-18-Anton-15.txt/1.1/Wed Sep 19 13:10:45 2007//
+/2007-09-18-Anton-30.txt/1.1/Wed Sep 19 13:10:45 2007//
+/2007-09-18-Gouthami-00.txt/1.1/Wed Sep 19 13:10:45 2007//
+/2007-09-18-Gouthami-15.txt/1.1/Wed Sep 19 13:10:45 2007//
+/2007-09-18-Gouthami-30.txt/1.1/Wed Sep 19 13:10:45 2007//
+/2007-09-18-results.txt/1.1/Wed Sep 19 13:10:45 2007//
+D/Data_New_Template////
+D/Data_Old_Template////

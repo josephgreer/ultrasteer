@@ -1,0 +1,206 @@
+% $Id: generate_dataset.m,v 1.6 2007/06/28 16:33:09 jain Exp $
+
+%Input is seed density in seeds/cc, prostate size in cc, num_images
+%is the number of projections that you want and alp in radians.
+%Create a directory called Simulation_Datasets where the answers are
+%stored. The C-arm parameters are similar to those of the Siemens.
+function Error = generate_dataset(seed_density, prostate_size, num_images, alp)
+
+%The dimension of the seeds
+% Rad = 0.4;
+% Len = 1.45;
+Rad = 0.3;%O.2
+Len = 1.05; %0.7
+Noise = 5;
+
+%Fluoroscope internal parameters
+pixel_ratio = [1/0.44 1/0.44];
+screen_size = [512 640];
+origin = [256 320];
+focal_len = 1000;
+
+%Calculate the coordinates of the object you need 7 4
+seed_pts = seed_points(Rad, Len, 10, 6, 4);
+
+%For the given prostate size and density, evaluate the best possible seed
+%configuration in a ratio of 5:3:3. When in discrepencies, take the longest
+%z-value, and then the longest y value.
+
+%a prostate is assumed to be of dimension 3:3:5. base unit is this basic
+%scale value
+num_seeds = round(seed_density*prostate_size);
+base_unit = power(num_seeds/45, 1/3);
+
+%But number of seeds can only be discreete. So we look at all possible
+%intermediate combinations. 2 in each dimension makes the total 8.
+implant_size(1,:) = [5*base_unit 3*base_unit 3*base_unit];
+for counter = 0:7
+    implant_size(counter+2, :) = floor(implant_size(1,:)) + [counter>3 mod((counter - mod(counter,2))/2, 2) mod(counter, 2)];
+end
+
+%Now choose the combination that best approximates the total number of
+%seeds calulated earlier. The original might not be an integer, but we will
+%choose the one that is closest. the second column decides the best
+%combination and makrs it 1, while everytyhing else is marked as 0.
+num_seeds = implant_size(:,1).*implant_size(:,2).*implant_size(:, 3);
+tmp = abs(num_seeds(2:end) - num_seeds(1));
+index = find(tmp == min(tmp));
+index = index+1;
+num_seeds(:,2) = 0;
+num_seeds(9 + index) = 1;
+
+%Choose the final correct split. If unique choose that one. If multiple
+%combinations are possible, then choose the one that gives the "longest"
+%prostate, going one dimension after another.
+if(sum(num_seeds(:,2))==1)
+    final_index = find(num_seeds(:,2));
+else
+        long_lens = max(implant_size(index));
+        index = find( (implant_size(:,1)==long_lens).*(num_seeds(:,2)==1) );
+        if(prod(size(index))==1)
+            final_index = index;
+        elseif(prod(size(index))==2)
+            if(implant_size(index(1),2)>implant_size(index(1),3))
+                final_index = index(1);
+            else
+                final_index = index(2);
+            end
+        else
+            display 'Error in locking in on final index'
+            bool = 0;
+            return
+        end
+end
+
+%final size (z, x, y) of the implant in number of seeds. spacing is in mm.
+final_implant_size = implant_size(final_index, :);
+final_spacing = 10*power(prostate_size/((final_implant_size(1)-1)*(final_implant_size(2)-1)*(final_implant_size(3)-1)), 1/3);
+bool = 1;
+
+%Generate a series of images from various orientations of the camera,
+%keeping the object constant. Estimate the frame transformation, use that
+%to generate fluoro images of the object and also calculate the centroids
+%of each object. Save the result if needed.
+seed_pos_wrt_grnd = [];
+seed_orien_wrt_grnd = [];
+seed_rot_wrt_grnd = [];
+for count3 = 0 : final_implant_size(1) - 1
+    for count1 = 0 : final_implant_size(3) - 1
+        for count2 = 0 : final_implant_size(2) - 1
+            new_pos = [count2 count1 count3]*final_spacing + 2*(rand(1,3)-0.5).*(Noise*[1 1 1]);
+            seed_pos_wrt_grnd = [seed_pos_wrt_grnd ; new_pos];
+            
+            %Rotate Each seed.
+            theta = (20*pi/180)*sign(rand(1)-0.5)*randn(1);
+            phi = 2*pi*rand(1);
+            zaxis = [sin(theta)*cos(phi) ; sin(theta)*sin(phi); cos(theta)];
+            zaxis = zaxis/sqrt(sum(zaxis.^2));
+            xaxis = [zaxis(2); -zaxis(1); 0];
+            xaxis = xaxis/sqrt(sum(xaxis.^2));
+            yaxis = cross(zaxis,xaxis);
+            yaxis = yaxis/sqrt(sum(yaxis.^2));
+            rot_xform = [xaxis yaxis zaxis];
+            if( abs(det(rot_xform) - 1) > 0.1 )
+                display 'Error in rotation matrix of seed'
+                rot_xform
+                return
+            end
+            seed_rot_wrt_grnd = cat(3, seed_rot_wrt_grnd, rot_xform);
+            seed_orien_wrt_grnd = [seed_orien_wrt_grnd ; phi*180/pi theta*180/pi];
+        end
+    end
+end
+
+%generate views for each image. The formula is calculated closed form and
+%then written here. A cone around the ground frame defines the locations of
+%the X-ray sources.
+%alp = 30*pi/180;
+count = 0;
+for th = 0 : (360*pi/180)/num_images : 359*pi/180
+    count = count + 1;
+%    test_xform(:,:,count) = [ sin(th) 0 -cos(th) ; -cos(alp)*cos(th) sin(alp) -cos(alp)*sin(th) ; sin(alp)*cos(th) cos(alp) sin(alp)*sin(th)];
+    tmp_const = sqrt(1 - (sin(alp)*cos(th))^2);
+    test_xform(:,:,count) = [cos(alp)/tmp_const (sin(alp)^2)*sin(th)*cos(th)/tmp_const -sin(alp)*sin(th) ;
+                             0 tmp_const sin(alp)*cos(th);
+                             sin(alp)*sin(th)/tmp_const -sin(alp)*cos(alp)*cos(th)/tmp_const cos(alp)];
+    test_xform(:,:,count) = inv(test_xform(:,:,count))*[1 0 0; 0 0 1; 0 -1 0]*[0 0 -1; 0 1 0; 1 0 0];
+    if(abs(det(test_xform(:,:,count))-1)>0.000001)
+        det(test_xform(:,:,count))
+        display ' error'
+    end
+end
+
+%Make a new directory for storing the images
+dir_name = strcat('Simulation_Datasets/', int2str(floor(seed_density)), '_', int2str(100*(seed_density-floor(seed_density))), '__');
+dir_name = strcat(dir_name, int2str(floor(prostate_size)), '_', int2str(100*(prostate_size-floor(prostate_size))), '__');
+dir_name = strcat(dir_name, int2str(round(alp*180/pi)), '__');
+mesg = 'initial';
+Dataset = 0;
+while( ~isempty(mesg) )
+    Dataset = Dataset+1;
+    tmp_dir_name = strcat(dir_name, int2str(Dataset));
+    [success mesg] = mkdir(tmp_dir_name);
+end
+dir_name = tmp_dir_name;
+
+%Now generate the images
+image_num = 0;
+for count = 1:num_images
+    image_num = image_num + 1
+    Grnd_2_fluoro_xform = [test_xform(:,:,image_num) [50 -50 800]' ; 0 0 0 1];
+   [I centers_tmp] = generate_fluoro_image(Grnd_2_fluoro_xform, seed_pts, seed_pos_wrt_grnd, seed_rot_wrt_grnd, pixel_ratio, screen_size, origin, focal_len);
+    [I_tmp centers] = generate_fluoro_image(Grnd_2_fluoro_xform, [0 0 0 1], seed_pos_wrt_grnd, seed_rot_wrt_grnd, pixel_ratio, screen_size, origin, focal_len);
+    
+    [I_tmp one_endpoint] = generate_fluoro_image(Grnd_2_fluoro_xform, [0 0 Len/2 1], seed_pos_wrt_grnd, seed_rot_wrt_grnd, pixel_ratio, screen_size, origin, focal_len);
+    [I_tmp other_endpoint] = generate_fluoro_image(Grnd_2_fluoro_xform, [0 0 -Len/2 1], seed_pos_wrt_grnd, seed_rot_wrt_grnd, pixel_ratio, screen_size, origin, focal_len);
+%    figure, imshow(I)
+    feval('imwrite', I, strcat(dir_name, '/image_',int2str(image_num),'.tiff'), 'tiff')
+    save(strcat(dir_name, '/image_transform_', int2str(image_num),'.txt'), 'Grnd_2_fluoro_xform', '-ascii')
+    direction = one_endpoint - other_endpoint;
+    direction = repmat(sign(direction(:,1)), 1, 2).*direction;
+    direction = direction./(repmat(sqrt(sum(direction.^2,2)), 1, 2));
+    seed_angle = acos(direction(:,1));
+    seed_angle = seed_angle.*sign(direction(:,2));
+    seed_angle = seed_angle*180/pi;
+    seed_info = [centers seed_angle ones(size(seed_angle,1),1) zeros(size(seed_angle,1),1)];
+    save(strcat(dir_name, '/image_seeds_', int2str(image_num),'.txt'), 'seed_info', '-ascii')
+end
+
+save(strcat(dir_name, '/3DSeedPositions.txt'), 'seed_pos_wrt_grnd', '-ascii')
+save(strcat(dir_name, '/3DSeedOrientations.txt'), 'seed_orien_wrt_grnd', '-ascii')
+save(strcat(dir_name, '/3DSeedRotations.txt'), 'seed_rot_wrt_grnd')
+tmp = size(seed_pos_wrt_grnd, 1);
+save(strcat(dir_name, '/General_Info.txt'), 'Noise', 'tmp', '-ascii')
+carm_param = [pixel_ratio ; screen_size ; origin ; focal_len focal_len];
+save(strcat(dir_name, '/Carm_parameters.txt'), 'carm_param', '-ascii')
+
+orientation_err = test_orientation(dir_name, 0, pixel_ratio, focal_len, origin, num_images);
+save(strcat(dir_name, '/Orientation_Errors.txt'), 'orientation_err', '-ascii')
+
+Error = orientation_err;
+
+% $Log: generate_dataset.m,v $
+% Revision 1.6  2007/06/28 16:33:09  jain
+% Have made some small changes:- (1) negated the image, (2) decreased the
+% gaussian blurring, (c) halfed the seed size, (d) changed the location of the seeds,
+% (e) increased the resolution of the seed voxelization.
+%
+% Revision 1.5  2006/03/22 00:23:30  jain
+% Just returning the errors instead of a boolean.
+%
+% Revision 1.4  2006/02/02 17:08:39  jain
+% Corrected a small error.
+%
+% Revision 1.3  2006/02/02 16:48:37  jain
+% Checked for orientation errors. Added a function to check for orientation errors.
+% Also the Gaussian averaging of the image added boundary to the image, making
+% the segmentation information incorrect - have changed this. Added another input
+% for the number of equal spaced projections required.
+%
+% Revision 1.2  2005/12/23 00:09:55  jain
+% Added some comment and did some checking to notice that pixelization changes the segmented orientation by
+% about 15 degrees (max).
+%
+% Revision 1.1  2005/12/21 00:19:17  jain
+% The first version of a wrking code, including seed orientation and our chosen final coordinate frame.
+%
