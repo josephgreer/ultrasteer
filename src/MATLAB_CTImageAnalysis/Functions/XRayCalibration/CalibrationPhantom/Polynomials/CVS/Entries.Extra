@@ -1,0 +1,16 @@
+/ComputeBarycentricBernsteinBasisMatrix.m////
+/ComputeBivariateBernsteinTensorBasisMatrix.m////
+/ComputeGeneralPolynomial.m////
+/CountBernsteinTerms.m////
+/EvaluatePowerProductsForPoints.m////
+/GenerateBernsteinIntegrationBasis.m////
+/GenerateBernsteinPolynomialIntegrationBasis.m////
+/GenerateBernsteinTermIntegrationBasis.m////
+/GenerateBivariateBernsteinTensorBasis.m////
+/GenerateCisstBernsteinBasis.m////
+/GenerateJYBernsteinBasis.m////
+/GeneratePowerBasis.m////
+/IntegrateBernsteinPolynomialForSegments.m////
+/MultinomialFactor.m////
+/NextTermIndex.m////
+/factorial2D.m////

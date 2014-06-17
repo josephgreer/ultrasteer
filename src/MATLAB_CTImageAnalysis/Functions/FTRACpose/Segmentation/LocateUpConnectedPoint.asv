@@ -1,0 +1,764 @@
+% $Id: LocateUpConnectedPoint.m,v 1.1 2005/10/27 19:10:47 svikal Exp $
+
+% //-----------------------------------------------------------------------------
+% // function:	LocateUpConnectedPoint() 
+% // file:		LocateUpConnectedPoint.m
+% // author:		siddharth
+% // date:		
+% // description:	from the given point, which is approx. BB center, find
+% a point which is actually a connected point on the line, looking in
+% upward direction..this is done by fitting a connectivity mask.. Since
+% what is given is at the center, due to the characteric of looking at edge
+% image, the given BB center is not going to have any connectivity (because
+% it is inside a homogeneous region), therefore, we look vertically up 3
+% point above the given points & look at 10-12 point above it. For each
+% point find the connectivity score, score is actually being done for 'y'
+% window i.e either 'y' row of points have highest ocnnectivity or 'y-1' or
+% 'y+1'...then we pick 8th point above in highest connected row of points
+
+% // input:	edge image, threshold value for point to be called connected, lowerthreshold range, Point to look for 
+%           
+
+% // output: bPointValid boolean flag that indicates whether a valid point
+% has been found or not, UpConnectedPoint: the point found
+
+% // calling function: ExtractLine()
+
+% // NOTE: 
+% //-----------------------------------------------------------------------------
+function [bValidPoint, UpConnectedPoint] = LocateUpConnectedPoint(PointToLookFor, iThreshold, iAcceptableThresholdRadius, Iedge)
+
+	iX_Index = PointToLookFor (1,1);
+	iY_Index = PointToLookFor (1,2);
+    iX_Dimension = length(Iedge(:,1));    
+    iY_Dimension = length(Iedge(1,:)); 
+	iPointIntensity = 0;
+	ConnectedPoints = 0;
+    bValidPoint = true;
+
+% 	//to check for
+% 	// 1) x-3, y-1
+% 	// 2) x-3, y
+% 	// 3) x-3, y+1
+%         x-3, y-2
+%         x-3, y+2
+% 	// 4) x-4, y-1
+% 	// 5) x-4, y
+% 	// 6) x-4, y+1
+%         x-4,y-2
+%         x-4,y+2
+% 	// 7) x-5, y-1
+% 	// 8) x-5, y
+% 	// 9) x-5, y+1
+%         x-5, y-2
+%         x-5, y+2
+
+if (PointToLookFor(1,1) == 1)
+    UpConnectedPoint = PointToLookFor;
+    bValidPoint = false;
+    return;
+end
+
+    
+% 1 y-1; 2 y; 3 y+1; 4 y-2; 5 y+2
+IndividualScore = zeros(5,1);   
+
+% 	//check neighbourhood connections
+
+% 	//1) x-3, y-1
+
+	if ( iX_Index > 3 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-3, iY_Index-1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+        	ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(1) = IndividualScore(1) + 1; 
+        end
+        
+    end
+    
+% 	//2) x-3, y
+
+	if ( iX_Index > 3 && iY_Index > 0)
+	
+		iPointIntensity = Iedge(iX_Index-3, iY_Index);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(2) = IndividualScore(2) + 1; 
+        end
+        
+    end
+ 
+% 	//3) x-3, y+1
+
+	if ( iX_Index > 3 && iY_Index + 1 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-3, iY_Index+1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(3) = IndividualScore(3) + 1; 
+        end
+        
+    end
+
+% 	//3) x-3, y-2
+
+	if ( iX_Index > 3 && iY_Index > 2)
+	
+		iPointIntensity = Iedge(iX_Index-3, iY_Index-2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(4) = IndividualScore(4) + 1; 
+        end
+        
+    end
+    
+% 	//3) x-3, y+2
+
+	if ( iX_Index > 3 && iY_Index + 2 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-3, iY_Index+2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(5) = IndividualScore(5) + 1; 
+        end
+        
+    end
+    
+
+% 	//4) x-4, y-1
+
+	if ( iX_Index > 4 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-4, iY_Index-1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(1) = IndividualScore(1) + 1; 
+        end
+        
+    end
+    
+% 	//5) x-4, y
+
+	if ( iX_Index > 4 && iY_Index > 0)
+	
+		iPointIntensity = Iedge(iX_Index-4, iY_Index);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(2) = IndividualScore(2) + 1; 
+        end
+        
+    end
+ 
+% 	//6) x-4, y+1
+
+	if ( iX_Index > 4 && iY_Index + 1 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-3, iY_Index+1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(3) = IndividualScore(3) + 1; 
+        end
+        
+    end
+
+% 	//6) x-4, y-2
+
+	if ( iX_Index > 4 && iY_Index > 2)
+	
+		iPointIntensity = Iedge(iX_Index-3, iY_Index-2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(4) = IndividualScore(4) + 1; 
+        end
+        
+    end
+
+% 	//6) x-4, y+2
+
+	if ( iX_Index > 4 && iY_Index + 2 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-3, iY_Index+2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(5) = IndividualScore(5) + 1; 
+        end
+        
+    end
+
+% 	//7) x-5, y-1
+
+	if ( iX_Index > 5 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-5, iY_Index-1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(1) = IndividualScore(1) + 1; 
+        end
+        
+    end
+    
+% 	//8) x-5, y
+
+	if ( iX_Index > 5 && iY_Index > 0)
+	
+		iPointIntensity = Iedge(iX_Index-5, iY_Index);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(2) = IndividualScore(2) + 1; 
+        end
+        
+    end
+ 
+% 	//9) x-5, y+1
+
+	if ( iX_Index > 5 && iY_Index + 1 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-5, iY_Index+1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(3) = IndividualScore(3) + 1; 
+        end
+        
+    end
+
+% 	//9) x-5, y-2
+
+	if ( iX_Index > 5 && iY_Index > 2)
+	
+		iPointIntensity = Iedge(iX_Index-5, iY_Index-2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(4) = IndividualScore(4) + 1; 
+        end
+        
+    end
+
+% 	//9) x-5, y+2
+
+	if ( iX_Index > 5 && iY_Index + 2 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-5, iY_Index+2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(5) = IndividualScore(5) + 1; 
+        end
+        
+    end
+
+    
+% 	//7) x-6, y-1
+
+	if ( iX_Index > 6 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-6, iY_Index-1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(1) = IndividualScore(1) + 1; 
+        end
+        
+    end
+    
+% 	//8) x-6, y
+
+	if ( iX_Index > 6 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-6, iY_Index);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(2) = IndividualScore(2) + 1; 
+        end
+        
+    end
+ 
+% 	//9) x-6, y+1
+
+	if ( iX_Index > 6 && iY_Index + 1 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-6, iY_Index+1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(3) = IndividualScore(3) + 1; 
+        end
+        
+    end
+
+% 	//9) x-6, y-2
+
+	if ( iX_Index > 6 && iY_Index > 2)
+	
+		iPointIntensity = Iedge(iX_Index-6, iY_Index-2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(4) = IndividualScore(4) + 1; 
+        end
+        
+    end
+
+% 	//9) x-6, y+2
+
+	if ( iX_Index > 6 && iY_Index + 2 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-6, iY_Index+2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(5) = IndividualScore(5) + 1; 
+        end
+        
+    end
+
+    
+% 	//7) x-7, y-1
+
+	if ( iX_Index > 7 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-7, iY_Index-1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(1) = IndividualScore(1) + 1; 
+        end
+        
+    end
+    
+% 	//8) x-7, y
+
+	if ( iX_Index > 7 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-7, iY_Index);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(2) = IndividualScore(2) + 1; 
+        end
+        
+    end
+ 
+% 	//9) x-7, y+1
+
+	if ( iX_Index > 7 && iY_Index + 1 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-7, iY_Index+1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(3) = IndividualScore(3) + 1; 
+        end
+        
+    end
+
+% 	//9) x-7, y-2
+
+	if ( iX_Index > 7 && iY_Index > 2)
+	
+		iPointIntensity = Iedge(iX_Index-7, iY_Index-2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(4) = IndividualScore(4) + 1; 
+        end
+        
+    end
+
+% 	//9) x-7, y+2
+
+	if ( iX_Index > 7 && iY_Index + 2 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-7, iY_Index+2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(5) = IndividualScore(5) + 1; 
+        end
+        
+    end
+
+% 	//7) x-8, y-1
+
+	if ( iX_Index > 8 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-8, iY_Index-1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(1) = IndividualScore(1) + 1; 
+        end
+        
+    end
+    
+% 	//8) x-8, y
+
+	if ( iX_Index > 8 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-8, iY_Index);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(2) = IndividualScore(2) + 1; 
+        end
+        
+    end
+ 
+% 	//9) x-8, y+1
+
+	if ( iX_Index > 8 && iY_Index + 1 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-8, iY_Index+1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(3) = IndividualScore(3) + 1; 
+        end
+        
+    end
+
+% 	//9) x-8, y-2
+
+	if ( iX_Index > 8 && iY_Index > 2)
+	
+		iPointIntensity = Iedge(iX_Index-8, iY_Index-2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(4) = IndividualScore(4) + 1; 
+        end
+        
+    end
+
+% 	//9) x-8, y+2
+
+	if ( iX_Index > 8 && iY_Index + 2 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-8, iY_Index+2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(5) = IndividualScore(5) + 1; 
+        end
+        
+    end
+
+    % 	//7) x-9, y-1
+
+	if ( iX_Index > 9 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-9, iY_Index-1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(1) = IndividualScore(1) + 1; 
+        end
+        
+    end
+    
+% 	//8) x-9, y
+
+	if ( iX_Index > 9 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-9, iY_Index);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(2) = IndividualScore(2) + 1; 
+        end
+        
+    end
+ 
+% 	//9) x-9, y+1
+
+	if ( iX_Index > 9 && iY_Index + 1 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-9, iY_Index+1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(3) = IndividualScore(3) + 1; 
+        end
+        
+    end
+
+% 	//9) x-9, y-2
+
+	if ( iX_Index > 9 && iY_Index > 2)
+	
+		iPointIntensity = Iedge(iX_Index-9, iY_Index-2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(4) = IndividualScore(4) + 1; 
+        end
+        
+    end
+
+% 	//9) x-9, y+2
+
+	if ( iX_Index > 9 && iY_Index + 2 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-9, iY_Index+2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(5) = IndividualScore(5) + 1; 
+        end
+        
+    end
+
+    % 	//7) x-10, y-1
+
+	if ( iX_Index > 10 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-10, iY_Index-1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(1) = IndividualScore(1) + 1; 
+        end
+        
+    end
+    
+% 	//8) x-10, y
+
+	if ( iX_Index > 10 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-10, iY_Index);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(2) = IndividualScore(2) + 1; 
+        end
+        
+    end
+ 
+% 	//9) x-10, y+1
+
+	if ( iX_Index > 10 && iY_Index + 1 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-10, iY_Index+1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(3) = IndividualScore(3) + 1; 
+        end
+        
+    end
+
+% 	//9) x-10, y-2
+
+	if ( iX_Index > 10 && iY_Index > 2)
+	
+		iPointIntensity = Iedge(iX_Index-10, iY_Index-2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(4) = IndividualScore(4) + 1; 
+        end
+        
+    end
+
+% 	//9) x-10, y+2
+
+	if ( iX_Index > 10 && iY_Index + 2 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-10, iY_Index+2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(5) = IndividualScore(5) + 1; 
+        end
+        
+    end
+
+ % 	//7) x-11, y-1
+
+	if ( iX_Index > 11 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-11, iY_Index-1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(1) = IndividualScore(1) + 1; 
+        end
+        
+    end
+    
+% 	//8) x-11, y
+
+	if ( iX_Index > 11 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-11, iY_Index);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(2) = IndividualScore(2) + 1; 
+        end
+        
+    end
+ 
+% 	//9) x-11, y+1
+
+	if ( iX_Index > 11 && iY_Index + 1 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-11, iY_Index+1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(3) = IndividualScore(3) + 1; 
+        end
+        
+    end
+
+% 	//9) x-11, y-2
+
+	if ( iX_Index > 11 && iY_Index > 2)
+	
+		iPointIntensity = Iedge(iX_Index-11, iY_Index-2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(4) = IndividualScore(4) + 1; 
+        end
+        
+    end
+
+% 	//9) x-11, y+2
+
+	if ( iX_Index > 11 && iY_Index + 2 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-11, iY_Index+2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(5) = IndividualScore(5) + 1; 
+        end
+        
+    end
+
+% 	//7) x-12, y-1
+
+	if ( iX_Index > 12 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-12, iY_Index-1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(1) = IndividualScore(1) + 1; 
+        end
+        
+    end
+    
+% 	//8) x-12, y
+
+	if ( iX_Index > 12 && iY_Index > 1)
+	
+		iPointIntensity = Iedge(iX_Index-12, iY_Index);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(2) = IndividualScore(2) + 1; 
+        end
+        
+    end
+ 
+% 	//9) x-12, y+1
+
+	if ( iX_Index > 12 && iY_Index + 1 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-12, iY_Index+1);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(3) = IndividualScore(3) + 1; 
+        end
+        
+    end
+
+% 	//9) x-12, y-2
+
+	if ( iX_Index > 12 && iY_Index > 2)
+	
+		iPointIntensity = Iedge(iX_Index-12, iY_Index-2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(4) = IndividualScore(4) + 1; 
+        end
+        
+    end
+
+% 	//9) x-12, y+2
+
+	if ( iX_Index > 10 && iY_Index + 2 < iY_Dimension)
+	
+		iPointIntensity = Iedge(iX_Index-12, iY_Index+2);
+
+		if( IsWithinIntensityRange(iPointIntensity, iThreshold, iAcceptableThresholdRadius))
+			ConnectedPoints = ConnectedPoints + 1;
+            IndividualScore(5) = IndividualScore(5) + 1; 
+        end
+        
+    end
+
+% 	if(ConnectedPoints >= 10)
+%         UpConnectedPoint = [iX_Index-5 iY_Index-1];
+%     else
+%         UpConnectedPoint = [1 iY_Index-1];
+%     end
+if (max(IndividualScore) < 6)
+    UpConnectedPoint(1,1) = iX_Dimension;
+    bValidPoint = false; 
+    return;
+ 
+end
+
+Index = find(IndividualScore == max(IndividualScore));
+% Index (1) = max(Index);
+
+% if(length(Index) == 3)
+%     Index(1) = Index(2);
+% end
+
+
+if (Index(1) == 1)
+    UpConnectedPoint = [(iX_Index-8) (iY_Index-1)];
+end
+
+if (Index(1) == 2)
+    UpConnectedPoint = [(iX_Index-8) (iY_Index)];
+end
+
+if (Index(1) == 3)
+    UpConnectedPoint = [(iX_Index-8) (iY_Index+1)];
+end
+
+if (Index(1) == 4)
+    UpConnectedPoint = [(iX_Index-8) (iY_Index-2)];
+end
+
+if (Index(1) == 5)
+    UpConnectedPoint = [(iX_Index-8) (iY_Index+2)];
+end
+
+% $Log: LocateUpConnectedPoint.m,v $
+% Revision 1.1  2005/10/27 19:10:47  svikal
+% Added CVS tags
+%

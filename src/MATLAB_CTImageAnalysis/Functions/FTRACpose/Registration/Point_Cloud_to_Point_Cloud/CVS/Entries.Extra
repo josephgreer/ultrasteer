@@ -1,0 +1,8 @@
+/CT_to_FTRAC_Registration.m////
+/Compute_Reconstruction_Errors.m////
+/Compute_Reconstruction_Errors_without_Optimization.m////
+/Compute_Seed_Locations_wrt_FTRAC.m////
+/FTRAC_Orientation_Error_Function.m////
+/Improve_Fiducial_Segmentation.m////
+/Plot_3D_Clouds.m////
+/Point_Cloud_Registration_Error_Function.m////

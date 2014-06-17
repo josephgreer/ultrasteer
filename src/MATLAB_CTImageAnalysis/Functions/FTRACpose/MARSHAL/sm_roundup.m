@@ -1,0 +1,12 @@
+p=load('warped\dataset_4\old\seeds1.txt');
+dlmwrite('warped\dataset_4\old\seeds1.txt',round(p));
+p=load('warped\dataset_4\old\seeds2.txt');
+dlmwrite('warped\dataset_4\old\seeds2.txt',round(p));
+p=load('warped\dataset_4\old\seeds3.txt');
+dlmwrite('warped\dataset_4\old\seeds3.txt',round(p));
+p=load('warped\dataset_4\old\seeds4.txt');
+dlmwrite('warped\dataset_4\old\seeds4.txt',round(p));
+p=load('warped\dataset_4\old\seeds5.txt');
+dlmwrite('warped\dataset_4\old\seeds5.txt',round(p));
+p=load('warped\dataset_4\old\seeds6.txt');
+dlmwrite('warped\dataset_4\old\seeds6.txt',round(p));

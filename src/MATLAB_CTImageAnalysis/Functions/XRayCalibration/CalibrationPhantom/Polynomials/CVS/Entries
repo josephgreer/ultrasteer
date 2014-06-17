@@ -1,0 +1,17 @@
+/ComputeBarycentricBernsteinBasisMatrix.m/1.1/Thu Mar  2 19:19:27 2006//
+/ComputeBivariateBernsteinTensorBasisMatrix.m/1.1/Thu Mar  2 19:19:27 2006//
+/ComputeGeneralPolynomial.m/1.1/Thu Mar  2 19:19:27 2006//
+/CountBernsteinTerms.m/1.1/Thu Mar  2 19:19:27 2006//
+/EvaluatePowerProductsForPoints.m/1.1/Thu Mar  2 19:19:27 2006//
+/GenerateBernsteinIntegrationBasis.m/1.1/Thu Mar  2 19:19:27 2006//
+/GenerateBernsteinPolynomialIntegrationBasis.m/1.1/Thu Mar  2 19:19:27 2006//
+/GenerateBernsteinTermIntegrationBasis.m/1.1/Thu Mar  2 19:19:27 2006//
+/GenerateBivariateBernsteinTensorBasis.m/1.1/Thu Mar  2 19:19:27 2006//
+/GenerateCisstBernsteinBasis.m/1.1/Thu Mar  2 19:19:27 2006//
+/GenerateJYBernsteinBasis.m/1.1/Thu Mar  2 19:19:27 2006//
+/GeneratePowerBasis.m/1.1/Thu Mar  2 19:19:27 2006//
+/IntegrateBernsteinPolynomialForSegments.m/1.1/Thu Mar  2 19:19:27 2006//
+/MultinomialFactor.m/1.1/Wed Jun 28 15:44:30 2006//
+/NextTermIndex.m/1.1/Wed Jun 28 15:44:30 2006//
+/factorial2D.m/1.1/Thu Mar  2 19:19:27 2006//
+D

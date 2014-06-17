@@ -1,0 +1,118 @@
+% $Id: FiducialBBSegmentation.m,v 1.3 2007/08/03 22:38:32 anton Exp $
+
+% //-----------------------------------------------------------------------------
+% // function:	FiducialBBSegmentation() 
+% // file:		FiducialBBSegmentation.m
+% // author:		siddharth
+% // date:		
+% // description:	perform BB segmentation by morphological proceesing
+% using top hat transform using a structuring element similar to BB, so we
+% use ball.Since the image also contains ellipses & lines, which consist of elements 
+% of shape similar to structuring element and smaller size, so those are
+% also segmented out. To get rid of them we do top-hat transform with
+% another structuring element which fits only elements of lines and
+% ellipses. Then we subtract the images to get image with only BBs. Then
+% perform the thresholding.; Remove border associated noise; Remove objects which 
+% are very small (which will be noise) by performing 'area-opening'. Label the
+% image. Get the CGs
+
+% // input:	I (image buffer) only of the region of interest
+
+% // output: BBLocations array in the format [CGx1 CGy1;CGx2 CGy2;......]
+
+% // calling function: called when Select region button is pressed
+
+% // NOTE: Note since we do not yet have a good algo. for thresholding, we
+% are using multiple threshold determined empirically depending on the
+% number of the objects segmented out. 
+% This algorithm assumes has to give correct BBs, not noise, coz'
+% otherwise, the further algorithm of line finding & subsequently ellipse
+% finding will suffer very badly
+% //-----------------------------------------------------------------------------
+function [BBLocations] = FiducialBBSegmentation(I, resRatioToNTSC)
+
+%since the seeds are dark in the image, we need to invert the image
+Ineg = imcomplement(I);
+
+%convert uint into double
+InegD = double(Ineg);
+
+% a) perform opening with 3x3 square
+Iop = imopen(Ineg, strel('square', round(3 * resRatioToNTSC)));
+% Iop = imopen(Ineg, strel('disk', 3, 8));
+Iop2 = imopen(Ineg, strel('ball', round(3 * resRatioToNTSC), round(1 * resRatioToNTSC)));
+
+% b) subtract from the original image to get the final gray scale image
+iThreshold = 22;
+Iopth = imsubtract(Ineg, Iop);
+Iopth2 = imsubtract (Ineg, Iop2);
+Idiff = imsubtract(Iopth2, Iopth);
+Idiffbin = Idiff > iThreshold;
+Idiffbin = bwareaopen(Idiffbin, 8);
+Idiffbin = imclearborder(Idiffbin);
+[Ilab nRegions] = bwlabel (Idiffbin,4);
+
+while( (nRegions > 9) || (nRegions <= 6))
+   
+    if(nRegions  > 9)
+        iThreshold = iThreshold + 2;
+        Idiffbin = Idiff > iThreshold;
+        Idiffbin = bwareaopen(Idiffbin, 6);
+        Idiffbin = imclearborder(Idiffbin);
+        [Ilab nRegions] = bwlabel (Idiffbin,4);
+
+    else
+        if (nRegions <= 6)
+            iThreshold = iThreshold - 4;
+            Idiffbin = Idiff > iThreshold;
+            Idiffbin = bwareaopen(Idiffbin, 8);
+            Idiffbin = imclearborder(Idiffbin);
+            [Ilab nRegions] = bwlabel (Idiffbin,4);
+        end
+    end
+end
+
+
+
+
+BBstats = regionprops(Ilab, 'area', 'boundingbox', 'centroid');
+Areas = cat(1, BBstats.Area);
+BoundingBoxes = cat (1, BBstats.BoundingBox);
+Centroids = cat(1, BBstats.Centroid);
+BBLocations = [];
+
+for iRegionNumber = 1:nRegions
+    RegionArea = Areas(iRegionNumber);
+    yRegionCorner = round(BoundingBoxes(iRegionNumber, 1));
+    xRegionCorner = round(BoundingBoxes(iRegionNumber, 2));
+    yRegionWidth = round(BoundingBoxes(iRegionNumber, 3));
+    xRegionWidth = round(BoundingBoxes(iRegionNumber, 4));
+    RegionCentroid = round(Centroids(iRegionNumber,:));    
+    yCG = RegionCentroid(1,1);
+    xCG = RegionCentroid(1,2);
+    if (RegionArea < (8 * resRatioToNTSC * resRatioToNTSC))
+        Ilab(xRegionCorner: xRegionCorner + xRegionWidth -1,yRegionCorner: yRegionCorner + yRegionWidth -1) = 0;
+    else
+        BBLocations = [BBLocations; xCG yCG];
+    end
+end
+
+% fill with invalid bbs
+for i = (nRegions + 1):10
+    BBLocations = [BBLocations; -1 -1];
+end
+
+
+% $Log: FiducialBBSegmentation.m,v $
+% Revision 1.3  2007/08/03 22:38:32  anton
+% FiducialBBSegmentation.m:  Added support for resolution ratio to NTSC.
+% Also make sure list returned contains 9 points.
+%
+% Revision 1.2  2005/11/28 19:41:52  anton
+% FiducialBBSegmentation.m: BB segmentation, now threshold is chosen
+% iteratively to ensure that number of BBs segmented are more than 6 & less i
+% than equal to 9 (By Siddharth).
+%
+% Revision 1.1  2005/10/27 19:10:47  svikal
+% Added CVS tags
+%

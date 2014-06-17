@@ -1,0 +1,497 @@
+% $Id: ExtractEllipses.m,v 1.7 2007/01/08 19:55:12 anton Exp $
+
+% //-----------------------------------------------------------------------------
+% // function:	ExtractEllipses() 
+% // file:		ExtractEllipses.m
+% // author:		siddharth
+% // date:		
+% // description: Steps 1.1 Perform morphological processing (top-hat) transform 
+%                    with a structuring element of disk shape and radius 1, 
+%                    followed by area-opening to get rid of most of the noise, to obtain a new image.
+%                    Note: The description of the top-hat and area-opening transforms 
+%                    has been previously provided. Now we will have an image, which contains only lines, 
+%                    ellipses and some noise, everything else will be eliminated.
+% 
+%                     1.2 Since line equations are known at this stage, 
+%                     we can get rid of the lines as well. Now we are left with the image, 
+%                     which consists of only ellipse segments.
+% 		
+%                     1.3 Perform morphological closing, which may or may not result 
+%                     in connecting the ellipse segments, which are close to each other. 
+%                     Call this as morphologically reduced image.
+% 
+%                     1.4 Label the image.
+% 
+%                     1.5 Find strongest ellipse and the segments contributing to it.
+% 
+%                         1.5.1 Take 2 segments/regions at a time; get an ellipse equation 
+%                         using least squares fitting.
+% 
+%                         1.5.2: Determine the center, see if the center lies close to 
+%                         any other center found earlier. If yes, add vote strength to that 'center-containing-region'. 
+%                         If no, declare a new region around the center found.
+% 
+%                         1.5.3: Do steps 1.5.1-1.5.2 for all possible 2-segment combinations.
+% 
+%                         1.5.4: Determine the region with the highest vote and for all 
+%                             the centers that lie within the region, record the segments responsible.
+% 
+%                         1.5.5: From the segments obtained, fit an ellipse. Record it.
+% 
+%                     1.6: Eliminate all the segments obtained above from the 
+%                     morphologically reduce image obtained after step 1.3.
+% 
+%                     1.7: Re-label the image obtained after step 1.6.
+% 
+%                     1.8: Perform step 3.5, obtain 2nd ellipse.
+% 
+%                     1.9: Establish correspondence of the ellipse by looking at their centers.
+
+% // input: intensity image of fiducial region of interest, three line
+% equations
+
+% // output: ellipse points
+
+% // calling function: during the process of Fiducial segementation, after
+% pressing of the button Select region by FiducialSelectROI_Callback after
+% the line segmentation is complete
+
+% // NOTE: 
+% //-----------------------------------------------------------------------------
+function [lEllipse1Points, lEllipse2Points] =  ExtractEllipses(Ifiducial, lCentralLineEq, lLineLeftEq, lLineRightEq)
+
+lEllipse1Points = [];
+lEllipse2Points = [];
+% start eliminating noise from the image
+Inew = MorphoReducedImage(Ifiducial);
+iX_Dimension = length(Inew(:,1));
+iY_Dimension = length(Inew(1,:));
+
+% remove/black out the lines
+for iX_Index = 1: iX_Dimension
+%   find y coordinate in -2 + 2 range of each line & black out
+
+    if( ~isempty(lLineLeftEq))
+        % for left line
+        yIndexLeft = round(-(lLineLeftEq(1)*iX_Index + lLineLeftEq(3))/lLineLeftEq(2));
+
+        if (yIndexLeft > 3)
+            Inew(iX_Index, yIndexLeft-3) = 0;
+        end
+
+        if (yIndexLeft > 2)
+            Inew(iX_Index, yIndexLeft-2) = 0;
+        end
+
+        if (yIndexLeft > 1)
+            Inew(iX_Index, yIndexLeft-1) = 0;
+        end
+
+        if (yIndexLeft)
+            Inew(iX_Index, yIndexLeft) = 0;
+        end
+
+        if (yIndexLeft + 1 < iY_Dimension)
+            Inew(iX_Index, yIndexLeft+1) = 0;
+        end
+
+        if (yIndexLeft + 2 < iY_Dimension)
+            Inew(iX_Index, yIndexLeft+2) = 0;
+        end
+
+        if (yIndexLeft + 3 < iY_Dimension)
+            Inew(iX_Index, yIndexLeft+3) = 0;
+        end
+    end
+
+    if(~isempty(lCentralLineEq))
+        % for Center line
+        yIndexCenter = round(-(lCentralLineEq(1)*iX_Index + lCentralLineEq(3))/lCentralLineEq(2));
+
+        if (yIndexCenter > 3)
+            Inew(iX_Index, yIndexCenter-3) = 0;
+        end
+
+        if (yIndexCenter > 2)
+            Inew(iX_Index, yIndexCenter-2) = 0;
+        end
+
+        if (yIndexCenter > 1)
+            Inew(iX_Index, yIndexCenter-1) = 0;
+        end
+
+        if (yIndexCenter)
+            Inew(iX_Index, yIndexCenter) = 0;
+        end
+
+        if (yIndexCenter + 1 < iY_Dimension)
+            Inew(iX_Index, yIndexCenter+1) = 0;
+        end
+
+        if (yIndexCenter + 2 < iY_Dimension)
+            Inew(iX_Index, yIndexCenter+2) = 0;
+        end
+
+        if (yIndexCenter + 3 < iY_Dimension)
+            Inew(iX_Index, yIndexCenter+3) = 0;
+        end
+    end
+
+
+    if( ~isempty(lLineRightEq))
+        % for right line
+        yIndexRight = round(-(lLineRightEq(1)*iX_Index + lLineRightEq(3))/lLineRightEq(2));
+
+        if (yIndexRight > 3)
+            Inew(iX_Index, yIndexRight-3) = 0;
+        end
+
+        if (yIndexRight > 2)
+            Inew(iX_Index, yIndexRight-2) = 0;
+        end
+
+        if (yIndexRight > 1)
+            Inew(iX_Index, yIndexRight-1) = 0;
+        end
+
+        if (yIndexRight)
+            Inew(iX_Index, yIndexRight) = 0;
+        end
+
+        if (yIndexRight + 1 < iY_Dimension)
+            Inew(iX_Index, yIndexRight+1) = 0;
+        end
+
+        if (yIndexRight + 2 < iY_Dimension)
+            Inew(iX_Index, yIndexRight+2) = 0;
+        end
+
+        if (yIndexRight + 3 < iY_Dimension)
+            Inew(iX_Index, yIndexRight+3) = 0;
+        end
+    end
+    
+end
+
+% clear border
+Inew  = imclearborder(Inew);
+% close
+Inew = imclose(Inew, strel('disk', 3));
+% label the image
+[Ilab nSegments] = bwlabel(Inew, 8);
+InitialStats = regionprops(Ilab, 'Boundingbox');
+InitialBoundingBox = cat(1, InitialStats.BoundingBox);
+
+% note that the edge segments here are either the ellipse segments and
+% noise edge segments
+% preference here is that we have minimum noise edge segments
+% Initial physical truths known
+% 1) there are at most two ellipses or there can be one too
+% 2) the two ellipses can overlap
+% Steps involved:
+% 1) get rid of noise as much as possible, try to end up with only ellipse
+% segments; however inevitably some noise edge will make it to preprocessed
+% image
+% 2) With ellipse segments & some noise edge segments, arrive at the
+% ellipse
+% 3) make sure that the noise segments are finally rejected, also they are
+% not taken/sent to method for determiing ellipse equation or even if it is
+% sent, the method determining the ellipse equation rejects it
+% 4) the method proposed is take 2 segments at a time, (generate exhaustive list of 
+% combinations; form an ellipse equation; get the residual errors
+% get the centers, mark them on the image; we will end up with clusters
+% 1) cluster of centers with one ellipse
+% 2) cluster of centers with 2nd ellipse
+% 3) all other noise
+% for two strongest clusters, take the centroid, within a radius of say 5
+% pixels, map the corresponding segment combinations from which centers
+% results; take a union of all the segment to generate an ellipse equation
+% 
+
+
+
+
+SegmentsArray = zeros(nSegments);
+% figure, imshow(Ifiducial/255);
+
+TotalEdgePixelsInConsideration = length(Inew > 0);
+Long_Axis_Threshold = 50;
+lWindowMappingList = [];
+lCenterWindowList = [];
+PointsToFitFirstEllipse = [];
+PointsToFitSecondEllipse = [];
+iX_Dimension = length(Ilab(:,1));
+iY_Dimension = length(Ilab(1,:));
+
+for i = 1: nSegments
+    for j = i+1: nSegments    
+        Combination = [ i j];       
+        RegionPointsX = []; RegionPointsY = [];
+        Region1 = (Ilab == i);
+        Region2 = (Ilab == j);
+        Region1Points = [];
+        Region2Points = [];
+        
+%       Note below X, Y returned are in our coordinate system, not in
+%       regular matlab x-y coordinate system
+        [RegionPointsX, RegionPointsY] = find(Region1 > 0 );
+        Region1Points = cat(2, RegionPointsX, RegionPointsY);
+        RegionPointsX = []; RegionPointsY = [];
+        [RegionPointsX, RegionPointsY] = find(Region2 > 0 );
+        Region2Points = cat(2, RegionPointsX, RegionPointsY);
+
+%       extract the points of one region onto a single dimensional array
+        PointsToFitEllipse = [];
+%       take region i , j, fit an ellipse
+        PointsToFitEllipse = [Region1Points; Region2Points];
+        [ellipse_t el_eq] = best_fit_ellipse(PointsToFitEllipse(:,2), PointsToFitEllipse(:,1));
+
+% Output:   ellipse_t - structure that defines the best fit to an ellipse
+%                       a           - sub axis (radius) of the X axis of the non-tilt ellipse
+%                       b           - sub axis (radius) of the Y axis of the non-tilt ellipse
+%                       phi         - orientation in radians of the ellipse (tilt)
+%                       X0          - center at the X axis of the non-tilt ellipse
+%                       Y0          - center at the Y axis of the non-tilt ellipse
+%                       X0_in       - center at the X axis of the tilted ellipse
+%                       Y0_in       - center at the Y axis of the tilted ellipse
+%                       long_axis   - size of the long axis of the ellipse
+%                       short_axis  - size of the short axis of the ellipse
+%                       status      - status of detection of an ellipse
+%
+%       Note: the values returned in the ellipse structure is not in our coordinate system       
+
+        if ((~isempty(ellipse_t)) && (length(ellipse_t.status) == 0))
+            CurrentEllipseCenter = [ellipse_t.Y0_in ellipse_t.X0_in];
+
+            %   check for validity of ellipse detected        
+            Cond1 = (CurrentEllipseCenter(1,1) < iX_Dimension);
+            Cond2 = (CurrentEllipseCenter(1,2) < iY_Dimension);
+            Cond3 = ((ellipse_t.long_axis < iX_Dimension) || (ellipse_t.long_axis < iY_Dimension));
+            Cond4 = ((ellipse_t.short_axis < iX_Dimension) || (ellipse_t.short_axis < iY_Dimension));
+%           length of long axis greater than a specific threshold ?  
+            Cond5 = (ellipse_t.long_axis > Long_Axis_Threshold);
+        
+            if (Cond1 && Cond2 && Cond3 && Cond4 && Cond5)
+%               valid ellipse found, check whether its center is contained within
+%               existing defined windows
+%               calculate vote strength  
+                dVoteStrength = 2;
+
+%               maintain a correspondence list for each 5x5 window, which consists
+%               of the pair of segments that resulted in the ellipse and 
+%               also for each center which is being added to the window add the
+%               vote strength 
+                [bCenterAlready iWindowIndexInMappingList] = IsCenterPresentInExistingWindows(CurrentEllipseCenter, ellipse_t.long_axis, ellipse_t.short_axis, lCenterWindowList);
+             
+                if (bCenterAlready)
+%                   Add details to existing window
+                    lWindowMappingList = AddToExistingWindow(iWindowIndexInMappingList, lWindowMappingList, dVoteStrength, i, j, nSegments);
+                else
+                    [lCenterWindowList lWindowMappingList] = DefineNewWindow(CurrentEllipseCenter, ellipse_t.long_axis, ellipse_t.short_axis, iX_Dimension, iY_Dimension, lCenterWindowList, lWindowMappingList, dVoteStrength, i, j, nSegments);                 
+                end
+            end
+        end
+    end
+end
+
+
+if (~isempty(lWindowMappingList))
+    % find top 2 candidates
+    iFirstIndexInWindowMappingList = find(lWindowMappingList(:,1) == max(lWindowMappingList(:,1)));
+    iFirstCandidateNode = lWindowMappingList(iFirstIndexInWindowMappingList(1), :);
+    lWindowMappingList(iFirstIndexInWindowMappingList(1),:) = [];
+
+    % find/draw 1st ellipse 
+    % find pertinent regions
+    iNumberOfRegions = iFirstCandidateNode(1,2);
+    ExistingSegmentIds = iFirstCandidateNode(1,3:3+iNumberOfRegions-1);
+
+    for iSegmentCount = 1: iNumberOfRegions
+        iPertinentSegmentNumber = ExistingSegmentIds(1,iSegmentCount);
+        Region = (Ilab == iPertinentSegmentNumber);
+        yRegionCorner = round(InitialBoundingBox(iPertinentSegmentNumber, 1));
+        xRegionCorner = round(InitialBoundingBox(iPertinentSegmentNumber, 2));
+        yRegionWidth = round(InitialBoundingBox(iPertinentSegmentNumber, 3));
+        xRegionWidth = round(InitialBoundingBox(iPertinentSegmentNumber, 4));
+        RegionPoints = [];
+
+%       Note below X, Y returned are in our coordinate system, not in
+%       regular matlab x-y coordinate system
+        [RegionPointsX, RegionPointsY] = find(Region > 0 );
+        RegionPoints = cat(2, RegionPointsX, RegionPointsY);
+%       extract the points of one region onto a single dimensional array
+        PointsToFitFirstEllipse = [PointsToFitFirstEllipse; RegionPoints];
+       
+%       clear the region 
+        Inew (xRegionCorner: xRegionCorner + xRegionWidth, yRegionCorner: yRegionCorner + yRegionWidth) = 0;
+    end
+   
+    % label the image
+    [Ilab nSegments] = bwlabel(Inew, 8); 
+    lWindowMappingList = [];
+    lCenterWindowList = [];
+    iX_Dimension = length(Ilab(:,1));
+    iY_Dimension = length(Ilab(1,:));
+
+    for i = 1: nSegments
+        for j = i+1: nSegments
+            Combination = [ i j];
+            RegionPointsX = []; RegionPointsY = [];
+            Region1 = (Ilab == i);
+            Region2 = (Ilab == j);
+            Region1Points = [];
+            Region2Points = [];
+        
+            % Note below X, Y returned are in our coordinate system, not in
+            % regular matlab x-y coordinate system
+            [RegionPointsX, RegionPointsY] = find(Region1 > 0 );
+            Region1Points = cat(2, RegionPointsX, RegionPointsY);
+            RegionPointsX = [];
+            RegionPointsY = []; 
+            [RegionPointsX, RegionPointsY] = find(Region2 > 0 );
+            Region2Points = cat(2, RegionPointsX, RegionPointsY);
+            
+            % extract the points of one region onto a single dimensional array
+            PointsToFitEllipse = [];
+            % take region i , j, fit an ellipse
+            PointsToFitEllipse = [Region1Points; Region2Points];
+            [ellipse_t el_eq] = best_fit_ellipse(PointsToFitEllipse(:,2), PointsToFitEllipse(:,1));
+
+            % Output:   ellipse_t - structure that defines the best fit to an ellipse
+            %                       a           - sub axis (radius) of the X axis of the non-tilt ellipse
+            %                       b           - sub axis (radius) of the Y axis of the non-tilt ellipse
+            %                       phi         - orientation in radians of the ellipse (tilt)
+            %                       X0          - center at the X axis of the non-tilt ellipse
+            %                       Y0          - center at the Y axis of the non-tilt ellipse
+            %                       X0_in       - center at the X axis of the tilted ellipse
+            %                       Y0_in       - center at the Y axis of the tilted ellipse
+            %                       long_axis   - size of the long axis of the ellipse
+            %                       short_axis  - size of the short axis of the ellipse
+            %                       status      - status of detection of an ellipse
+            %
+            %       Note: the values returned in the ellipse structure is not in our coordinate system       
+
+            if ((~isempty(ellipse_t)) && (length(ellipse_t.status) == 0))
+                CurrentEllipseCenter = [ellipse_t.Y0_in ellipse_t.X0_in];
+
+                % check for validity of ellipse detected        
+                Cond1 = (CurrentEllipseCenter(1,1) < iX_Dimension);
+                Cond2 = (CurrentEllipseCenter(1,2) < iY_Dimension);
+                Cond3 = ((ellipse_t.long_axis < iX_Dimension) || (ellipse_t.long_axis < iY_Dimension));
+                Cond4 = ((ellipse_t.short_axis < iX_Dimension) || (ellipse_t.short_axis < iY_Dimension));
+                % length of long axis greater than a specific threshold ?  
+                Cond5 = (ellipse_t.long_axis > Long_Axis_Threshold);
+        
+                if (Cond1 && Cond2 && Cond3 && Cond4 && Cond5)
+                    % valid ellipse found, check whether its center is contained within
+                    % existing defined windows               
+                    % calculate vote strength  
+                    % dVoteStrength = (length(PointsToFitEllipse(:,1))/TotalEdgePixelsInConsideration)*10;
+                    dVoteStrength = 2;
+
+                    % maintain a correspondence list for each 5x5 window, which consists
+                    % of the pair of segments that resulted in the ellipse and 
+                    % also for each center which is being added to the window add the
+                    % vote strength weighted by the number of pixels used to generate the
+                    % ellipse weight = number of pixels/total number of pixels of the
+                    % edge segments * 10
+                    [bCenterAlready iWindowIndexInMappingList] = IsCenterPresentInExistingWindows(CurrentEllipseCenter, ellipse_t.long_axis, ellipse_t.short_axis,lCenterWindowList);
+             
+                    if (bCenterAlready)
+                        % Add details to existing window
+                        lWindowMappingList = AddToExistingWindow(iWindowIndexInMappingList, lWindowMappingList, dVoteStrength, i, j, nSegments);
+                    else
+                        [lCenterWindowList lWindowMappingList] = DefineNewWindow(CurrentEllipseCenter, ellipse_t.long_axis, ellipse_t.short_axis, iX_Dimension, iY_Dimension, lCenterWindowList, lWindowMappingList, dVoteStrength, i, j, nSegments);                 
+                    end
+                end
+            end
+        end
+    end
+          
+    if (~isempty(lWindowMappingList))       
+        iSecondIndexInWindowMappingList = find(lWindowMappingList(:,1) == max(lWindowMappingList(:,1)));
+        iSecondCandidateNode = lWindowMappingList(iSecondIndexInWindowMappingList(1), :);
+        lWindowMappingList(iSecondIndexInWindowMappingList(1),:) = [];
+       
+        % find/draw 2nd ellipse 
+        % find pertinent regions
+        iNumberOfRegions = iSecondCandidateNode(1,2);
+        ExistingSegmentIds = iSecondCandidateNode(1,3:3+iNumberOfRegions-1);
+
+        for iSegmentCount = 1: iNumberOfRegions
+            iPertinentSegmentNumber = ExistingSegmentIds(1,iSegmentCount);
+            Region = (Ilab == iPertinentSegmentNumber);
+            RegionPoints = [];
+            % Note below X, Y returned are in our coordinate system, not in
+            % regular matlab x-y coordinate system
+            [RegionPointsX, RegionPointsY] = find(Region > 0 );
+            RegionPoints = cat(2, RegionPointsX, RegionPointsY);
+            % extract the points of one region onto a single dimensional array
+            PointsToFitSecondEllipse = [PointsToFitSecondEllipse; RegionPoints];
+        end
+    end
+end
+
+
+hello = 0;
+ellipse_t1 = [];
+ellipse_t2 = [];
+
+if (~isempty(PointsToFitFirstEllipse))
+    [ellipse_t1 el_eq_1] = best_fit_ellipse(PointsToFitFirstEllipse(:,2), PointsToFitFirstEllipse(:,1));
+    if (~isempty(PointsToFitSecondEllipse))
+        [ellipse_t2 el_eq_2]= best_fit_ellipse(PointsToFitSecondEllipse(:,2), PointsToFitSecondEllipse(:,1));
+        % both ellipses found  
+        if (ellipse_t1.Y0_in > ellipse_t2.Y0_in)
+            lEllipse1Points = PointsToFitFirstEllipse;
+            lEllipse2Points = PointsToFitSecondEllipse;
+        else
+            lEllipse2Points = PointsToFitFirstEllipse;
+            lEllipse1Points = PointsToFitSecondEllipse;
+        end
+    else
+        % only one ellipse found
+        if (ellipse_t1.Y0_in > (iX_Dimension/2))
+            lEllipse1Points = PointsToFitFirstEllipse;
+        else
+            lEllipse2Points = PointsToFitFirstEllipse;
+        end
+    end
+end
+
+
+             
+
+% $Log: ExtractEllipses.m,v $
+% Revision 1.7  2007/01/08 19:55:12  anton
+% Segmentation: Tab and removed white lines
+%
+% Revision 1.6  2005/11/28 19:45:14  anton
+% General Update from Siddharth:
+% *: Handling failure cases in fiducial segmentation, when only partial region
+%    is selected as region of interest for fiducial...however, note that the
+%    region should not be too small
+% *: Now the BB numbers, line numbers and ellipse numbers are displayed after
+%    establishing correspondence to have a visual check for user that
+%    correspondence established is correct; Note tht these are displayed only
+%    on whole image, not zoomed up region of interest, because there user can
+%    make changes....so just on whole image after segmentation & after user
+%    says he accepts the results
+% *: Few cases prev. unhandled in user intervention in fiducial segmentation
+%    validation
+%
+% Revision 1.5  2005/11/08 00:59:22  svikal
+% relaxed/improved constraints on ellipse detection
+%
+% Revision 1.4  2005/11/08 00:47:51  svikal
+% BB correspondence after edit/user changes
+%
+% Revision 1.3  2005/11/07 00:05:11  svikal
+% integrating with FTRAC;output of segmentation in desired format of FTRAC
+%
+% Revision 1.2  2005/11/05 22:56:12  svikal
+% improved ellipse detection; changed the name of the function of fitting ellipse; hence file changed; also comments
+%
+% Revision 1.1  2005/10/27 19:10:47  svikal
+% Added CVS tags
+%

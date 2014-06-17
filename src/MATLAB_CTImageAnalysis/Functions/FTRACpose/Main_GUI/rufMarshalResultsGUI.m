@@ -1,0 +1,300 @@
+function varargout = rufMarshalResultsGUI(varargin)
+% RUFMARSHALRESULTSGUI M-file for rufMarshalResultsGUI.fig
+%      RUFMARSHALRESULTSGUI, by itself, creates a new RUFMARSHALRESULTSGUI or raises the existing
+%      singleton*.
+%
+%      H = RUFMARSHALRESULTSGUI returns the handle to a new RUFMARSHALRESULTSGUI or the handle to
+%      the existing singleton*.
+%
+%      RUFMARSHALRESULTSGUI('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in RUFMARSHALRESULTSGUI.M with the given input arguments.
+%
+%      RUFMARSHALRESULTSGUI('Property','Value',...) creates a new RUFMARSHALRESULTSGUI or raises the
+%      existing singleton*.  Starting from the left, property value pairs are
+%      applied to the GUI before rufMarshalResultsGUI_OpeningFunction gets called.  An
+%      unrecognized property name or invalid value makes property application
+%      stop.  All inputs are passed to rufMarshalResultsGUI_OpeningFcn via varargin.
+%
+%      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
+%      instance to run (singleton)".
+%
+% See also: GUIDE, GUIDATA, GUIHANDLES
+
+% Edit the above text to modify the response to help rufMarshalResultsGUI
+
+% Last Modified by GUIDE v2.5 17-Jan-2007 21:45:08
+
+% Begin initialization code - DO NOT EDIT
+gui_Singleton = 1;
+gui_State = struct('gui_Name',       mfilename, ...
+                   'gui_Singleton',  gui_Singleton, ...
+                   'gui_OpeningFcn', @rufMarshalResultsGUI_OpeningFcn, ...
+                   'gui_OutputFcn',  @rufMarshalResultsGUI_OutputFcn, ...
+                   'gui_LayoutFcn',  [] , ...
+                   'gui_Callback',   []);
+if nargin && ischar(varargin{1})
+    gui_State.gui_Callback = str2func(varargin{1});
+end
+
+if nargout
+    [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
+else
+    gui_mainfcn(gui_State, varargin{:});
+end
+% End initialization code - DO NOT EDIT
+end
+
+
+function UpdateView(handles)
+    % if index is higher, 3D results
+    switch handles.currentImage
+        case (length(handles.allImages) + 1)
+            % load the 3D seeds
+            [pathstr, inputPrefix] = fileparts(handles.inputFile);
+            seedsFile = strcat(handles.directory, '/3D_Seed_Locations/', inputPrefix, '.txt');
+            seeds = load(seedsFile);
+            % UI message
+            set(handles.CurrentImageText, 'String', 'XY view (Transverse)');
+            % display
+            axes(handles.ResultAxes);
+            cla;
+            cla('reset');
+            hold on;
+            axis on;
+            axis xy;
+            axis equal;
+            grid on;
+            xlim('auto'); ylim('auto');
+            set(gca,'XTick',[0;5;10;15;20;25;30;35;40;45;50;55;60])
+            set(gca,'XTickLabel',{'A';'a';'B';'b';'C';'c';'D';'d';'E';'e';'F';'f';'G'})
+            set(gca,'YTick',[0;5;10;15;20;25;30;35;40;45;50;55;60])
+            set(gca,'YTickLabel',{'1';'1.5';'2';'2.5';'3';'3.5';'4';'4.5';'5';'5.5';'6';'6.5';'7'})
+            plot(seeds(:,1), seeds(:,2), 'ro');
+            % add grid corners
+            plot(0, 0, 'b+');
+            plot(60, 0, 'b+');
+            plot(0, 60, 'b+');
+            plot(60, 60, 'b+');
+            hold off;
+
+        case (length(handles.allImages) + 2)
+            % load the 3D seeds
+            [pathstr, inputPrefix] = fileparts(handles.inputFile);
+            seedsFile = strcat(handles.directory, '/3D_Seed_Locations/', inputPrefix, '.txt');
+            seeds = load(seedsFile);
+            % UI message
+            set(handles.CurrentImageText, 'String', 'XZ view (Sagital)');
+            % display
+            axes(handles.ResultAxes);
+            cla;
+            cla('reset');
+            hold on;
+            axis on;
+            axis xy;
+            axis equal;
+            grid on;
+            xlim('auto'); ylim('auto');
+            set(gca,'XTick',[0;5;10;15;20;25;30;35;40;45;50;55;60])
+            set(gca,'XTickLabel',{'A';'a';'B';'b';'C';'c';'D';'d';'E';'e';'F';'f';'G'})
+            plot(seeds(:,1), -seeds(:,3), 'ro');
+            % add grid corners
+            yPos = mean(-seeds(:,3));
+            plot(0, yPos, 'b+');
+            plot(60, yPos, 'b+');
+            hold off;
+            
+        case (length(handles.allImages) + 3)
+        % load the 3D seeds
+            [pathstr, inputPrefix] = fileparts(handles.inputFile);
+            seedsFile = strcat(handles.directory, '/3D_Seed_Locations/', inputPrefix, '.txt');
+            seeds = load(seedsFile);
+            % UI message
+            set(handles.CurrentImageText, 'String', 'YZ view (Top)');
+            axes(handles.ResultAxes);
+            % display
+            cla;
+            cla('reset');
+            hold on;
+            axis on;
+            axis xy;
+            axis equal;
+            grid on;
+            xlim('auto'); ylim('auto');
+            set(gca,'XTick',[0;5;10;15;20;25;30;35;40;45;50;55;60])
+            set(gca,'XTickLabel',{'1';'1.5';'2';'2.5';'3';'3.5';'4';'4.5';'5';'5.5';'6';'6.5';'7'})
+            plot(seeds(:,2), -seeds(:,3), 'ro');
+            % add grid corners
+            yPos = mean(-seeds(:,3));
+            plot(0, yPos, 'b+');
+            plot(60, yPos, 'b+');
+            hold off;
+            
+        otherwise
+            % based on image name, look for dewarped image
+            imagePrefix = handles.allImages{handles.currentImage};
+            message = strcat('[', num2str(handles.currentImage), {'] '}, imagePrefix, {'   '});
+            
+            % load the image, dewarped
+            imageName = strcat(handles.directory, '/', imagePrefix, '.tiff');
+            imagePixmap = imread(imageName);
+            
+            % find and display pose error
+            errorFile = strcat(handles.directory, '/Carm_Poses/Residual_Error_', imagePrefix, '.txt');
+            error = load(errorFile);
+            message = strcat(message, {'Pose error: '}, num2str(mean(error)), {'   '});
+
+            % load the back projected seeds
+            [pathstr, inputPrefix] = fileparts(handles.inputFile);
+            bpName = strcat(handles.directory, '/3D_Seed_Locations/', inputPrefix, '_bpe_', imagePrefix, '.txt');
+            bp = load(bpName);
+
+            % load the segmented seeds
+            seedsFile = strcat(handles.directory, '/Seed_Segmentation/Seeds_', imagePrefix, '.txt');
+            seeds = load('-ascii', seedsFile);
+            seeds = seeds(:,1:2); % first two columns only
+            
+            % display numbers of seeds
+            message = strcat(message, {'Seeds:'}, int2str(size(seeds, 1)), '/', int2str(size(bp, 1)), {'   '});
+            
+            % compute zoomed view
+            allPts = [bp; seeds];
+            minBP = max(round(min(allPts) - 20), [0 0]);
+            maxBP = min(round(max(allPts) + 20), size(imagePixmap));
+
+            % display all
+            axes(handles.ResultAxes);
+            axis off;    
+            % imshow(imagePixmap);
+            imshow(imagePixmap(minBP(1):maxBP(1), minBP(2):maxBP(2)));
+            hold on;
+            plot(bp(:,2) - minBP(2) + 1, bp(:,1) - minBP(1) + 1, 'mo', 'MarkerSize', 12);
+            plot(seeds(:,2) - minBP(2) + 1, seeds(:,1) - minBP(1) + 1, 'r.', 'MarkerSize', 8);
+            hold off;
+            
+            % text info
+            set(handles.CurrentImageText, 'String', message);
+    end
+end
+
+
+% --- Executes just before rufMarshalResultsGUI is made visible.
+function rufMarshalResultsGUI_OpeningFcn(hObject, eventdata, handles, varargin)
+% This function has no output args, see OutputFcn.
+% hObject    handle to figure
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% varargin   command line arguments to rufMarshalResultsGUI (see VARARGIN)
+
+% Choose default command line output for rufMarshalResultsGUI
+handles.output = hObject;
+
+    global rufMainGUIData;
+
+    handles.directory = varargin{1};
+    handles.inputFile = varargin{2};
+    
+    inputFile = strcat(handles.directory, '/3D_Seed_Locations/', handles.inputFile);
+    fid = fopen(inputFile, 'rt');
+    currentImage = 0;
+    handles.allImages = [];
+    while 1
+        tline = fgetl(fid);
+        if ~ischar(tline),   break,   end
+        currentImage = currentImage + 1;
+        handles.allImages{currentImage} = tline;
+    end
+    fclose(fid);
+ 
+    % clear images
+    axes(handles.ResultAxes);
+    colormap(gray);
+    axis off;    
+    cla;
+ 
+    % display the first image
+    handles.currentImage = 1;
+    UpdateView(handles);
+    
+    % find and display info used
+%     calibImage = strcat(rufCalibrationProcessedDirectory(rufMainGUIData.RootDirectory, rufMainGUIData.CalibSession), rufMainGUIData.CalibImage);
+%     [pathstr, name, ext, versn] = fileparts(calibImage);
+%     handles.coeffFile = strcat(pathstr, '/', name, '-map-coords.txt');
+%     handles.maskFile =  strcat(pathstr, '/', name, '-mask.tiff');
+%     handles.mask = double(imread(handles.maskFile));
+%     handles.mask = uint8(handles.mask / max(max(handles.mask)));
+%     set(handles.CoeffText, 'string', handles.coeffFile);
+    
+    % Update handles structure
+    guidata(hObject, handles);
+end
+
+
+% --- Outputs from this function are returned to the command line.
+function varargout = rufMarshalResultsGUI_OutputFcn(hObject, eventdata, handles) 
+% varargout  cell array for returning output args (see VARARGOUT);
+% hObject    handle to figure
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Get default command line output from handles structure
+    varargout{1} = handles.output;
+end
+
+
+% --- Executes on button press in PreviousButton.
+function PreviousButton_Callback(hObject, eventdata, handles)
+% hObject    handle to PreviousButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    handles.currentImage = handles.currentImage - 1;
+    if (handles.currentImage < 1)
+        handles.currentImage = length(handles.allImages) + 3;
+    end
+    UpdateView(handles);
+        
+    % Update handles structure
+    guidata(hObject, handles);
+end
+
+
+% --- Executes on button press in NextButton.
+function NextButton_Callback(hObject, eventdata, handles)
+% hObject    handle to NextButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    handles.currentImage = handles.currentImage + 1;
+    if (handles.currentImage > length(handles.allImages) + 3)
+        handles.currentImage = 1;
+    end
+    UpdateView(handles);
+        
+    % Update handles structure
+    guidata(hObject, handles);
+end
+
+
+% --- Executes on button press in CloseButton.
+function CloseButton_Callback(hObject, eventdata, handles)
+% hObject    handle to CloseButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    delete(handles.rufMarshalResultsGUI);
+end
+
+
+
+% --- Executes on button press in ExportButton.
+function ExportButton_Callback(hObject, eventdata, handles)
+% hObject    handle to ExportButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    [pathstr, inputPrefix] = fileparts(handles.inputFile);
+    seedsFile = strcat(handles.directory, '/3D_Seed_Locations/', inputPrefix, '.txt');
+    seeds = load(seedsFile);
+    [file, path] = uiputfile(strcat(inputPrefix, '.txt'), 'Save 3D seeds');
+    if isequal(file,0) | isequal(path,0)
+        disp('User selected Cancel');
+    else
+        save(fullfile(path, file), 'seeds', '-ascii');
+    end
+end
