@@ -18,9 +18,13 @@ clc
 addpath('./Functions');
 addpath('./GUIs');
 addpath('./Functions/lsge-matlab');
-folder = 'C:\Users\charm\Desktop\Needle Steering\06_11_14 Cadaver Study\Data\DYNACT_HEAD_NAT_FILL_HU_NORMAL_[INSPACE3D]_0054';
+folder = 'C:\Users\Rotator\Documents\NEEDLE_GUIDANCE_HENRIETTA_123456\DYNACT_HEAD_NAT_FILL_HU_NORMAL_[INSPACE3D]_0054';
 
-dbstop in generateSummaryData;
+topFile = dir(folder);
+topFile = topFile(3).name;
+info = dicominfo(strcat(folder,'/',topFile));
+
+%dbstop in generateSummaryData;
 
 
 % Create the shape analysis sturcture which will save all relevant info.
@@ -88,6 +92,8 @@ end
 
 % Generate Summary data and save
 summaryData = generateSummaryData(shapeAnalysis,1,1);
+
+display(sprintf('Radius of curavture %f cm\n', shapeAnalysis(1).curve(1)*info.PixelSpacing/10));
 %save([folder '/summaryData.mat'],'summaryData');
 %plotSummaryData(summaryData);
 
