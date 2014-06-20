@@ -6,28 +6,13 @@
 clear all
 close all
 clc
-addpath('/Functions');
+addpath('./Functions');
 
-
-%folder = 'DICOM/Scan1/';
-%filenameBase = 'DICOM/Scan1/Scan1-';
-
-folder = 'DICOM/Scan2/';
-filenameBase = 'DICOM/Scan2/Scan2-';
-
-%folder = 'DICOM/Scan3/';
-%filenameBase = 'DICOM/Scan3/Scan3-';
+folder = 'C:\Users\charm\Desktop\Needle Steering\06_11_14 Cadaver Study\Data\DYNACT_HEAD_NAT_FILL_HU_NORMAL_[INSPACE3D]_0054';
 
 file = dir(folder);
-numberFiles = length(file)-2;
-for i = 1:numberFiles
-    numberzeros = 3-length(int2str(i));
-    pad = [];
-    for j=1:numberzeros
-        pad = [pad '0'];
-       
-    end
-    x = dicomread([filenameBase pad int2str(i) '.dcm']);
+for i = 3:length(file)
+    x = dicomread(strcat(folder,'/',file(i).name));
     data(:,:,i) = x;
    % image = x;
   %  figure;

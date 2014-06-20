@@ -15,43 +15,12 @@
 clear all
 close all
 clc
-addpath('Functions');
-addpath('GUIs');
-addpath('Functions/lsge-matlab');
-folder = [uigetdir('../') '/'];
+addpath('./Functions');
+addpath('./GUIs');
+addpath('./Functions/lsge-matlab');
+folder = 'C:\Users\charm\Desktop\Needle Steering\06_11_14 Cadaver Study\Data\DYNACT_HEAD_NAT_FILL_HU_NORMAL_[INSPACE3D]_0054';
 
-scans = dir([folder '/Scan*'])
-
-scansDD = [];
-scansSD = [];
-scansNumber = zeros(length(scans),1);
-
-for i = 1:length(scans)                                                     % Since the scan number may be double digits, the ordering that dir does, messes up the numerical order so it has to be fixed...
-    scansNumber(i) = str2num(scans(i).name(5:end));
-    if length(scans(i).name) == 5
-        scansSD = [scansSD ; scans(i).name];
-    else
-        scansDD = [scansDD ; scans(i).name];
-    end
-end
-
-[mS nS] = size(scansSD);
-[mD nD] = size(scansDD);
-
-% Need to pad a space on the end of the vector of the scan name for single
-% digit scans so that they can be ordered with the others. Now that I think
-% about this, I'm not sure if there isnt a better way... need to come back.
-scansSDSpace = [];
-for i =1:mS
-    scansSDSpace(i,:) = [scansSD(i,:),' '];
-end
-
-
-scansNumberSorted = sort(scansNumber);                                     % Sort the numbers
-
-
-scansOrdered = [scansSDSpace;scansDD];                                     % Order the scans single digit first. 
-[mO nO] = size(scansOrdered);                                              % mO gives the number of total scans in the folder. 
+dbstop in ShapeAnalysisCode;
 
 
 % Create the shape analysis sturcture which will save all relevant info.
@@ -82,11 +51,8 @@ end
 % -------------------------------------------------------------------------
 % Perform shape analysis
 % -------------------------------------------------------------------------
-for i=start:mO                                                             %Perform shape analysis for all scans that have not been analyzed yet. 
-    scanFolder = [folder strtrim(scansOrdered(i,:)) '/'];
-    disp(['Evaluating Scan :' strtrim(scansOrdered(i,:)) ]);
-    shapeAnalysis(i) = ShapeAnalysisCode(scanFolder,1,[]);                    % 1 is for inVivo. 
-end
+disp(['Evaluating Scan :' folder]);
+shapeAnalysis = ShapeAnalysisCode(folder,1,[]);                    % 1 is for inVivo.
 
 
 % -------------------------------------------------------------------------
@@ -121,7 +87,7 @@ if plotimages == 1
 end
 
 % Generate Summary data and save
-summaryData = generateSummaryData(shapeAnalysis,scansNumberSorted);
+summaryData = generateSummaryData(shapeAnalysis,1);
 save([folder '/summaryData.mat'],'summaryData');
 %plotSummaryData(summaryData);
 
