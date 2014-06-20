@@ -35,8 +35,8 @@ for i = 1:m
 end
 
 if inVivo == 1
-    needleDiameter = [0.74 0.74 0.74 0.58 0.58 0.58 0.74 0.74 0.74 0.74 0.74 0.74 0.74 0.74 0.74];
-    needleType = [1 2 3 1 2 3 1 1 1 2 2 2 3 3 3];
+    needleDiameter = [0.5];
+    needleType = [1];
 
 else
     needleDiameter = repmat([repmat(0.74,1,9),repmat(0.58,1,9),repmat(0.74,1,9)],1,m);

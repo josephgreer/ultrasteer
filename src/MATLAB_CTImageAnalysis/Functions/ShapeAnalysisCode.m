@@ -39,10 +39,7 @@ function [shape] = ShapeAnalysisCode(scanFolder,inVivo,ROIdata)
     shape.Data = [];
     
   if inVivo == 1  
-    % Identify the number of scan files in the folder. 
-    filenameBase = [scanFolder fliplr(strtok(fliplr(scanFolder),'/')) '-'];
     file = dir(scanFolder);
-    numberFiles = length(file)-2;
     
     
     % -------------------------------------------------------------------------
@@ -51,15 +48,12 @@ function [shape] = ShapeAnalysisCode(scanFolder,inVivo,ROIdata)
     
     % Read in the files with dicomread. The number after the scan0x-nnn is
     % three digits so it needs to be padded to be read properly. 
-    for j = 1:numberFiles
-        numberzeros = 3-length(int2str(j));
-        pad = [];
-        for k=1:numberzeros
-            pad = [pad '0']; 
-        end
-        x(:,:,j) = dicomread([filenameBase pad int2str(j) '.dcm']);
-
+    for j = 3:length(file)
+        x(:,:,j-2) = dicomread(strcat(scanFolder,'/',file(j).name));
+       
     end
+    
+    numberFiles = length(file)-2;
 
     % Run the thresholding method to expose just the bone and needle. 
     [image v] = Threshold(x,numberFiles);
