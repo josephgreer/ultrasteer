@@ -30,7 +30,7 @@ function [image v] = Threshold(x,numberFiles)
 
     ok = 0;
 
-    image = zeros(256,256,numberFiles); %192 w imresize
+    image = zeros(512,512,numberFiles); %192 w imresize
 
     
 % -------------------------------------------------------------------------
