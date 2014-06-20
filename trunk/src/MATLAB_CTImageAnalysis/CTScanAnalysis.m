@@ -20,7 +20,7 @@ addpath('./GUIs');
 addpath('./Functions/lsge-matlab');
 folder = 'C:\Users\charm\Desktop\Needle Steering\06_11_14 Cadaver Study\Data\DYNACT_HEAD_NAT_FILL_HU_NORMAL_[INSPACE3D]_0054';
 
-dbstop in ShapeAnalysisCode;
+dbstop in generateSummaryData;
 
 
 % Create the shape analysis sturcture which will save all relevant info.
@@ -60,10 +60,10 @@ shapeAnalysis = ShapeAnalysisCode(folder,1,[]);                    % 1 is for in
 % -------------------------------------------------------------------------
 
 % Save the shapeAnalysis at the end. 
-save([folder '/shapeAnalysis.mat'],'shapeAnalysis');
+%save([folder '/shapeAnalysis.mat'],'shapeAnalysis');
 
 % Plot the isosurfaces with the fitted lines/circles. If plotimages == 1.
-plotimages = 0;
+plotimages = 1;
 if plotimages == 1
     for i=1:length(shapeAnalysis)
         if ~isempty(shapeAnalysis(i).line)
@@ -72,7 +72,7 @@ if plotimages == 1
              isosurface(shapeAnalysis(i).Image)
              hold on
              plot3(Xpts,Ypts,Zpts)
-             title(strtrim(scansOrdered(i,:)))
+             title(strtrim(folder))
              axis([0 300 0 300 0 200])
         else
              figure
@@ -80,14 +80,14 @@ if plotimages == 1
              hold on
              circle3(shapeAnalysis(i).curve(2:4),shapeAnalysis(i).curve(5:7),shapeAnalysis(i).curve(1))
              axis([0 300 0 300 0 200])
-             title(strtrim(scansOrdered(i,:)))
+             title(strtrim(folder))
         end
 
     end
 end
 
 % Generate Summary data and save
-summaryData = generateSummaryData(shapeAnalysis,1);
-save([folder '/summaryData.mat'],'summaryData');
+summaryData = generateSummaryData(shapeAnalysis,1,1);
+%save([folder '/summaryData.mat'],'summaryData');
 %plotSummaryData(summaryData);
 
