@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 2.8)
+
+SET(OPENCV_DIR "C:/sl/SDK/OpenCV2.2")
+SET(OpenCV_DIR "C:/sl/SDK/OpenCV2.2")
+FIND_PACKAGE(OpenCV)
+Project(RTUltrasteer)
+
+SET(OPENCV_NEW_LIBRARY_NAMES YES)
+FIND_PACKAGE(OPENCV)
+
+ADD_SUBDIRECTORY(RTUltrasteer)
