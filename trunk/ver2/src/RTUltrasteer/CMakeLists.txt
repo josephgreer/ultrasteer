@@ -31,9 +31,9 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_SOURCE_DIR}
 ) 
 
-SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp)
+SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp USVisualizerWidget.cpp)
 
-SET(ultrasteerHeaders RTUltrasteer.h)
+SET(ultrasteerHeaders RTUltrasteer.h USVisualizerWidget.h)
 
 SET(ultrasteerUI RTUltrasteer.ui)
 
