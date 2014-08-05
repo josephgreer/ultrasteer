@@ -5,6 +5,8 @@
 #include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
 #include <vtkActor.h>
+#include <vtkInformation.h>
+#include <vtkStreamingDemandDrivenPipeline.h>
 
 
 USVisualizerWidget::USVisualizerWidget()
@@ -22,7 +24,7 @@ void USVisualizerWidget::Initialize()
   // Sphere
   vtkSmartPointer<vtkSphereSource> sphereSource = 
     vtkSmartPointer<vtkSphereSource>::New();
-  sphereSource->Update();
+  //sphereSource->Update();
   vtkSmartPointer<vtkPolyDataMapper> sphereMapper =
     vtkSmartPointer<vtkPolyDataMapper>::New();
   sphereMapper->SetInputConnection(sphereSource->GetOutputPort());
@@ -34,6 +36,4 @@ void USVisualizerWidget::Initialize()
     vtkSmartPointer<vtkRenderer>::New();
   renderer->AddActor(sphereActor);
   renderer->SetBackground(0.0, 0.0, 0.0);
-
-  this->GetRenderWindow()->AddRenderer(renderer);
 }
