@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
 
-SET(VTK_DIR "D:/Build/VTK")
-SET(ITK_DIR "D:/Build/ITK")
-
 FIND_PACKAGE(ITK)
 IF(ITK_FOUND)
 	INCLUDE(${ITK_USE_FILE})

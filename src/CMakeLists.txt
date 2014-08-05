@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
-SET(OPENCV_DIR "D:/Build/OpenCV2.2")
+SET(OPENCV_DIR "C:/sl/SDK/OpenCV2.2")
+SET(OpenCV_DIR "C:/sl/SDK/OpenCV2.2")
 FIND_PACKAGE(OpenCV)
 Project(RealTimeUltrasteer)
 
@@ -11,5 +12,7 @@ ADD_SUBDIRECTORY(${CMAKE_CURRENT_SOURCE_DIR}/../external/alglib ${CMAKE_CURRENT_
 ADD_SUBDIRECTORY(Segment)
 ADD_SUBDIRECTORY(Control)
 ADD_SUBDIRECTORY(RPFileReader)
+ADD_SUBDIRECTORY(VolumeCreator)
 ADD_SUBDIRECTORY(UnitTests)
+ADD_SUBDIRECTORY(RTUltrasteer)
 ADD_SUBDIRECTORY(RealTimeUltrasteer)

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-PROJECT(RealTimeUltrasteer)
+PROJECT(RTUltrasteer)
 
 IF(COMMAND CMAKE_POLICY)
 	   CMAKE_POLICY(SET CMP0003 NEW)
@@ -25,21 +25,15 @@ INCLUDE( ${QT_USE_FILE} )
 INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_BINARY_DIR} #this is where ui_ImageViewerUI.h is generated
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../inc/
-  ${CMAKE_CURRENT_SOURCE_DIR}/../Control/  
-  ${CMAKE_CURRENT_SOURCE_DIR}/../Segment/
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/alglib/src
 ) 
 
-SET(ultrasteerSrcs main.cpp Propello.cpp PropelloDisplay.cpp PropelloBDisplay.cpp SaveDlg.cpp StdAfx.cpp)
+SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp USVisualizerWidget.cpp)
 
-SET(ultrasteerHeaders Propello.h SaveDlg.h PropelloBDisplay.h)
+SET(ultrasteerHeaders RTUltrasteer.h USVisualizerWidget.h)
 
-SET(ultrasteerOtherHeaders stdafx.h SaveDlg.h PropelloDisplay.h Propello.h)
+SET(ultrasteerUI RTUltrasteer.ui)
 
-SET(ultrasteerUI save.ui propello.ui)
-
-SET(ultrasteerResources propello.qrc)
+SET(ultrasteerResources RTUltrasteer.qrc)
 
 # for generate qt aditional files 
 QT4_WRAP_UI(UISrcs ${ultrasteerUI})
@@ -57,20 +51,19 @@ SOURCE_GROUP("Generated" FILES
   ${MOCSrcs}
 )
 
-ADD_EXECUTABLE(RealTimeUltrasteer WIN32
+ADD_EXECUTABLE(RTUltrasteer WIN32
 	${ultrasteerSrcs}
 	${ultrasteerHeaders}
 	${UISrcs}
 	${MOCSrcs}
-	${ultrasteerOtherHeaders}
 	${ResourcesRCC}
 	)
 
-SET_TARGET_PROPERTIES(RealTimeUltrasteer PROPERTIES LINK_FLAGS_DEBUG /SUBSYSTEM:windows)
+SET_TARGET_PROPERTIES(RTUltrasteer PROPERTIES LINK_FLAGS_DEBUG /SUBSYSTEM:windows)
  #Must be lowercase windows
 
-SET_TARGET_PROPERTIES(RealTimeUltrasteer PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:windows)
+SET_TARGET_PROPERTIES(RTUltrasteer PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:windows)
  #Must be lowercase windows
 
-TARGET_LINK_LIBRARIES(RealTimeUltrasteer Control alglib Segment ${OpenCV_LIBS} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/porta.lib ${ITK_LIBRARIES} ${VTK_LIBRARIES})
+TARGET_LINK_LIBRARIES(RTUltrasteer VolumeCreator RPFileReader ${OpenCV_LIBS} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${ITK_LIBRARIES} ${VTK_LIBRARIES})
 
