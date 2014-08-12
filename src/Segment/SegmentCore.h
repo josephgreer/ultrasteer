@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <math.h>
+#include <vtkMath.h>
 #include "windows.h"
 
 typedef unsigned char u8;
@@ -335,4 +336,119 @@ namespace Nf
 
   typedef Square < int > Squarei;
   typedef Square < float > Squaref;
+
+  template < class T >
+  class Matrix33
+  {
+  public:
+    T m_data[3][3];
+    Matrix33(const T mat[3][3])
+    {
+      memcpy(m_data, mat, sizeof(T)*9);
+    }
+
+    static Matrix33<T> I()
+    {
+      T data[3][3];
+      vtkMath::Identity3x3(data);
+      return Matrix33<T>(data);
+    }
+
+    Matrix33<T> operator=(const Matrix33<T> &rhs)
+    {
+      memcpy(this->mdata, rhs.mdata, sizeof(T)*9);
+      return *this;  // Return a reference to myself.
+    }
+
+    Matrix33<T> operator+(const Matrix33<T> &b) const
+    {
+      T res[3][3];
+      res[0][0] = this->m_data[0][0] + b.m_data[0][0];
+      res[0][1] = this->m_data[0][1] + b.m_data[0][1];
+      res[0][2] = this->m_data[0][2] + b.m_data[0][2];
+      res[1][0] = this->m_data[1][0] + b.m_data[1][0];
+      res[1][1] = this->m_data[1][1] + b.m_data[1][1];
+      res[1][2] = this->m_data[1][2] + b.m_data[1][2];
+      res[2][0] = this->m_data[2][0] + b.m_data[2][0];
+      res[2][1] = this->m_data[2][1] + b.m_data[2][1];
+      res[2][2] = this->m_data[2][2] + b.m_data[2][2];
+
+      return Matrix33<T>(res);
+    }
+
+    Matrix33<T> operator+=(const Matrix33<T> &b)
+    {
+      this->m_data[0][0] += b.m_data[0][0];
+      this->m_data[0][1] += b.m_data[0][1];
+      this->m_data[0][2] += b.m_data[0][2];
+      this->m_data[1][0] += b.m_data[1][0];
+      this->m_data[1][1] += b.m_data[1][1];
+      this->m_data[1][2] += b.m_data[1][2];
+      this->m_data[2][0] += b.m_data[2][0];
+      this->m_data[2][1] += b.m_data[2][1];
+      this->m_data[2][2] += b.m_data[2][2];
+
+      return *this;
+    }
+
+    Matrix33<T> operator-(const Matrix33<T> &b) const
+    {
+      T res[3][3];
+      res[0][0] = this->m_data[0][0] - b.m_data[0][0];
+      res[0][1] = this->m_data[0][1] - b.m_data[0][1];
+      res[0][2] = this->m_data[0][2] - b.m_data[0][2];
+      res[1][0] = this->m_data[1][0] - b.m_data[1][0];
+      res[1][1] = this->m_data[1][1] - b.m_data[1][1];
+      res[1][2] = this->m_data[1][2] - b.m_data[1][2];
+      res[2][0] = this->m_data[2][0] - b.m_data[2][0];
+      res[2][1] = this->m_data[2][1] - b.m_data[2][1];
+      res[2][2] = this->m_data[2][2] - b.m_data[2][2];
+
+      return Matrix33<T>(res);
+    }
+
+    Matrix33<T> operator*(const T &b) const
+    {
+      T res[3][3];
+      res[0][0] = this->m_data[0][0]*b;
+      res[0][1] = this->m_data[0][1]*b;
+      res[0][2] = this->m_data[0][2]*b;
+      res[1][0] = this->m_data[1][0]*b;
+      res[1][1] = this->m_data[1][1]*b;
+      res[1][2] = this->m_data[1][2]*b;
+      res[2][0] = this->m_data[2][0]*b;
+      res[2][1] = this->m_data[2][1]*b;
+      res[2][2] = this->m_data[2][2]*b;
+      return Matrix33<T>(res);
+    }
+
+    Matrix33<T> operator*(const Matrix33<T> &b) const
+    {
+      T res[3][3];
+      vtkMath::Multiply3x3(this->m_data, b.m_data, res);
+      return Matrix33<T>(res);
+    }
+
+    Matrix33<T> Transpose() const
+    {
+      T res[3][3];
+      vtkMath::Transpose3x3(this->m_data,res);
+      return res;
+    }
+
+    Matrix33<T> Invert() const
+    {
+      T res[3][3];
+      vtkMath::Invert3x3(this->m_data,res);
+      return res;
+    }
+
+    T Determinant() const
+    {
+      return vtkMath::Determinant3x3(&m_data[0][0], &m_data[1][0], &m_data[2][0]);
+    }
+
+    typedef Matrix33 < f32 > Matrix33f;
+    typedef Matrix33 < f64 > Matrix33d;
+  };
 }
