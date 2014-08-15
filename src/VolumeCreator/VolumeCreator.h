@@ -2,6 +2,15 @@
 #include "SegmentCore.h"
 
 namespace Nf {
+
+  //used for specifying origin location when setting a volume from a base frame
+  enum VOLUME_ORIGIN_LOCATION
+  {
+    VOL_EDGE = 0,
+    VOL_QUARTER,
+    VOL_MIDDLE,
+  };
+
   class Volume
   {
   protected:
@@ -12,32 +21,37 @@ namespace Nf {
     u16 * GetSlice(s32 z);
     u16 * GetRow(s32 z, s32 r);
 
-    Vec3f m_origin;  //origin coordinates in phyiscal units
+    Vec3i m_dims;   //number of voxels in x,y,z axis resp.
+    Vec3d m_spacing;  //spacing between voxels in x,y,z axis resp. (physical units)
 
+    Vec3d m_origin; //origin of volume in units (the location of voxel index [0,0,0])
+    Matrix33d m_orientation;  //Columns of matrix correspond to x-axis, y-axis, and z-axis of the volume, resp. 
+
+    Matrix44d m_worldToVolume;    //Matrix part of transform from world coordiantes to volume indices
+    Matrix44d m_volumeToWorld;    //Matrix part of transfrom from volume indices to world coordinates (m_volumeToWorld = m_worldToVolume^{-1})   
+
+    void Reinitialize();
 
   public:
+    Volume();
     //Volume represents a 3D cube (with non-equal dimensions)
-    //width,height,depth represent the number of voxels in each direction
-    //wdist = physical horizontal distance between voxels in unit of choice
-    //hdist = physical vertical distance between voxels in unit of choice
-    //ddist = physical depth distance between voxels in unit of choice
-    Volume(s32 width, s32 height, s32 depth, f32 wdist = -1, f32 hdist = -1, f32 ddist = -1);
-    s32 Initialize();
+    //Initialize volume from a frame and extent around the frame
+    //orientation:  Columns of orientation matrix specify the directions of x, y, and z axis of the cube
+    //frameOrigin: specifies the location of the middle of the frame (in physical units).  Memory for a  3D
+    //  volume will be allocated around the frameOrigin.  
+    //config:  Specifies the way the volume will be allocated around the frame. /
+    //  VOL_EDGE should be used if the location of the frame marks the edge of the volume
+    //  VOL_QUARTER should be used if the location of the frame is near the edge but you want some space
+    //  VOL_MIDDLE should be used if the location of the frame will be in the middle of the volume
+    //extent:  Specifies the extent of the volume in physical units.  It will be converted to numbers of voxels by taking into
+    //  account spacing
+    //spacing:  Specifiy the distance between voxels in each of the axes in phyiscal units.
+    s32 InitializeVolume(Matrix33d &orientation, Vec3d frameOrigin, VOLUME_ORIGIN_LOCATION config, Vec3d extent, Vec3d spacing);
     void Release();
 
-    void SetSpacing(f32 wdist, f32 hdist, f32 ddist);
-    void SetSpacing(Vec3f spacing);
-    void SetOrigin(Vec3f origin);
-
-    s32 m_width;  //number of voxels in volume in x direction
-    s32 m_height; //""                         in y direction
-    s32 m_depth;  //""                         in z direction
-
-    f32 m_wdist;  //number of units between each voxel in x direction
-    f32 m_hdist;  //number of units between each voxel in y direction
-    f32 m_ddist;  //number of units between each voxel in z direction
-
-    Vec3f origin; //origin of volume in units (the location of voxel index [0,0,0])
+    Vec3d GetSpacing();
+    Vec3d GetOrigin();
+    Matrix33d GetOrientation();
   };
 
   class VolumeCreator 
