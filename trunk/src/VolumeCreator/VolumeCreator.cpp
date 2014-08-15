@@ -7,6 +7,7 @@ namespace Nf {
   Volume::Volume()
     : m_dims(0,0,0)
     , m_spacing(0,0,0)
+    , m_scale(1.0)
   {
   }
 
@@ -67,6 +68,11 @@ namespace Nf {
     return GetSlice(z)+m_rowStride*r;
   }
 
+  u16 * Volume::GetCoordData(Vec3i coord)
+  {
+    return GetSlice(coord.z)+m_rowStride*coord.y+coord.x;
+  }
+
   Vec3d Volume::GetSpacing()
   {
     return m_spacing;
@@ -82,7 +88,87 @@ namespace Nf {
     return m_orientation;
   }
 
+  Vec3d Volume::WorldCoordinatesToVolumeCoordinates(Vec3d worldCoords)
+  {
+    Vec4d wc(worldCoords.x, worldCoords.y, worldCoords.z, 1);
+    Vec4d vc = m_worldToVolume*wc;
+    return Vec3d(vc.x, vc.y, vc.z);
+  }
+
+  Vec3d Volume::VolumeCoordinatesToWorldCoordinates(Vec3d volCoords)
+  {
+    Vec4d vc(volCoords.x, volCoords.y, volCoords.z, 1);
+    Vec4d wc = m_volumeToWorld*vc;
+    return Vec3d(wc.x, wc.y, wc.z);
+  }
+
+  void Volume::SetScale(f64 scale)
+  {
+    m_scale = scale;
+  }
+
+  void Volume::AddFrame(const IplImage *image, const Matrix33d &orientation, const Vec3d &origin, const Matrix44d &calibration, const Vec2d &mpp)
+  {
+    //TODO OPTIMIZE!!!!!
+    const IplImage *im = image;
+    if(m_scale != 1.0) {
+      IplImage *_im = cvCreateImage(cvSize((s32)(image->width*m_scale+0.5), (s32)(image->height*m_scale+0.5)), IPL_DEPTH_8U, 1);
+      cvResize(image, _im);
+      im = _im;
+    }        
+    Vec2d start(320,0);
+    Vec2d scale(mpp.x/1000.0, mpp.y/1000.0);
+    Vec4d imc, sensor, world, grid;
+    Vec3i gridI;
+
+    Matrix44d augOrientation = Matrix44d::FromOrientationAndTranslation(orientation, origin);
+
+    for(s32 y=0; y<im->height; y++) {
+      const u8 *psrc = (const u8 *)(image->imageData+y*image->widthStep);
+      for(s32 x=0; x<im->width; x++) {
+        //Map image coord to world coord
+        imc = Vec4d(1, (y-start.y)*scale.y, (x-start.x)*scale.x, 1);
+        sensor = calibration*imc;
+        world = augOrientation*sensor;
+
+        //Now map to volume coord
+        grid = m_worldToVolume*world;
+        gridI = Vec3i((s32)(grid.x+0.5),(s32)(grid.y+0.5),(s32)(grid.z+0.5));
+
+        //Cast and write to volume
+        *GetCoordData(gridI) = (u16)psrc[x];
+      }
+    }
+  }
+
   ////////////////////////////////////////////////////////
   //End Volume Class
   ////////////////////////////////////////////////////////
+  
+#if 0
+  ////////////////////////////////////////////////////////
+  //VolumeCreator Class
+  ////////////////////////////////////////////////////////
+
+  VolumeCreator::VolumeCreator()
+  {
+  }
+
+  
+  s32 VolumeCreator::Initialize(Matrix33d &orientation, Vec3d frameOrigin, VOLUME_ORIGIN_LOCATION config, 
+    Vec3d extent, Vec3d spacing)
+  {
+    m_vol.Initialize(orientation, frameOrigin, config, extent, spacing);
+  }
+
+  void VolumeCreator::Release()
+  {
+    m_vol.Release();
+  }
+
+  ////////////////////////////////////////////////////////
+  //End VolumeCreator Class
+  ////////////////////////////////////////////////////////
+#endif
 };
+
