@@ -1,4 +1,8 @@
 #pragma once
+#include <cv.h>
+#include <cxcore.h>
+#include <highgui.h>
+
 #include "SegmentCore.h"
 
 namespace Nf {
@@ -20,6 +24,7 @@ namespace Nf {
 
     u16 * GetSlice(s32 z);
     u16 * GetRow(s32 z, s32 r);
+    u16 * GetCoordData(Vec3i coord);
 
     Vec3i m_dims;   //number of voxels in x,y,z axis resp.
     Vec3d m_spacing;  //spacing between voxels in x,y,z axis resp. (physical units)
@@ -30,7 +35,11 @@ namespace Nf {
     Matrix44d m_worldToVolume;    //Matrix part of transform from world coordiantes to volume indices
     Matrix44d m_volumeToWorld;    //Matrix part of transfrom from volume indices to world coordinates (m_volumeToWorld = m_worldToVolume^{-1})   
 
+    f64 m_scale;  //scale factor to apply to images before adding to the volume
+
     void Reinitialize();
+
+    void AddFrame(const IplImage *image, const Matrix33d &orientation, const Vec3d &origin, const Matrix44d &calibration, const Vec2d &mpp);
 
   public:
     Volume();
@@ -52,11 +61,25 @@ namespace Nf {
     Vec3d GetSpacing();
     Vec3d GetOrigin();
     Matrix33d GetOrientation();
+
+    Vec3d WorldCoordinatesToVolumeCoordinates(Vec3d worldCoords);
+    Vec3d VolumeCoordinatesToWorldCoordinates(Vec3d volCoords);
+
+    //Scale images before they are added to the volume
+    void SetScale(f64 scale);
   };
 
+#if 0
   class VolumeCreator 
   {
   public:
     VolumeCreator();
+    s32 Initialize(Matrix33d &orientation, Vec3d frameOrigin, VOLUME_ORIGIN_LOCATION config, Vec3d extent, Vec3d spacing);
+    void Release();
+    void AddFrame(const IplImage *im);
+
+  protected:
+    Volume m_vol;
   };
+#endif
 };

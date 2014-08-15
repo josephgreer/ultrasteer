@@ -635,7 +635,7 @@ namespace Nf
       return Matrix44d(data);
     }
 
-    static Matrix44d FromOrientationAndTranslation(Matrix33d &orientation, Vec3d translation)
+    static Matrix44d FromOrientationAndTranslation(const Matrix33d &orientation, const Vec3d translation)
     {
       Matrix44d res = Matrix44d::I();
       memcpy(&res.m_data[0][0], &orientation.m_data[0][0], sizeof(f64)*3);
