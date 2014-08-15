@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <math.h>
 #include <vtkMath.h>
+#include <vtkMatrix4x4.h>
 #include "windows.h"
 
 typedef unsigned char u8;
@@ -114,6 +115,81 @@ namespace Nf
   };
 
   template <class T>
+  class Vec4
+  {
+  public:
+    T x,y,z,w;
+    Vec4(T x, T y, T z, T w)
+      : x(x)
+      , y(y)
+      , z(z)
+      , w(w)
+    {}
+
+    Vec4<T>()
+      : x(0)
+      , y(0)
+      , z(0)
+      , w(0)
+    {}
+
+    Vec4<T> operator=(const Vec4<T> &rhs)
+    {
+      this->x = rhs.x;
+      this->y = rhs.y;
+      this->z = rhs.z;
+      this->w = rhs.w;
+      return *this;  // Return a reference to myself.
+    }
+
+    Vec4<T> operator+(const Vec4<T> &b) const
+    {
+      return Vec4<T>(this->x+b.x, this->y+b.y, this->z+b.z, this->w+b.w);
+    }
+
+    Vec4<T> operator-(const Vec4<T> &b) const
+    {
+      return Vec4<T>(this->x-b.x, this->y-b.y,this->z-b.z,this->w-b.w);
+    }
+
+    Vec4<T> operator*(const T &b)
+    {
+      return Vec4<T>(this->x*b, this->y*b, this->z*b, this->w*b);
+    }
+
+    Vec4<T> operator+=(const Vec4<T> &b)
+    {
+      this->x += b.x;
+      this->y += b.y;
+      this->z += b.z;
+      this->w += b.w;
+      return *this;
+    }
+
+    T dot(Vec4<T> b) const
+    {
+      return this->x*b.x+this->y*b.y+this->z*b.z+this->w*b.w;
+    }
+
+    T magnitudeSquared() const
+    {
+      return this->dot(*this);
+    }
+
+    T magnitude() const
+    {
+      return sqrt(magnitudeSquared());
+    }
+
+    Vec4<T> normalized()
+    {
+      T mag = this->magnitude();
+
+      return Vec4<T>(this->x/mag, this->y/mag, this->z/mag, this->w/mag);
+    }
+  };
+
+  template <class T>
   class Vec3
   {
   public:
@@ -208,10 +284,13 @@ namespace Nf
 
   typedef Vec2<f32> Vec2f;
   typedef Vec3<f32> Vec3f;
+  typedef Vec4<f32> Vec4f;
   typedef Vec2<s32> Vec2i;
   typedef Vec3<s32> Vec3i;
+  typedef Vec4<s32> Vec4i;
   typedef Vec2<f64> Vec2d;
   typedef Vec3<f64> Vec3d;
+  typedef Vec4<f64> Vec4d;
 
 
   //Structure representing a connected square of pixels that are of the color being tracked.
@@ -337,11 +416,19 @@ namespace Nf
   typedef Square < int > Squarei;
   typedef Square < float > Squaref;
 
+  //should have used vtkMatrix3x3 but apparently they don't advertise it very well, so I made
+  //this before I found out about it
   template < class T >
   class Matrix33
   {
   public:
     T m_data[3][3];
+
+    Matrix33()
+    {
+      memset(m_data, 0, sizeof(T)*9);
+    }
+
     Matrix33(const T mat[3][3])
     {
       memcpy(m_data, mat, sizeof(T)*9);
@@ -354,9 +441,46 @@ namespace Nf
       return Matrix33<T>(data);
     }
 
+    static Matrix33<T> Diaganol(T a, T b, T c)
+    {
+      T data[3][3];
+      vtkMath::Identity3x3(data);
+      data[0][0] = a;
+      data[1][1] = b;
+      data[2][2] = c;
+      return Matrix33<T>(data);
+    }
+
+    static Matrix33<T> Diaganol(Vec3 < T > values)
+    {
+      T data[3][3];
+      vtkMath::Identity3x3(data);
+      data[0][0] = values.x;
+      data[1][1] = values.y;
+      data[2][2] = values.z;
+      return Matrix33<T>(data);
+    }
+
+    static Matrix33<T> FromCols(Vec3d a, Vec3d b, Vec3d c)
+    {
+      T data[3][3];
+      data[0][0] = a.x;   data[0][1] = b.x;  data[0][2] = c.x;
+      data[1][0] = a.y;   data[1][1] = b.y;  data[1][2] = c.y;
+      data[2][0] = a.z;   data[2][1] = b.z;  data[2][2] = c.z;
+      return Matrix33<T>(data);
+    }
+
+    static Matrix33<T> FromRows(Vec3d a, Vec3d b, Vec3d c)
+    {
+      T data[3][3];
+      data[0][0] = a.x;  data[0][1] = a.y;  data[0][2] = a.z;
+      data[1][0] = b.x;  data[1][1] = b.y;  data[1][2] = b.z;
+      data[2][0] = c.x;  data[2][1] = c.y;  data[2][2] = c.z;
+    }
+
     Matrix33<T> operator=(const Matrix33<T> &rhs)
     {
-      memcpy(this->mdata, rhs.mdata, sizeof(T)*9);
+      memcpy(&this->m_data[0][0], &rhs.m_data[0][0], sizeof(T)*9);
       return *this;  // Return a reference to myself.
     }
 
@@ -422,11 +546,26 @@ namespace Nf
       return Matrix33<T>(res);
     }
 
+    Vec3<T> Col(s32 col) const
+    {
+      return Vec3<T>(m_data[0][col], m_data[1][col], m_data[2][col]);
+    }
+
+    Vec3<T> Row(s32 row) const
+    {
+      return Vec3<T>(m_data[row][0], m_data[row][1], m_data[row][2]);
+    }
+
     Matrix33<T> operator*(const Matrix33<T> &b) const
     {
       T res[3][3];
       vtkMath::Multiply3x3(this->m_data, b.m_data, res);
       return Matrix33<T>(res);
+    }
+
+    Vec3<T> operator*(const Vec3<T> &b) const
+    {
+       return this->Col(0)*b.x + this->Col(1)*b.y + this->Col(2)*b.z;
     }
 
     Matrix33<T> Transpose() const
@@ -436,7 +575,7 @@ namespace Nf
       return res;
     }
 
-    Matrix33<T> Invert() const
+    Matrix33<T> Inverse() const
     {
       T res[3][3];
       vtkMath::Invert3x3(this->m_data,res);
@@ -447,8 +586,226 @@ namespace Nf
     {
       return vtkMath::Determinant3x3(&m_data[0][0], &m_data[1][0], &m_data[2][0]);
     }
+  };
 
-    typedef Matrix33 < f32 > Matrix33f;
-    typedef Matrix33 < f64 > Matrix33d;
+  typedef Matrix33 < f32 > Matrix33f;
+  typedef Matrix33 < f64 > Matrix33d;
+
+  class Matrix44d 
+  {
+  public:
+    f64 m_data[4][4];
+
+    Matrix44d()
+    {
+      memset(m_data, 0, sizeof(f64)*16);
+    }
+
+    Matrix44d(const f64 mat[4][4])
+    {
+      memcpy(m_data, mat, sizeof(f64)*16);
+    }
+
+    static Matrix44d I()
+    {
+      f64 data[4][4] = {0};
+      vtkMatrix4x4::Identity(&data[0][0]);
+      return Matrix44d(data);
+    }
+
+    static Matrix44d Diaganol(f64 a, f64 b, f64 c, f64 d)
+    {
+      f64 data[4][4] = {0};
+      vtkMatrix4x4::Identity(&data[0][0]);
+      data[0][0] = a;
+      data[1][1] = b;
+      data[2][2] = c;
+      data[3][3] = d;
+      return Matrix44d(data);
+    }
+
+    static Matrix44d Diaganol(Vec4d values)
+    {
+      f64 data[4][4];
+      vtkMatrix4x4::Identity(&data[0][0]);
+      data[0][0] = values.x;
+      data[1][1] = values.y;
+      data[2][2] = values.z;
+      data[3][3] = values.w;
+      return Matrix44d(data);
+    }
+
+    static Matrix44d FromOrientationAndTranslation(Matrix33d &orientation, Vec3d translation)
+    {
+      Matrix44d res = Matrix44d::I();
+      memcpy(&res.m_data[0][0], &orientation.m_data[0][0], sizeof(f64)*3);
+      memcpy(&res.m_data[1][0], &orientation.m_data[1][0], sizeof(f64)*3);
+      memcpy(&res.m_data[2][0], &orientation.m_data[2][0], sizeof(f64)*3);
+
+      res.m_data[0][3] = translation.x;
+      res.m_data[1][3] = translation.y;
+      res.m_data[2][3] = translation.z;
+
+      return res;
+    }
+
+    Matrix33d GetOrientation()
+    {
+      Matrix33d res;
+      memcpy(&res.m_data[0][0], &this->m_data[0][0], sizeof(f64)*3);
+      memcpy(&res.m_data[1][0], &this->m_data[1][0], sizeof(f64)*3);
+      memcpy(&res.m_data[2][0], &this->m_data[2][0], sizeof(f64)*3);
+      return res;
+    }
+
+    Matrix44d operator=(const Matrix44d &rhs)
+    {
+      memcpy(&this->m_data[0][0], &rhs.m_data[0][0], sizeof(f64)*16);
+      return *this;  // Return a reference to myself.
+    }
+
+    Matrix44d operator+(const Matrix44d &b) const
+    {
+      f64 res[4][4];
+      res[0][0] = this->m_data[0][0] + b.m_data[0][0];
+      res[0][1] = this->m_data[0][1] + b.m_data[0][1];
+      res[0][2] = this->m_data[0][2] + b.m_data[0][2];
+      res[0][3] = this->m_data[0][3] + b.m_data[0][3];
+      
+      res[1][0] = this->m_data[1][0] + b.m_data[1][0];
+      res[1][1] = this->m_data[1][1] + b.m_data[1][1];
+      res[1][2] = this->m_data[1][2] + b.m_data[1][2];
+      res[1][3] = this->m_data[1][3] + b.m_data[1][3];
+      
+      res[2][0] = this->m_data[2][0] + b.m_data[2][0];
+      res[2][1] = this->m_data[2][1] + b.m_data[2][1];
+      res[2][2] = this->m_data[2][2] + b.m_data[2][2];
+      res[2][3] = this->m_data[2][3] + b.m_data[2][3];
+      
+      res[3][0] = this->m_data[3][0] + b.m_data[3][0];
+      res[3][1] = this->m_data[3][1] + b.m_data[3][1];
+      res[3][2] = this->m_data[3][2] + b.m_data[3][2];
+      res[3][3] = this->m_data[3][3] + b.m_data[3][3];
+
+      return Matrix44d(res);
+    }
+
+    Matrix44d operator+=(const Matrix44d &b)
+    {
+      this->m_data[0][0] += b.m_data[0][0];
+      this->m_data[0][1] += b.m_data[0][1];
+      this->m_data[0][2] += b.m_data[0][2];
+      this->m_data[0][3] += b.m_data[0][3];
+      
+      this->m_data[1][0] += b.m_data[1][0];
+      this->m_data[1][1] += b.m_data[1][1];
+      this->m_data[1][2] += b.m_data[1][2];
+      this->m_data[1][3] += b.m_data[1][3];
+      
+      this->m_data[2][0] += b.m_data[2][0];
+      this->m_data[2][1] += b.m_data[2][1];
+      this->m_data[2][2] += b.m_data[2][2];
+      this->m_data[2][3] += b.m_data[2][3];
+      
+      this->m_data[3][0] += b.m_data[3][0];
+      this->m_data[3][1] += b.m_data[3][1];
+      this->m_data[3][2] += b.m_data[3][2];
+      this->m_data[3][3] += b.m_data[3][3];
+
+      return *this;
+    }
+
+    Matrix44d operator-(const Matrix44d &b) const
+    {
+      f64 res[4][4];
+      res[0][0] = this->m_data[0][0] - b.m_data[0][0];
+      res[0][1] = this->m_data[0][1] - b.m_data[0][1];
+      res[0][2] = this->m_data[0][2] - b.m_data[0][2];
+      res[0][3] = this->m_data[0][3] - b.m_data[0][3];
+      
+      res[1][0] = this->m_data[1][0] - b.m_data[1][0];
+      res[1][1] = this->m_data[1][1] - b.m_data[1][1];
+      res[1][2] = this->m_data[1][2] - b.m_data[1][2];
+      res[1][3] = this->m_data[1][3] - b.m_data[1][3];
+      
+      res[2][0] = this->m_data[2][0] - b.m_data[2][0];
+      res[2][1] = this->m_data[2][1] - b.m_data[2][1];
+      res[2][2] = this->m_data[2][2] - b.m_data[2][2];
+      res[2][3] = this->m_data[2][3] - b.m_data[2][3];
+      
+      res[3][0] = this->m_data[3][0] - b.m_data[3][0];
+      res[3][1] = this->m_data[3][1] - b.m_data[3][1];
+      res[3][2] = this->m_data[3][2] - b.m_data[3][2];
+      res[3][3] = this->m_data[3][3] - b.m_data[3][3];
+
+      return Matrix44d(res);
+    }
+
+    Matrix44d operator*(const f64 &b) const
+    {
+      f64 res[4][4];
+      res[0][0] = this->m_data[0][0] * b;
+      res[0][1] = this->m_data[0][1] * b;
+      res[0][2] = this->m_data[0][2] * b;
+      res[0][3] = this->m_data[0][3] * b;
+      
+      res[1][0] = this->m_data[1][0] * b;
+      res[1][1] = this->m_data[1][1] * b;
+      res[1][2] = this->m_data[1][2] * b;
+      res[1][3] = this->m_data[1][3] * b;
+      
+      res[2][0] = this->m_data[2][0] * b;
+      res[2][1] = this->m_data[2][1] * b;
+      res[2][2] = this->m_data[2][2] * b;
+      res[2][3] = this->m_data[2][3] * b;
+      
+      res[3][0] = this->m_data[3][0] * b;
+      res[3][1] = this->m_data[3][1] * b;
+      res[3][2] = this->m_data[3][2] * b;
+      res[3][3] = this->m_data[3][3] * b;
+
+      return Matrix44d(res);
+    }
+
+    Matrix44d operator*(const Matrix44d &b) const
+    {
+      f64 res[4][4] = {0};
+      vtkMatrix4x4::Multiply4x4(&this->m_data[0][0], &b.m_data[0][0], &res[0][0]);
+      return Matrix44d(res);
+    }
+
+    Vec4d Col(s32 col) const
+    {
+      return Vec4d(m_data[0][col], m_data[1][col], m_data[2][col], m_data[3][col]);
+    }
+
+    Vec4d Row(s32 row) const
+    {
+      return Vec4d(m_data[row][0], m_data[row][1], m_data[row][2], m_data[row][3]);
+    }
+
+    Vec4d operator*(const Vec4d &b) const
+    {
+       return this->Col(0)*b.x + this->Col(1)*b.y + this->Col(2)*b.z + this->Col(3)*b.w;
+    }
+
+    Matrix44d Transpose() const
+    {
+      f64 res[4][4] = {0};
+      vtkMatrix4x4::Transpose(&this->m_data[0][0],&res[0][0]);
+      return Matrix44d(res);
+    }
+
+    Matrix44d Inverse() const
+    {
+      f64 res[4][4] = {0};
+      vtkMatrix4x4::Invert(&this->m_data[0][0], &res[0][0]);
+      return Matrix44d(res);
+    }
+
+    f64 Determinant() const
+    {
+      return vtkMatrix4x4::Determinant(&this->m_data[0][0]);
+    }
   };
 }
