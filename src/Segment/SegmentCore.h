@@ -4,6 +4,11 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <math.h>
+
+#include <cv.h>
+#include <cxcore.h>
+#include <highgui.h>
+
 #include <vtkMath.h>
 #include <vtkMatrix4x4.h>
 #include "windows.h"
@@ -484,6 +489,23 @@ namespace Nf
       return *this;  // Return a reference to myself.
     }
 
+    Matrix33<T> operator=(const cv::Mat &rhs)
+    {
+      if(rhs.cols != 3 && rhs.rows != 3) {
+        assert(0);
+      }
+
+      T data[3][3];
+
+      for(s32 r=0; r<3; r++) {
+        for(s32 c=0; c<3; c++) {
+          data[r][c] = rhs.at<T>(r,c);
+        }
+      }
+
+      return Matrix33<T>(data);
+    }
+
     Matrix33<T> operator+(const Matrix33<T> &b) const
     {
       T res[3][3];
@@ -662,6 +684,23 @@ namespace Nf
     {
       memcpy(&this->m_data[0][0], &rhs.m_data[0][0], sizeof(f64)*16);
       return *this;  // Return a reference to myself.
+    }
+
+    static Matrix44d FromCvMat(const cv::Mat &rhs)
+    {
+      if(rhs.cols != 4 && rhs.rows != 4) {
+        assert(0);
+      }
+
+      f64 data[4][4];
+
+      for(s32 r=0; r<4; r++) {
+        for(s32 c=0; c<4; c++) {
+          data[r][c] = rhs.at<f64>(r,c);
+        }
+      }
+
+      return Matrix44d(data);
     }
 
     Matrix44d operator+(const Matrix44d &b) const

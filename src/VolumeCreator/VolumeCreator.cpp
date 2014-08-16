@@ -11,7 +11,7 @@ namespace Nf {
   {
   }
 
-  s32 Volume::InitializeVolume(Matrix33d &orientation, Vec3d frameOrigin, VOLUME_ORIGIN_LOCATION config, Vec3d extent, Vec3d spacing)
+  s32 Volume::InitializeVolume(Matrix33d &orientation, Vec3d frameOrigin, VOLUME_ORIGIN_LOCATION config, Vec3d extent, Vec3d spacing, f64 imscale)
   {
     m_dims = Vec3i((s32)ceil(extent.x/spacing.x), (s32)ceil(extent.y/spacing.y), (s32)ceil(extent.z/spacing.z));
     m_data = (u16 *)_aligned_malloc(m_dims.x*m_dims.y*m_dims.z*sizeof(u16), 64);
@@ -44,6 +44,8 @@ namespace Nf {
     
     m_volumeToWorld = Matrix44d::FromOrientationAndTranslation(m_orientation*Matrix33d::Diaganol(m_spacing),m_origin);
     m_worldToVolume = m_volumeToWorld.Inverse();
+
+    m_scale = imscale;
 
     return m_data != NULL ? 1 : 0;
   }
@@ -102,12 +104,7 @@ namespace Nf {
     return Vec3d(wc.x, wc.y, wc.z);
   }
 
-  void Volume::SetScale(f64 scale)
-  {
-    m_scale = scale;
-  }
-
-  void Volume::AddFrame(const IplImage *image, const Matrix33d &orientation, const Vec3d &origin, const Matrix44d &calibration, const Vec2d &mpp)
+  void Volume::AddFrame(const IplImage *image, const Matrix33d &pose, const Vec3d &pos, const Matrix44d &calibration, const Vec2d &mpp)
   {
     //TODO OPTIMIZE!!!!!
     const IplImage *im = image;
@@ -121,7 +118,7 @@ namespace Nf {
     Vec4d imc, sensor, world, grid;
     Vec3i gridI;
 
-    Matrix44d augOrientation = Matrix44d::FromOrientationAndTranslation(orientation, origin);
+    Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, pos);
 
     for(s32 y=0; y<im->height; y++) {
       const u8 *psrc = (const u8 *)(image->imageData+y*image->widthStep);
@@ -129,13 +126,13 @@ namespace Nf {
         //Map image coord to world coord
         imc = Vec4d(1, (y-start.y)*scale.y, (x-start.x)*scale.x, 1);
         sensor = calibration*imc;
-        world = augOrientation*sensor;
+        world = posePos*sensor;
 
         //Now map to volume coord
         grid = m_worldToVolume*world;
         gridI = Vec3i((s32)(grid.x+0.5),(s32)(grid.y+0.5),(s32)(grid.z+0.5));
 
-        //Cast and write to volume
+        //Cast to u16 and write to volume
         *GetCoordData(gridI) = (u16)psrc[x];
       }
     }
@@ -145,30 +142,92 @@ namespace Nf {
   //End Volume Class
   ////////////////////////////////////////////////////////
   
-#if 0
+#if 1
   ////////////////////////////////////////////////////////
-  //VolumeCreator Class
+  //RPVolumeCreator Class
   ////////////////////////////////////////////////////////
-
-  VolumeCreator::VolumeCreator()
+  RPVolumeCreator::RPVolumeCreator()
+    : m_index(-1)
+    , m_newData(false)
   {
   }
 
-  
-  s32 VolumeCreator::Initialize(Matrix33d &orientation, Vec3d frameOrigin, VOLUME_ORIGIN_LOCATION config, 
-    Vec3d extent, Vec3d spacing)
+  RPVolumeCreator::~RPVolumeCreator()
   {
-    m_vol.Initialize(orientation, frameOrigin, config, extent, spacing);
   }
 
-  void VolumeCreator::Release()
+  Volume *RPVolumeCreator::GetNew()
   {
-    m_vol.Release();
+    m_newData = false;
+    return m_newData ? &m_volume : NULL;
+  }
+
+  void RPVolumeCreator::Release()
+  {
+    m_volume.Release();
   }
 
   ////////////////////////////////////////////////////////
-  //End VolumeCreator Class
+  //End RPVolumeCreator Class
   ////////////////////////////////////////////////////////
+
+
+  ////////////////////////////////////////////////////////
+  //RPFullVolumeCreator Class
+  ////////////////////////////////////////////////////////
+  RPFullVolumeCreator::RPFullVolumeCreator()
+    : RPVolumeCreator()
+  {
+  }
+
+  RPFullVolumeCreator::~RPFullVolumeCreator()
+  {
+  }
+
+  s32 RPFullVolumeCreator::Initialize(const char *path, Matrix44d &calibration, Vec2d &mpp, VOLUME_ORIGIN_LOCATION config, Vec3d &extent, Vec3d &spacing, f64 imscale)
+  {
+    //TODO RPReader pointers created below are leaked.
+    char temp[200];
+    sprintf(temp,"%s/scan.b8",path);
+    m_rpReaders.AddReader(RPF_BPOST8, (RPReader *)new RPFileReader(temp));
+    sprintf(temp,"%s/scan.gps1",path);
+    m_rpReaders.AddGPSReader((RPGPSReaderBasic *)new RPGPSReader(temp));
+
+    m_cal = calibration;
+    m_mpp = mpp;
+
+
+
+    RPData rp = m_rpReaders.GetNextRPData();
+    if(!rp.gps.valid) {
+      //TODO:  Release readers to avoid a leak!
+
+      return -1;
+    }
+
+    Matrix44d tPose = Matrix44d::FromCvMat(rp.gps.pose);
+    Matrix33d pose = tPose.GetOrientation();
+    s32 rv = m_volume.InitializeVolume(pose, rp.gps.pos, config, extent, spacing, imscale);
+    if(rv < 0)
+      return rv;
+
+    //Since this is full volume creator, iterate through all frames.
+    while(rp.gps.valid) {
+      tPose = Matrix44d::FromCvMat(rp.gps.pose);
+      pose = tPose.GetOrientation();
+
+      m_volume.AddFrame(rp.b8, pose, rp.gps.pos, m_cal, m_mpp);
+
+      rp.Release();
+    }
+
+
+    return 0;
+  }
+
+  ////////////////////////////////////////////////////////
+  //End RPFullVolumeCreator Class
+  ///////////////////////////////////////////////////////
 #endif
 };
 

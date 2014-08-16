@@ -4,6 +4,7 @@
 #include <highgui.h>
 
 #include "SegmentCore.h"
+#include "RPFileReader.h"
 
 namespace Nf {
 
@@ -39,8 +40,6 @@ namespace Nf {
 
     void Reinitialize();
 
-    void AddFrame(const IplImage *image, const Matrix33d &orientation, const Vec3d &origin, const Matrix44d &calibration, const Vec2d &mpp);
-
   public:
     Volume();
     //Volume represents a 3D cube (with non-equal dimensions)
@@ -55,7 +54,7 @@ namespace Nf {
     //extent:  Specifies the extent of the volume in physical units.  It will be converted to numbers of voxels by taking into
     //  account spacing
     //spacing:  Specifiy the distance between voxels in each of the axes in phyiscal units.
-    s32 InitializeVolume(Matrix33d &orientation, Vec3d frameOrigin, VOLUME_ORIGIN_LOCATION config, Vec3d extent, Vec3d spacing);
+    s32 InitializeVolume(Matrix33d &orientation, Vec3d frameOrigin, VOLUME_ORIGIN_LOCATION config, Vec3d extent, Vec3d spacing, f64 imscale);
     void Release();
 
     Vec3d GetSpacing();
@@ -65,21 +64,60 @@ namespace Nf {
     Vec3d WorldCoordinatesToVolumeCoordinates(Vec3d worldCoords);
     Vec3d VolumeCoordinatesToWorldCoordinates(Vec3d volCoords);
 
-    //Scale images before they are added to the volume
-    void SetScale(f64 scale);
+    void AddFrame(const IplImage *image, const Matrix33d &pose, const Vec3d &pos, const Matrix44d &calibration, const Vec2d &mpp);
   };
 
-#if 0
+
   class VolumeCreator 
   {
   public:
-    VolumeCreator();
-    s32 Initialize(Matrix33d &orientation, Vec3d frameOrigin, VOLUME_ORIGIN_LOCATION config, Vec3d extent, Vec3d spacing);
-    void Release();
-    void AddFrame(const IplImage *im);
+    virtual ~VolumeCreator();
+    virtual Volume *GetNew() = 0;
+  };
 
+  typedef enum
+  {
+    RPVM_READ_ALL = 0,              //Read all b-mode frames and put them into the volume at once
+    RPVM_READ_RANGE = 1,            //Read range of b-mode frames and update pipeline sequentially
+    RPVM_READ_SEQUENTIALLY = 2,     //Read all b-mode frames and update pipeline sequentially
+  } RP_VOLUME_READ_MODE;
+
+  //Create vtkImageData objects from RP b8 files
+  class RPVolumeCreator : VolumeCreator
+  {
   protected:
-    Volume m_vol;
+    s32 m_index;                            //Current frame index.  Valid when m_rm != RPVM_READ_ALL              
+    bool m_newData;                         //New data since last GetNew() call?
+    Volume m_volume;                        //Self explanatory
+    RPFileReaderCollection m_rpReaders;     //What will actually do the reading for us
+    Matrix44d m_cal;                        //Calibration Matrix for transducer (maps image coords to world coords)
+    Vec2d m_mpp;                            //Vector containing microns per pixel of b-mode image in x&y dimensions
+
+  public:
+    RPVolumeCreator();
+    virtual ~RPVolumeCreator();
+    Volume *GetNew();
+    virtual void Start() = 0;
+    void Release();
+  };
+
+  class RPFullVolumeCreator : RPVolumeCreator
+  {
+  public:
+    RPFullVolumeCreator();
+    virtual ~RPFullVolumeCreator();
+    s32 Initialize(const char *path, Matrix44d &calibration, Vec2d &mpp, VOLUME_ORIGIN_LOCATION config, Vec3d &extent, Vec3d &spacing, f64 imscale);
+  };
+
+#if 0
+  class RPSequentialVolumeCreator : RPVolumeCreator
+  {
+  };
+
+  class RPRangeVolumeCreator : RPVolumeCreator
+  {
+  protected:
+    Vec2i m_range;                          //Frame range.  Valid when m_rm == RPVM_READ_RANGE
   };
 #endif
 };
