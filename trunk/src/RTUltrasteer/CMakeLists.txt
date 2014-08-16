@@ -25,6 +25,7 @@ INCLUDE( ${QT_USE_FILE} )
 INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_BINARY_DIR} #this is where ui_ImageViewerUI.h is generated
   ${CMAKE_CURRENT_SOURCE_DIR}
+  ../VolumeCreator
 ) 
 
 SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp USVisualizerWidget.cpp)

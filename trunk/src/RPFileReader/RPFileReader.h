@@ -139,6 +139,18 @@ namespace Nf
       this->gps = rhs.gps;
       return *this;
     }
+
+    void Release()
+    {
+      if(this->b8)
+        cvReleaseImage(&this->b8);
+      if(this->color)
+        cvReleaseImage(&this->color);
+      if(this->sig)
+        cvReleaseImage(&this->sig);
+      if(this->var)
+        cvReleaseImage(&this->var);
+    }
   };
 
   class RPGPSReaderBasic {
