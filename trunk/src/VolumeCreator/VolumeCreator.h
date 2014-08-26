@@ -25,7 +25,6 @@ namespace Nf {
 
     u16 * GetSlice(s32 z);
     u16 * GetRow(s32 z, s32 r);
-    u16 * GetCoordData(Vec3i coord);
 
     Vec3i m_dims;   //number of voxels in x,y,z axis resp.
     Vec3d m_spacing;  //spacing between voxels in x,y,z axis resp. (physical units)
@@ -39,6 +38,8 @@ namespace Nf {
     f64 m_scale;  //scale factor to apply to images before adding to the volume
 
     void Reinitialize();
+
+    IplImage *m_im;
 
   public:
     Volume();
@@ -60,6 +61,8 @@ namespace Nf {
     Vec3d GetSpacing();
     Vec3d GetOrigin();
     Matrix33d GetOrientation();
+    Vec3i GetDims();
+    u16 * GetCoordData(Vec3i coord);
 
     Vec3d WorldCoordinatesToVolumeCoordinates(Vec3d worldCoords);
     Vec3d VolumeCoordinatesToWorldCoordinates(Vec3d volCoords);
@@ -98,15 +101,18 @@ namespace Nf {
     virtual ~RPVolumeCreator();
     Volume *GetNew();
     virtual void Start() = 0;
+    virtual Vec3i GetVolumeDims();
+    virtual u16 * GetVolumeOriginData();
     void Release();
   };
 
-  class RPFullVolumeCreator : RPVolumeCreator
+  class RPFullVolumeCreator : public RPVolumeCreator
   {
   public:
     RPFullVolumeCreator();
     virtual ~RPFullVolumeCreator();
     s32 Initialize(const char *path, Matrix44d &calibration, Vec2d &mpp, VOLUME_ORIGIN_LOCATION config, Vec3d &extent, Vec3d &spacing, f64 imscale);
+    void Start();
   };
 
 #if 0

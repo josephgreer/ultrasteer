@@ -29,6 +29,12 @@ typedef double f64;
 
 #define PI 3.14159265359f
 
+#ifdef _DEBUG
+#define DEBUG_ASSERT(x) if(!(x)) { int a = 0;  int b = 1/a; } 
+#else
+#define DEBUG_ASSERT(x)
+#endif
+
 namespace Nf
 {
 
@@ -219,6 +225,14 @@ namespace Nf
       return *this;  // Return a reference to myself.
     }
 
+    Vec3<T> operator=(const Vec4<T> &rhs)
+    {
+      this->x = rhs.x;
+      this->y = rhs.y;
+      this->z = rhs.z;
+      return *this;
+    }
+
     Vec3<T> operator+(const Vec3<T> &b) const
     {
       return Vec3<T>(a.x+b.x, a.y+b.y, a.z+b.z);
@@ -249,7 +263,11 @@ namespace Nf
 
     Vec3<T> cross(const Vec3<T> &b) const
     {
-      return Vec3<T>(this->y*b.z-this->z*b.y, this->z*b.z-this->x*b.z, this->x*b.y-this->y*b.x);
+      T va[3] = {this->x, this->y, this->z};
+      T vb[3] = {b.x, b.y, b.z};
+      T vc[3] = {0};
+      vtkMath::Cross(va, vb, vc);
+      return Vec3<T>(vc[0], vc[1], vc[2]);
     }
 
     T magnitudeSquared() const
@@ -439,6 +457,12 @@ namespace Nf
       memcpy(m_data, mat, sizeof(T)*9);
     }
 
+    Matrix33(f64 a11, f64 a12, f64 a13, f64 a21, f64 a22, f64 a23, f64 a31, f64 a32, f64 a33)
+    {
+      m_data[0][0] = a11; m_data[0][1] = a12; m_data[0][2] = a13; 
+      m_data[1][0] = a21; m_data[1][1] = a22; m_data[1][2] = a23; 
+      m_data[2][0] = a31; m_data[2][1] = a32; m_data[2][2] = a33; 
+    }
     static Matrix33<T> I()
     {
       T data[3][3];
@@ -568,6 +592,13 @@ namespace Nf
       return Matrix33<T>(res);
     }
 
+    void Print() const
+    {
+      NTrace("[%f %f %f; %f %f %f; %f %f %f]\n", m_data[0][0], m_data[0][1], m_data[0][2],
+        m_data[1][0], m_data[1][1], m_data[1][2],
+        m_data[2][0], m_data[2][1], m_data[2][2]);
+    }
+
     Vec3<T> Col(s32 col) const
     {
       return Vec3<T>(m_data[0][col], m_data[1][col], m_data[2][col]);
@@ -626,6 +657,14 @@ namespace Nf
     Matrix44d(const f64 mat[4][4])
     {
       memcpy(m_data, mat, sizeof(f64)*16);
+    }
+
+    Matrix44d(f64 a11, f64 a12, f64 a13, f64 a14, f64 a21, f64 a22, f64 a23, f64 a24, f64 a31, f64 a32, f64 a33, f64 a34, f64 a41, f64 a42, f64 a43, f64 a44)
+    {
+      m_data[0][0] = a11; m_data[0][1] = a12; m_data[0][2] = a13; m_data[0][3] = a14;
+      m_data[1][0] = a21; m_data[1][1] = a22; m_data[1][2] = a23; m_data[1][3] = a24;
+      m_data[2][0] = a31; m_data[2][1] = a32; m_data[2][2] = a33; m_data[2][3] = a34;
+      m_data[3][0] = a41; m_data[3][1] = a42; m_data[3][2] = a43; m_data[3][3] = a44;
     }
 
     static Matrix44d I()
@@ -813,6 +852,14 @@ namespace Nf
       return Matrix44d(res);
     }
 
+    void Print() const
+    {
+      NTrace("[%f %f %f %f; %f %f %f %f; %f %f %f %f; %f %f %f %f]\n", m_data[0][0], m_data[0][1], m_data[0][2], m_data[0][3],
+        m_data[1][0], m_data[1][1], m_data[1][2], m_data[1][3],
+        m_data[2][0], m_data[2][1], m_data[2][2], m_data[2][3],
+        m_data[3][0], m_data[3][1], m_data[3][2], m_data[3][3]);
+    }
+
     Vec4d Col(s32 col) const
     {
       return Vec4d(m_data[0][col], m_data[1][col], m_data[2][col], m_data[3][col]);
@@ -847,4 +894,15 @@ namespace Nf
       return vtkMatrix4x4::Determinant(&this->m_data[0][0]);
     }
   };
+
+  template < class T >
+  static void printMatrix33(const Matrix33<T> & matrix)
+  {
+    matrix.Print();
+  }
+
+  static void printMatrix44(const Matrix44d & matrix)
+  {
+    matrix.Print();
+  }
 }
