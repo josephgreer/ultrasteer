@@ -142,22 +142,39 @@ namespace Nf {
       const u8 *psrc = (const u8 *)(image->imageData+y*image->widthStep);
       for(s32 x=0; x<im->width; x++) {
         //Map image coord to world coord
-        world = rpImageCoordToWorldCoord4(Vec2d(x,y), posePos, calibration, start, scale);
+        world = rpImageCoordToWorldCoord4(Vec2d(x/m_scale,y/m_scale), posePos, calibration, start, scale);
 
-        if(x == 320 && y == 240)
+        if(x == 160 && y == 120)
           int x = 0;
 
         //Now map to volume coord
         grid = m_worldToVolume*world;
         gridI = Vec3i((s32)(grid.x+0.5),(s32)(grid.y+0.5),(s32)(grid.z+0.5));
 
-        DEBUG_ASSERT(0 <= gridI.x && gridI.x < m_dims.x && 0 <= gridI.y && gridI.y < m_dims.y 
-          && 0 <= gridI.z && gridI.z < m_dims.z);
+        //DEBUG_ASSERT(0 <= gridI.x && gridI.x < m_dims.x && 0 <= gridI.y && gridI.y < m_dims.y 
+        //  && 0 <= gridI.z && gridI.z < m_dims.z);
+        if(!(0 <= gridI.x && gridI.x < m_dims.x && 0 <= gridI.y && gridI.y < m_dims.y 
+          && 0 <= gridI.z && gridI.z < m_dims.z))
+          continue;
 
         //Cast to u16 and write to volume
         *GetCoordData(gridI) = (u16)psrc[x];
       }
     }
+  }
+
+  Cubed Volume::GetCubeExtent() const
+  {
+    Vec3d extent(m_dims.x*m_spacing.x, m_dims.y*m_spacing.y, m_dims.z*m_spacing.z);
+    Vec3d ul = m_origin;
+    Vec3d br = m_origin+m_orientation.Col(0)*extent.x+m_orientation.Col(1)*extent.y+m_orientation.Col(2)*extent.z;
+    return Cubed(ul, br);
+  }
+
+  Cubed Volume::GetPhysicalExtent() const
+  {
+    Vec3d extent(m_dims.x*m_spacing.x, m_dims.y*m_spacing.y, m_dims.z*m_spacing.z);
+    return Cubed(Vec3d(0,0,0), extent);
   }
 
   Vec3i Volume::GetDims()
@@ -212,6 +229,16 @@ namespace Nf {
   u16 * RPVolumeCreator::GetVolumeOriginData()
   {
     return m_volume.GetCoordData(Vec3i(0,0,0));
+  }
+
+  Cubed RPVolumeCreator::GetVolumeCubeExtent() const
+  {
+    return m_volume.GetCubeExtent();
+  }
+  
+  Cubed RPVolumeCreator::GetVolumePhysicalExtent() const
+  {
+    return m_volume.GetPhysicalExtent();
   }
 
   ////////////////////////////////////////////////////////

@@ -235,7 +235,7 @@ namespace Nf
 
     Vec3<T> operator+(const Vec3<T> &b) const
     {
-      return Vec3<T>(a.x+b.x, a.y+b.y, a.z+b.z);
+      return Vec3<T>(this->x+b.x, this->y+b.y, this->z+b.z);
     }
 
     Vec3<T> operator+=(const Vec3<T> &b)
@@ -438,6 +438,22 @@ namespace Nf
 
   typedef Square < int > Squarei;
   typedef Square < float > Squaref;
+
+  template < class T >
+  class Cube
+  {
+  public:
+    Vec3<T> m_ul, m_br;
+    Cube(Vec3<T> ul, Vec3<T> br)
+      : m_ul(ul)
+      , m_br(br)
+    {
+    }
+  };
+
+  typedef Cube < s32 > Cubei;
+  typedef Cube < f32 > Cubef;
+  typedef Cube < f64 > Cubed;
 
   //should have used vtkMatrix3x3 but apparently they don't advertise it very well, so I made
   //this before I found out about it
