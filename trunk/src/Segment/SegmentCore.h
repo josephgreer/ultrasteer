@@ -444,6 +444,12 @@ namespace Nf
   {
   public:
     Vec3<T> m_ul, m_br;
+    Cube()
+      : m_ul(0,0,0)
+      , m_br(0,0,0)
+    {
+    }
+
     Cube(Vec3<T> ul, Vec3<T> br)
       : m_ul(ul)
       , m_br(br)
