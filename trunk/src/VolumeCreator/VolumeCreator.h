@@ -63,6 +63,8 @@ namespace Nf {
     Matrix33d GetOrientation();
     Vec3i GetDims();
     u16 * GetCoordData(Vec3i coord);
+    Cubed GetCubeExtent() const;
+    Cubed GetPhysicalExtent() const;
 
     Vec3d WorldCoordinatesToVolumeCoordinates(Vec3d worldCoords);
     Vec3d VolumeCoordinatesToWorldCoordinates(Vec3d volCoords);
@@ -103,6 +105,8 @@ namespace Nf {
     virtual void Start() = 0;
     virtual Vec3i GetVolumeDims();
     virtual u16 * GetVolumeOriginData();
+    virtual Cubed GetVolumeCubeExtent() const;
+    virtual Cubed GetVolumePhysicalExtent() const;
     void Release();
   };
 

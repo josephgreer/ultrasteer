@@ -10,5 +10,4 @@ public:
   void Initialize();
 
   virtual QSize sizeHint() const;
-
 };
