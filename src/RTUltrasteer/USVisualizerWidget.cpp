@@ -20,7 +20,9 @@ using namespace Nf;
 
 USVisualizerWidget::USVisualizerWidget()
 : QVTKWidget()
+, Nf::ParameterCollection("Ultrasound Visualization")
 {
+  ADD_BOOL_PARAMETER(m_showVolumeExtent, false, "Show Volume Extent");
 }
 
 QSize USVisualizerWidget::sizeHint() const
@@ -30,7 +32,7 @@ QSize USVisualizerWidget::sizeHint() const
 
 void USVisualizerWidget::Initialize()
 {
-#if 0
+#if 1
   // Sphere
   vtkSmartPointer<vtkSphereSource> sphereSource = 
     vtkSmartPointer<vtkSphereSource>::New();
@@ -50,6 +52,7 @@ void USVisualizerWidget::Initialize()
 
 #else
 
+  //Volume visualization
   RPFullVolumeCreator rpvc;
   Vec3d spacing(83.0/1000.0*4, 83.0/1000.0*4, 83.0/1000.0*4);
   Matrix44d cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0);
@@ -86,10 +89,11 @@ void USVisualizerWidget::Initialize()
   renderer->AddViewProp(volume);
   renderer->SetBackground(0.0, 0.0, 0.0);
 
-  vtkSmartPointer<vtkActor> cubeActor = vtkSmartPointer<vtkActor>::New();
-
+  //Cube Visualization
   CubeVisualizer extentVis(rpvc.GetVolumePhysicalExtent());
   renderer->AddActor(extentVis.GetActor());
+
+  renderer->RemoveActor(extentVis.GetActor());
 
   this->GetRenderWindow()->AddRenderer(renderer);
 

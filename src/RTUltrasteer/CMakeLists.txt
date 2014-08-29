@@ -30,9 +30,9 @@ INCLUDE_DIRECTORIES(
   ../RPFileReader
 ) 
 
-SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp USVisualizerWidget.cpp)
+SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp USVisualizerWidget.cpp UICore.cpp)
 
-SET(ultrasteerHeaders RTUltrasteer.h USVisualizerWidget.h)
+SET(ultrasteerHeaders RTUltrasteer.h USVisualizerWidget.h UICore.h)
 
 SET(ultrasteerUI RTUltrasteer.ui)
 

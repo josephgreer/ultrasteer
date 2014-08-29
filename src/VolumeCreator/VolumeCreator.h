@@ -5,6 +5,7 @@
 
 #include "SegmentCore.h"
 #include "RPFileReader.h"
+#include "UICore.h"
 
 namespace Nf {
 
@@ -73,9 +74,10 @@ namespace Nf {
   };
 
 
-  class VolumeCreator 
+  class VolumeCreator : public ParameterCollection
   {
   public:
+    VolumeCreator();
     virtual ~VolumeCreator();
     virtual Volume *GetNew() = 0;
   };
