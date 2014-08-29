@@ -5,8 +5,7 @@ IF (VTK_FOUND)
    INCLUDE(${USE_VTK_FILE})
 ENDIF(VTK_FOUND)
 
-
-INCLUDE_DIRECTORIES(${OPENCV_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} ../Segment ../RPFileReader)
+INCLUDE_DIRECTORIES(${OPENCV_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} ../Segment ../RPFileReader ../RTUltrasteer)
 
 SET(VolumeCreatorHeaders VolumeCreator.h CubeVisualizer.h)
 SET(VolumeCreatorSources VolumeCreator.cpp CubeVisualizer.cpp)

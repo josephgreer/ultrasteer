@@ -3,9 +3,49 @@
 
 #include <QtGui/QMainWindow>
 #include <QtGui/QDockWidget>
-#include <QtGui/QListWidget>
+#include <QtGui/QTreeWidget>
 #include "ui_rtultrasteer.h"
+#include "UICore.h"
 #include "USVisualizerWidget.h"
+
+namespace Nf
+{
+  typedef void (*Function)(void *); 
+
+  class BoolSlotForwarder : public QObject, public UIElement < bool >
+  {
+    Q_OBJECT
+
+  private:
+
+    QTreeWidgetItem *m_element;
+    void *m_context;
+    Function m_fptr;
+
+  public:
+
+    BoolSlotForwarder(Function function, void *context, QTreeWidgetItem *element, QObject* parent = 0) 
+      : QObject(parent)
+      , m_fptr(function)
+      , m_context(context)
+      , m_element(element)
+    {}
+
+    bool GetValue()
+    {
+      return m_element->checkState(1) == Qt::Checked;
+    }
+
+    public slots:
+
+      void forward()
+      {
+        m_element->setText(1, m_element->checkState(1) == Qt::Checked ? "True" : "False");
+        if(m_fptr)
+          m_fptr(m_context);
+      }
+  };
+}
 
 class RTUltrasteer : public QMainWindow
 {
@@ -22,10 +62,14 @@ private:
     USVisualizerWidget *m_usVis;
 
     QDockWidget *m_menu;
-    QListWidget *m_params;
+    QTreeWidget *m_params;
 
     void CreateUSVisualizer();
     void CreateMenuDock();
+
+    void CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollection &collection);
+
+    std::vector < QTreeWidgetItem * > m_roots;
 };
 
 #endif // RTULTRASTEER_H

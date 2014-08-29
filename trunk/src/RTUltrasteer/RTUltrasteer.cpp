@@ -1,4 +1,4 @@
-#include "rtultrasteer.h"
+#include "RTUltrasteer.h"
 
 RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
     : QMainWindow(parent, flags)
@@ -9,8 +9,30 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
 {
   ui.setupUi(this);
 
-  CreateUSVisualizer();
   CreateMenuDock();
+  CreateUSVisualizer();
+
+  QTreeWidgetItem * usVis = new QTreeWidgetItem(m_params);
+  usVis->setText(0, m_usVis->GetName());
+  CreateUIElements(usVis, *m_usVis);
+  m_roots.push_back(usVis);
+}
+
+void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollection &collection) 
+{
+  std::vector < std::tr1::shared_ptr < Nf::BoolParameter > > bools = collection.GetBoolParameters();
+  for(s32 i=0; i<(s32)bools.size(); i++) {
+    QTreeWidgetItem *child = new QTreeWidgetItem();
+    parent->addChild(child);
+    child->setText(0, bools[i]->GetName());
+    child->setText(1, bools[i]->GetValue() ? "true" : "false");
+
+    Nf::BoolSlotForwarder * uiElem = new Nf::BoolSlotForwarder(NULL, NULL, child, NULL);
+    //td::tr1::shared_ptr < Nf::BoolSlotForwarder > uiElem (new Nf::BoolSlotForwarder(NULL, NULL, child, NULL));
+    //child->setFlags(child->flags() | Qt::ItemIsUserCheckable);
+    bools[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< bool > >(uiElem));
+    QObject::connect((QObject *)this, SIGNAL(QTreeWidgetItem *, int), (QObject *)uiElem, SLOT(forward()));
+  }
 }
 
 
@@ -31,7 +53,10 @@ void RTUltrasteer::CreateMenuDock()
   m_menu = new QDockWidget(tr("Menu"), this);
   m_menu->setAllowedAreas(Qt::AllDockWidgetAreas);
 
-  m_params = new QListWidget(m_menu);
+  m_params = new QTreeWidget(m_menu);
+  m_params->setColumnCount(2);
+  m_params->setHeaderLabels(QStringList() << "Parameter" << "Value");
+
   m_menu->setWidget(m_params);
   
   addDockWidget(Qt::LeftDockWidgetArea, m_menu);

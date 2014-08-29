@@ -190,6 +190,12 @@ namespace Nf {
   ////////////////////////////////////////////////////////
   //VolumeCreator Class
   ////////////////////////////////////////////////////////
+  VolumeCreator::VolumeCreator()
+    : ParameterCollection("Volume Creator")
+  {
+
+  }
+
   VolumeCreator::~VolumeCreator()
   {
   }
