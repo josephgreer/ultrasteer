@@ -7,6 +7,7 @@
 
 namespace Nf
 {
+  //Callback type for UI events
   typedef void (*Function)(void *); 
 
   typedef enum {
@@ -16,23 +17,29 @@ namespace Nf
     PT_STRING,
   } PARAMETER_TYPE;
 
+  //UIElement is an interface that is impelmented in QT projects
+  //UIElement is defined abstractly to make it so that projects
+  //can implement paramters without having to be QT projects and 
+  //include QT headers.  A concrete UIElement is defined in 
+  //RTUltrasteer.cpp
   template <class T>
   class UIElement
   {
   public:
-    virtual T GetValue() = 0;
+    virtual T GetValue() = 0;  //Get the UI element's value
   };
 
+  //Basic parameter class (T = string, float, int, etc.) 
   template <class T>
   class Parameter
   {
   protected:
-    T m_val;
-    PARAMETER_TYPE m_type;
-    char m_name[200];
-    std::tr1::shared_ptr < UIElement < T > > m_element;
-    Function m_callback;
-    void *m_context;
+    T m_val;                            //Current value
+    PARAMETER_TYPE m_type;              //Type
+    char m_name[200];                   //String that is displayed to user
+    std::tr1::shared_ptr < UIElement < T > > m_element;   //Pointer to UI Element that represents the paramter.  This is set later by the code that displays this parameter
+    Function m_callback;                //Callback function for UI interaction with this parameter.  This is set at creation time.
+    void *m_context;                    //Callback context for UI interaction.  (Usually a class pointer.)  This is set at creation time.
 
   public:
     Parameter()
@@ -41,6 +48,9 @@ namespace Nf
       m_callback = NULL;
     }
 
+    //Constructor for generic parameter
+    //Definition is self-explanmatory.  
+    //Parameters are generally created with the ADD_xx_PARAMETER macros below
     Parameter(PARAMETER_TYPE type, const char *name, Function callback, void *context, T def)
       : m_val(def)
       , m_type(type)
@@ -57,6 +67,8 @@ namespace Nf
       return m_val;
     }
 
+    //Sets the UIElement class.  This is set in GUI code that actually creates
+    //a UI manifestation of this element
     virtual void SetUIElement(std::tr1::shared_ptr < UIElement < T > > element)
     {
       m_element = element;
@@ -67,17 +79,22 @@ namespace Nf
       return m_name;
     }
 
+    //Used in GUI code that creates a UI manifestation of the parameter
     virtual Function GetCallback()
     {
       return m_callback;
     }
 
+
+    //Used in GUI code that creates a UI manifestation of the parameter
     virtual void *GetContext()
     {
       return m_context;
     }
   };
 
+  //Number parameter class (T = float, int, etc.) 
+  //Same as Parameter, only min, max, and step can be specified
   template < class T >
   class NumberParameter : public Parameter < T >
   {
@@ -124,6 +141,10 @@ namespace Nf
   
   class ParameterCollection;
 
+  //A parameter collection is a container of parameters
+  //A UI manifestation of a parameter collection is a
+  //dropdown in a tree view.
+  //Parameters themselves are tree leaves.
   class ParameterCollection
    {
    protected:
@@ -154,6 +175,8 @@ namespace Nf
    };
 }
 
+//These macros are used in a cpp file of a ParameterCollection
+//They take care of creaitng the parameter and inserting them into the collection
 #define ADD_STRING_PARAMETER(var, name, callback, context, val) \
   var = std::tr1::shared_ptr < Nf::StringParameter > (new Nf::StringParameter(PT_STRING, name, callback, context, val)); \
   m_bools.push_back(var);
@@ -170,10 +193,35 @@ namespace Nf
   var = std::tr1::shared_ptr < Nf::BoolParameter > (new Nf::BoolParameter(PT_BOOL, name, callback, context, val)); \
   m_bools.push_back(var);
 
+//Since callbacks must be static and we usually want to call a class function
+//a class, this takes care of the dirty work of creating a static function,
+//and calling a class function of the same name and then calling the class function
+//on the context paramter
 #define CLASS_CALLBACK(x, type) \
   static void stat##x(void *context) { \
     type * obj = (type *)context; \
     obj->x(); \
   }\
 
+//When we need to pass a callback to an ADD_xx_PARAMETER macro,
+//we use this to get a reference to the callback.  The same arguments
+//should be used as the CLASS_CALLBACK macro
 #define CALLBACK_POINTER(x, type) (&type::stat##x)
+
+//Example:
+//I have a float parameter, FloatParameter m_gravity;
+//I want an MyClass::onGravityChanged() function to be called
+//I can't use a member function as a callback function pointer 
+//Therefore I create a static function static MyClass::statOnGravityChanged(void *context)
+//and in it i call ((MyClass *)(context))->onGravityChanged();
+//To save the time of writing this code for every parameter, I just use the following lines of code:
+// class MyClass : ParameterCollection {
+//   FloatParameter m_gravity;
+//    void onGravityChanged();
+//    CLASS_CALLBACK(onGravityChanged, MyClass);
+// }
+
+// In the MyClass Constructor I do the following:
+// MyClass::MyClass() {
+//    ADD_FLOAT_PARAMETER(m_gravity, "Gravity", CALLBACK_POINTER(onGravityChanged, MyClass), this, 9.8f);
+//}
