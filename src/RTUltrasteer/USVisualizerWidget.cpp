@@ -13,8 +13,6 @@
 #include <vtkVolumeRayCastMIPFunction.h>
 
 #include "USVisualizerWidget.h"
-#include "VolumeCreator.h"
-#include "CubeVisualizer.h"
 
 using namespace Nf;
 
@@ -22,7 +20,7 @@ USVisualizerWidget::USVisualizerWidget()
 : QVTKWidget()
 , Nf::ParameterCollection("Ultrasound Visualization")
 {
-  ADD_BOOL_PARAMETER(m_showVolumeExtent, false, "Show Volume Extent");
+  ADD_BOOL_PARAMETER(m_showVolumeExtent, "Show Volume Extent", CALLBACK_POINTER(onShowVolumeExtentChanged, USVisualizerWidget), this, true);
 }
 
 QSize USVisualizerWidget::sizeHint() const
@@ -30,9 +28,27 @@ QSize USVisualizerWidget::sizeHint() const
   return QSize(1050,800);
 }
 
+void USVisualizerWidget::onShowVolumeExtentChanged()
+{
+  bool reRender = false;
+  if(m_extentVis)
+    m_renderer->RemoveActor(m_extentVis->GetActor());
+  if(m_showVolumeExtent->GetValue()) {
+    m_extentVis = std::tr1::shared_ptr < CubeVisualizer > (new CubeVisualizer(m_rpvc.GetVolumePhysicalExtent()));
+    m_renderer->AddActor(m_extentVis->GetActor());
+    reRender = true;
+  } else if(m_extentVis) {
+    reRender = true;
+  }
+
+  if(reRender) {
+    this->repaint();
+  }
+}
+
 void USVisualizerWidget::Initialize()
 {
-#if 1
+#if 0
   // Sphere
   vtkSmartPointer<vtkSphereSource> sphereSource = 
     vtkSmartPointer<vtkSphereSource>::New();
@@ -53,14 +69,13 @@ void USVisualizerWidget::Initialize()
 #else
 
   //Volume visualization
-  RPFullVolumeCreator rpvc;
   Vec3d spacing(83.0/1000.0*4, 83.0/1000.0*4, 83.0/1000.0*4);
   Matrix44d cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0);
-  rpvc.Initialize("V:/NeedleScan/Feb13_LiverScan/Scan 1/scan", cal, Vec2d(83, 83), VOL_QUARTER, 
+  m_rpvc.Initialize("V:/NeedleScan/Feb13_LiverScan/Scan 1/scan", cal, Vec2d(83, 83), VOL_QUARTER, 
     Vec3d(60.0, 60.0, 60.0), spacing, 0.5);
-  rpvc.Start();
+  m_rpvc.Start();
 
-  Vec3i dims = rpvc.GetVolumeDims();
+  Vec3i dims = m_rpvc.GetVolumeDims();
 
   vtkSmartPointer<vtkImageImport> importer = vtkSmartPointer<vtkImageImport>::New();
   importer->SetDataSpacing(spacing.x, spacing.y, spacing.z);
@@ -69,7 +84,7 @@ void USVisualizerWidget::Initialize()
   importer->SetDataExtentToWholeExtent();
   importer->SetDataScalarTypeToUnsignedChar();
   importer->SetNumberOfScalarComponents(1);
-  importer->SetImportVoidPointer(rpvc.GetVolumeOriginData());
+  importer->SetImportVoidPointer(m_rpvc.GetVolumeOriginData());
   importer->Update();
   
   vtkSmartPointer<vtkVolumeRayCastMIPFunction> rayCastFunction =
@@ -84,18 +99,18 @@ void USVisualizerWidget::Initialize()
     vtkSmartPointer<vtkVolume>::New();
   volume->SetMapper(volumeMapper);
 
-  vtkSmartPointer<vtkRenderer> renderer = 
+  m_renderer = 
     vtkSmartPointer<vtkRenderer>::New();
-  renderer->AddViewProp(volume);
-  renderer->SetBackground(0.0, 0.0, 0.0);
+  m_renderer->AddViewProp(volume);
+  m_renderer->SetBackground(0.0, 0.0, 0.0);
 
   //Cube Visualization
-  CubeVisualizer extentVis(rpvc.GetVolumePhysicalExtent());
-  renderer->AddActor(extentVis.GetActor());
+  if(m_showVolumeExtent->GetValue()) {
+    m_extentVis = std::tr1::shared_ptr < CubeVisualizer > (new CubeVisualizer(m_rpvc.GetVolumePhysicalExtent()));
+    m_renderer->AddActor(m_extentVis->GetActor());
+  };
 
-  renderer->RemoveActor(extentVis.GetActor());
-
-  this->GetRenderWindow()->AddRenderer(renderer);
+  this->GetRenderWindow()->AddRenderer(m_renderer);
 
 #endif
 }

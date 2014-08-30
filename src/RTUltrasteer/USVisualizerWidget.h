@@ -2,6 +2,8 @@
 
 #include "QVTKWidget.h"
 #include "UICore.h"
+#include "VolumeCreator.h"
+#include "CubeVisualizer.h"
 
 class USVisualizerWidget : public QVTKWidget, public Nf::ParameterCollection
 {
@@ -12,6 +14,12 @@ public:
 
   virtual QSize sizeHint() const;
 
+  Nf::RPFullVolumeCreator m_rpvc;
+  std::tr1::shared_ptr < Nf::CubeVisualizer > m_extentVis;
+  vtkSmartPointer<vtkRenderer> m_renderer;
+
   //Parameters
   std::tr1::shared_ptr < Nf::BoolParameter > m_showVolumeExtent;
+  void onShowVolumeExtentChanged();
+  CLASS_CALLBACK(onShowVolumeExtentChanged, USVisualizerWidget);
 };

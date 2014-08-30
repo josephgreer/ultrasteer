@@ -1,5 +1,17 @@
 #include "RTUltrasteer.h"
 
+namespace Nf
+{
+  void BoolSlotForwarder::forward(QTreeWidgetItem *item, int col) 
+  {
+    if(item == m_element) {
+      Qt::CheckState checkState = m_element->checkState(1);
+      if(m_fptr)
+        m_fptr(m_context);
+    }
+  }
+}
+
 RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
     : QMainWindow(parent, flags)
     , m_menu(NULL)
@@ -25,13 +37,13 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
     QTreeWidgetItem *child = new QTreeWidgetItem();
     parent->addChild(child);
     child->setText(0, bools[i]->GetName());
-    child->setText(1, bools[i]->GetValue() ? "true" : "false");
 
-    Nf::BoolSlotForwarder * uiElem = new Nf::BoolSlotForwarder(NULL, NULL, child, NULL);
-    //td::tr1::shared_ptr < Nf::BoolSlotForwarder > uiElem (new Nf::BoolSlotForwarder(NULL, NULL, child, NULL));
-    //child->setFlags(child->flags() | Qt::ItemIsUserCheckable);
+    //Nf::BoolSlotForwarder * uiElem = new Nf::BoolSlotForwarder(NULL, NULL, child, NULL);
+    std::tr1::shared_ptr < Nf::BoolSlotForwarder > uiElem (new Nf::BoolSlotForwarder(bools[i]->GetCallback(), bools[i]->GetContext(), child, NULL));
+    child->setCheckState(1, bools[i]->GetValue() ? Qt::Checked : Qt::Unchecked);
+    child->setFlags(child->flags() | Qt::ItemIsUserCheckable);
     bools[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< bool > >(uiElem));
-    QObject::connect((QObject *)this, SIGNAL(QTreeWidgetItem *, int), (QObject *)uiElem, SLOT(forward()));
+    QObject::connect((QObject *)m_params, SIGNAL(itemClicked(QTreeWidgetItem *, int)), (QObject *)&(*uiElem), SLOT(forward(QTreeWidgetItem *, int)));
   }
 }
 
@@ -56,6 +68,9 @@ void RTUltrasteer::CreateMenuDock()
   m_params = new QTreeWidget(m_menu);
   m_params->setColumnCount(2);
   m_params->setHeaderLabels(QStringList() << "Parameter" << "Value");
+
+  m_params->setColumnWidth(0, 150);
+  m_params->setColumnWidth(1, 20);
 
   m_menu->setWidget(m_params);
   

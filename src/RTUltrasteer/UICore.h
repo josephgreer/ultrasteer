@@ -7,6 +7,8 @@
 
 namespace Nf
 {
+  typedef void (*Function)(void *); 
+
   typedef enum {
     PT_BOOL,
     PT_INT,
@@ -29,27 +31,29 @@ namespace Nf
     PARAMETER_TYPE m_type;
     char m_name[200];
     std::tr1::shared_ptr < UIElement < T > > m_element;
+    Function m_callback;
+    void *m_context;
 
   public:
     Parameter()
     {
+      m_context = NULL;
+      m_callback = NULL;
     }
 
-    Parameter(PARAMETER_TYPE type, const char *name, T def)
+    Parameter(PARAMETER_TYPE type, const char *name, Function callback, void *context, T def)
       : m_val(def)
       , m_type(type)
+      , m_callback(callback)
+      , m_context(context)
     {
       strcpy(m_name, name);
     }
 
-    virtual void SetValue()
+    virtual T GetValue()
     {
       if(m_element)
         m_val = m_element->GetValue();
-    }
-
-    virtual T GetValue()
-    {
       return m_val;
     }
 
@@ -61,6 +65,16 @@ namespace Nf
     virtual const char * GetName()
     {
       return m_name;
+    }
+
+    virtual Function GetCallback()
+    {
+      return m_callback;
+    }
+
+    virtual void *GetContext()
+    {
+      return m_context;
     }
   };
 
@@ -78,8 +92,8 @@ namespace Nf
     {
     }
 
-    NumberParameter(PARAMETER_TYPE type, const char *name, T def, T min, T max, T step)
-      : Parameter(type, name, def)
+    NumberParameter(PARAMETER_TYPE type, const char *name, Function callback, void *context, T def, T min, T max, T step)
+      : Parameter(type, name, callback, context, def)
       , m_min(min)
       , m_max(max)
       , m_step(step)
@@ -140,18 +154,26 @@ namespace Nf
    };
 }
 
-#define ADD_STRING_PARAMETER(var, val, name) \
-  var = std::tr1::shared_ptr < Nf::StringParameter > (new Nf::StringParameter(PT_STRING, name, val)); \
+#define ADD_STRING_PARAMETER(var, name, callback, context, val) \
+  var = std::tr1::shared_ptr < Nf::StringParameter > (new Nf::StringParameter(PT_STRING, name, callback, context, val)); \
   m_bools.push_back(var);
 
-#define ADD_INT_PARAMETER(var, val, name, min, max, step) \
-  var = std::tr1::shared_ptr < Nf::IntParameter > (new Nf::IntParameter(PT_INT, name, val, min, max, step)); \
+#define ADD_INT_PARAMETER(var, name, callback, context, val, min, max, step) \
+  var = std::tr1::shared_ptr < Nf::IntParameter > (new Nf::IntParameter(PT_INT, name, callback, context, val, min, max, step)); \
   m_ints.push_back(var);
 
-#define ADD_FLOAT_PARAMETER(var, val, name, min, max, step) \
-  var = std::tr1::shared_ptr < Nf::FloatParameter > (new Nf::FloatParameter(PT_FLOAT, name, val, min, max, step)); \
+#define ADD_FLOAT_PARAMETER(var, name, callback, context, val, min, max, step) \
+  var = std::tr1::shared_ptr < Nf::FloatParameter > (new Nf::FloatParameter(PT_FLOAT, name, callback, context, val, min, max, step)); \
   m_floats.push_back(var);
 
-#define ADD_BOOL_PARAMETER(var, val, name) \
-  var = std::tr1::shared_ptr < Nf::BoolParameter > (new Nf::BoolParameter(PT_BOOL, name, val)); \
+#define ADD_BOOL_PARAMETER(var, name, callback, context, val) \
+  var = std::tr1::shared_ptr < Nf::BoolParameter > (new Nf::BoolParameter(PT_BOOL, name, callback, context, val)); \
   m_bools.push_back(var);
+
+#define CLASS_CALLBACK(x, type) \
+  static void stat##x(void *context) { \
+    type * obj = (type *)context; \
+    obj->x(); \
+  }\
+
+#define CALLBACK_POINTER(x, type) (&type::stat##x)
