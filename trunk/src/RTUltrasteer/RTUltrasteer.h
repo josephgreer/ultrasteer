@@ -10,8 +10,6 @@
 
 namespace Nf
 {
-  typedef void (*Function)(void *); 
-
   class BoolSlotForwarder : public QObject, public UIElement < bool >
   {
     Q_OBJECT
@@ -38,12 +36,7 @@ namespace Nf
 
     public slots:
 
-      void forward()
-      {
-        m_element->setText(1, m_element->checkState(1) == Qt::Checked ? "True" : "False");
-        if(m_fptr)
-          m_fptr(m_context);
-      }
+      void forward(QTreeWidgetItem *item, int col);
   };
 }
 
