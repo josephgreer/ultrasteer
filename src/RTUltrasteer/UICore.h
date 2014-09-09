@@ -179,7 +179,7 @@ namespace Nf
 //They take care of creaitng the parameter and inserting them into the collection
 #define ADD_STRING_PARAMETER(var, name, callback, context, val) \
   var = std::tr1::shared_ptr < Nf::StringParameter > (new Nf::StringParameter(PT_STRING, name, callback, context, val)); \
-  m_bools.push_back(var);
+  m_strings.push_back(var);
 
 #define ADD_INT_PARAMETER(var, name, callback, context, val, min, max, step) \
   var = std::tr1::shared_ptr < Nf::IntParameter > (new Nf::IntParameter(PT_INT, name, callback, context, val, min, max, step)); \
@@ -193,7 +193,10 @@ namespace Nf
   var = std::tr1::shared_ptr < Nf::BoolParameter > (new Nf::BoolParameter(PT_BOOL, name, callback, context, val)); \
   m_bools.push_back(var);
 
-//Since callbacks must be static and we usually want to call a class function
+#define ADD_CHILD_COLLECTION(var) \
+  m_children.push_back((Nf::ParameterCollection *)&var);
+
+//Since calbacks must be static and we usually want to call a class function
 //a class, this takes care of the dirty work of creating a static function,
 //and calling a class function of the same name and then calling the class function
 //on the context paramter

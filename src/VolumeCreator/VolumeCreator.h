@@ -59,10 +59,10 @@ namespace Nf {
     s32 InitializeVolume(Matrix33d &orientation, Vec3d frameOrigin, VOLUME_ORIGIN_LOCATION config, Vec3d extent, Vec3d spacing, f64 imscale);
     void Release();
 
-    Vec3d GetSpacing();
-    Vec3d GetOrigin();
-    Matrix33d GetOrientation();
-    Vec3i GetDims();
+    Vec3d GetSpacing() const;
+    Vec3d GetOrigin() const;
+    Matrix33d GetOrientation() const;
+    Vec3i GetDims() const;
     u16 * GetCoordData(Vec3i coord);
     Cubed GetCubeExtent() const;
     Cubed GetPhysicalExtent() const;
@@ -90,7 +90,7 @@ namespace Nf {
   } RP_VOLUME_READ_MODE;
 
   //Create vtkImageData objects from RP b8 files
-  class RPVolumeCreator : VolumeCreator
+  class RPVolumeCreator : public VolumeCreator
   {
   protected:
     s32 m_index;                            //Current frame index.  Valid when m_rm != RPVM_READ_ALL              
@@ -109,6 +109,7 @@ namespace Nf {
     virtual u16 * GetVolumeOriginData();
     virtual Cubed GetVolumeCubeExtent() const;
     virtual Cubed GetVolumePhysicalExtent() const;
+    virtual Matrix33d GetVolumeOrientation() const;
     void Release();
   };
 
@@ -119,6 +120,11 @@ namespace Nf {
     virtual ~RPFullVolumeCreator();
     s32 Initialize(const char *path, Matrix44d &calibration, Vec2d &mpp, VOLUME_ORIGIN_LOCATION config, Vec3d &extent, Vec3d &spacing, f64 imscale);
     void Start();
+
+  protected:
+    std::tr1::shared_ptr < Nf::BoolParameter > m_addData;
+    void onAddDataChanged();
+    CLASS_CALLBACK(onAddDataChanged, RPFullVolumeCreator)
   };
 
 #if 0

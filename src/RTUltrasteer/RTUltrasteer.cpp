@@ -2,12 +2,15 @@
 
 namespace Nf
 {
-  void BoolSlotForwarder::forward(QTreeWidgetItem *item, int col) 
+  void SlotForwarder::forward(QTreeWidgetItem *item, int col) 
   {
     if(item == m_element) {
-      Qt::CheckState checkState = m_element->checkState(1);
       if(m_fptr)
         m_fptr(m_context);
+      //repaint
+      for(s32 i=0; i<(s32)m_repaintList.size(); i++) {
+        m_repaintList[i]->repaint();
+      }
     }
   }
 }
@@ -26,11 +29,13 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
 
   QTreeWidgetItem * usVis = new QTreeWidgetItem(m_params);
   usVis->setText(0, m_usVis->GetName());
-  CreateUIElements(usVis, *m_usVis);
+  std::vector < QVTKWidget * > repainters;
+  repainters.push_back(m_usVis);
+  CreateUIElements(usVis, *m_usVis, repainters);
   m_roots.push_back(usVis);
 }
 
-void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollection &collection) 
+void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollection &collection, const std::vector < QVTKWidget * > & repainters) 
 {
   std::vector < std::tr1::shared_ptr < Nf::BoolParameter > > bools = collection.GetBoolParameters();
   for(s32 i=0; i<(s32)bools.size(); i++) {
@@ -39,11 +44,18 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
     child->setText(0, bools[i]->GetName());
 
     //Nf::BoolSlotForwarder * uiElem = new Nf::BoolSlotForwarder(NULL, NULL, child, NULL);
-    std::tr1::shared_ptr < Nf::BoolSlotForwarder > uiElem (new Nf::BoolSlotForwarder(bools[i]->GetCallback(), bools[i]->GetContext(), child, NULL));
+    std::tr1::shared_ptr < Nf::BoolSlotForwarder > uiElem (new Nf::BoolSlotForwarder(bools[i]->GetCallback(), bools[i]->GetContext(), child, repainters, NULL));
     child->setCheckState(1, bools[i]->GetValue() ? Qt::Checked : Qt::Unchecked);
     child->setFlags(child->flags() | Qt::ItemIsUserCheckable);
     bools[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< bool > >(uiElem));
     QObject::connect((QObject *)m_params, SIGNAL(itemClicked(QTreeWidgetItem *, int)), (QObject *)&(*uiElem), SLOT(forward(QTreeWidgetItem *, int)));
+  }
+
+  std::vector < Nf::ParameterCollection * > colls = collection.GetChildCollections();
+  for(s32 i=0; i<(s32)colls.size(); i++) {
+    QTreeWidgetItem * root = new QTreeWidgetItem(parent);
+    root->setText(0, colls[i]->GetName());
+    CreateUIElements(root, *colls[i], repainters);
   }
 }
 
