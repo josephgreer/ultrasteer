@@ -10,33 +10,45 @@
 
 namespace Nf
 {
-  class BoolSlotForwarder : public QObject, public UIElement < bool >
+  class SlotForwarder : public QObject
   {
     Q_OBJECT
 
-  private:
-
-    QTreeWidgetItem *m_element;
+  protected:
     void *m_context;
     Function m_fptr;
+    QTreeWidgetItem *m_element;
+    std::vector < QVTKWidget * > m_repaintList;
 
   public:
-
-    BoolSlotForwarder(Function function, void *context, QTreeWidgetItem *element, QObject* parent = 0) 
+    SlotForwarder(Function function, void *context, QTreeWidgetItem *element, std::vector < QVTKWidget * > repaintList, QObject *parent)
       : QObject(parent)
       , m_fptr(function)
       , m_context(context)
       , m_element(element)
+      , m_repaintList(repaintList)
+    {
+    }
+
+    public slots:
+
+      void forward(QTreeWidgetItem *item, int col);
+  };
+
+  class BoolSlotForwarder : public SlotForwarder, public UIElement < bool >
+  {
+    Q_OBJECT
+
+  public:
+
+    BoolSlotForwarder(Function function, void *context, QTreeWidgetItem *element, std::vector < QVTKWidget * > repaintList, QObject* parent = 0) 
+      : SlotForwarder(function, context, element, repaintList, parent)
     {}
 
     bool GetValue()
     {
       return m_element->checkState(1) == Qt::Checked;
     }
-
-    public slots:
-
-      void forward(QTreeWidgetItem *item, int col);
   };
 }
 
@@ -60,7 +72,7 @@ private:
     void CreateUSVisualizer();
     void CreateMenuDock();
 
-    void CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollection &collection);
+    void CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollection &collection, const std::vector < QVTKWidget * > & repainters);
 
     std::vector < QTreeWidgetItem * > m_roots;
 };

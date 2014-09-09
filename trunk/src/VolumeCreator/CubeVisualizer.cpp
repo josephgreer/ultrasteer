@@ -7,25 +7,52 @@
 #include <vtkPolyData.h>
 
 namespace Nf {
+
+  static void InsertVec(vtkSmartPointer<vtkPoints> pts, Vec3d pt)
+  {
+    pts->InsertNextPoint(pt.x, pt.y, pt.z);
+  }
+
+  
+  ////////////////////////////////////////////////////////
+  //GeometryVisualizer Class
+  ////////////////////////////////////////////////////////
+  vtkSmartPointer<vtkActor> GeometryVisualizer::GetActor()
+  {
+    return m_actor;
+  }
+
+  vtkSmartPointer<vtkPolyDataMapper> GeometryVisualizer::GetMapper()
+  {
+    return m_mapper;
+  }
+  ////////////////////////////////////////////////////////
+  //End GeometryVisualizer Class
+  ///////////////////////////////////////////////////////
+
   ////////////////////////////////////////////////////////
   //CubeVisualizer Class
   ////////////////////////////////////////////////////////
-  CubeVisualizer::CubeVisualizer(const Nf::Cubed &cube)
+  CubeVisualizer::CubeVisualizer(const Nf::Cubed &cube, const u8 color[3])
   {
     m_cube = cube;
     vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
 
-    //front face
-    pts->InsertNextPoint(cube.m_ul.x, cube.m_ul.y, cube.m_ul.z);  //0
-    pts->InsertNextPoint(cube.m_ul.x, cube.m_br.y, cube.m_ul.z);  //1
-    pts->InsertNextPoint(cube.m_br.x, cube.m_br.y, cube.m_ul.z);  //2
-    pts->InsertNextPoint(cube.m_br.x, cube.m_ul.y, cube.m_ul.z);  //3
+    Vec3d x_axis = cube.m_axes.Col(0);
+    Vec3d y_axis = cube.m_axes.Col(1);
+    Vec3d z_axis = cube.m_axes.Col(2);
 
-    //back face
-    pts->InsertNextPoint(cube.m_ul.x, cube.m_ul.y, cube.m_br.z);  //4
-    pts->InsertNextPoint(cube.m_ul.x, cube.m_br.y, cube.m_br.z);  //5
-    pts->InsertNextPoint(cube.m_br.x, cube.m_br.y, cube.m_br.z);  //6
-    pts->InsertNextPoint(cube.m_br.x, cube.m_ul.y, cube.m_br.z);  //7
+    //Front Face
+    Vec3d p0 = cube.m_ul;                 InsertVec(pts, p0);
+    Vec3d p1 = p0+y_axis;                 InsertVec(pts, p1);     
+    Vec3d p2 = p1+x_axis;                 InsertVec(pts, p2);
+    Vec3d p3 = p2-y_axis;                 InsertVec(pts, p3);
+
+    //Back Face
+    Vec3d p4 = cube.m_ul+z_axis;          InsertVec(pts, p4);
+    Vec3d p5 = p4+y_axis;                 InsertVec(pts, p5);
+    Vec3d p6 = p5+x_axis;                 InsertVec(pts, p6);
+    Vec3d p7 = p6-y_axis;                 InsertVec(pts, p7);
 
     //lines
     vtkSmartPointer<vtkLine> l01 = vtkSmartPointer<vtkLine>::New();
@@ -79,13 +106,12 @@ namespace Nf {
     linesPolyData->SetPoints(pts);
     linesPolyData->SetLines(lines);
 
-    unsigned char red[3] = {27, 161, 226};
     vtkSmartPointer<vtkUnsignedCharArray> colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
     colors->SetNumberOfComponents(3);
     colors->SetName("Colors");
 
     for(s32 i=0; i<12; i++)
-      colors->InsertNextTupleValue(red);
+      colors->InsertNextTupleValue(color);
 
     linesPolyData->GetCellData()->SetScalars(colors);
 
@@ -99,19 +125,74 @@ namespace Nf {
 
     m_actor = actor;
   }
-
-  vtkSmartPointer<vtkActor> CubeVisualizer::GetActor()
-  {
-    return m_actor;
-  }
-
-  vtkSmartPointer<vtkPolyDataMapper> CubeVisualizer::GetMapper()
-  {
-    return m_mapper;
-  }
-
   ////////////////////////////////////////////////////////
   //End CubeVisualizer Class
+  ///////////////////////////////////////////////////////
+
+  ////////////////////////////////////////////////////////
+  //AxesVisualizer Class
+  ////////////////////////////////////////////////////////
+  AxesVisualizer::AxesVisualizer(const Nf::Cubed &cube)
+  {
+    m_cube = cube;
+    vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
+
+    Vec3d x_axis = cube.m_axes.Col(0);
+    Vec3d y_axis = cube.m_axes.Col(1);
+    Vec3d z_axis = cube.m_axes.Col(2);
+
+    //Front Base Point
+    Vec3d p0 = cube.m_ul;                 InsertVec(pts, p0);
+    Vec3d p1 = p0+y_axis;                 InsertVec(pts, p1);     
+    Vec3d p2 = p1+x_axis;                 InsertVec(pts, p2);
+    Vec3d p3 = p2+z_axis;                 InsertVec(pts, p3);
+
+    //lines
+    vtkSmartPointer<vtkLine> l01 = vtkSmartPointer<vtkLine>::New();
+    vtkSmartPointer<vtkLine> l02 = vtkSmartPointer<vtkLine>::New();
+    vtkSmartPointer<vtkLine> l03 = vtkSmartPointer<vtkLine>::New();
+
+    l01->GetPointIds()->SetId(0,0);  l01->GetPointIds()->SetId(1,1);  
+    l02->GetPointIds()->SetId(0,0);  l02->GetPointIds()->SetId(1,2);  
+    l03->GetPointIds()->SetId(0,2);  l03->GetPointIds()->SetId(1,3);  
+
+    //cellArray
+    vtkSmartPointer<vtkCellArray> lines = vtkSmartPointer<vtkCellArray>::New();
+    lines->InsertNextCell(l01);
+    lines->InsertNextCell(l02);
+    lines->InsertNextCell(l03);
+
+    vtkSmartPointer<vtkPolyData> linesPolyData = vtkSmartPointer<vtkPolyData>::New();
+    linesPolyData->SetPoints(pts);
+    linesPolyData->SetLines(lines);
+
+    vtkSmartPointer<vtkUnsignedCharArray> colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
+    colors->SetNumberOfComponents(3);
+    colors->SetName("Colors");
+
+    u8 clrs[3][3] = {
+      {255, 0, 0},
+      {0, 255, 0},
+      {0, 0, 255}
+    };
+
+    for(s32 i=0; i<3; i++)
+      colors->InsertNextTupleValue(&clrs[i][0]);
+
+    linesPolyData->GetCellData()->SetScalars(colors);
+
+    vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper->SetInputData(linesPolyData);
+
+    m_mapper = mapper;
+
+    vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+    actor->SetMapper(m_mapper);
+
+    m_actor = actor;
+  }
+  ////////////////////////////////////////////////////////
+  //End AxesVisualizer Class
   ///////////////////////////////////////////////////////
 };
 
