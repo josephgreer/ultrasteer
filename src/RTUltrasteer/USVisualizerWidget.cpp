@@ -13,6 +13,7 @@
 #include <vtkVolumeRayCastMIPFunction.h>
 #include <vtkTransform.h>
 #include <vtkProperty.h>
+#include <vtkCamera.h>
 
 #include "USVisualizerWidget.h"
 
@@ -22,6 +23,7 @@ USVisualizerWidget::USVisualizerWidget()
 : QVTKWidget()
 , Nf::ParameterCollection("Ultrasound Visualization")
 , m_volumeAxes(NULL)
+, m_volume(NULL)
 {
   ADD_BOOL_PARAMETER(m_showVolumeExtent, "Show Volume Extent", CALLBACK_POINTER(onShowVolumeExtentChanged, USVisualizerWidget), this, true);
   ADD_BOOL_PARAMETER(m_showVolumeAxes, "Show Volume Axes", CALLBACK_POINTER(onShowVolumeAxesChanged, USVisualizerWidget), this, true);
@@ -54,19 +56,34 @@ void USVisualizerWidget::onShowVolumeAxesChanged()
   }
 }
 
+void USVisualizerWidget::SetUSVisView(s32 axis1, s32 axis2)
+{
+  vtkSmartPointer <vtkCamera> camera = vtkSmartPointer<vtkCamera>::New();
+  Vec3d up = m_rpvc.GetVolumeOrientation().Col(axis1);
+  Vec3d focal = m_rpvc.GetVolumeOrientation().Col(axis2);
+  camera->SetPosition(0,0,0);
+  camera->SetFocalPoint(focal.x, focal.y, focal.z);
+  camera->SetViewUp(up.x, up.y, up.z);
+
+  f64 *bounds = m_volume->GetBounds();
+  m_renderer->SetActiveCamera(camera);
+  m_renderer->ResetCamera(bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], 
+    bounds[5]);
+}
+
 void USVisualizerWidget::onSetViewXY()
 {
-  int x = 0;
+  SetUSVisView(1,2);
 }
 
 void USVisualizerWidget::onSetViewXZ()
 {
-  int x = 0;
+  SetUSVisView(2,1);
 }
 
 void USVisualizerWidget::onSetViewYZ()
 {
-  int x = 0;
+  SetUSVisView(2,0);
 }
 
 
@@ -157,17 +174,15 @@ void USVisualizerWidget::Initialize()
   //Volumne
   Matrix33d orientation = m_rpvc.GetVolumeOrientation();
   Matrix44d volTrans = Matrix44d::FromOrientationAndTranslation(m_rpvc.GetVolumeOrientation(), volExtent.m_ul);
-  vtkSmartPointer<vtkVolume> volume =
-    vtkSmartPointer<vtkVolume>::New();
-  volume->SetMapper(volumeMapper);
-  volume->PokeMatrix(volTrans.GetVTKMatrix());
-  volume->Update();
-  f64 *boundsVolume = volume->GetBounds();
+  m_volume = vtkSmartPointer<vtkVolume>::New();
+  m_volume->SetMapper(volumeMapper);
+  m_volume->PokeMatrix(volTrans.GetVTKMatrix());
+  m_volume->Update();
 
   //Volume Renderer
   m_renderer = 
     vtkSmartPointer<vtkRenderer>::New();
-  m_renderer->AddViewProp(volume);
+  m_renderer->AddViewProp(m_volume);
   m_renderer->SetBackground(0.0, 0.0, 0.0);
 
   //Cube Visualization
