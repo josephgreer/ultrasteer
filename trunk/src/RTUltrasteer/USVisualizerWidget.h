@@ -5,6 +5,7 @@
 #include "VolumeCreator.h"
 #include "CubeVisualizer.h"
 #include <vtkAxesActor.h>
+#include <vtkVolume.h>
 
 class USVisualizerWidget : public QVTKWidget, public Nf::ParameterCollection
 {
@@ -15,10 +16,14 @@ public:
 
   virtual QSize sizeHint() const;
 
+  // helper function for setViewXY
+  void SetUSVisView(s32 axis1, s32 axis2);
+
   Nf::RPFullVolumeCreator m_rpvc;
   std::tr1::shared_ptr < Nf::CubeVisualizer > m_extentVis;
   vtkSmartPointer<vtkAxesActor> m_volumeAxes;
   vtkSmartPointer<vtkRenderer> m_renderer;
+  vtkSmartPointer<vtkVolume> m_volume;
 
   //Parameters
 
@@ -45,5 +50,5 @@ public:
   //setViewYZ
   std::tr1::shared_ptr < Nf::BoolParameter > m_setViewYZ;
   void onSetViewYZ();
-  CLASS_CALLBACK(onSetViewYZ, USVisualizerWidget)
+  CLASS_CALLBACK(onSetViewYZ, USVisualizerWidget);
 };
