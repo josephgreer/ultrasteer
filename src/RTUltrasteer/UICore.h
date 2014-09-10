@@ -15,6 +15,7 @@ namespace Nf
     PT_INT,
     PT_FLOAT,
     PT_STRING,
+    PT_ACTION,
   } PARAMETER_TYPE;
 
   //UIElement is an interface that is impelmented in QT projects
@@ -152,6 +153,7 @@ namespace Nf
      std::vector < std::tr1::shared_ptr < IntParameter > > m_ints;
      std::vector < std::tr1::shared_ptr < StringParameter > > m_strings;
      std::vector < std::tr1::shared_ptr < BoolParameter > > m_bools;
+     std::vector < std::tr1::shared_ptr < BoolParameter > > m_actions;
      std::vector < ParameterCollection * > m_children;
 
      char m_name[100];
@@ -165,12 +167,14 @@ namespace Nf
      void AddIntParameter(std::tr1::shared_ptr < IntParameter > intParam);
      void AddStringParameter(std::tr1::shared_ptr < StringParameter > stringParam);
      void AddBoolParameter(std::tr1::shared_ptr < BoolParameter >  boolParam);
+     void AddActionParameter(std::tr1::shared_ptr < BoolParameter >  actionParam);
      void AddChildCollection(ParameterCollection *child);
 
      std::vector < std::tr1::shared_ptr < FloatParameter > > GetFloatParameters();
      std::vector < std::tr1::shared_ptr < IntParameter > > GetIntParameters();
      std::vector < std::tr1::shared_ptr < StringParameter > > GetStringParameters();
      std::vector < std::tr1::shared_ptr < BoolParameter > > GetBoolParameters();
+     std::vector < std::tr1::shared_ptr < BoolParameter > > GetActionParameters();
      std::vector < ParameterCollection * > GetChildCollections();
    };
 }
@@ -192,6 +196,10 @@ namespace Nf
 #define ADD_BOOL_PARAMETER(var, name, callback, context, val) \
   var = std::tr1::shared_ptr < Nf::BoolParameter > (new Nf::BoolParameter(PT_BOOL, name, callback, context, val)); \
   m_bools.push_back(var);
+
+#define ADD_ACTION_PARAMETER(var, name, callback, context, val) \
+  var = std::tr1::shared_ptr < Nf::BoolParameter > (new Nf::BoolParameter(PT_ACTION, name, callback, context, val)); \
+  m_actions.push_back(var);
 
 #define ADD_CHILD_COLLECTION(var) \
   m_children.push_back((Nf::ParameterCollection *)&var);

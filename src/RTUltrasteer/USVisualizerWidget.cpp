@@ -25,6 +25,9 @@ USVisualizerWidget::USVisualizerWidget()
 {
   ADD_BOOL_PARAMETER(m_showVolumeExtent, "Show Volume Extent", CALLBACK_POINTER(onShowVolumeExtentChanged, USVisualizerWidget), this, true);
   ADD_BOOL_PARAMETER(m_showVolumeAxes, "Show Volume Axes", CALLBACK_POINTER(onShowVolumeAxesChanged, USVisualizerWidget), this, true);
+  ADD_ACTION_PARAMETER(m_setViewXY, "Set View XY", CALLBACK_POINTER(onSetViewXY, USVisualizerWidget), this, true); 
+  ADD_ACTION_PARAMETER(m_setViewXZ, "Set View XZ", CALLBACK_POINTER(onSetViewXZ, USVisualizerWidget), this, true); 
+  ADD_ACTION_PARAMETER(m_setViewYZ, "Set View YZ", CALLBACK_POINTER(onSetViewYZ, USVisualizerWidget), this, true); 
   ADD_CHILD_COLLECTION(m_rpvc);
 }
 
@@ -50,6 +53,22 @@ void USVisualizerWidget::onShowVolumeAxesChanged()
     m_renderer->RemoveActor(m_volumeAxes);
   }
 }
+
+void USVisualizerWidget::onSetViewXY()
+{
+  int x = 0;
+}
+
+void USVisualizerWidget::onSetViewXZ()
+{
+  int x = 0;
+}
+
+void USVisualizerWidget::onSetViewYZ()
+{
+  int x = 0;
+}
+
 
 static void outputMatrix(Matrix44d matrix)
 {

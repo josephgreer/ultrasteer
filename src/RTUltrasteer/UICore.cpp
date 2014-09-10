@@ -32,6 +32,12 @@ namespace Nf
   {
     m_bools.push_back(boolParam);
   }
+  
+  void ParameterCollection::AddActionParameter(std::tr1::shared_ptr < BoolParameter > actionParam)
+  {
+    m_actions.push_back(actionParam);
+  }
+
 
   void ParameterCollection::AddChildCollection(ParameterCollection *child)
   {
@@ -57,6 +63,12 @@ namespace Nf
   {
     return m_bools;
   }
+
+  std::vector < std::tr1::shared_ptr < BoolParameter > > ParameterCollection::GetActionParameters()
+  {
+    return m_actions;
+  }
+
 
   std::vector < ParameterCollection * > ParameterCollection::GetChildCollections()
   {

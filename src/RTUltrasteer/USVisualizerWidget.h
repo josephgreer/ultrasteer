@@ -21,11 +21,29 @@ public:
   vtkSmartPointer<vtkRenderer> m_renderer;
 
   //Parameters
+
+  //showVolumeExtent
   std::tr1::shared_ptr < Nf::BoolParameter > m_showVolumeExtent;
   void onShowVolumeExtentChanged();
   CLASS_CALLBACK(onShowVolumeExtentChanged, USVisualizerWidget);
 
+  //showVolumeAxes
   std::tr1::shared_ptr < Nf::BoolParameter > m_showVolumeAxes;
   void onShowVolumeAxesChanged();
-  CLASS_CALLBACK(onShowVolumeAxesChanged, USVisualizerWidget)
+  CLASS_CALLBACK(onShowVolumeAxesChanged, USVisualizerWidget);
+
+  //setViewXY
+  std::tr1::shared_ptr < Nf::BoolParameter > m_setViewXY;
+  void onSetViewXY();
+  CLASS_CALLBACK(onSetViewXY, USVisualizerWidget)
+
+  //setViewXZ
+  std::tr1::shared_ptr < Nf::BoolParameter > m_setViewXZ;
+  void onSetViewXZ();
+  CLASS_CALLBACK(onSetViewXZ, USVisualizerWidget);
+
+  //setViewYZ
+  std::tr1::shared_ptr < Nf::BoolParameter > m_setViewYZ;
+  void onSetViewYZ();
+  CLASS_CALLBACK(onSetViewYZ, USVisualizerWidget)
 };

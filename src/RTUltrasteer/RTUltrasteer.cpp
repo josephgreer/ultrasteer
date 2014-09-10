@@ -2,9 +2,9 @@
 
 namespace Nf
 {
-  void SlotForwarder::forward(QTreeWidgetItem *item, int col) 
+  void SlotForwarder::treeWidgetForward(QTreeWidgetItem *item, int col) 
   {
-    if(item == m_element) {
+    if((void * &)item == (void * &)m_element) {
       if(m_fptr)
         m_fptr(m_context);
       //repaint
@@ -13,7 +13,18 @@ namespace Nf
       }
     }
   }
+
+  void SlotForwarder::buttonForward()
+  {
+    if(m_fptr)
+      m_fptr(m_context);
+    //repaint
+    for(s32 i=0; i<(s32)m_repaintList.size(); i++) {
+      m_repaintList[i]->repaint();
+    }
+  }
 }
+
 
 RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
     : QMainWindow(parent, flags)
@@ -37,6 +48,7 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
 
 void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollection &collection, const std::vector < QVTKWidget * > & repainters) 
 {
+  //Bool Parameters
   std::vector < std::tr1::shared_ptr < Nf::BoolParameter > > bools = collection.GetBoolParameters();
   for(s32 i=0; i<(s32)bools.size(); i++) {
     QTreeWidgetItem *child = new QTreeWidgetItem();
@@ -44,13 +56,28 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
     child->setText(0, bools[i]->GetName());
 
     //Nf::BoolSlotForwarder * uiElem = new Nf::BoolSlotForwarder(NULL, NULL, child, NULL);
-    std::tr1::shared_ptr < Nf::BoolSlotForwarder > uiElem (new Nf::BoolSlotForwarder(bools[i]->GetCallback(), bools[i]->GetContext(), child, repainters, NULL));
+    std::tr1::shared_ptr < Nf::BoolSlotForwarder > uiElem (new Nf::BoolSlotForwarder(bools[i]->GetCallback(), bools[i]->GetContext(), (QObject *)child, repainters, NULL));
     child->setCheckState(1, bools[i]->GetValue() ? Qt::Checked : Qt::Unchecked);
     child->setFlags(child->flags() | Qt::ItemIsUserCheckable);
     bools[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< bool > >(uiElem));
-    QObject::connect((QObject *)m_params, SIGNAL(itemClicked(QTreeWidgetItem *, int)), (QObject *)&(*uiElem), SLOT(forward(QTreeWidgetItem *, int)));
+    QObject::connect((QObject *)m_params, SIGNAL(itemClicked(QTreeWidgetItem *, int)), (QObject *)&(*uiElem), SLOT(treeWidgetForward(QTreeWidgetItem *, int)));
   }
 
+  //Action Parameters
+  std::vector < std::tr1::shared_ptr < Nf::BoolParameter > > actions = collection.GetActionParameters();
+  for(s32 i=0; i<(s32)actions.size(); i++) {
+    QTreeWidgetItem *child = new QTreeWidgetItem();
+    parent->addChild(child);
+    child->setText(0, actions[i]->GetName());
+
+    QPushButton *execButton = new QPushButton("Exec", m_params);
+    std::tr1::shared_ptr < Nf::ActionSlotForwarder > uiElem (new Nf::ActionSlotForwarder(actions[i]->GetCallback(), actions[i]->GetContext(), (QObject *)execButton, repainters, NULL));
+    m_params->setItemWidget(child, 1, execButton); 
+    actions[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< bool > >(uiElem));
+    QObject::connect((QObject *)execButton, SIGNAL(pressed()), (QObject *)&(*uiElem), SLOT(buttonForward()));
+  }
+
+  //Child parameters
   std::vector < Nf::ParameterCollection * > colls = collection.GetChildCollections();
   for(s32 i=0; i<(s32)colls.size(); i++) {
     QTreeWidgetItem * root = new QTreeWidgetItem(parent);
