@@ -4,6 +4,7 @@
 #include <QtGui/QMainWindow>
 #include <QtGui/QDockWidget>
 #include <QtGui/QTreeWidget>
+#include <QtGui/QPushButton>
 #include "ui_rtultrasteer.h"
 #include "UICore.h"
 #include "USVisualizerWidget.h"
@@ -17,11 +18,11 @@ namespace Nf
   protected:
     void *m_context;
     Function m_fptr;
-    QTreeWidgetItem *m_element;
+    QObject *m_element;
     std::vector < QVTKWidget * > m_repaintList;
 
   public:
-    SlotForwarder(Function function, void *context, QTreeWidgetItem *element, std::vector < QVTKWidget * > repaintList, QObject *parent)
+    SlotForwarder(Function function, void *context, QObject *element, std::vector < QVTKWidget * > repaintList, QObject *parent)
       : QObject(parent)
       , m_fptr(function)
       , m_context(context)
@@ -32,7 +33,8 @@ namespace Nf
 
     public slots:
 
-      void forward(QTreeWidgetItem *item, int col);
+      void treeWidgetForward(QTreeWidgetItem *item, int col);
+      void buttonForward();
   };
 
   class BoolSlotForwarder : public SlotForwarder, public UIElement < bool >
@@ -41,13 +43,29 @@ namespace Nf
 
   public:
 
-    BoolSlotForwarder(Function function, void *context, QTreeWidgetItem *element, std::vector < QVTKWidget * > repaintList, QObject* parent = 0) 
+    BoolSlotForwarder(Function function, void *context, QObject *element, std::vector < QVTKWidget * > repaintList, QObject* parent = 0) 
       : SlotForwarder(function, context, element, repaintList, parent)
     {}
 
     bool GetValue()
     {
-      return m_element->checkState(1) == Qt::Checked;
+      return ((QTreeWidgetItem *)m_element)->checkState(1) == Qt::Checked;
+    }
+  };
+
+  class ActionSlotForwarder : public SlotForwarder, public UIElement < bool >
+  {
+    Q_OBJECT
+
+  public:
+
+    ActionSlotForwarder(Function function, void *context, QObject *element, std::vector < QVTKWidget * > repaintList, QObject* parent = 0) 
+      : SlotForwarder(function, context, element, repaintList, parent)
+    {}
+
+    bool GetValue()
+    {
+      return true;
     }
   };
 }
