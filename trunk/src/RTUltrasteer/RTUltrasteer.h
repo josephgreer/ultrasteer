@@ -6,6 +6,7 @@
 #include <QtGui/QTreeWidget>
 #include <QtGui/QPushButton>
 #include "ui_rtultrasteer.h"
+#include "CTKTransferFunctionWidget.h"
 #include "UICore.h"
 #include "USVisualizerWidget.h"
 
@@ -87,8 +88,13 @@ private:
     QDockWidget *m_menu;
     QTreeWidget *m_params;
 
+    QDockWidget *m_tfDock;
+    CTKTransferFunctionWidget *m_tfWidget;
+    //TransferFunctionWidget *m_tfWidget;
+
     void CreateUSVisualizer();
     void CreateMenuDock();
+    void CreateTFDock();
 
     void CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollection &collection, const std::vector < QVTKWidget * > & repainters);
 

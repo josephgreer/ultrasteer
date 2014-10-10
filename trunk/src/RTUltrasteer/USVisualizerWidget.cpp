@@ -137,13 +137,16 @@ void USVisualizerWidget::Initialize()
   this->GetRenderWindow()->AddRenderer(renderer);
 
 #else
+  m_renderer = 
+    vtkSmartPointer<vtkRenderer>::New();
+  m_renderer->SetBackground(0.0, 0.0, 0.0);
 
   //Volume visualization
 
   //Raw volume data
   Vec3d spacing(83.0/1000.0*4, 83.0/1000.0*4, 83.0/1000.0*4);
   Matrix44d cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0);
-  m_rpvc.Initialize("V:/NeedleScan/Feb13_LiverScan/Scan 1/scan", cal, Vec2d(83, 83), VOL_QUARTER, 
+  m_rpvc.Initialize("V:/NeedleScan/Feb13_LiverScan/Scan 1/scan", cal, Vec2d(83, 83), VOL_QUARTER_RIGHT, 
     Vec3d(60.0, 60.0, 60.0), spacing, 0.5);
   m_rpvc.Start();
 
@@ -180,10 +183,7 @@ void USVisualizerWidget::Initialize()
   m_volume->Update();
 
   //Volume Renderer
-  m_renderer = 
-    vtkSmartPointer<vtkRenderer>::New();
   m_renderer->AddViewProp(m_volume);
-  m_renderer->SetBackground(0.0, 0.0, 0.0);
 
   //Cube Visualization
   u8 cubeColor[3] = {27, 161, 226};
@@ -193,6 +193,13 @@ void USVisualizerWidget::Initialize()
   //Volume Axes Visualization
   m_volumeAxes = vtkSmartPointer<vtkAxesActor>::New();
   m_volumeAxes->SetTotalLength(physExtent.m_axes.Col(0).x, physExtent.m_axes.Col(1).y, physExtent.m_axes.Col(2).z);
+  char lbl[100];
+  sprintf(lbl, "X - %2.1f cm", physExtent.m_axes.Col(0).x/10.0);
+  m_volumeAxes->SetXAxisLabelText(lbl);
+  sprintf(lbl, "Y - %2.1f cm", physExtent.m_axes.Col(1).y/10.0);
+  m_volumeAxes->SetYAxisLabelText(lbl);
+  sprintf(lbl, "Z - %2.1f cm", physExtent.m_axes.Col(2).z/10.0);
+  m_volumeAxes->SetZAxisLabelText(lbl);
  
   vtkSmartPointer<vtkTransform> axesTransform =
     vtkSmartPointer<vtkTransform>::New();
@@ -204,6 +211,10 @@ void USVisualizerWidget::Initialize()
   onShowVolumeAxesChanged();
 
   this->GetRenderWindow()->AddRenderer(m_renderer);
+
+  f64 *volBounds = m_volume->GetBounds();
+  this->m_renderer->ResetCamera(volBounds[0], volBounds[1], volBounds[2], volBounds[3],
+    volBounds[4], volBounds[5]);
 
 #endif
 }

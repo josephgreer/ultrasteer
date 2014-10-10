@@ -161,7 +161,7 @@ protected:
   double VisibleScalarRange[2];
   int BorderWidth;
 
-  void InitializeImage(vtkImageData *image);
+  void InitializeImage(vtkImageData *image, int scalarType);
   void UpdateActorSize(vtkActor *actor);
 
 private:

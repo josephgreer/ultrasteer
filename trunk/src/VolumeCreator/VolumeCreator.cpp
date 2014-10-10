@@ -25,20 +25,30 @@ namespace Nf {
     Matrix33d axes = Matrix33d::Diaganol(extent*0.5)*orientation;
     Matrix33d modAxes;
     switch(config) {
-      case VOL_EDGE: 
+      case VOL_LEFT: 
         {
           modAxes = Matrix33d::FromCols(axes.Col(0), axes.Col(1), Vec3d(0,0,0));
           break;
         }
-      case VOL_QUARTER: 
+      case VOL_RIGHT: 
+        {
+          modAxes = Matrix33d::FromCols(axes.Col(0), axes.Col(1), axes.Col(2));
+          break;
+        }
+      case VOL_QUARTER_LEFT: 
         {
           modAxes = Matrix33d::FromCols(axes.Col(0), axes.Col(1), axes.Col(2)*0.25);
           break;
         }
-      case VOL_MIDDLE:
+      case VOL_QUARTER_RIGHT: 
+        {
+          modAxes = Matrix33d::FromCols(axes.Col(0), axes.Col(1), axes.Col(2)*0.75);
+          break;
+        }
+      case VOL_MIDDLE: 
       default:
         {
-          modAxes = axes;
+          modAxes = Matrix33d::FromCols(axes.Col(0), axes.Col(1), axes.Col(2)*0.5);
           break;
         }
     }

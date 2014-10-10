@@ -32,11 +32,13 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
     , m_params(NULL)
     , m_usDock(NULL)
     , m_usVis(NULL)
+    , m_tfDock(NULL)
 {
   ui.setupUi(this);
 
-  CreateMenuDock();
+  CreateTFDock();
   CreateUSVisualizer();
+  CreateMenuDock();
 
   QTreeWidgetItem * usVis = new QTreeWidgetItem(m_params);
   usVis->setText(0, m_usVis->GetName());
@@ -99,6 +101,19 @@ void RTUltrasteer::CreateUSVisualizer()
   addDockWidget(Qt::RightDockWidgetArea, m_usDock);
 }
 
+void RTUltrasteer::CreateTFDock()
+{
+  m_tfDock = new QDockWidget(tr("Transfer Function Editor"), this);
+  m_tfDock->setAllowedAreas(Qt::AllDockWidgetAreas);
+
+  m_tfWidget = new CTKTransferFunctionWidget();
+  this->m_tfWidget->Initialize();
+  m_tfDock->setWidget(m_tfWidget);
+  
+  addDockWidget(Qt::RightDockWidgetArea, m_tfDock);
+}
+
+
 void RTUltrasteer::CreateMenuDock()
 {
   m_menu = new QDockWidget(tr("Menu"), this);
@@ -115,7 +130,6 @@ void RTUltrasteer::CreateMenuDock()
   
   addDockWidget(Qt::LeftDockWidgetArea, m_menu);
 }
-
 RTUltrasteer::~RTUltrasteer()
 {
   if(m_params)
@@ -126,4 +140,8 @@ RTUltrasteer::~RTUltrasteer()
     delete m_usVis;
   if(m_usDock)
     delete m_usDock;
+  if(m_tfWidget)
+    delete m_tfWidget;
+  if(m_tfDock)
+    delete m_tfDock;
 }

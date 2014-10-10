@@ -19,11 +19,16 @@ public:
   // helper function for setViewXY
   void SetUSVisView(s32 axis1, s32 axis2);
 
+  //Volume Data Creator
   Nf::RPFullVolumeCreator m_rpvc;
-  std::tr1::shared_ptr < Nf::CubeVisualizer > m_extentVis;
-  vtkSmartPointer<vtkAxesActor> m_volumeAxes;
   vtkSmartPointer<vtkRenderer> m_renderer;
+
+  //Volume
   vtkSmartPointer<vtkVolume> m_volume;
+
+  //Volume Axes
+  vtkSmartPointer<vtkAxesActor> m_volumeAxes;
+  std::tr1::shared_ptr < Nf::CubeVisualizer > m_extentVis;
 
   //Parameters
 

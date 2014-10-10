@@ -706,7 +706,9 @@ void vtkTransferFunctionEditorWidgetSimple1D::UpdateFromTransferFunctions()
     size = this->OpacityFunction->GetSize();
     for (i = 0, idx = 0; i < size; i++)
       {
+        int szer = this->OpacityFunction->GetSize();
       this->OpacityFunction->GetNodeValue(idx, oNode);
+        szer = this->OpacityFunction->GetSize();
       idx++;
       if (this->AllowInteriorElements)
         {
