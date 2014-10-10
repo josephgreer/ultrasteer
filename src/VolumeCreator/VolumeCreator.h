@@ -12,8 +12,10 @@ namespace Nf {
   //used for specifying origin location when setting a volume from a base frame
   enum VOLUME_ORIGIN_LOCATION
   {
-    VOL_EDGE = 0,
-    VOL_QUARTER,
+    VOL_LEFT = 0,
+    VOL_RIGHT,
+    VOL_QUARTER_LEFT,
+    VOL_QUARTER_RIGHT,
     VOL_MIDDLE,
   };
 

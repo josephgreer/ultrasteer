@@ -32,7 +32,6 @@ vtkCxxSetObjectMacro(vtkTransferFunctionEditorRepresentation,
 vtkTransferFunctionEditorRepresentation::vtkTransferFunctionEditorRepresentation()
 {
   this->HistogramImage = vtkImageData::New();
-  this->HistogramImage->SetScalarType(VTK_UNSIGNED_CHAR, NULL);
   this->HistogramTexture = vtkTexture::New();
   this->HistogramTexture->SetInputData(this->HistogramImage);
   this->HistogramGeometry = vtkPolyData::New();
@@ -149,7 +148,7 @@ void vtkTransferFunctionEditorRepresentation::SetDisplaySize(int x, int y)
 
     if (this->HistogramImage)
       {
-      this->InitializeImage(this->HistogramImage);
+      this->InitializeImage(this->HistogramImage, VTK_UNSIGNED_CHAR);
       this->HistogramGeometry->Initialize();
       }
     if (this->BackgroundImage)
@@ -168,7 +167,7 @@ void vtkTransferFunctionEditorRepresentation::SetBorderWidth(int width)
     this->BorderWidth = width;
     if (this->DisplaySize[0] > 0 && this->DisplaySize[1] > 0)
       {
-      this->InitializeImage(this->HistogramImage);
+      this->InitializeImage(this->HistogramImage, VTK_UNSIGNED_CHAR);
       }
     this->Modified();
     }
@@ -176,7 +175,7 @@ void vtkTransferFunctionEditorRepresentation::SetBorderWidth(int width)
 
 //----------------------------------------------------------------------------
 void vtkTransferFunctionEditorRepresentation::InitializeImage(
-  vtkImageData *image)
+  vtkImageData *image, int scalarType)
 {
   if (image)
     {
@@ -184,8 +183,7 @@ void vtkTransferFunctionEditorRepresentation::InitializeImage(
     image->SetDimensions(
       this->DisplaySize[0] - 2*this->BorderWidth,
       this->DisplaySize[1] - 2*this->BorderWidth, 1);
-    image->SetNumberOfScalarComponents(4,NULL);
-    image->AllocateScalars(VTK_UNSIGNED_CHAR,4);
+    image->AllocateScalars(scalarType,4);
     vtkUnsignedCharArray *array = vtkUnsignedCharArray::SafeDownCast(
       image->GetPointData()->GetScalars());
     if (array)
