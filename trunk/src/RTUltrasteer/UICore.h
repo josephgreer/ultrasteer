@@ -5,6 +5,9 @@
 
 #include "SegmentCore.h"
 
+#define VIS_WIDTH 600
+#define VIS_HEIGHT 480
+
 namespace Nf
 {
   //Callback type for UI events

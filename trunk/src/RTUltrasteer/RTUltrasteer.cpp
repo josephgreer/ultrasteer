@@ -99,6 +99,7 @@ void RTUltrasteer::CreateUSVisualizer()
   m_usDock->setWidget(m_usVis);
   
   addDockWidget(Qt::RightDockWidgetArea, m_usDock);
+  m_usDock->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
 }
 
 void RTUltrasteer::CreateTFDock()
@@ -106,11 +107,12 @@ void RTUltrasteer::CreateTFDock()
   m_tfDock = new QDockWidget(tr("Transfer Function Editor"), this);
   m_tfDock->setAllowedAreas(Qt::AllDockWidgetAreas);
 
-  m_tfWidget = new CTKColorTransferFucntionWidget();
+  m_tfWidget = new VTKTransferFunctionWidget();
   this->m_tfWidget->Initialize();
   m_tfDock->setWidget(m_tfWidget);
   
   addDockWidget(Qt::RightDockWidgetArea, m_tfDock);
+  m_tfDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
 
 
@@ -129,6 +131,7 @@ void RTUltrasteer::CreateMenuDock()
   m_menu->setWidget(m_params);
   
   addDockWidget(Qt::LeftDockWidgetArea, m_menu);
+  m_menu->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
 }
 RTUltrasteer::~RTUltrasteer()
 {

@@ -35,7 +35,7 @@ USVisualizerWidget::USVisualizerWidget()
 
 QSize USVisualizerWidget::sizeHint() const
 {
-  return QSize(640,480);
+  return QSize(VIS_WIDTH,VIS_HEIGHT);
 }
 
 void USVisualizerWidget::onShowVolumeExtentChanged()
