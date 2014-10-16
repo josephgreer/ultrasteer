@@ -33,9 +33,9 @@ INCLUDE_DIRECTORIES(
   ../CTKTransferFunction/Core
 ) 
 
-SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp USVisualizerWidget.cpp UICore.cpp CTKTransferFunctionWidget.cpp)
+SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp USVisualizerWidget.cpp UICore.cpp CTKColorTransferFunctionWidget.cpp)
 
-SET(ultrasteerHeaders RTUltrasteer.h USVisualizerWidget.h UICore.h CTKTransferFunctionWidget.h)
+SET(ultrasteerHeaders RTUltrasteer.h USVisualizerWidget.h UICore.h CTKColorTransferFunctionWidget.h)
 
 SET(ultrasteerUI RTUltrasteer.ui)
 
