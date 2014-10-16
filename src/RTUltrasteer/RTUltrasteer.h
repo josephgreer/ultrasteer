@@ -6,7 +6,7 @@
 #include <QtGui/QTreeWidget>
 #include <QtGui/QPushButton>
 #include "ui_rtultrasteer.h"
-#include "CTKColorTransferFunctionWidget.h"
+#include "VTKTransferFunctionWidget.h"
 #include "UICore.h"
 #include "USVisualizerWidget.h"
 
@@ -89,7 +89,7 @@ private:
     QTreeWidget *m_params;
 
     QDockWidget *m_tfDock;
-    CTKColorTransferFucntionWidget *m_tfWidget;
+    VTKTransferFunctionWidget *m_tfWidget;
     //TransferFunctionWidget *m_tfWidget;
 
     void CreateUSVisualizer();

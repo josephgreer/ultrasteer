@@ -13,64 +13,44 @@
 
 using namespace Nf;
 
-CTKColorTransferFucntionWidget::CTKColorTransferFucntionWidget()
+CTKColorTransferFunctionWidget::CTKColorTransferFunctionWidget()
 : ctkTransferFunctionView()
-, Nf::ParameterCollection("Transfer Function Widget")
+, Nf::ParameterCollection("Color Transfer Function Widget")
+, m_tf(NULL)
+, m_gradient(NULL)
+, m_cp(NULL)
+, m_qtf(NULL)
 {
-#if 1
-  
-  vtkSmartPointer<vtkColorTransferFunction> ctf = 
-    vtkSmartPointer<vtkColorTransferFunction>::New();
+  m_tf = vtkSmartPointer<vtkColorTransferFunction>::New();
   //
-  ctf->AddRGBPoint(0.2, 1.,0.,0., 0.5, 0.);
+  m_tf->AddRGBPoint(0.2, 1.,0.,0., 0.5, 0.);
   //ctf->AddRGBPoint(0.5, 0.,0.,1.);
-  ctf->AddRGBPoint(0.8, 0.,1.,0.);
+  m_tf->AddRGBPoint(0.8, 0.,1.,0.);
   //ctf->AddHSVPoint(0., 0.,1.,1.);
   //ctf->AddHSVPoint(1., 0.66666,1.,1.);
 
-  m_qtf = QSharedPointer<ctkTransferFunction>( new ctkVTKColorTransferFunction(ctf));
+  m_qtf = QSharedPointer<ctkTransferFunction>( new ctkVTKColorTransferFunction(m_tf));
   m_qtf->insertControlPoint(.5);
   m_gradient = 
     new ctkTransferFunctionGradientItem(m_qtf.data());
   m_cp = 
     new ctkTransferFunctionControlPointsItem(m_qtf.data());
-#else
-
-  vtkSmartPointer<vtkPiecewiseFunction> pwf =
-    vtkSmartPointer<vtkPiecewiseFunction>::New();
-  //
-  pwf->AddPoint(0., 1.);
-  pwf->AddPoint(0.2, 1.2);
-  pwf->AddPoint(0.3, 1.5);
-  pwf->AddPoint(0.4, 2., 0.5, 0.5);
-  pwf->AddPoint(0.9, 1.5);
-
-  m_qtf =
-    QSharedPointer<ctkTransferFunction>(new ctkVTKPiecewiseFunction(pwf));
-
-  m_gradient = 
-    new ctkTransferFunctionGradientItem(m_qtf.data());
-  m_cp = 
-    new ctkTransferFunctionControlPointsItem(m_qtf.data());
-#endif
 }
 
-CTKColorTransferFucntionWidget::~CTKColorTransferFucntionWidget()
+CTKColorTransferFunctionWidget::~CTKColorTransferFunctionWidget()
 {
   if(this->m_gradient)
     delete m_gradient;
   if(this->m_cp)
     delete m_cp;
-  if(this->m_tf)
-    delete m_tf;
 }
 
-QSize CTKColorTransferFucntionWidget::sizeHint() const
+QSize CTKColorTransferFunctionWidget::sizeHint() const
 {
   return QSize(640,100);
 }
 
-void CTKColorTransferFucntionWidget::Initialize()
+void CTKColorTransferFunctionWidget::Initialize()
 {
   
   this->scene()->addItem(m_gradient);
