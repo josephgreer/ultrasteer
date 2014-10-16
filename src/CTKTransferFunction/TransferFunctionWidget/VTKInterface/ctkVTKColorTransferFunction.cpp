@@ -99,6 +99,9 @@ void ctkVTKColorTransferFunction::range(qreal& minRange, qreal& maxRange)const
     }
   double rangeValues[2];
   d->ColorTransferFunction->GetRange(rangeValues);
+  
+  //vtkDebugMacro(<< this->GetClassName() << " (" << this << "): returning " << #name " pointer " << this->name); \
+
   minRange = rangeValues[0];
   maxRange = rangeValues[1];
 }

@@ -6,19 +6,20 @@
 #include "ctkTransferFunctionView.h"
 #include "ctkTransferFunctionGradientItem.h"
 #include "ctkTransferFunctionControlPointsItem.h"
+#include <vtkColorTransferFunction.h>
 
-class CTKTransferFunctionWidget : public ctkTransferFunctionView , public Nf::ParameterCollection
+class CTKColorTransferFucntionWidget : public ctkTransferFunctionView , public Nf::ParameterCollection
 {
     Q_OBJECT
 private:
-  ctkTransferFunction *m_tf;
+  vtkSmartPointer<vtkColorTransferFunction> *m_tf;
   ctkTransferFunctionGradientItem *m_gradient;
   ctkTransferFunctionControlPointsItem *m_cp;
   QSharedPointer<ctkTransferFunction> m_qtf;
 
 public: 
-  CTKTransferFunctionWidget();
-  ~CTKTransferFunctionWidget();
+  CTKColorTransferFucntionWidget();
+  ~CTKColorTransferFucntionWidget();
   void Initialize();
 
   virtual QSize sizeHint() const;

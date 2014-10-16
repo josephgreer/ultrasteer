@@ -106,7 +106,7 @@ void RTUltrasteer::CreateTFDock()
   m_tfDock = new QDockWidget(tr("Transfer Function Editor"), this);
   m_tfDock->setAllowedAreas(Qt::AllDockWidgetAreas);
 
-  m_tfWidget = new CTKTransferFunctionWidget();
+  m_tfWidget = new CTKColorTransferFucntionWidget();
   this->m_tfWidget->Initialize();
   m_tfDock->setWidget(m_tfWidget);
   

@@ -7,13 +7,13 @@
 #include <vtkPieceWiseFunction.h>
 #include <vtkColorTransferFunction.h>
 
-#include "CTKTransferFunctionWidget.h"
+#include "CTKColorTransferFunctionWidget.h"
 #include "ctkVTKColorTransferFunction.h"
 #include "ctkVTKPiecewiseFunction.h"
 
 using namespace Nf;
 
-CTKTransferFunctionWidget::CTKTransferFunctionWidget()
+CTKColorTransferFucntionWidget::CTKColorTransferFucntionWidget()
 : ctkTransferFunctionView()
 , Nf::ParameterCollection("Transfer Function Widget")
 {
@@ -29,7 +29,7 @@ CTKTransferFunctionWidget::CTKTransferFunctionWidget()
   //ctf->AddHSVPoint(1., 0.66666,1.,1.);
 
   m_qtf = QSharedPointer<ctkTransferFunction>( new ctkVTKColorTransferFunction(ctf));
-  //cctf->insertControlPoint(.5);
+  m_qtf->insertControlPoint(.5);
   m_gradient = 
     new ctkTransferFunctionGradientItem(m_qtf.data());
   m_cp = 
@@ -55,7 +55,7 @@ CTKTransferFunctionWidget::CTKTransferFunctionWidget()
 #endif
 }
 
-CTKTransferFunctionWidget::~CTKTransferFunctionWidget()
+CTKColorTransferFucntionWidget::~CTKColorTransferFucntionWidget()
 {
   if(this->m_gradient)
     delete m_gradient;
@@ -65,12 +65,12 @@ CTKTransferFunctionWidget::~CTKTransferFunctionWidget()
     delete m_tf;
 }
 
-QSize CTKTransferFunctionWidget::sizeHint() const
+QSize CTKColorTransferFucntionWidget::sizeHint() const
 {
   return QSize(640,100);
 }
 
-void CTKTransferFunctionWidget::Initialize()
+void CTKColorTransferFucntionWidget::Initialize()
 {
   
   this->scene()->addItem(m_gradient);
