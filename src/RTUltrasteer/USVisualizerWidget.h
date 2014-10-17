@@ -6,12 +6,15 @@
 #include "CubeVisualizer.h"
 #include <vtkAxesActor.h>
 #include <vtkVolume.h>
+#include <vtkColorTransferFunction.h>
+#include <vtkPiecewiseFunction.h>
+#include <vtkCommand.h>
 
-class USVisualizerWidget : public QVTKWidget, public Nf::ParameterCollection
+class USVisualizerWidget : public QVTKWidget, public vtkCommand, public Nf::ParameterCollection
 {
     Q_OBJECT
 public: 
-  USVisualizerWidget();
+  USVisualizerWidget(vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf);
   void Initialize();
 
   virtual QSize sizeHint() const;
@@ -31,6 +34,12 @@ public:
   std::tr1::shared_ptr < Nf::CubeVisualizer > m_extentVis;
 
   //Parameters
+
+  //colorTransferFunction
+  vtkSmartPointer<vtkColorTransferFunction> m_ctf;
+
+  //opacity transfer function
+  vtkSmartPointer<vtkPiecewiseFunction> m_otf;
 
   //showVolumeExtent
   std::tr1::shared_ptr < Nf::BoolParameter > m_showVolumeExtent;
@@ -56,4 +65,7 @@ public:
   std::tr1::shared_ptr < Nf::BoolParameter > m_setViewYZ;
   void onSetViewYZ();
   CLASS_CALLBACK(onSetViewYZ, USVisualizerWidget);
+
+  //For changes to the transfer function
+  virtual void Execute(vtkObject *caller, unsigned long, void*);
 };

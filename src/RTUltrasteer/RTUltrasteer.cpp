@@ -91,15 +91,18 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
 
 void RTUltrasteer::CreateUSVisualizer()
 {
+  assert(m_tfWidget != NULL);
   m_usDock = new QDockWidget(tr("Ultrasound Visualization"), this);
   m_usDock->setAllowedAreas(Qt::AllDockWidgetAreas);
 
-  m_usVis = new USVisualizerWidget();
+  m_usVis = new USVisualizerWidget(m_tfWidget->GetColorTransferFunction(), m_tfWidget->GetOpacityTransferFunction());
   m_usVis->Initialize();
   m_usDock->setWidget(m_usVis);
   
   addDockWidget(Qt::RightDockWidgetArea, m_usDock);
   m_usDock->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
+
+  m_tfWidget->SetInteractionObserver(m_usVis);
 }
 
 void RTUltrasteer::CreateTFDock()
