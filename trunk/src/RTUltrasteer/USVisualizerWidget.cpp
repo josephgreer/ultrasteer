@@ -11,19 +11,23 @@
 #include <vtkVolumeRayCastMapper.h>
 #include <vtkVolumeRayCastCompositeFunction.h>
 #include <vtkVolumeRayCastMIPFunction.h>
+#include <vtkVolumeTextureMapper2D.h>
 #include <vtkTransform.h>
 #include <vtkProperty.h>
+#include <vtkVolumeProperty.h>
 #include <vtkCamera.h>
 
 #include "USVisualizerWidget.h"
 
 using namespace Nf;
 
-USVisualizerWidget::USVisualizerWidget()
+USVisualizerWidget::USVisualizerWidget(vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf)
 : QVTKWidget()
 , Nf::ParameterCollection("Ultrasound Visualization")
 , m_volumeAxes(NULL)
 , m_volume(NULL)
+, m_otf(otf)
+, m_ctf(ctf)
 {
   ADD_BOOL_PARAMETER(m_showVolumeExtent, "Show Volume Extent", CALLBACK_POINTER(onShowVolumeExtentChanged, USVisualizerWidget), this, true);
   ADD_BOOL_PARAMETER(m_showVolumeAxes, "Show Volume Axes", CALLBACK_POINTER(onShowVolumeAxesChanged, USVisualizerWidget), this, true);
@@ -165,7 +169,8 @@ void USVisualizerWidget::Initialize()
   importer->SetImportVoidPointer(m_rpvc.GetVolumeOriginData());
   importer->Update();
   
-  //Ray Casting
+#if 0
+  //Volume Mapper
   vtkSmartPointer<vtkVolumeRayCastMIPFunction> rayCastFunction =
     vtkSmartPointer<vtkVolumeRayCastMIPFunction>::New();
 
@@ -173,6 +178,10 @@ void USVisualizerWidget::Initialize()
     vtkSmartPointer<vtkVolumeRayCastMapper>::New();
   volumeMapper->SetInputConnection(importer->GetOutputPort(0));
   volumeMapper->SetVolumeRayCastFunction(rayCastFunction);
+#else
+  vtkSmartPointer<vtkVolumeTextureMapper2D> volumeMapper = vtkSmartPointer<vtkVolumeTextureMapper2D>::New();
+  volumeMapper->SetInputConnection(importer->GetOutputPort(0));
+#endif
 
   //Volumne
   Matrix33d orientation = m_rpvc.GetVolumeOrientation();
@@ -181,6 +190,14 @@ void USVisualizerWidget::Initialize()
   m_volume->SetMapper(volumeMapper);
   m_volume->PokeMatrix(volTrans.GetVTKMatrix());
   m_volume->Update();
+
+  //Volume Property
+  vtkSmartPointer<vtkVolumeProperty> volumeProperty =
+    vtkSmartPointer<vtkVolumeProperty>::New();
+  volumeProperty->SetColor(m_ctf);
+  volumeProperty->SetScalarOpacity(m_otf);
+
+  m_volume->SetProperty(volumeProperty);
 
   //Volume Renderer
   m_renderer->AddViewProp(m_volume);
@@ -216,5 +233,21 @@ void USVisualizerWidget::Initialize()
   this->m_renderer->ResetCamera(volBounds[0], volBounds[1], volBounds[2], volBounds[3],
     volBounds[4], volBounds[5]);
 
+  vtkCamera *cam = m_renderer->GetActiveCamera();
+  cam->Zoom(1.5);
+  this->m_renderer->SetActiveCamera(cam);
+
 #endif
+}
+
+void USVisualizerWidget::Execute(vtkObject *caller, unsigned long, void*)
+{
+  vtkSmartPointer<vtkVolumeProperty> volumeProperty =
+    vtkSmartPointer<vtkVolumeProperty>::New();
+  volumeProperty->SetColor(m_ctf);
+  volumeProperty->SetScalarOpacity(m_otf);
+
+  m_volume->SetProperty(volumeProperty);
+  m_volume->Modified();
+  this->repaint();
 }
