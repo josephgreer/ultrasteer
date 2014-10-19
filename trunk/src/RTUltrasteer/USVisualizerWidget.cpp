@@ -7,7 +7,6 @@
 #include <vtkActor.h>
 #include <vtkInformation.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
-#include <vtkImageImport.h>
 #include <vtkVolumeRayCastMapper.h>
 #include <vtkVolumeRayCastCompositeFunction.h>
 #include <vtkVolumeRayCastMIPFunction.h>
@@ -35,6 +34,7 @@ USVisualizerWidget::USVisualizerWidget(vtkSmartPointer<vtkColorTransferFunction>
   ADD_ACTION_PARAMETER(m_setViewXY, "Set View XY", CALLBACK_POINTER(onSetViewXY, USVisualizerWidget), this, true); 
   ADD_ACTION_PARAMETER(m_setViewXZ, "Set View XZ", CALLBACK_POINTER(onSetViewXZ, USVisualizerWidget), this, true); 
   ADD_ACTION_PARAMETER(m_setViewYZ, "Set View YZ", CALLBACK_POINTER(onSetViewYZ, USVisualizerWidget), this, true); 
+  ADD_ENUM_PARAMETER(m_renderMode, "Render Mode", CALLBACK_POINTER(onSetRenderMode, USVisualizerWidget), this, QtEnums::VisRenderMethod::RayCastingMIP, "VisRenderMethod");
   ADD_CHILD_COLLECTION(m_rpvc);
 }
 
@@ -89,6 +89,29 @@ void USVisualizerWidget::onSetViewXZ()
 void USVisualizerWidget::onSetViewYZ()
 {
   SetUSVisView(2,0);
+}
+
+void USVisualizerWidget::onSetRenderMode()
+{
+  if(m_renderMode->GetValue() == QtEnums::VisRenderMethod::RayCastingMIP) {
+    //Volume Mapper
+    vtkSmartPointer<vtkVolumeRayCastMIPFunction> rayCastFunction =
+      vtkSmartPointer<vtkVolumeRayCastMIPFunction>::New();
+
+    vtkSmartPointer<vtkVolumeRayCastMapper> volumeMapper =
+      vtkSmartPointer<vtkVolumeRayCastMapper>::New();
+    volumeMapper->SetInputConnection(m_importer->GetOutputPort(0));
+    volumeMapper->SetVolumeRayCastFunction(rayCastFunction); 
+    m_volume->Modified();
+    m_volume->SetMapper(volumeMapper);
+  } else if(m_renderMode->GetValue() == QtEnums::VisRenderMethod::Texture_2D) {
+    vtkSmartPointer<vtkVolumeTextureMapper3D> volumeMapper = vtkSmartPointer<vtkVolumeTextureMapper3D>::New();
+    volumeMapper->SetInputConnection(m_importer->GetOutputPort(0));
+    m_volume->Modified();
+    m_volume->SetMapper(volumeMapper);
+  } else {
+    assert(0);
+  }
 }
 
 
@@ -160,35 +183,21 @@ void USVisualizerWidget::Initialize()
   Cubed physExtent = m_rpvc.GetVolumePhysicalExtent();
 
   //vtkImageData importer
-  vtkSmartPointer<vtkImageImport> importer = vtkSmartPointer<vtkImageImport>::New();
-  importer->SetDataSpacing(spacing.x, spacing.y, spacing.z);
-  importer->SetDataOrigin(0,0,0);
-  importer->SetWholeExtent(0, dims.x-1, 0, dims.y-1, 0, dims.z-1);
-  importer->SetDataExtentToWholeExtent();
-  importer->SetDataScalarTypeToUnsignedChar();
-  importer->SetNumberOfScalarComponents(1);
-  importer->SetImportVoidPointer(m_rpvc.GetVolumeOriginData());
-  importer->Update();
-  
-#if 1
-  //Volume Mapper
-  vtkSmartPointer<vtkVolumeRayCastMIPFunction> rayCastFunction =
-    vtkSmartPointer<vtkVolumeRayCastMIPFunction>::New();
-
-  vtkSmartPointer<vtkVolumeRayCastMapper> volumeMapper =
-    vtkSmartPointer<vtkVolumeRayCastMapper>::New();
-  volumeMapper->SetInputConnection(importer->GetOutputPort(0));
-  volumeMapper->SetVolumeRayCastFunction(rayCastFunction);
-#else
-  vtkSmartPointer<vtkVolumeTextureMapper3D> volumeMapper = vtkSmartPointer<vtkVolumeTextureMapper3D>::New();
-  volumeMapper->SetInputConnection(importer->GetOutputPort(0));
-#endif
+  m_importer = vtkSmartPointer<vtkImageImport>::New();
+  m_importer->SetDataSpacing(spacing.x, spacing.y, spacing.z);
+  m_importer->SetDataOrigin(0,0,0);
+  m_importer->SetWholeExtent(0, dims.x-1, 0, dims.y-1, 0, dims.z-1);
+  m_importer->SetDataExtentToWholeExtent();
+  m_importer->SetDataScalarTypeToUnsignedChar();
+  m_importer->SetNumberOfScalarComponents(1);
+  m_importer->SetImportVoidPointer(m_rpvc.GetVolumeOriginData());
+  m_importer->Update();
 
   //Volumne
   Matrix33d orientation = m_rpvc.GetVolumeOrientation();
   Matrix44d volTrans = Matrix44d::FromOrientationAndTranslation(m_rpvc.GetVolumeOrientation(), volExtent.m_ul);
   m_volume = vtkSmartPointer<vtkVolume>::New();
-  m_volume->SetMapper(volumeMapper);
+  onSetRenderMode();
   m_volume->PokeMatrix(volTrans.GetVTKMatrix());
   m_volume->Update();
 

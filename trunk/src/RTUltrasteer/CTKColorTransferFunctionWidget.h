@@ -1,12 +1,12 @@
 #pragma once
 
-#include "UICore.h"
-
 // CTK includes
 #include "ctkTransferFunctionView.h"
 #include "ctkTransferFunctionGradientItem.h"
 #include "ctkTransferFunctionControlPointsItem.h"
 #include <vtkColorTransferFunction.h>
+
+#include "UICore.h"
 
 class CTKColorTransferFunctionWidget : public ctkTransferFunctionView , public Nf::ParameterCollection
 {

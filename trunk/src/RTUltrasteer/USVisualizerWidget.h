@@ -9,6 +9,7 @@
 #include <vtkColorTransferFunction.h>
 #include <vtkPiecewiseFunction.h>
 #include <vtkCommand.h>
+#include <vtkImageImport.h>
 
 class USVisualizerWidget : public QVTKWidget, public Nf::ParameterCollection
 {
@@ -32,6 +33,9 @@ public:
   //Volume Axes
   vtkSmartPointer<vtkAxesActor> m_volumeAxes;
   std::tr1::shared_ptr < Nf::CubeVisualizer > m_extentVis;
+
+  //Importer
+  vtkSmartPointer<vtkImageImport> m_importer;
 
   //Parameters
 
@@ -65,6 +69,11 @@ public:
   std::tr1::shared_ptr < Nf::BoolParameter > m_setViewYZ;
   void onSetViewYZ();
   CLASS_CALLBACK(onSetViewYZ, USVisualizerWidget);
+
+  //renderMode
+  std::tr1::shared_ptr < Nf::EnumParameter > m_renderMode;
+  void onSetRenderMode();
+  CLASS_CALLBACK(onSetRenderMode, USVisualizerWidget);
 
   //For changes to the transfer function
   virtual void Execute(vtkObject *caller, unsigned long, void*);

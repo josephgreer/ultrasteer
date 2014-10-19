@@ -1,6 +1,5 @@
 #pragma once
 
-#include "UICore.h"
 #include "QVTKWidget.h"
 #include <vtkContextView.h>
 #include <vtkChartXY.h>
@@ -11,6 +10,7 @@
 #include <vtkColorTransferFunction.h>
 #include <vtkCommand.h>
 #include <vtkEventQtSlotConnect.h>
+#include "UICore.h"
 
 class VTKTransferFunctionWidget : public QVTKWidget, public Nf::ParameterCollection
 {

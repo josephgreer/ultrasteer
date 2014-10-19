@@ -1,4 +1,5 @@
 #include "RTUltrasteer.h"
+#include <QComboBox>
 
 namespace Nf
 {
@@ -14,7 +15,7 @@ namespace Nf
     }
   }
 
-  void SlotForwarder::buttonForward()
+  void SlotForwarder::changeForward()
   {
     if(m_fptr)
       m_fptr(m_context);
@@ -46,6 +47,7 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   repainters.push_back(m_usVis);
   CreateUIElements(usVis, *m_usVis, repainters);
   m_roots.push_back(usVis);
+  m_params->expandAll();
 }
 
 void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollection &collection, const std::vector < QVTKWidget * > & repainters) 
@@ -76,7 +78,65 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
     std::tr1::shared_ptr < Nf::ActionSlotForwarder > uiElem (new Nf::ActionSlotForwarder(actions[i]->GetCallback(), actions[i]->GetContext(), (QObject *)execButton, repainters, NULL));
     m_params->setItemWidget(child, 1, execButton); 
     actions[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< bool > >(uiElem));
-    QObject::connect((QObject *)execButton, SIGNAL(pressed()), (QObject *)&(*uiElem), SLOT(buttonForward()));
+    QObject::connect((QObject *)execButton, SIGNAL(pressed()), (QObject *)&(*uiElem), SLOT(changeForward()));
+  }
+
+  //Int Parameters
+  std::vector < std::tr1::shared_ptr < Nf::IntParameter > > ints = collection.GetIntParameters();
+  for(s32 i=0; i<(s32)ints.size(); i++) {
+    QTreeWidgetItem *child = new QTreeWidgetItem();
+    parent->addChild(child);
+    child->setText(0, ints[i]->GetName());
+
+    QSpinBox *sb = new QSpinBox(m_params);
+    sb->setMinimum(ints[i]->GetMin());
+    sb->setMaximum(ints[i]->GetMax());
+    sb->setSingleStep(ints[i]->GetStep());
+
+    std::tr1::shared_ptr < Nf::IntSlotForwarder > uiElem (new Nf::IntSlotForwarder(ints[i]->GetCallback(), ints[i]->GetContext(), (QObject *)sb, repainters, NULL));
+    m_params->setItemWidget(child, 1, sb); 
+    ints[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< s32 > >(uiElem));
+    QObject::connect((QObject *)sb, SIGNAL(valueChanged(int)), (QObject *)&(*uiElem), SLOT(changeForward()));
+  }
+
+  //Float Parameters
+  std::vector < std::tr1::shared_ptr < Nf::FloatParameter > > floats = collection.GetFloatParameters();
+  for(s32 i=0; i<(s32)floats.size(); i++) {
+    QTreeWidgetItem *child = new QTreeWidgetItem();
+    parent->addChild(child);
+    child->setText(0, floats[i]->GetName());
+
+    QDoubleSpinBox *sb = new QDoubleSpinBox(m_params);
+    sb->setMinimum(floats[i]->GetMin());
+    sb->setMaximum(floats[i]->GetMax());
+    sb->setSingleStep(floats[i]->GetStep());
+
+    std::tr1::shared_ptr < Nf::FloatSlotForwarder > uiElem (new Nf::FloatSlotForwarder(floats[i]->GetCallback(), floats[i]->GetContext(), (QObject *)sb, repainters, NULL));
+    m_params->setItemWidget(child, 1, sb); 
+    floats[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< f32 > >(uiElem));
+    QObject::connect((QObject *)sb, SIGNAL(valueChanged(double)), (QObject *)&(*uiElem), SLOT(changeForward()));
+  }
+
+  //Enum Parameters
+  std::vector < std::tr1::shared_ptr < Nf::EnumParameter > > enums = collection.GetEnumParameters();
+  for(s32 i=0; i<(s32)enums.size(); i++) {
+    QTreeWidgetItem *child = new QTreeWidgetItem();
+    parent->addChild(child);
+    child->setText(0, enums[i]->GetName());
+
+    QComboBox *combo = new QComboBox(m_params);
+    const QMetaObject &mo = Nf::QtEnums::staticMetaObject;
+    QMetaEnum meta = mo.enumerator(mo.indexOfEnumerator(enums[i]->GetEnumName()));
+    for(s32 ky=0; ky<meta.keyCount(); ky++) {
+      combo->insertItem(ky, meta.key(ky));
+    }
+    combo->setCurrentIndex(enums[i]->GetValue());
+
+    std::tr1::shared_ptr < Nf::EnumSlotForwarder > uiElem (new Nf::EnumSlotForwarder(enums[i]->GetEnumName(),
+      enums[i]->GetCallback(), enums[i]->GetContext(), (QObject *)combo, repainters, NULL));
+    m_params->setItemWidget(child, 1, combo); 
+    enums[i]->SetUIElement(std::tr1::shared_ptr< Nf::UIElement < s32 > >(uiElem));
+    QObject::connect((QObject *)combo, SIGNAL(currentIndexChanged(int)), (QObject *)&(*uiElem), SLOT(changeForward()));
   }
 
   //Child parameters
@@ -128,8 +188,8 @@ void RTUltrasteer::CreateMenuDock()
   m_params->setColumnCount(2);
   m_params->setHeaderLabels(QStringList() << "Parameter" << "Value");
 
-  m_params->setColumnWidth(0, 150);
-  m_params->setColumnWidth(1, 20);
+  m_params->setColumnWidth(0, 120);
+  m_params->setColumnWidth(1, 60);
 
   m_menu->setWidget(m_params);
   
