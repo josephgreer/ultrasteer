@@ -5,6 +5,10 @@
 
 #include "SegmentCore.h"
 
+#ifdef QT_GUI_LIB
+#include <QObject>
+#endif
+
 #define VIS_WIDTH 600
 #define VIS_HEIGHT 480
 
@@ -19,6 +23,7 @@ namespace Nf
     PT_FLOAT,
     PT_STRING,
     PT_ACTION,
+    PT_ENUM,
   } PARAMETER_TYPE;
 
   //UIElement is an interface that is impelmented in QT projects
@@ -136,7 +141,54 @@ namespace Nf
     {
       return m_step;
     }
+  };  
+
+  //################################BEGIN ENUM DEFINITIONS#############################################
+#ifdef QT_GUI_LIB
+  class QtEnums : public QObject
+  {
+    Q_OBJECT
+
+    Q_ENUMS(VisRenderMethod)
+  public:
+#else
+  class QtEnums
+  {
+#endif
+  enum VisRenderMethod 
+  {
+    Texture_2D = 0,
+    Texture_3D,
+    RayCastingMIP,
   };
+  };
+
+  //################################END ENUM DEFINITIONS###############################################
+  
+  //Enumerable parameter class 
+  //Same as Parameter, only corresponding string list can be supplied
+  //Enum class takes advantage of QT introspection to convert between
+  //enums and strings.  Therefore the enum has to be defined in a Q_OBJECT class    
+  class EnumParameter : public Parameter < s32 >
+  {
+  protected:
+    std::string m_enumName;
+
+  public:
+    EnumParameter()
+      : Parameter()
+    {
+    }
+
+    EnumParameter(PARAMETER_TYPE type, const char *name, Function callback, void *context, s32 def, const char *enumName)
+      : Parameter(type, name, callback, context, def)
+    {
+      m_enumName = enumName;
+    }
+
+    const char * GetEnumName() { return m_enumName.c_str(); }
+  };
+
 
   typedef NumberParameter < f32 > FloatParameter;
   typedef NumberParameter < s32 > IntParameter;
@@ -157,6 +209,7 @@ namespace Nf
      std::vector < std::tr1::shared_ptr < StringParameter > > m_strings;
      std::vector < std::tr1::shared_ptr < BoolParameter > > m_bools;
      std::vector < std::tr1::shared_ptr < BoolParameter > > m_actions;
+     std::vector < std::tr1::shared_ptr < EnumParameter > > m_enums;
      std::vector < ParameterCollection * > m_children;
 
      char m_name[100];
@@ -171,6 +224,7 @@ namespace Nf
      void AddStringParameter(std::tr1::shared_ptr < StringParameter > stringParam);
      void AddBoolParameter(std::tr1::shared_ptr < BoolParameter >  boolParam);
      void AddActionParameter(std::tr1::shared_ptr < BoolParameter >  actionParam);
+     void AddEnumParameter(std::tr1::shared_ptr < EnumParameter > enumParam);
      void AddChildCollection(ParameterCollection *child);
 
      std::vector < std::tr1::shared_ptr < FloatParameter > > GetFloatParameters();
@@ -178,6 +232,7 @@ namespace Nf
      std::vector < std::tr1::shared_ptr < StringParameter > > GetStringParameters();
      std::vector < std::tr1::shared_ptr < BoolParameter > > GetBoolParameters();
      std::vector < std::tr1::shared_ptr < BoolParameter > > GetActionParameters();
+     std::vector < std::tr1::shared_ptr < EnumParameter > > GetEnumParameters();
      std::vector < ParameterCollection * > GetChildCollections();
    };
 }
@@ -203,6 +258,10 @@ namespace Nf
 #define ADD_ACTION_PARAMETER(var, name, callback, context, val) \
   var = std::tr1::shared_ptr < Nf::BoolParameter > (new Nf::BoolParameter(PT_ACTION, name, callback, context, val)); \
   m_actions.push_back(var);
+
+#define ADD_ENUM_PARAMETER(var, name, callback, context, val, enumName) \
+  var = std::tr1::shared_ptr < Nf::EnumParameter > (new Nf::EnumParameter(PT_ENUM, name, callback, context, val, enumName)); \
+  m_enums.push_back(var);
 
 #define ADD_CHILD_COLLECTION(var) \
   m_children.push_back((Nf::ParameterCollection *)&var);

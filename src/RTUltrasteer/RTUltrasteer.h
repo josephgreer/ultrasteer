@@ -5,6 +5,10 @@
 #include <QtGui/QDockWidget>
 #include <QtGui/QTreeWidget>
 #include <QtGui/QPushButton>
+#include <QtGui/QComboBox>
+#include <QtGui/QDoubleSpinBox>
+#include <QtGui/QSpinBox>
+#include <QMetaEnum>
 #include "ui_rtultrasteer.h"
 #include "VTKTransferFunctionWidget.h"
 #include "UICore.h"
@@ -35,7 +39,7 @@ namespace Nf
     public slots:
 
       void treeWidgetForward(QTreeWidgetItem *item, int col);
-      void buttonForward();
+      void changeForward();
   };
 
   class BoolSlotForwarder : public SlotForwarder, public UIElement < bool >
@@ -67,6 +71,66 @@ namespace Nf
     bool GetValue()
     {
       return true;
+    }
+  };
+
+  class IntSlotForwarder : public SlotForwarder, public UIElement < s32 >
+  {
+    Q_OBJECT
+
+  public:
+
+    IntSlotForwarder(Function function, void *context, QObject *element, std::vector < QVTKWidget * > repaintList, QObject* parent = 0) 
+      : SlotForwarder(function, context, element, repaintList, parent)
+    {
+    }
+
+    s32 GetValue()
+    {
+      QSpinBox *sb = (QSpinBox *)m_element;
+      return (s32)sb->value();
+    }
+  };
+
+  class FloatSlotForwarder : public SlotForwarder, public UIElement < f32 >
+  {
+    Q_OBJECT
+
+  public:
+
+    FloatSlotForwarder(Function function, void *context, QObject *element, std::vector < QVTKWidget * > repaintList, QObject* parent = 0) 
+      : SlotForwarder(function, context, element, repaintList, parent)
+    {
+    }
+
+    f32 GetValue()
+    {
+      QDoubleSpinBox *sb = (QDoubleSpinBox *)m_element;
+      return (f32)sb->value();
+    }
+  };
+
+  class EnumSlotForwarder : public SlotForwarder, public UIElement < s32 >
+  {
+    Q_OBJECT
+
+  protected:
+    std::string m_enumName;
+
+  public:
+
+    EnumSlotForwarder(const char *enumName, Function function, void *context, QObject *element, std::vector < QVTKWidget * > repaintList, QObject* parent = 0) 
+      : SlotForwarder(function, context, element, repaintList, parent)
+    {
+      m_enumName = enumName;
+    }
+
+    s32 GetValue()
+    {
+      QComboBox *combo = (QComboBox *)m_element;
+      const QMetaObject &mo = QtEnums::staticMetaObject;
+      QMetaEnum meta = mo.enumerator(mo.indexOfEnumerator(m_enumName.c_str()));
+      return meta.keyToValue(combo->currentText().toStdString().c_str());
     }
   };
 }

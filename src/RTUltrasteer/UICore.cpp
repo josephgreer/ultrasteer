@@ -1,3 +1,4 @@
+#include <QObject>
 #include "UICore.h"
 
 namespace Nf
@@ -38,6 +39,10 @@ namespace Nf
     m_actions.push_back(actionParam);
   }
 
+  void ParameterCollection::AddEnumParameter(std::tr1::shared_ptr < EnumParameter > enumParam)
+  {
+    m_enums.push_back(enumParam);
+  }
 
   void ParameterCollection::AddChildCollection(ParameterCollection *child)
   {
@@ -62,6 +67,11 @@ namespace Nf
   std::vector < std::tr1::shared_ptr < BoolParameter > > ParameterCollection::GetBoolParameters()
   {
     return m_bools;
+  }
+
+  std::vector < std::tr1::shared_ptr < EnumParameter > > ParameterCollection::GetEnumParameters()
+  {
+    return m_enums;
   }
 
   std::vector < std::tr1::shared_ptr < BoolParameter > > ParameterCollection::GetActionParameters()
