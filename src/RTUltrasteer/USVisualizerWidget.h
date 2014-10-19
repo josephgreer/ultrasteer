@@ -10,7 +10,7 @@
 #include <vtkPiecewiseFunction.h>
 #include <vtkCommand.h>
 
-class USVisualizerWidget : public QVTKWidget, public vtkCommand, public Nf::ParameterCollection
+class USVisualizerWidget : public QVTKWidget, public Nf::ParameterCollection
 {
     Q_OBJECT
 public: 
@@ -68,4 +68,8 @@ public:
 
   //For changes to the transfer function
   virtual void Execute(vtkObject *caller, unsigned long, void*);
+
+public slots:
+  void TransferFunctionChanged(vtkObject *caller, unsigned long, void*, void*, vtkCommand *);
+
 };

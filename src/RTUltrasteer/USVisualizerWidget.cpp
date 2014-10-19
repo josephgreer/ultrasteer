@@ -12,6 +12,7 @@
 #include <vtkVolumeRayCastCompositeFunction.h>
 #include <vtkVolumeRayCastMIPFunction.h>
 #include <vtkVolumeTextureMapper2D.h>
+#include <vtkVolumeTextureMapper3D.h>
 #include <vtkTransform.h>
 #include <vtkProperty.h>
 #include <vtkVolumeProperty.h>
@@ -143,7 +144,7 @@ void USVisualizerWidget::Initialize()
 #else
   m_renderer = 
     vtkSmartPointer<vtkRenderer>::New();
-  m_renderer->SetBackground(0.0, 0.0, 0.0);
+  m_renderer->SetBackground(0.5, 0.0, 0.0);
 
   //Volume visualization
 
@@ -169,7 +170,7 @@ void USVisualizerWidget::Initialize()
   importer->SetImportVoidPointer(m_rpvc.GetVolumeOriginData());
   importer->Update();
   
-#if 0
+#if 1
   //Volume Mapper
   vtkSmartPointer<vtkVolumeRayCastMIPFunction> rayCastFunction =
     vtkSmartPointer<vtkVolumeRayCastMIPFunction>::New();
@@ -179,7 +180,7 @@ void USVisualizerWidget::Initialize()
   volumeMapper->SetInputConnection(importer->GetOutputPort(0));
   volumeMapper->SetVolumeRayCastFunction(rayCastFunction);
 #else
-  vtkSmartPointer<vtkVolumeTextureMapper2D> volumeMapper = vtkSmartPointer<vtkVolumeTextureMapper2D>::New();
+  vtkSmartPointer<vtkVolumeTextureMapper3D> volumeMapper = vtkSmartPointer<vtkVolumeTextureMapper3D>::New();
   volumeMapper->SetInputConnection(importer->GetOutputPort(0));
 #endif
 
@@ -241,6 +242,19 @@ void USVisualizerWidget::Initialize()
 }
 
 void USVisualizerWidget::Execute(vtkObject *caller, unsigned long, void*)
+{
+  vtkSmartPointer<vtkVolumeProperty> volumeProperty =
+    vtkSmartPointer<vtkVolumeProperty>::New();
+  volumeProperty->SetColor(m_ctf);
+  volumeProperty->SetScalarOpacity(m_otf);
+
+  m_volume->SetProperty(volumeProperty);
+  m_volume->Modified();
+  //this->repaint();
+}
+
+
+void USVisualizerWidget::TransferFunctionChanged(vtkObject *caller, unsigned long, void*, void*, vtkCommand *)
 {
   vtkSmartPointer<vtkVolumeProperty> volumeProperty =
     vtkSmartPointer<vtkVolumeProperty>::New();
