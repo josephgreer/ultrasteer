@@ -28,6 +28,16 @@ namespace Nf
   {
     m_strings.push_back(stringParam);
   }
+
+  void ParameterCollection::AddOpenFileParameter(std::tr1::shared_ptr < FileParameter > ofile)
+  {
+    m_ofiles.push_back(ofile);
+  }
+
+  void ParameterCollection::AddSaveFileParameter(std::tr1::shared_ptr < FileParameter > sfile)
+  {
+    m_sfiles.push_back(sfile);
+  }
   
   void ParameterCollection::AddBoolParameter(std::tr1::shared_ptr < BoolParameter > boolParam)
   {
@@ -62,6 +72,16 @@ namespace Nf
   std::vector < std::tr1::shared_ptr < StringParameter > > ParameterCollection::GetStringParameters()
   {
     return m_strings;
+  }
+
+  std::vector < std::tr1::shared_ptr < FileParameter > > ParameterCollection::GetOpenFileParameters()
+  {
+    return m_ofiles;
+  }
+
+  std::vector < std::tr1::shared_ptr < FileParameter > > ParameterCollection::GetSaveFileParameters()
+  {
+    return m_sfiles;
   }
 
   std::vector < std::tr1::shared_ptr < BoolParameter > > ParameterCollection::GetBoolParameters()
