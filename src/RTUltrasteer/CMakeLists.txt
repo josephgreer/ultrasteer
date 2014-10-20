@@ -28,16 +28,13 @@ INCLUDE_DIRECTORIES(
   ../VolumeCreator
   ../Segment
   ../RPFileReader
-  ../CTKTransferFunction/TransferFunctionWidget
-  ../CTKTransferFunction/TransferFunctionWidget/VTKInterface
-  ../CTKTransferFunction/Core
 ) 
 
-SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp USVisualizerWidget.cpp UICore.cpp CTKColorTransferFunctionWidget.cpp CTKTransferFunctionWidget.cpp VTKTransferFunctionWidget.cpp)
+SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp USVisualizerWidget.cpp UICore.cpp VTKTransferFunctionWidget.cpp FileWidget.cpp)
 
-SET(ultrasteerHeaders RTUltrasteer.h USVisualizerWidget.h UICore.h CTKColorTransferFunctionWidget.h CTKTransferFunctionWidget.h VTKTransferFunctionWidget.h)
+SET(ultrasteerHeaders RTUltrasteer.h USVisualizerWidget.h UICore.h VTKTransferFunctionWidget.h FileWidget.h)
 
-SET(ultrasteerUI RTUltrasteer.ui)
+SET(ultrasteerUI RTUltrasteer.ui FileWidget.ui)
 
 SET(ultrasteerResources RTUltrasteer.qrc)
 
@@ -55,6 +52,7 @@ SOURCE_GROUP("Resources" FILES
 SOURCE_GROUP("Generated" FILES
   ${UISrcs}
   ${MOCSrcs}
+  ${ResourcesRCC}
 )
 
 ADD_EXECUTABLE(RTUltrasteer WIN32
@@ -71,5 +69,5 @@ SET_TARGET_PROPERTIES(RTUltrasteer PROPERTIES LINK_FLAGS_DEBUG /SUBSYSTEM:window
 SET_TARGET_PROPERTIES(RTUltrasteer PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:windows)
  #Must be lowercase windows
 
-TARGET_LINK_LIBRARIES(RTUltrasteer VolumeCreator RPFileReader CTKTransferFunctionEditor ${OpenCV_LIBS} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${ITK_LIBRARIES} ${VTK_LIBRARIES})
+TARGET_LINK_LIBRARIES(RTUltrasteer VolumeCreator RPFileReader ${OpenCV_LIBS} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${ITK_LIBRARIES} ${VTK_LIBRARIES})
 

@@ -1,4 +1,5 @@
 #include "RTUltrasteer.h"
+#include "FileWidget.h"
 #include <QComboBox>
 
 namespace Nf
@@ -46,6 +47,7 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   std::vector < QVTKWidget * > repainters;
   repainters.push_back(m_usVis);
   CreateUIElements(usVis, *m_usVis, repainters);
+
   m_roots.push_back(usVis);
   m_params->expandAll();
 }
@@ -75,6 +77,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
     child->setText(0, actions[i]->GetName());
 
     QPushButton *execButton = new QPushButton("Exec", m_params);
+    execButton->setMaximumWidth(50);
     std::tr1::shared_ptr < Nf::ActionSlotForwarder > uiElem (new Nf::ActionSlotForwarder(actions[i]->GetCallback(), actions[i]->GetContext(), (QObject *)execButton, repainters, NULL));
     m_params->setItemWidget(child, 1, execButton); 
     actions[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< bool > >(uiElem));
@@ -181,17 +184,18 @@ void RTUltrasteer::CreateTFDock()
 
 void RTUltrasteer::CreateMenuDock()
 {
-  m_menu = new QDockWidget(tr("Menu"), this);
-  m_menu->setAllowedAreas(Qt::AllDockWidgetAreas);
-
   m_params = new QTreeWidget(m_menu);
   m_params->setColumnCount(2);
   m_params->setHeaderLabels(QStringList() << "Parameter" << "Value");
 
-  m_params->setColumnWidth(0, 120);
-  m_params->setColumnWidth(1, 60);
+  m_params->setColumnWidth(0, 130);
+  m_params->setColumnWidth(1, 220);
+  
+  m_menu = new QDockWidget(tr("Menu"), this);
+  m_menu->setAllowedAreas(Qt::AllDockWidgetAreas);
 
   m_menu->setWidget(m_params);
+  m_menu->setMinimumWidth(370);
   
   addDockWidget(Qt::LeftDockWidgetArea, m_menu);
   m_menu->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);

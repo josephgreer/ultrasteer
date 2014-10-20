@@ -22,6 +22,8 @@ namespace Nf
     PT_INT,
     PT_FLOAT,
     PT_STRING,
+    PT_OPEN_FILE,
+    PT_SAVE_FILE,
     PT_ACTION,
     PT_ENUM,
   } PARAMETER_TYPE;
@@ -141,7 +143,36 @@ namespace Nf
     {
       return m_step;
     }
-  };  
+  };
+
+  //File parameter class 
+  class FileParameter : public Parameter < std::string >
+  {
+  protected:
+    std::string m_extWC;        //extension wildcard
+  
+  public:
+    FileParameter()
+      : Parameter()
+    {
+    }
+
+    FileParameter(PARAMETER_TYPE type, const char *name, Function callback, void *context, std::string def, std::string extWC)
+      : Parameter(type, name, callback, context, def)
+      , m_extWC(extWC)
+    {
+    }
+
+    const char * GetDirectory()
+    {
+      return m_val.substr(0,m_val.find_last_of("/")).c_str();
+    }
+
+    const char * GetExtensionWildcard()
+    {
+      return m_extWC.c_str();
+    }
+  };    
 
   //################################BEGIN ENUM DEFINITIONS#############################################
 #ifdef QT_GUI_LIB
@@ -207,6 +238,8 @@ namespace Nf
      std::vector < std::tr1::shared_ptr < FloatParameter > > m_floats;
      std::vector < std::tr1::shared_ptr < IntParameter > > m_ints;
      std::vector < std::tr1::shared_ptr < StringParameter > > m_strings;
+     std::vector < std::tr1::shared_ptr < FileParameter > > m_ofiles;;
+     std::vector < std::tr1::shared_ptr < FileParameter > > m_sfiles;
      std::vector < std::tr1::shared_ptr < BoolParameter > > m_bools;
      std::vector < std::tr1::shared_ptr < BoolParameter > > m_actions;
      std::vector < std::tr1::shared_ptr < EnumParameter > > m_enums;
@@ -222,6 +255,8 @@ namespace Nf
      void AddFloatParameter(std::tr1::shared_ptr < FloatParameter >  floatParam);
      void AddIntParameter(std::tr1::shared_ptr < IntParameter > intParam);
      void AddStringParameter(std::tr1::shared_ptr < StringParameter > stringParam);
+     void AddSaveFileParameter(std::tr1::shared_ptr < FileParameter > ofile);
+     void AddOpenFileParameter(std::tr1::shared_ptr < FileParameter > sfile);
      void AddBoolParameter(std::tr1::shared_ptr < BoolParameter >  boolParam);
      void AddActionParameter(std::tr1::shared_ptr < BoolParameter >  actionParam);
      void AddEnumParameter(std::tr1::shared_ptr < EnumParameter > enumParam);
@@ -230,6 +265,8 @@ namespace Nf
      std::vector < std::tr1::shared_ptr < FloatParameter > > GetFloatParameters();
      std::vector < std::tr1::shared_ptr < IntParameter > > GetIntParameters();
      std::vector < std::tr1::shared_ptr < StringParameter > > GetStringParameters();
+     std::vector < std::tr1::shared_ptr < FileParameter > > GetOpenFileParameters();
+     std::vector < std::tr1::shared_ptr < FileParameter > > GetSaveFileParameters();
      std::vector < std::tr1::shared_ptr < BoolParameter > > GetBoolParameters();
      std::vector < std::tr1::shared_ptr < BoolParameter > > GetActionParameters();
      std::vector < std::tr1::shared_ptr < EnumParameter > > GetEnumParameters();
@@ -242,6 +279,14 @@ namespace Nf
 #define ADD_STRING_PARAMETER(var, name, callback, context, val) \
   var = std::tr1::shared_ptr < Nf::StringParameter > (new Nf::StringParameter(PT_STRING, name, callback, context, val)); \
   m_strings.push_back(var);
+
+#define ADD_OPEN_FILE_PARAMETER(var, name, callback, context, val) \
+  var = std::tr1::shared_ptr < Nf::StringParameter > (new Nf::StringParameter(PT_OPEN_FILE, name, callback, context, val)); \
+  m_ofiles.push_back(var);
+
+#define ADD_SAVE_FILE_PARAMETER(var, name, callback, context, val) \
+  var = std::tr1::shared_ptr < Nf::StringParameter > (new Nf::StringParameter(PT_SAVE_FILE, name, callback, context, val)); \
+  m_sfiles.push_back(var);
 
 #define ADD_INT_PARAMETER(var, name, callback, context, val, min, max, step) \
   var = std::tr1::shared_ptr < Nf::IntParameter > (new Nf::IntParameter(PT_INT, name, callback, context, val, min, max, step)); \
