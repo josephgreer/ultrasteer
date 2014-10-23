@@ -6,46 +6,54 @@ namespace Nf {
   ////////////////////////////////////////////////////////
   Volume::Volume()
     : m_dims(0,0,0)
-    , m_spacing(0,0,0)
-    , m_scale(1.0)
     , m_im(NULL)
+    , Nf::ParameterCollection("Volume")
   {
+    ADD_VEC3D_PARAMETER(m_spacing, "Physical Voxel Spacing (um)", CALLBACK_POINTER(Reinitialize, Volume), this, Vec3d(83.0*4, 83.0*4, 83.0*4), 
+      Vec3d(83.0, 83.0, 83.0), Vec3d(2000,2000,2000), Vec3d(1,1,1));
+    ADD_FLOAT_PARAMETER(m_imscale, "Image Scale", CALLBACK_POINTER(Reinitialize, Volume), this, 0.5, 0.05, 1, 0.01);
+    ADD_VEC2D_PARAMETER(m_mpp, "Microns Per Pixel (um/px)", CALLBACK_POINTER(Reinitialize, Volume), this, Vec2d(83.0,83.0), Vec2d(0,0), Vec2d(2000,2000), Vec2d(0.1,0.1));
+    ADD_VEC3D_PARAMETER(m_extent, "Volume Extent (cm)", CALLBACK_POINTER(Reinitialize, Volume), this, Vec3d(6,6,6), Vec3d(2,2,2), Vec3d(15,15,15), Vec3d(0.1,0.1,0.1));
   }
 
-  s32 Volume::InitializeVolume(Matrix33d &orientation, Vec3d frameOrigin, VOLUME_ORIGIN_LOCATION config, Vec3d extent, Vec3d spacing, f64 imscale)
+  s32 Volume::InitializeVolume(Reinitializer *reinit, Matrix33d &orientation, Vec3d frameOrigin, QtEnums::VOLUME_ORIGIN_LOCATION config)
   {
+    m_reinit = reinit;
+    Vec3d spacing = GetSpacing();
+    Vec3d extent = m_extent->GetValue()*(10.0);
+    f32 imscale = m_imscale->GetValue();
+
     m_dims = Vec3i((s32)ceil(extent.x/spacing.x), (s32)ceil(extent.y/spacing.y), (s32)ceil(extent.z/spacing.z));
     m_data = (u16 *)_aligned_malloc(m_dims.x*m_dims.y*m_dims.z*sizeof(u16), 64);
     memset(m_data, 0, m_dims.x*m_dims.y*m_dims.z*sizeof(u16));
     m_rowStride = m_dims.x;
     m_sliceStride = m_dims.x*m_dims.y;
-    m_spacing = spacing;
 
     //Matrix stores axes of volume in physical coordinates
     Matrix33d axes = Matrix33d::Diaganol(extent*0.5)*orientation;
     Matrix33d modAxes;
     switch(config) {
-      case VOL_LEFT: 
+      case QtEnums::VOLUME_ORIGIN_LOCATION::VOL_LEFT: 
         {
           modAxes = Matrix33d::FromCols(axes.Col(0), axes.Col(1), Vec3d(0,0,0));
           break;
         }
-      case VOL_RIGHT: 
+      case QtEnums::VOLUME_ORIGIN_LOCATION::VOL_RIGHT: 
         {
           modAxes = Matrix33d::FromCols(axes.Col(0), axes.Col(1), axes.Col(2));
           break;
         }
-      case VOL_QUARTER_LEFT: 
+      case QtEnums::VOLUME_ORIGIN_LOCATION::VOL_QUARTER_LEFT: 
         {
           modAxes = Matrix33d::FromCols(axes.Col(0), axes.Col(1), axes.Col(2)*0.25);
           break;
         }
-      case VOL_QUARTER_RIGHT: 
+      case QtEnums::VOLUME_ORIGIN_LOCATION::VOL_QUARTER_RIGHT: 
         {
           modAxes = Matrix33d::FromCols(axes.Col(0), axes.Col(1), axes.Col(2)*0.75);
           break;
         }
-      case VOL_MIDDLE: 
+      case QtEnums::VOLUME_ORIGIN_LOCATION::VOL_MIDDLE: 
       default:
         {
           modAxes = Matrix33d::FromCols(axes.Col(0), axes.Col(1), axes.Col(2)*0.5);
@@ -55,10 +63,8 @@ namespace Nf {
     m_origin = frameOrigin-modAxes.Col(0)-modAxes.Col(1)-modAxes.Col(2);
     m_orientation = orientation;
     
-    m_volumeToWorld = Matrix44d::FromOrientationAndTranslation(m_orientation*Matrix33d::Diaganol(m_spacing),m_origin);
+    m_volumeToWorld = Matrix44d::FromOrientationAndTranslation(m_orientation*Matrix33d::Diaganol(spacing),m_origin);
     m_worldToVolume = m_volumeToWorld.Inverse();
-
-    m_scale = imscale;
 
     return m_data != NULL ? 1 : 0;
   }
@@ -90,7 +96,7 @@ namespace Nf {
 
   Vec3d Volume::GetSpacing() const
   {
-    return m_spacing;
+    return m_spacing->GetValue()*(1.0/1e3);
   }
 
   Vec3d Volume::GetOrigin() const
@@ -129,13 +135,16 @@ namespace Nf {
   }
 
 
-  void Volume::AddFrame(const IplImage *image, const Matrix33d &pose, const Vec3d &pos, const Matrix44d &calibration, const Vec2d &mpp)
+  void Volume::AddFrame(const IplImage *image, const Matrix33d &pose, const Vec3d &pos, const Matrix44d &calibration)
   {
+    Vec2d mpp = m_mpp->GetValue();
+    f32 imscale = m_imscale->GetValue();
+
     //TODO OPTIMIZE!!!!!
     const IplImage *im = image;
-    if(m_scale != 1.0) {
+    if(imscale != 1.0) {
       if(m_im == NULL)
-        m_im = cvCreateImage(cvSize((s32)(image->width*m_scale+0.5), (s32)(image->height*m_scale+0.5)), IPL_DEPTH_8U, 1);
+        m_im = cvCreateImage(cvSize((s32)(image->width*imscale+0.5), (s32)(image->height*imscale+0.5)), IPL_DEPTH_8U, 1);
       cvResize(image, m_im);
       im = m_im;
     }        
@@ -152,7 +161,7 @@ namespace Nf {
       const u8 *psrc = (const u8 *)(image->imageData+y*image->widthStep);
       for(s32 x=0; x<im->width; x++) {
         //Map image coord to world coord
-        world = rpImageCoordToWorldCoord4(Vec2d(x/m_scale,y/m_scale), posePos, calibration, start, scale);
+        world = rpImageCoordToWorldCoord4(Vec2d(x/imscale,y/imscale), posePos, calibration, start, scale);
 
         if(x == 160 && y == 120)
           int x = 0;
@@ -173,22 +182,36 @@ namespace Nf {
     }
   }
 
+  void Volume::Reinitialize()
+  {
+    assert(m_reinit != NULL);
+    m_reinit->Reinitialize();
+  }
+
   Cubed Volume::GetCubeExtent() const
   {
-    Vec3d extent(m_dims.x*m_spacing.x, m_dims.y*m_spacing.y, m_dims.z*m_spacing.z);
+    Vec3d spacing = GetSpacing();
+    Vec3d extent(m_dims.x*spacing.x, m_dims.y*spacing.y, m_dims.z*spacing.z);
     Vec3d ul = m_origin;
     return Cubed(ul, Matrix33d::Diaganol(extent)*m_orientation);
   }
 
   Cubed Volume::GetPhysicalExtent() const
   {
-    Vec3d extent(m_dims.x*m_spacing.x, m_dims.y*m_spacing.y, m_dims.z*m_spacing.z);
+    Vec3d spacing = GetSpacing();
+    Vec3d extent(m_dims.x*spacing.x, m_dims.y*spacing.y, m_dims.z*spacing.z);
     return Cubed(Vec3d(0,0,0), Matrix33d::Diaganol(extent));
   }
 
   Vec3i Volume::GetDims() const
   {
     return m_dims;
+  }
+
+  
+  Vec2d Volume::GetMPP() const
+  {
+    return m_mpp->GetValue();
   }
 
   ////////////////////////////////////////////////////////
@@ -217,8 +240,15 @@ namespace Nf {
   ////////////////////////////////////////////////////////
   RPVolumeCreator::RPVolumeCreator()
     : m_index(-1)
+    , VolumeCreator()
     , m_newData(false)
+    , m_cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0)
   {
+    m_importer = vtkSmartPointer<vtkImageImport>::New();
+    ADD_BOOL_PARAMETER(m_initialize, "Initialize", CALLBACK_POINTER(Reinitialize, RPVolumeCreator), this, false);
+    ADD_OPEN_FILE_PARAMETER(m_usFile, "US File Data", CALLBACK_POINTER(Reinitialize, RPVolumeCreator), this, "V:/NeedleScan/Feb13_LiverScan/Scan 1/scan.b8", "Any File (*.*)");
+    ADD_ENUM_PARAMETER(m_originLoc, "Start Loc.", CALLBACK_POINTER(Reinitialize, RPVolumeCreator), this, QtEnums::VOLUME_ORIGIN_LOCATION::VOL_RIGHT, "VOLUME_ORIGIN_LOCATION");
+    ADD_CHILD_COLLECTION(m_volume);
   }
 
   RPVolumeCreator::~RPVolumeCreator()
@@ -261,6 +291,11 @@ namespace Nf {
     return m_volume.GetOrientation();
   }
 
+  vtkSmartPointer<vtkImageImport> RPVolumeCreator::GetImporter()
+  {
+    return m_importer;
+  }
+
   ////////////////////////////////////////////////////////
   //End RPVolumeCreator Class
   ////////////////////////////////////////////////////////
@@ -272,24 +307,24 @@ namespace Nf {
   RPFullVolumeCreator::RPFullVolumeCreator()
     : RPVolumeCreator()
   {
-    ADD_BOOL_PARAMETER(m_addData, "Use Real Data", CALLBACK_POINTER(onAddDataChanged, RPFullVolumeCreator), this, false);
+    s32 x = 0;
   }
 
   RPFullVolumeCreator::~RPFullVolumeCreator()
   {
   }
 
-  s32 RPFullVolumeCreator::Initialize(const char *path, Matrix44d &calibration, Vec2d &mpp, VOLUME_ORIGIN_LOCATION config, Vec3d &extent, Vec3d &spacing, f64 imscale)
+  s32 RPFullVolumeCreator::Initialize()
   {
     //TODO RPReader pointers created below are leaked.
-    char temp[200];
-    sprintf(temp,"%s.b8",path);
-    m_rpReaders.AddReader(RPF_BPOST8, (RPReader *)new RPFileReader(temp));
-    sprintf(temp,"%s.gps1",path);
-    m_rpReaders.AddGPSReader((RPGPSReaderBasic *)new RPGPSReader(temp));
+    std::string fname = m_usFile->GetValue();
+    fname = fname.substr(0,fname.find_last_of("."));
 
-    m_cal = calibration;
-    m_mpp = mpp;
+    char temp[200];
+    sprintf(temp,"%s.b8",fname.c_str());
+    m_rpReaders.AddReader(RPF_BPOST8, (RPReader *)new RPFileReader(temp));
+    sprintf(temp,"%s.gps1",fname.c_str());
+    m_rpReaders.AddGPSReader((RPGPSReaderBasic *)new RPGPSReader(temp));
 
     RPData rp = m_rpReaders.GetNextRPData();
     if(!rp.gps.valid) {
@@ -303,30 +338,48 @@ namespace Nf {
 
     Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, rp.gps.pos);
     Vec2d start(320.0, 0.0);
+    Vec2d mpp = m_volume.GetMPP();
     Vec2d mppScale(mpp.x/1000.0, mpp.y/1000.0);
 
-    Vec3d x_axis = rpImageCoordToWorldCoord3(Vec2d(1.0,0.0), posePos, calibration, start, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, calibration, start, mppScale);  //tPose*calibration*Vec4d(1.0, 0.0, (1.0)*mpp.x, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, (0.0)*mpp.x, 0.0);
-    Vec3d y_axis = rpImageCoordToWorldCoord3(Vec2d(0.0,1.0), posePos, calibration, start, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, calibration, start, mppScale);//tPose*calibration*Vec4d(1.0, 1.0*mpp.y, 0.0, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, 0.0, 0.0);
+    Vec3d x_axis = rpImageCoordToWorldCoord3(Vec2d(1.0,0.0), posePos, m_cal, start, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, start, mppScale);  //tPose*calibration*Vec4d(1.0, 0.0, (1.0)*mpp.x, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, (0.0)*mpp.x, 0.0);
+    Vec3d y_axis = rpImageCoordToWorldCoord3(Vec2d(0.0,1.0), posePos, m_cal, start, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, start, mppScale);//tPose*calibration*Vec4d(1.0, 1.0*mpp.y, 0.0, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, 0.0, 0.0);
     x_axis = x_axis.normalized();
     y_axis = y_axis.normalized();
     Vec3d z_axis = x_axis.cross(y_axis);
 
-    s32 rv = m_volume.InitializeVolume(Matrix33d::FromCols(x_axis,y_axis,z_axis), rpImageCoordToWorldCoord3(Vec2d(rp.b8->width/2.0, rp.b8->height/2.0), posePos, calibration, start, mppScale), 
-      config, extent, spacing, imscale);
+    s32 rv = m_volume.InitializeVolume(this, Matrix33d::FromCols(x_axis,y_axis,z_axis), 
+      rpImageCoordToWorldCoord3(Vec2d(rp.b8->width/2.0, rp.b8->height/2.0), posePos, m_cal, start, mppScale),
+      (QtEnums::VOLUME_ORIGIN_LOCATION)m_originLoc->GetValue());
 
     rp.Release();
+
+    //vtkImageData importer
+    Vec3d spacing = m_volume.GetSpacing();
+    Vec3i dims = m_volume.GetDims();
+    m_importer = vtkSmartPointer<vtkImageImport>::New();
+    m_importer->SetDataSpacing(spacing.x, spacing.y, spacing.z);
+    m_importer->SetDataOrigin(0,0,0);
+    m_importer->SetWholeExtent(0, dims.x-1, 0, dims.y-1, 0, dims.z-1);
+    m_importer->SetDataExtentToWholeExtent();
+    m_importer->SetDataScalarTypeToUnsignedChar();
+    m_importer->SetNumberOfScalarComponents(1);
+    m_importer->SetImportVoidPointer(this->GetVolumeOriginData());
+    m_importer->Update();
+    m_importer->Modified();
 
     return 0;
   }
 
-  void RPFullVolumeCreator::onAddDataChanged()
+  void RPFullVolumeCreator::Reinitialize()
   {
+    m_volume.Release();
+    Initialize();
     Start();
   }
 
   void RPFullVolumeCreator::Start()
   {
-    if(m_addData->GetValue()) {
+    if(m_initialize->GetValue()) {
       RPData rp = m_rpReaders.GetRPData(1);
 
       Matrix44d tPose;
@@ -336,11 +389,12 @@ namespace Nf {
         tPose = Matrix44d::FromCvMat(rp.gps.pose);
         pose = tPose.GetOrientation();
 
-        m_volume.AddFrame(rp.b8, pose, rp.gps.pos, m_cal, m_mpp);
+        m_volume.AddFrame(rp.b8, pose, rp.gps.pos, m_cal);
         rp.Release();
 
         rp = m_rpReaders.GetNextRPData();
       }
+
     }
     
   }

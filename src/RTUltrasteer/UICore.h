@@ -26,6 +26,12 @@ namespace Nf
     PT_SAVE_FILE,
     PT_ACTION,
     PT_ENUM,
+    PT_VEC3D,
+    PT_VEC3F,
+    PT_VEC3I,
+    PT_VEC2D,
+    PT_VEC2F,
+    PT_VEC2I,
   } PARAMETER_TYPE;
 
   //UIElement is an interface that is impelmented in QT projects
@@ -163,12 +169,17 @@ namespace Nf
     {
     }
 
-    const char * GetDirectory()
+    std::string GetDirectory()
     {
-      return m_val.substr(0,m_val.find_last_of("/")).c_str();
+      return m_val.substr(0,m_val.find_last_of("/"));
     }
 
-    const char * GetExtensionWildcard()
+    std::string GetFilename()
+    {
+      return m_val.substr(m_val.find_last_of("/")+1,std::string::npos);
+    }
+
+    std::string GetExtensionWildcard()
     {
       return m_extWC.c_str();
     }
@@ -181,17 +192,29 @@ namespace Nf
     Q_OBJECT
 
     Q_ENUMS(VisRenderMethod)
-  public:
+    Q_ENUMS(VOLUME_ORIGIN_LOCATION)
 #else
   class QtEnums
   {
 #endif
+  public:
   enum VisRenderMethod 
   {
     Texture_2D = 0,
     Texture_3D,
     RayCastingMIP,
   };
+
+  //used for specifying origin location when setting a volume from a base frame
+  enum VOLUME_ORIGIN_LOCATION
+  {
+    VOL_LEFT = 0,
+    VOL_RIGHT,
+    VOL_QUARTER_LEFT,
+    VOL_QUARTER_RIGHT,
+    VOL_MIDDLE,
+  };
+
   };
 
   //################################END ENUM DEFINITIONS###############################################
@@ -223,6 +246,12 @@ namespace Nf
 
   typedef NumberParameter < f32 > FloatParameter;
   typedef NumberParameter < s32 > IntParameter;
+  typedef NumberParameter < Vec3d > Vec3dParameter;
+  typedef NumberParameter < Vec3f > Vec3fParameter;
+  typedef NumberParameter < Vec3i > Vec3iParameter;
+  typedef NumberParameter < Vec2d > Vec2dParameter;
+  typedef NumberParameter < Vec2f > Vec2fParameter;
+  typedef NumberParameter < Vec2i > Vec2iParameter;
   typedef Parameter < std::string > StringParameter;
   typedef Parameter < bool > BoolParameter;
   
@@ -243,6 +272,12 @@ namespace Nf
      std::vector < std::tr1::shared_ptr < BoolParameter > > m_bools;
      std::vector < std::tr1::shared_ptr < BoolParameter > > m_actions;
      std::vector < std::tr1::shared_ptr < EnumParameter > > m_enums;
+     std::vector < std::tr1::shared_ptr < Vec3dParameter > > m_vec3ds;
+     std::vector < std::tr1::shared_ptr < Vec3fParameter > > m_vec3fs;
+     std::vector < std::tr1::shared_ptr < Vec3iParameter > > m_vec3is;
+     std::vector < std::tr1::shared_ptr < Vec2dParameter > > m_vec2ds;
+     std::vector < std::tr1::shared_ptr < Vec2fParameter > > m_vec2fs;
+     std::vector < std::tr1::shared_ptr < Vec2iParameter > > m_vec2is;
      std::vector < ParameterCollection * > m_children;
 
      char m_name[100];
@@ -260,6 +295,12 @@ namespace Nf
      void AddBoolParameter(std::tr1::shared_ptr < BoolParameter >  boolParam);
      void AddActionParameter(std::tr1::shared_ptr < BoolParameter >  actionParam);
      void AddEnumParameter(std::tr1::shared_ptr < EnumParameter > enumParam);
+     void AddVec3dParameter(std::tr1::shared_ptr < Vec3dParameter > vec3dParam);
+     void AddVec3fParameter(std::tr1::shared_ptr < Vec3fParameter > vec3fParam);
+     void AddVec3iParameter(std::tr1::shared_ptr < Vec3iParameter > vec3iParam);
+     void AddVec2dParameter(std::tr1::shared_ptr < Vec2dParameter > vec2dParam);
+     void AddVec2fParameter(std::tr1::shared_ptr < Vec2fParameter > vec2fParam);
+     void AddVec2iParameter(std::tr1::shared_ptr < Vec2iParameter > vec2iParam);
      void AddChildCollection(ParameterCollection *child);
 
      std::vector < std::tr1::shared_ptr < FloatParameter > > GetFloatParameters();
@@ -270,6 +311,12 @@ namespace Nf
      std::vector < std::tr1::shared_ptr < BoolParameter > > GetBoolParameters();
      std::vector < std::tr1::shared_ptr < BoolParameter > > GetActionParameters();
      std::vector < std::tr1::shared_ptr < EnumParameter > > GetEnumParameters();
+     std::vector < std::tr1::shared_ptr < Vec3dParameter > > GetVec3dParameters();
+     std::vector < std::tr1::shared_ptr < Vec3fParameter > > GetVec3fParameters();
+     std::vector < std::tr1::shared_ptr < Vec3iParameter > > GetVec3iParameters();
+     std::vector < std::tr1::shared_ptr < Vec2dParameter > > GetVec2dParameters();
+     std::vector < std::tr1::shared_ptr < Vec2fParameter > > GetVec2fParameters();
+     std::vector < std::tr1::shared_ptr < Vec2iParameter > > GetVec2iParameters();
      std::vector < ParameterCollection * > GetChildCollections();
    };
 }
@@ -280,12 +327,12 @@ namespace Nf
   var = std::tr1::shared_ptr < Nf::StringParameter > (new Nf::StringParameter(PT_STRING, name, callback, context, val)); \
   m_strings.push_back(var);
 
-#define ADD_OPEN_FILE_PARAMETER(var, name, callback, context, val) \
-  var = std::tr1::shared_ptr < Nf::StringParameter > (new Nf::StringParameter(PT_OPEN_FILE, name, callback, context, val)); \
+#define ADD_OPEN_FILE_PARAMETER(var, name, callback, context, val, extension) \
+  var = std::tr1::shared_ptr < Nf::FileParameter > (new Nf::FileParameter(PT_OPEN_FILE, name, callback, context, val, extension)); \
   m_ofiles.push_back(var);
 
-#define ADD_SAVE_FILE_PARAMETER(var, name, callback, context, val) \
-  var = std::tr1::shared_ptr < Nf::StringParameter > (new Nf::StringParameter(PT_SAVE_FILE, name, callback, context, val)); \
+#define ADD_SAVE_FILE_PARAMETER(var, name, callback, context, val, extension) \
+  var = std::tr1::shared_ptr < Nf::FileParameter > (new Nf::FileParameter(PT_SAVE_FILE, name, callback, context, val, extension)); \
   m_sfiles.push_back(var);
 
 #define ADD_INT_PARAMETER(var, name, callback, context, val, min, max, step) \
@@ -307,6 +354,30 @@ namespace Nf
 #define ADD_ENUM_PARAMETER(var, name, callback, context, val, enumName) \
   var = std::tr1::shared_ptr < Nf::EnumParameter > (new Nf::EnumParameter(PT_ENUM, name, callback, context, val, enumName)); \
   m_enums.push_back(var);
+
+#define ADD_VEC3D_PARAMETER(var, name, callback, context, val, min, max, step) \
+  var = std::tr1::shared_ptr < Nf::Vec3dParameter > (new Nf::Vec3dParameter(PT_VEC3D, name, callback, context, val, min, max, step)); \
+  m_vec3ds.push_back(var);
+
+#define ADD_VEC3F_PARAMETER(var, name, callback, context, val, min, max, step) \
+  var = std::tr1::shared_ptr < Nf::Vec3fParameter > (new Nf::Vec3fParameter(PT_VEC3F, name, callback, context, val, min, max, step)); \
+  m_vec3fs.push_back(var);
+
+#define ADD_VEC3I_PARAMETER(var, name, callback, context, val, min, max, step) \
+  var = std::tr1::shared_ptr < Nf::Vec3iParameter > (new Nf::Vec3iParameter(PT_VEC3I, name, callback, context, val, min, max, step)); \
+  m_vec3is.push_back(var);
+
+#define ADD_VEC2D_PARAMETER(var, name, callback, context, val, min, max, step) \
+  var = std::tr1::shared_ptr < Nf::Vec2dParameter > (new Nf::Vec2dParameter(PT_VEC2D, name, callback, context, val, min, max, step)); \
+  m_vec2ds.push_back(var);
+
+#define ADD_VEC2F_PARAMETER(var, name, callback, context, val, min, max, step) \
+  var = std::tr1::shared_ptr < Nf::Vec2fParameter > (new Nf::Vec2fParameter(PT_VEC2F, name, callback, context, val, min, max, step)); \
+  m_vec2fs.push_back(var);
+
+#define ADD_VEC2I_PARAMETER(var, name, callback, context, val, min, max, step) \
+  var = std::tr1::shared_ptr < Nf::Vec2iParameter > (new Nf::Vec2iParameter(PT_VEC2I, name, callback, context, val, min, max, step)); \
+  m_vec2is.push_back(var);
 
 #define ADD_CHILD_COLLECTION(var) \
   m_children.push_back((Nf::ParameterCollection *)&var);

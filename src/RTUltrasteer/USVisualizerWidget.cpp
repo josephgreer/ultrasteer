@@ -30,7 +30,7 @@ USVisualizerWidget::USVisualizerWidget(vtkSmartPointer<vtkColorTransferFunction>
 , m_ctf(ctf)
 {
   ADD_BOOL_PARAMETER(m_showVolumeExtent, "Show Volume Extent", CALLBACK_POINTER(onShowVolumeExtentChanged, USVisualizerWidget), this, true);
-  ADD_BOOL_PARAMETER(m_showVolumeAxes, "Show Volume Axes", CALLBACK_POINTER(onShowVolumeAxesChanged, USVisualizerWidget), this, true);
+  ADD_BOOL_PARAMETER(m_showVolumeAxes, "Show Volume Axes", CALLBACK_POINTER(onShowVolumeAxesChanged, USVisualizerWidget), this, false);
   ADD_ACTION_PARAMETER(m_setViewXY, "Set View XY", CALLBACK_POINTER(onSetViewXY, USVisualizerWidget), this, true); 
   ADD_ACTION_PARAMETER(m_setViewXZ, "Set View XZ", CALLBACK_POINTER(onSetViewXZ, USVisualizerWidget), this, true); 
   ADD_ACTION_PARAMETER(m_setViewYZ, "Set View YZ", CALLBACK_POINTER(onSetViewYZ, USVisualizerWidget), this, true); 
@@ -74,6 +74,7 @@ void USVisualizerWidget::SetUSVisView(s32 axis1, s32 axis2)
   m_renderer->SetActiveCamera(camera);
   m_renderer->ResetCamera(bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], 
     bounds[5]);
+  m_renderer->GetActiveCamera()->Zoom(1.3);
 }
 
 void USVisualizerWidget::onSetViewXY()
@@ -100,18 +101,23 @@ void USVisualizerWidget::onSetRenderMode()
 
     vtkSmartPointer<vtkVolumeRayCastMapper> volumeMapper =
       vtkSmartPointer<vtkVolumeRayCastMapper>::New();
-    volumeMapper->SetInputConnection(m_importer->GetOutputPort(0));
+    volumeMapper->SetInputConnection(m_rpvc.GetImporter()->GetOutputPort(0));
     volumeMapper->SetVolumeRayCastFunction(rayCastFunction); 
     m_volume->Modified();
     m_volume->SetMapper(volumeMapper);
   } else if(m_renderMode->GetValue() == QtEnums::VisRenderMethod::Texture_2D) {
     vtkSmartPointer<vtkVolumeTextureMapper3D> volumeMapper = vtkSmartPointer<vtkVolumeTextureMapper3D>::New();
-    volumeMapper->SetInputConnection(m_importer->GetOutputPort(0));
+    volumeMapper->SetInputConnection(m_rpvc.GetImporter()->GetOutputPort(0));
     m_volume->Modified();
     m_volume->SetMapper(volumeMapper);
   } else {
     assert(0);
   }
+}
+
+
+void USVisualizerWidget::Reinitialize()
+{
 }
 
 
@@ -167,31 +173,17 @@ void USVisualizerWidget::Initialize()
 #else
   m_renderer = 
     vtkSmartPointer<vtkRenderer>::New();
-  m_renderer->SetBackground(0.5, 0.0, 0.0);
+  m_renderer->SetBackground(0.0, 0.0, 0.0);
 
   //Volume visualization
 
   //Raw volume data
-  Vec3d spacing(83.0/1000.0*4, 83.0/1000.0*4, 83.0/1000.0*4);
-  Matrix44d cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0);
-  m_rpvc.Initialize("V:/NeedleScan/Feb13_LiverScan/Scan 1/scan", cal, Vec2d(83, 83), VOL_QUARTER_RIGHT, 
-    Vec3d(60.0, 60.0, 60.0), spacing, 0.5);
+  m_rpvc.Initialize();
   m_rpvc.Start();
 
   Vec3i dims = m_rpvc.GetVolumeDims();
   Cubed volExtent = m_rpvc.GetVolumeCubeExtent();
   Cubed physExtent = m_rpvc.GetVolumePhysicalExtent();
-
-  //vtkImageData importer
-  m_importer = vtkSmartPointer<vtkImageImport>::New();
-  m_importer->SetDataSpacing(spacing.x, spacing.y, spacing.z);
-  m_importer->SetDataOrigin(0,0,0);
-  m_importer->SetWholeExtent(0, dims.x-1, 0, dims.y-1, 0, dims.z-1);
-  m_importer->SetDataExtentToWholeExtent();
-  m_importer->SetDataScalarTypeToUnsignedChar();
-  m_importer->SetNumberOfScalarComponents(1);
-  m_importer->SetImportVoidPointer(m_rpvc.GetVolumeOriginData());
-  m_importer->Update();
 
   //Volumne
   Matrix33d orientation = m_rpvc.GetVolumeOrientation();
