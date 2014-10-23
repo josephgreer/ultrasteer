@@ -54,7 +54,7 @@ QSize VTKTransferFunctionWidget::sizeHint() const
 
 void VTKTransferFunctionWidget::Initialize()
 {
-  m_view->GetRenderer()->SetBackground(0.5,0,0);
+  m_view->GetRenderer()->SetBackground(0,0,0);
   m_view->SetRenderWindow(this->GetRenderWindow());
  // this->SetRenderWindow(m_view->GetRenderWindow());
 

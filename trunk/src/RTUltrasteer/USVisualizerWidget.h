@@ -34,9 +34,6 @@ public:
   vtkSmartPointer<vtkAxesActor> m_volumeAxes;
   std::tr1::shared_ptr < Nf::CubeVisualizer > m_extentVis;
 
-  //Importer
-  vtkSmartPointer<vtkImageImport> m_importer;
-
   //Parameters
 
   //colorTransferFunction
@@ -74,6 +71,11 @@ public:
   std::tr1::shared_ptr < Nf::EnumParameter > m_renderMode;
   void onSetRenderMode();
   CLASS_CALLBACK(onSetRenderMode, USVisualizerWidget);
+
+
+  //reinitialize callback
+  void Reinitialize();
+  CLASS_CALLBACK(Reinitialize, USVisualizerWidget);
 
   //For changes to the transfer function
   virtual void Execute(vtkObject *caller, unsigned long, void*);

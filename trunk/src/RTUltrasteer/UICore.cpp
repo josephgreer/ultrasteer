@@ -54,6 +54,36 @@ namespace Nf
     m_enums.push_back(enumParam);
   }
 
+  void ParameterCollection::AddVec3dParameter(std::tr1::shared_ptr < Vec3dParameter > vec3dParam)
+  {
+    m_vec3ds.push_back(vec3dParam);
+  }
+
+  void ParameterCollection::AddVec3fParameter(std::tr1::shared_ptr < Vec3fParameter > vec3fParam)
+  {
+    m_vec3fs.push_back(vec3fParam);
+  }
+
+  void ParameterCollection::AddVec3iParameter(std::tr1::shared_ptr < Vec3iParameter > vec3iParam)
+  {
+    m_vec3is.push_back(vec3iParam);
+  }
+
+  void ParameterCollection::AddVec2dParameter(std::tr1::shared_ptr < Vec2dParameter > vec2dParam)
+  {
+    m_vec2ds.push_back(vec2dParam);
+  }
+
+  void ParameterCollection::AddVec2fParameter(std::tr1::shared_ptr < Vec2fParameter > vec2fParam)
+  {
+    m_vec2fs.push_back(vec2fParam);
+  }
+
+  void ParameterCollection::AddVec2iParameter(std::tr1::shared_ptr < Vec2iParameter > vec2iParam)
+  {
+    m_vec2is.push_back(vec2iParam);
+  }
+
   void ParameterCollection::AddChildCollection(ParameterCollection *child)
   {
     m_children.push_back(child);
@@ -92,6 +122,36 @@ namespace Nf
   std::vector < std::tr1::shared_ptr < EnumParameter > > ParameterCollection::GetEnumParameters()
   {
     return m_enums;
+  }
+
+  std::vector < std::tr1::shared_ptr < Vec3dParameter > > ParameterCollection::GetVec3dParameters()
+  {
+    return m_vec3ds;
+  }
+
+  std::vector < std::tr1::shared_ptr < Vec3fParameter > > ParameterCollection::GetVec3fParameters()
+  {
+    return m_vec3fs;
+  }
+
+  std::vector < std::tr1::shared_ptr < Vec3iParameter > > ParameterCollection::GetVec3iParameters()
+  {
+    return m_vec3is;
+  }
+
+  std::vector < std::tr1::shared_ptr < Vec2dParameter > > ParameterCollection::GetVec2dParameters()
+  {
+    return m_vec2ds;
+  }
+
+  std::vector < std::tr1::shared_ptr < Vec2fParameter > > ParameterCollection::GetVec2fParameters()
+  {
+    return m_vec2fs;
+  }
+
+  std::vector < std::tr1::shared_ptr < Vec2iParameter > > ParameterCollection::GetVec2iParameters()
+  {
+    return m_vec2is;
   }
 
   std::vector < std::tr1::shared_ptr < BoolParameter > > ParameterCollection::GetActionParameters()

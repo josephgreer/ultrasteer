@@ -12,10 +12,16 @@
 #include "ui_rtultrasteer.h"
 #include "VTKTransferFunctionWidget.h"
 #include "UICore.h"
+#include "FileWidget.h"
 #include "USVisualizerWidget.h"
 
 namespace Nf
 {
+  struct SBContainer{
+    QObject *obj[3];
+    s32 nsbs;
+  }; 
+
   class SlotForwarder : public QObject
   {
     Q_OBJECT
@@ -110,6 +116,137 @@ namespace Nf
     }
   };
 
+  class Vec3dSlotForwarder : public SlotForwarder, public UIElement < Vec3d >
+  {
+    Q_OBJECT
+
+  public:
+
+    Vec3dSlotForwarder(Function function, void *context, QObject *element, std::vector < QVTKWidget * > repaintList, QObject* parent = 0) 
+      : SlotForwarder(function, context, element, repaintList, parent)
+    {
+    }
+
+    Vec3d GetValue()
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
+      return Vec3d((f64)x->value(), (f64)y->value(), (f64)z->value());
+    }
+  };
+
+  class Vec3fSlotForwarder : public SlotForwarder, public UIElement < Vec3f >
+  {
+    Q_OBJECT
+
+  public:
+
+    Vec3fSlotForwarder(Function function, void *context, QObject *element, std::vector < QVTKWidget * > repaintList, QObject* parent = 0) 
+      : SlotForwarder(function, context, element, repaintList, parent)
+    {
+    }
+
+    Vec3f GetValue()
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
+      return Vec3f((f32)x->value(), (f32)y->value(), (f32)z->value());
+    }
+  };
+
+  class Vec3iSlotForwarder : public SlotForwarder, public UIElement < Vec3i >
+  {
+    Q_OBJECT
+
+  public:
+
+    Vec3iSlotForwarder(Function function, void *context, QObject *element, std::vector < QVTKWidget * > repaintList, QObject* parent = 0) 
+      : SlotForwarder(function, context, element, repaintList, parent)
+    {
+    }
+
+    Vec3i GetValue()
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QSpinBox *x = (QSpinBox *)item->obj[0];
+      QSpinBox *y = (QSpinBox *)item->obj[1];
+      QSpinBox *z = (QSpinBox *)item->obj[2];
+      return Vec3i((s32)x->value(), (s32)y->value(), (s32)z->value());
+    }
+  };
+
+  class Vec2dSlotForwarder : public SlotForwarder, public UIElement < Vec2d >
+  {
+    Q_OBJECT
+
+  public:
+
+    Vec2dSlotForwarder(Function function, void *context, QObject *element, std::vector < QVTKWidget * > repaintList, QObject* parent = 0) 
+      : SlotForwarder(function, context, element, repaintList, parent)
+    {
+    }
+
+    Vec2d GetValue()
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 2);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      return Vec2d((f64)x->value(), (f64)y->value());
+    }
+  };
+
+  class Vec2fSlotForwarder : public SlotForwarder, public UIElement < Vec2f >
+  {
+    Q_OBJECT
+
+  public:
+
+    Vec2fSlotForwarder(Function function, void *context, QObject *element, std::vector < QVTKWidget * > repaintList, QObject* parent = 0) 
+      : SlotForwarder(function, context, element, repaintList, parent)
+    {
+    }
+
+    Vec2f GetValue()
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 2);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      return Vec2f((f32)x->value(), (f32)y->value());
+    }
+  };
+
+  class Vec2iSlotForwarder : public SlotForwarder, public UIElement < Vec2i >
+  {
+    Q_OBJECT
+
+  public:
+
+    Vec2iSlotForwarder(Function function, void *context, QObject *element, std::vector < QVTKWidget * > repaintList, QObject* parent = 0) 
+      : SlotForwarder(function, context, element, repaintList, parent)
+    {
+    }
+
+    Vec2i GetValue()
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 2);
+      QSpinBox *x = (QSpinBox *)item->obj[0];
+      QSpinBox *y = (QSpinBox *)item->obj[1];
+      return Vec2i((s32)x->value(), (s32)y->value());
+    }
+  };
+
+
+
   class EnumSlotForwarder : public SlotForwarder, public UIElement < s32 >
   {
     Q_OBJECT
@@ -131,6 +268,24 @@ namespace Nf
       const QMetaObject &mo = QtEnums::staticMetaObject;
       QMetaEnum meta = mo.enumerator(mo.indexOfEnumerator(m_enumName.c_str()));
       return meta.keyToValue(combo->currentText().toStdString().c_str());
+    }
+  };
+
+  class FileSlotForwarder : public SlotForwarder, public UIElement < std::string >
+  {
+    Q_OBJECT
+
+  public:
+
+    FileSlotForwarder(Function function, void *context, QObject *element, std::vector < QVTKWidget * > repaintList, QObject* parent = 0) 
+      : SlotForwarder(function, context, element, repaintList, parent)
+    {
+    }
+
+    std::string GetValue()
+    {
+      FileWidget *fw = (FileWidget *)m_element;
+      return std::string(fw->GetFilename());
     }
   };
 }

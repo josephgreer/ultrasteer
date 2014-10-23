@@ -6,20 +6,17 @@
 #include "SegmentCore.h"
 #include "RPFileReader.h"
 #include "UICore.h"
+#include <vtkImageImport.h>
 
 namespace Nf {
 
-  //used for specifying origin location when setting a volume from a base frame
-  enum VOLUME_ORIGIN_LOCATION
+  class Reinitializer
   {
-    VOL_LEFT = 0,
-    VOL_RIGHT,
-    VOL_QUARTER_LEFT,
-    VOL_QUARTER_RIGHT,
-    VOL_MIDDLE,
+  public:
+    virtual void Reinitialize() = 0;
   };
 
-  class Volume
+  class Volume : public Nf::ParameterCollection, public Reinitializer
   {
   protected:
     u16 *m_data;
@@ -30,7 +27,6 @@ namespace Nf {
     u16 * GetRow(s32 z, s32 r);
 
     Vec3i m_dims;   //number of voxels in x,y,z axis resp.
-    Vec3d m_spacing;  //spacing between voxels in x,y,z axis resp. (physical units)
 
     Vec3d m_origin; //origin of volume in units (the location of voxel index [0,0,0])
     Matrix33d m_orientation;  //Columns of matrix correspond to x-axis, y-axis, and z-axis of the volume, resp. 
@@ -38,9 +34,20 @@ namespace Nf {
     Matrix44d m_worldToVolume;    //Matrix part of transform from world coordiantes to volume indices
     Matrix44d m_volumeToWorld;    //Matrix part of transfrom from volume indices to world coordinates (m_volumeToWorld = m_worldToVolume^{-1})   
 
-    f64 m_scale;  //scale factor to apply to images before adding to the volume
+    //User Parameters
+    //config:  Specifies the way the volume will be allocated around the frame. /
+    //  VOL_EDGE should be used if the location of the frame marks the edge of the volume
+    //  VOL_QUARTER should be used if the location of the frame is near the edge but you want some space
+    //  VOL_MIDDLE should be used if the location of the frame will be in the middle of the volume
+    //extent:  Specifies the extent of the volume in physical units.  It will be converted to numbers of voxels by taking into
+    //  account spacing
+    //spacing:  Specifiy the distance between voxels in each of the axes in phyiscal units.
+    std::tr1::shared_ptr < Nf::Vec3dParameter > m_spacing;                      //spacing (physical units)
+    std::tr1::shared_ptr < Nf::FloatParameter > m_imscale;                      //scale factor
+    std::tr1::shared_ptr < Nf::Vec3dParameter > m_extent;                       //volume extent (physical units
+    std::tr1::shared_ptr < Nf::Vec2dParameter > m_mpp;                          //Vector containing microns per pixel of b-mode image in x&y dimensions
 
-    void Reinitialize();
+    Reinitializer *m_reinit;
 
     IplImage *m_im;
 
@@ -51,14 +58,7 @@ namespace Nf {
     //orientation:  Columns of orientation matrix specify the directions of x, y, and z axis of the cube
     //frameOrigin: specifies the location of the middle of the frame (in physical units).  Memory for a  3D
     //  volume will be allocated around the frameOrigin.  
-    //config:  Specifies the way the volume will be allocated around the frame. /
-    //  VOL_EDGE should be used if the location of the frame marks the edge of the volume
-    //  VOL_QUARTER should be used if the location of the frame is near the edge but you want some space
-    //  VOL_MIDDLE should be used if the location of the frame will be in the middle of the volume
-    //extent:  Specifies the extent of the volume in physical units.  It will be converted to numbers of voxels by taking into
-    //  account spacing
-    //spacing:  Specifiy the distance between voxels in each of the axes in phyiscal units.
-    s32 InitializeVolume(Matrix33d &orientation, Vec3d frameOrigin, VOLUME_ORIGIN_LOCATION config, Vec3d extent, Vec3d spacing, f64 imscale);
+    s32 InitializeVolume(Reinitializer *reinit, Matrix33d &orientation, Vec3d frameOrigin, QtEnums::VOLUME_ORIGIN_LOCATION config);
     void Release();
 
     Vec3d GetSpacing() const;
@@ -68,20 +68,26 @@ namespace Nf {
     u16 * GetCoordData(Vec3i coord);
     Cubed GetCubeExtent() const;
     Cubed GetPhysicalExtent() const;
+    Vec2d GetMPP() const;
 
     Vec3d WorldCoordinatesToVolumeCoordinates(Vec3d worldCoords);
     Vec3d VolumeCoordinatesToWorldCoordinates(Vec3d volCoords);
 
-    void AddFrame(const IplImage *image, const Matrix33d &pose, const Vec3d &pos, const Matrix44d &calibration, const Vec2d &mpp);
+    void AddFrame(const IplImage *image, const Matrix33d &pose, const Vec3d &pos, const Matrix44d &calibration);
+
+    virtual void Reinitialize();
+
+    CLASS_CALLBACK(Reinitialize, Volume);
   };
 
 
-  class VolumeCreator : public ParameterCollection
+  class VolumeCreator : public vtkImageImport, public ParameterCollection, public Reinitializer
   {
   public:
     VolumeCreator();
     virtual ~VolumeCreator();
     virtual Volume *GetNew() = 0;
+    virtual void Reinitialize() = 0;
   };
 
   typedef enum
@@ -95,12 +101,17 @@ namespace Nf {
   class RPVolumeCreator : public VolumeCreator
   {
   protected:
-    s32 m_index;                            //Current frame index.  Valid when m_rm != RPVM_READ_ALL              
-    bool m_newData;                         //New data since last GetNew() call?
-    Volume m_volume;                        //Self explanatory
-    RPFileReaderCollection m_rpReaders;     //What will actually do the reading for us
-    Matrix44d m_cal;                        //Calibration Matrix for transducer (maps image coords to world coords)
-    Vec2d m_mpp;                            //Vector containing microns per pixel of b-mode image in x&y dimensions
+    s32 m_index;                                                                //Current frame index.  Valid when m_rm != RPVM_READ_ALL              
+    bool m_newData;                                                             //New data since last GetNew() call?
+    Volume m_volume;                                                            //Self explanatory
+    RPFileReaderCollection m_rpReaders;                                         //What will actually do the reading for us
+    Matrix44d m_cal;                                                            //Calibration Matrix for transducer (maps image coords to world coords)
+    vtkSmartPointer<vtkImageImport> m_importer;
+
+    //User Parameters
+    std::tr1::shared_ptr < Nf::BoolParameter > m_initialize;                    //initialize
+    std::tr1::shared_ptr < Nf::FileParameter > m_usFile;                        //ultrasound file)
+    std::tr1::shared_ptr < Nf::EnumParameter > m_originLoc;                     //location of origin with respect to first frame
 
   public:
     RPVolumeCreator();
@@ -112,21 +123,23 @@ namespace Nf {
     virtual Cubed GetVolumeCubeExtent() const;
     virtual Cubed GetVolumePhysicalExtent() const;
     virtual Matrix33d GetVolumeOrientation() const;
+    virtual void Reinitialize() = 0;
     void Release();
+    vtkSmartPointer<vtkImageImport> GetImporter();
+    CLASS_CALLBACK(Reinitialize, RPVolumeCreator);
   };
 
-  class RPFullVolumeCreator : public RPVolumeCreator
+  class RPFullVolumeCreator : public RPVolumeCreator, public Reinitializer
   {
   public:
     RPFullVolumeCreator();
     virtual ~RPFullVolumeCreator();
-    s32 Initialize(const char *path, Matrix44d &calibration, Vec2d &mpp, VOLUME_ORIGIN_LOCATION config, Vec3d &extent, Vec3d &spacing, f64 imscale);
+    s32 Initialize();
     void Start();
 
   protected:
-    std::tr1::shared_ptr < Nf::BoolParameter > m_addData;
-    void onAddDataChanged();
-    CLASS_CALLBACK(onAddDataChanged, RPFullVolumeCreator)
+    void Reinitialize();
+    CLASS_CALLBACK(Reinitialize, RPFullVolumeCreator);
   };
 
 #if 0

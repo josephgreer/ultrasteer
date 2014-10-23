@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>239</width>
+    <width>200</width>
     <height>35</height>
    </rect>
   </property>
@@ -33,7 +33,7 @@
     <rect>
      <x>4</x>
      <y>4</y>
-     <width>181</width>
+     <width>140</width>
      <height>24</height>
     </rect>
    </property>
@@ -41,7 +41,7 @@
   <widget class="QPushButton" name="chooseFile">
    <property name="geometry">
     <rect>
-     <x>190</x>
+     <x>150</x>
      <y>4</y>
      <width>41</width>
      <height>23</height>
