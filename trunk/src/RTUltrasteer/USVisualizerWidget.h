@@ -10,15 +10,14 @@
 #include <vtkPiecewiseFunction.h>
 #include <vtkCommand.h>
 #include <vtkImageImport.h>
+#include "Resizable.h"
 
-class USVisualizerWidget : public QVTKWidget, public Nf::ParameterCollection
+class USVisualizerWidget : public Nf::Resizable, public Nf::ParameterCollection
 {
     Q_OBJECT
 public: 
   USVisualizerWidget(vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf);
   void Initialize();
-
-  virtual QSize sizeHint() const;
 
   // helper function for setViewXY
   void SetUSVisView(s32 axis1, s32 axis2);

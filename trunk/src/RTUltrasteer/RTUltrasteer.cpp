@@ -4,6 +4,7 @@
 
 namespace Nf
 {
+
   void SlotForwarder::treeWidgetForward(QTreeWidgetItem *item, int col) 
   {
     if((void * &)item == (void * &)m_element) {
@@ -50,6 +51,17 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
 
   m_roots.push_back(usVis);
   m_params->expandAll();
+}
+
+void RTUltrasteer::resizeEvent(QResizeEvent *event)
+{
+  QSize totalSize = this->size();
+  QSize menuSize = m_params->size();
+  QSize usVisSz = m_usVis->size();
+  QSize tfSz = m_tfWidget->size();
+  s32 w = totalSize.width()-menuSize.width()-10;
+  m_usVis->UpdateSize(QSize(w, usVisSz.height()));
+  m_tfWidget->UpdateSize(QSize(w, tfSz.height()));
 }
 
 #define EL_VALUE(vec, i) ((i) == 0 ? vec.x : ((i) == 1 ? vec.y : vec.z))
@@ -404,6 +416,7 @@ void RTUltrasteer::CreateUSVisualizer()
   
   addDockWidget(Qt::RightDockWidgetArea, m_usDock);
   m_usDock->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
+  m_usVis->addAction(m_usDock->toggleViewAction());
 
   m_tfWidget->SetInteractionObserver(m_usVis);
 }

@@ -8,12 +8,14 @@
 #include <QtGui/QComboBox>
 #include <QtGui/QDoubleSpinBox>
 #include <QtGui/QSpinBox>
+#include <QTimer>
 #include <QMetaEnum>
 #include "ui_rtultrasteer.h"
 #include "VTKTransferFunctionWidget.h"
 #include "UICore.h"
 #include "FileWidget.h"
 #include "USVisualizerWidget.h"
+#include "Resizable.h"
 
 namespace Nf
 {
@@ -309,11 +311,11 @@ private:
 
     QDockWidget *m_tfDock;
     VTKTransferFunctionWidget *m_tfWidget;
-    //TransferFunctionWidget *m_tfWidget;
 
     void CreateUSVisualizer();
     void CreateMenuDock();
     void CreateTFDock();
+    void resizeEvent(QResizeEvent *event);
 
     void CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollection &collection, const std::vector < QVTKWidget * > & repainters);
 
