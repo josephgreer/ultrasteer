@@ -22,7 +22,7 @@
 using namespace Nf;
 
 USVisualizerWidget::USVisualizerWidget(vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf)
-: QVTKWidget()
+: Nf::Resizable(NULL, QSize(VIS_WIDTH, VIS_HEIGHT))
 , Nf::ParameterCollection("Ultrasound Visualization")
 , m_volumeAxes(NULL)
 , m_volume(NULL)
@@ -36,11 +36,6 @@ USVisualizerWidget::USVisualizerWidget(vtkSmartPointer<vtkColorTransferFunction>
   ADD_ACTION_PARAMETER(m_setViewYZ, "Set View YZ", CALLBACK_POINTER(onSetViewYZ, USVisualizerWidget), this, true); 
   ADD_ENUM_PARAMETER(m_renderMode, "Render Mode", CALLBACK_POINTER(onSetRenderMode, USVisualizerWidget), this, QtEnums::VisRenderMethod::RayCastingMIP, "VisRenderMethod");
   ADD_CHILD_COLLECTION(m_rpvc);
-}
-
-QSize USVisualizerWidget::sizeHint() const
-{
-  return QSize(VIS_WIDTH,VIS_HEIGHT);
 }
 
 void USVisualizerWidget::onShowVolumeExtentChanged()

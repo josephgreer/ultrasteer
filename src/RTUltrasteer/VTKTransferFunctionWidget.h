@@ -11,8 +11,9 @@
 #include <vtkCommand.h>
 #include <vtkEventQtSlotConnect.h>
 #include "UICore.h"
+#include "Resizable.h"
 
-class VTKTransferFunctionWidget : public QVTKWidget, public Nf::ParameterCollection
+class VTKTransferFunctionWidget : public Nf::Resizable, public Nf::ParameterCollection
 {
   Q_OBJECT 
 private:
@@ -34,6 +35,4 @@ public:
   vtkSmartPointer<vtkPiecewiseFunction> GetOpacityTransferFunction();
 
   void SetInteractionObserver(QObject *qobj);
-
-  virtual QSize sizeHint() const;
 };
