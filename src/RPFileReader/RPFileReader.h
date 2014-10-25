@@ -219,6 +219,7 @@ namespace Nf
     RPData GetRPData(int frame);
 
     RPFileReaderCollection();
+    ~RPFileReaderCollection();
 
     s32 GetCurrentFrame();
 

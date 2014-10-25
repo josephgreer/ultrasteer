@@ -557,20 +557,16 @@ private:
     Ui::RTUltrasteerClass ui;
 
     QDockWidget *m_usDock;
-    USVisualizerWidget *m_usVis;
+    USVisualizer *m_usVis;
 
     QDockWidget *m_menu;
     QTreeWidget *m_params;
-
-    QDockWidget *m_tfDock;
-    VTKTransferFunctionWidget *m_tfWidget;
 
     QDockWidget *m_rpDock;
     Nf::RPWidget *m_rpWidget;
 
     void CreateUSVisualizer();
     void CreateMenuDock();
-    void CreateTFDock();
     void CreateRPDock();
     void resizeEvent(QResizeEvent *event);
 

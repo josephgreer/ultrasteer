@@ -268,6 +268,15 @@ namespace Nf
   {
   }
 
+  
+  RPFileReaderCollection::~RPFileReaderCollection()
+  {
+    for(std::map < RP_TYPE, RPFileReader * >::iterator i = m_readers.begin(); i != m_readers.end(); i++) {
+      delete i->second;
+    }
+  }
+
+
   void RPFileReaderCollection::AddReader(RP_TYPE type, RPReader * reader)
   {
     //TODO:  Make sure readers are synced up
