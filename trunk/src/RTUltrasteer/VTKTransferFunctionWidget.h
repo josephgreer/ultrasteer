@@ -13,7 +13,7 @@
 #include "UICore.h"
 #include "Resizable.h"
 
-class VTKTransferFunctionWidget : public Nf::Resizable, public Nf::ParameterCollection
+class VTKTransferFunctionWidget : public Nf::ResizableQVTKWidget, public Nf::ParameterCollection
 {
   Q_OBJECT 
 private:

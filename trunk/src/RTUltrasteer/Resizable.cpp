@@ -2,7 +2,7 @@
 
 namespace Nf
 {
-  Resizable::Resizable(QWidget *parent, QSize sz)
+  ResizableQVTKWidget::ResizableQVTKWidget(QWidget *parent, QSize sz)
     : QVTKWidget(parent)
     , m_resizeTimer(NULL)
     , m_resizeTimer2(NULL)
@@ -11,7 +11,7 @@ namespace Nf
   {
   }
 
-  void Resizable::UpdateSize(QSize sz)
+  void ResizableQVTKWidget::UpdateSize(QSize sz)
   {
     m_sz = sz;
     m_minSz = sz;
@@ -27,17 +27,17 @@ namespace Nf
     m_resizeTimer->start();
   }
 
-  QSize Resizable::sizeHint() const
+  QSize ResizableQVTKWidget::sizeHint() const
   {
     return m_sz;
   }
 
-  QSize Resizable::minimumSizeHint() const
+  QSize ResizableQVTKWidget::minimumSizeHint() const
   {
     return m_minSz;
   }
 
-  void Resizable::onResize()
+  void ResizableQVTKWidget::onResize()
   {
     this->updateGeometry();
 
@@ -55,7 +55,7 @@ namespace Nf
     m_resizeTimer2->start();
   }
 
-  void Resizable::onResize2()
+  void ResizableQVTKWidget::onResize2()
   {
     m_minSz = QSize(0,0);
     this->updateGeometry();

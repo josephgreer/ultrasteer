@@ -12,7 +12,7 @@
 #include <vtkImageImport.h>
 #include "Resizable.h"
 
-class USVisualizerWidget : public Nf::Resizable, public Nf::ParameterCollection
+class USVisualizerWidget : public Nf::ResizableQVTKWidget, public Nf::ParameterCollection
 {
     Q_OBJECT
 public: 

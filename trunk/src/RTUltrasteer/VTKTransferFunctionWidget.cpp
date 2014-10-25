@@ -11,7 +11,7 @@
 using namespace Nf;
 
 VTKTransferFunctionWidget::VTKTransferFunctionWidget()
-: Nf::Resizable(NULL, QSize(VIS_WIDTH, 150))
+: Nf::ResizableQVTKWidget(NULL, QSize(VIS_WIDTH, 150))
 , Nf::ParameterCollection("Piecewise Transfer Function Widget")
 , m_opacity(NULL)
 , m_cp(NULL)
