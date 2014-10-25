@@ -24,7 +24,9 @@ namespace Nf
   
   void RPWidget::UpdateSize(QSize sz)
   {
-    m_imageViewer->UpdateSize(QSize(sz.width()-10, sz.height()-10));
+    s32 ml, mr, mu, mb;
+    m_layout->getContentsMargins(&ml, &mu, &mr, &mb);
+    m_imageViewer->UpdateSize(QSize(sz.width()-10, sz.height()-2*(mr+ml)));
   }
 
   void RPWidget::onUpdateFile()

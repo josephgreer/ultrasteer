@@ -407,7 +407,7 @@ namespace Nf
   m_vec2is.push_back(var);
 
 #define ADD_CHILD_COLLECTION(var) \
-  m_children.push_back((Nf::ParameterCollection *)&var);
+  m_children.push_back((Nf::ParameterCollection *)var);
 
 //Since calbacks must be static and we usually want to call a class function
 //a class, this takes care of the dirty work of creating a static function,

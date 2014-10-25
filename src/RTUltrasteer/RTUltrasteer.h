@@ -557,7 +557,7 @@ private:
     Ui::RTUltrasteerClass ui;
 
     QDockWidget *m_usDock;
-    USVisualizer *m_usVis;
+    USVisualizerFullRP *m_usVis;
 
     QDockWidget *m_menu;
     QTreeWidget *m_params;
