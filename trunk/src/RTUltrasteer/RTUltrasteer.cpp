@@ -35,20 +35,18 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
     , m_params(NULL)
     , m_usDock(NULL)
     , m_usVis(NULL)
-    , m_tfDock(NULL)
 {
   ui.setupUi(this);
 
-  CreateTFDock();
   CreateUSVisualizer();
   CreateMenuDock();
   CreateRPDock();
 
+  this->tabifyDockWidget(m_rpDock, m_usDock);
+
   QTreeWidgetItem * usVis = new QTreeWidgetItem(m_params);
   usVis->setText(0, m_usVis->GetName());
-  std::vector < QVTKWidget * > repainters;
-  repainters.push_back(m_usVis);
-  CreateUIElements(usVis, *m_usVis, repainters);
+  CreateUIElements(usVis, *m_usVis, m_usVis->GetRepaintList());
 
   QTreeWidgetItem * rp = new QTreeWidgetItem(m_params);
   rp->setText(0, m_rpWidget->GetName());
@@ -63,12 +61,10 @@ void RTUltrasteer::resizeEvent(QResizeEvent *event)
   QSize totalSize = this->size();
   QSize menuSize = m_params->size();
   QSize usVisSz = m_usVis->size();
-  QSize tfSz = m_tfWidget->size();
   QSize rpSz = m_rpWidget->size();
-  s32 w = totalSize.width()-menuSize.width()-10;
-  m_usVis->UpdateSize(QSize(w, usVisSz.height()));
-  m_tfWidget->UpdateSize(QSize(w, tfSz.height()));
-  m_rpWidget->UpdateSize(QSize(w, rpSz.height()));
+  s32 w = totalSize.width()-menuSize.width()-50;
+  m_usVis->UpdateSize(QSize(w, usVisSz.height()-50));
+  m_rpWidget->UpdateSize(QSize(w, rpSz.height()-50));
 }
 
 #define EL_VALUE(vec, i) ((i) == 0 ? vec.x : ((i) == 1 ? vec.y : vec.z))
@@ -413,32 +409,15 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
 
 void RTUltrasteer::CreateUSVisualizer()
 {
-  assert(m_tfWidget != NULL);
-  m_usDock = new QDockWidget(tr("Ultrasound Visualization"), this);
+  m_usDock = new QDockWidget(tr("Ultrasound Volume Visualizer"), this);
   m_usDock->setAllowedAreas(Qt::AllDockWidgetAreas);
 
-  m_usVis = new USVisualizerWidget(m_tfWidget->GetColorTransferFunction(), m_tfWidget->GetOpacityTransferFunction());
-  m_usVis->Initialize();
+  m_usVis = new USVisualizer(NULL);
   m_usDock->setWidget(m_usVis);
   
   addDockWidget(Qt::RightDockWidgetArea, m_usDock);
   m_usDock->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
   m_usVis->addAction(m_usDock->toggleViewAction());
-
-  m_tfWidget->SetInteractionObserver(m_usVis);
-}
-
-void RTUltrasteer::CreateTFDock()
-{
-  m_tfDock = new QDockWidget(tr("Transfer Function Editor"), this);
-  m_tfDock->setAllowedAreas(Qt::AllDockWidgetAreas);
-
-  m_tfWidget = new VTKTransferFunctionWidget();
-  this->m_tfWidget->Initialize();
-  m_tfDock->setWidget(m_tfWidget);
-  
-  addDockWidget(Qt::RightDockWidgetArea, m_tfDock);
-  m_tfDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
 
 void RTUltrasteer::CreateRPDock()
@@ -482,8 +461,4 @@ RTUltrasteer::~RTUltrasteer()
     delete m_usVis;
   if(m_usDock)
     delete m_usDock;
-  if(m_tfWidget)
-    delete m_tfWidget;
-  if(m_tfDock)
-    delete m_tfDock;
 }

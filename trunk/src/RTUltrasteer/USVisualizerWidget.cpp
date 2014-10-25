@@ -261,3 +261,43 @@ void USVisualizerWidget::TransferFunctionChanged(vtkObject *caller, unsigned lon
   m_volume->Modified();
   this->repaint();
 }
+
+USVisualizer::USVisualizer(QWidget *parent)
+: QWidget(parent)
+, Nf::ParameterCollection("Ultrasound Volume Visualizer")
+{
+  m_tfWidget = new VTKTransferFunctionWidget();
+  m_usVis = new USVisualizerWidget(m_tfWidget->GetColorTransferFunction(), m_tfWidget->GetOpacityTransferFunction());
+
+  m_layout = new QGridLayout(parent);
+  m_layout->addWidget(m_tfWidget, 0, 0);
+  m_layout->addWidget(m_usVis, 1, 0);
+  this->setLayout(m_layout);
+
+  m_tfWidget->Initialize();
+  m_usVis->Initialize();
+
+  m_tfWidget->SetInteractionObserver(m_usVis);
+
+  ADD_CHILD_COLLECTION(*m_usVis);
+}
+
+USVisualizer::~USVisualizer()
+{
+  delete m_tfWidget;
+  delete m_usVis;
+  delete m_layout;
+}
+
+std::vector < QVTKWidget * > USVisualizer::GetRepaintList()
+{
+  std::vector < QVTKWidget * > res;
+  res.push_back(m_usVis);
+  return res;
+}
+
+void USVisualizer::UpdateSize(QSize sz)
+{
+  m_tfWidget->UpdateSize(QSize(sz.width()-10, (sz.height()/4)-10));
+  m_usVis->UpdateSize(QSize(sz.width()-10, (sz.height()*3/4)-10));
+}

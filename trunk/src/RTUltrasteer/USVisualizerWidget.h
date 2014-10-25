@@ -11,6 +11,8 @@
 #include <vtkCommand.h>
 #include <vtkImageImport.h>
 #include "Resizable.h"
+#include <QGridLayout>
+#include "VTKTransferFunctionWidget.h"
 
 class USVisualizerWidget : public Nf::ResizableQVTKWidget, public Nf::ParameterCollection
 {
@@ -82,4 +84,20 @@ public:
 public slots:
   void TransferFunctionChanged(vtkObject *caller, unsigned long, void*, void*, vtkCommand *);
 
+};
+
+class USVisualizer : public QWidget, public Nf::Resizable, public Nf::ParameterCollection
+{
+  Q_OBJECT
+protected:
+  USVisualizerWidget *m_usVis;
+  VTKTransferFunctionWidget *m_tfWidget;
+  QGridLayout *m_layout;
+
+public:
+  USVisualizer(QWidget *parent);
+  ~USVisualizer();
+  void UpdateSize(QSize sz);
+
+  std::vector < QVTKWidget * > GetRepaintList();
 };
