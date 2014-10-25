@@ -22,7 +22,7 @@
 using namespace Nf;
 
 USVisualizerWidget::USVisualizerWidget(vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf)
-: Nf::Resizable(NULL, QSize(VIS_WIDTH, VIS_HEIGHT))
+: Nf::ResizableQVTKWidget(NULL, QSize(VIS_WIDTH, VIS_HEIGHT))
 , Nf::ParameterCollection("Ultrasound Visualization")
 , m_volumeAxes(NULL)
 , m_volume(NULL)

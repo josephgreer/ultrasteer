@@ -46,6 +46,15 @@ namespace Nf
     virtual T GetValue() = 0;  //Get the UI element's value
   };
 
+  template <class T>
+  class NumberUIElement : public UIElement<T>
+  {
+  public:
+    virtual void SetMin(T min) = 0;
+    virtual void SetMax(T min) = 0;
+    virtual void SetStep(T min) = 0;
+  };
+
   //Basic parameter class (T = string, float, int, etc.) 
   template <class T>
   class Parameter
@@ -148,6 +157,24 @@ namespace Nf
     T GetStep()
     {
       return m_step;
+    }
+
+    void SetMin(T min)
+    {
+      NumberUIElement<T> * nui = (NumberUIElement<T> *)(&(*m_element));
+      nui->SetMin(min);
+    }
+
+    void SetMax(T min)
+    {
+      NumberUIElement<T> * nui = (NumberUIElement<T> *)(&(*m_element));
+      nui->SetMax(min);
+    }
+
+    void SetStep(T min)
+    {
+      NumberUIElement<T> * nui = (NumberUIElement<T> *)(&(*m_element));
+      nui->SetStep(min);
     }
   };
 

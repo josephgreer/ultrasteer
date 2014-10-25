@@ -9,7 +9,13 @@
 
 namespace Nf
 {
-  class Resizable : public QVTKWidget
+  class Resizable
+  {
+  public:
+    virtual void UpdateSize(QSize sz) = 0;
+  };
+
+  class ResizableQVTKWidget : public QVTKWidget, public Resizable
   {
     Q_OBJECT 
 
@@ -20,7 +26,7 @@ namespace Nf
     QTimer *m_resizeTimer2;
 
   public:
-    Resizable(QWidget *parent, QSize sz);
+    ResizableQVTKWidget(QWidget *parent, QSize sz);
 
     virtual void UpdateSize(QSize sz);
     virtual QSize sizeHint() const;

@@ -13,9 +13,10 @@
 #include "ui_rtultrasteer.h"
 #include "VTKTransferFunctionWidget.h"
 #include "UICore.h"
+#include "Resizable.h"
 #include "FileWidget.h"
 #include "USVisualizerWidget.h"
-#include "Resizable.h"
+#include "RPWidget.h"
 
 namespace Nf
 {
@@ -82,7 +83,7 @@ namespace Nf
     }
   };
 
-  class IntSlotForwarder : public SlotForwarder, public UIElement < s32 >
+  class IntSlotForwarder : public SlotForwarder, public NumberUIElement < s32 >
   {
     Q_OBJECT
 
@@ -98,9 +99,27 @@ namespace Nf
       QSpinBox *sb = (QSpinBox *)m_element;
       return (s32)sb->value();
     }
+
+    void SetMin(s32 min)
+    {
+      QSpinBox *sb = (QSpinBox *)m_element;
+      sb->setMinimum(min);
+    }
+
+    void SetMax(s32 max)
+    {
+      QSpinBox *sb = (QSpinBox *)m_element;
+      sb->setMaximum(max);
+    }
+
+    void SetStep(s32 step)
+    {
+      QSpinBox *sb = (QSpinBox *)m_element;
+      sb->setSingleStep(step);
+    }
   };
 
-  class FloatSlotForwarder : public SlotForwarder, public UIElement < f32 >
+  class FloatSlotForwarder : public SlotForwarder, public NumberUIElement < f32 >
   {
     Q_OBJECT
 
@@ -116,9 +135,27 @@ namespace Nf
       QDoubleSpinBox *sb = (QDoubleSpinBox *)m_element;
       return (f32)sb->value();
     }
+
+    void SetMin(f32 min)
+    {
+      QDoubleSpinBox *sb = (QDoubleSpinBox *)m_element;
+      sb->setMinimum(min);
+    }
+
+    void SetMax(f32 max)
+    {
+      QDoubleSpinBox *sb = (QDoubleSpinBox *)m_element;
+      sb->setMaximum(max);
+    }
+
+    void SetStep(f32 step)
+    {
+      QDoubleSpinBox *sb = (QDoubleSpinBox *)m_element;
+      sb->setSingleStep(step);
+    }
   };
 
-  class Vec3dSlotForwarder : public SlotForwarder, public UIElement < Vec3d >
+  class Vec3dSlotForwarder : public SlotForwarder, public NumberUIElement < Vec3d >
   {
     Q_OBJECT
 
@@ -138,9 +175,48 @@ namespace Nf
       QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
       return Vec3d((f64)x->value(), (f64)y->value(), (f64)z->value());
     }
+
+    void SetMin(Vec3d min)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
+
+      x->setMinimum(min.x);
+      y->setMinimum(min.y);
+      z->setMinimum(min.z);
+    }
+
+    void SetMax(Vec3d max)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
+
+      x->setMinimum(max.x);
+      y->setMinimum(max.y);
+      z->setMinimum(max.z);
+    }
+
+    void SetStep(Vec3d step)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
+
+      x->setMinimum(step.x);
+      y->setMinimum(step.y);
+      z->setMinimum(step.z);
+    }
   };
 
-  class Vec3fSlotForwarder : public SlotForwarder, public UIElement < Vec3f >
+  class Vec3fSlotForwarder : public SlotForwarder, public NumberUIElement < Vec3f >
   {
     Q_OBJECT
 
@@ -160,9 +236,48 @@ namespace Nf
       QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
       return Vec3f((f32)x->value(), (f32)y->value(), (f32)z->value());
     }
+
+    void SetMin(Vec3f min)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
+
+      x->setMinimum(min.x);
+      y->setMinimum(min.y);
+      z->setMinimum(min.z);
+    }
+
+    void SetMax(Vec3f max)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
+
+      x->setMinimum(max.x);
+      y->setMinimum(max.y);
+      z->setMinimum(max.z);
+    }
+
+    void SetStep(Vec3f step)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
+
+      x->setMinimum(step.x);
+      y->setMinimum(step.y);
+      z->setMinimum(step.z);
+    }
   };
 
-  class Vec3iSlotForwarder : public SlotForwarder, public UIElement < Vec3i >
+  class Vec3iSlotForwarder : public SlotForwarder, public NumberUIElement < Vec3i >
   {
     Q_OBJECT
 
@@ -182,9 +297,48 @@ namespace Nf
       QSpinBox *z = (QSpinBox *)item->obj[2];
       return Vec3i((s32)x->value(), (s32)y->value(), (s32)z->value());
     }
+
+    void SetMin(Vec3i min)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QSpinBox *x = (QSpinBox *)item->obj[0];
+      QSpinBox *y = (QSpinBox *)item->obj[1];
+      QSpinBox *z = (QSpinBox *)item->obj[2];
+
+      x->setMinimum(min.x);
+      y->setMinimum(min.y);
+      z->setMinimum(min.z);
+    }
+
+    void SetMax(Vec3i max)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QSpinBox *x = (QSpinBox *)item->obj[0];
+      QSpinBox *y = (QSpinBox *)item->obj[1];
+      QSpinBox *z = (QSpinBox *)item->obj[2];
+
+      x->setMinimum(max.x);
+      y->setMinimum(max.y);
+      z->setMinimum(max.z);
+    }
+
+    void SetStep(Vec3i step)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QSpinBox *x = (QSpinBox *)item->obj[0];
+      QSpinBox *y = (QSpinBox *)item->obj[1];
+      QSpinBox *z = (QSpinBox *)item->obj[2];
+
+      x->setMinimum(step.x);
+      y->setMinimum(step.y);
+      z->setMinimum(step.z);
+    }
   };
 
-  class Vec2dSlotForwarder : public SlotForwarder, public UIElement < Vec2d >
+  class Vec2dSlotForwarder : public SlotForwarder, public NumberUIElement < Vec2d >
   {
     Q_OBJECT
 
@@ -203,9 +357,42 @@ namespace Nf
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
       return Vec2d((f64)x->value(), (f64)y->value());
     }
+
+    void SetMin(Vec2d min)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 2);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+
+      x->setMinimum(min.x);
+      y->setMinimum(min.y);
+    }
+
+    void SetMax(Vec2d max)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 2);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+
+      x->setMinimum(max.x);
+      y->setMinimum(max.y);
+    }
+
+    void SetStep(Vec2d step)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 2);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+
+      x->setMinimum(step.x);
+      y->setMinimum(step.y);
+    }
   };
 
-  class Vec2fSlotForwarder : public SlotForwarder, public UIElement < Vec2f >
+  class Vec2fSlotForwarder : public SlotForwarder, public NumberUIElement < Vec2f >
   {
     Q_OBJECT
 
@@ -224,9 +411,42 @@ namespace Nf
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
       return Vec2f((f32)x->value(), (f32)y->value());
     }
+
+    void SetMin(Vec2f min)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 2);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+
+      x->setMinimum(min.x);
+      y->setMinimum(min.y);
+    }
+
+    void SetMax(Vec2f max)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 2);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+
+      x->setMinimum(max.x);
+      y->setMinimum(max.y);
+    }
+
+    void SetStep(Vec2f step)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 2);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+
+      x->setMinimum(step.x);
+      y->setMinimum(step.y);
+    }
   };
 
-  class Vec2iSlotForwarder : public SlotForwarder, public UIElement < Vec2i >
+  class Vec2iSlotForwarder : public SlotForwarder, public NumberUIElement < Vec2i >
   {
     Q_OBJECT
 
@@ -244,6 +464,39 @@ namespace Nf
       QSpinBox *x = (QSpinBox *)item->obj[0];
       QSpinBox *y = (QSpinBox *)item->obj[1];
       return Vec2i((s32)x->value(), (s32)y->value());
+    }
+
+    void SetMin(Vec2i min)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QSpinBox *x = (QSpinBox *)item->obj[0];
+      QSpinBox *y = (QSpinBox *)item->obj[1];
+
+      x->setMinimum(min.x);
+      y->setMinimum(min.y);
+    }
+
+    void SetMax(Vec2i max)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QSpinBox *x = (QSpinBox *)item->obj[0];
+      QSpinBox *y = (QSpinBox *)item->obj[1];
+
+      x->setMinimum(max.x);
+      y->setMinimum(max.y);
+    }
+
+    void SetStep(Vec2i step)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QSpinBox *x = (QSpinBox *)item->obj[0];
+      QSpinBox *y = (QSpinBox *)item->obj[1];
+
+      x->setMinimum(step.x);
+      y->setMinimum(step.y);
     }
   };
 
@@ -312,9 +565,13 @@ private:
     QDockWidget *m_tfDock;
     VTKTransferFunctionWidget *m_tfWidget;
 
+    QDockWidget *m_rpDock;
+    Nf::RPWidget *m_rpWidget;
+
     void CreateUSVisualizer();
     void CreateMenuDock();
     void CreateTFDock();
+    void CreateRPDock();
     void resizeEvent(QResizeEvent *event);
 
     void CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollection &collection, const std::vector < QVTKWidget * > & repainters);

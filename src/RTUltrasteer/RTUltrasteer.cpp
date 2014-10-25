@@ -42,12 +42,17 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   CreateTFDock();
   CreateUSVisualizer();
   CreateMenuDock();
+  CreateRPDock();
 
   QTreeWidgetItem * usVis = new QTreeWidgetItem(m_params);
   usVis->setText(0, m_usVis->GetName());
   std::vector < QVTKWidget * > repainters;
   repainters.push_back(m_usVis);
   CreateUIElements(usVis, *m_usVis, repainters);
+
+  QTreeWidgetItem * rp = new QTreeWidgetItem(m_params);
+  rp->setText(0, m_rpWidget->GetName());
+  CreateUIElements(rp, *m_rpWidget, m_rpWidget->GetChildWidgets());
 
   m_roots.push_back(usVis);
   m_params->expandAll();
@@ -59,9 +64,11 @@ void RTUltrasteer::resizeEvent(QResizeEvent *event)
   QSize menuSize = m_params->size();
   QSize usVisSz = m_usVis->size();
   QSize tfSz = m_tfWidget->size();
+  QSize rpSz = m_rpWidget->size();
   s32 w = totalSize.width()-menuSize.width()-10;
   m_usVis->UpdateSize(QSize(w, usVisSz.height()));
   m_tfWidget->UpdateSize(QSize(w, tfSz.height()));
+  m_rpWidget->UpdateSize(QSize(w, rpSz.height()));
 }
 
 #define EL_VALUE(vec, i) ((i) == 0 ? vec.x : ((i) == 1 ? vec.y : vec.z))
@@ -432,6 +439,18 @@ void RTUltrasteer::CreateTFDock()
   
   addDockWidget(Qt::RightDockWidgetArea, m_tfDock);
   m_tfDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
+}
+
+void RTUltrasteer::CreateRPDock()
+{
+  m_rpDock = new QDockWidget(tr("RPDock"), this);
+  m_rpDock->setAllowedAreas(Qt::AllDockWidgetAreas);
+
+  m_rpWidget = new Nf::RPWidget(m_rpDock);
+  m_rpDock->setWidget(m_rpWidget);
+  
+  addDockWidget(Qt::RightDockWidgetArea, m_rpDock);
+  m_rpDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
 
 
