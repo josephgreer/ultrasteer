@@ -2,6 +2,7 @@
 
 #include "QVTKWidget.h"
 #include "UICore.h"
+#include "RPFileReader.h"
 #include "VolumeCreator.h"
 #include "CubeVisualizer.h"
 #include <vtkAxesActor.h>
@@ -18,15 +19,19 @@ class USVisualizerWidget : public Nf::ResizableQVTKWidget, public Nf::ParameterC
 {
     Q_OBJECT
 public: 
-  USVisualizerWidget(vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf);
-  void Initialize();
+  USVisualizerWidget(Nf::RPVolumeCreator *rpvc = NULL);
+  virtual void Initialize(Nf::RPData rp, vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf);
+  virtual void Initialize(vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf);
 
   // helper function for setViewXY
-  void SetUSVisView(s32 axis1, s32 axis2);
+  virtual void SetUSVisView(s32 axis1, s32 axis2);
 
   //Volume Data Creator
-  Nf::RPFullVolumeCreator m_rpvc;
+  Nf::RPVolumeCreator *m_rpvc;
   vtkSmartPointer<vtkRenderer> m_renderer;
+
+  //Add a frame of RPData to the volume
+  virtual void AddRPData(Nf::RPData data);
 
   //Volume
   vtkSmartPointer<vtkVolume> m_volume;
@@ -78,12 +83,28 @@ public:
   void Reinitialize();
   CLASS_CALLBACK(Reinitialize, USVisualizerWidget);
 
+
   //For changes to the transfer function
   virtual void Execute(vtkObject *caller, unsigned long, void*);
 
 public slots:
   void TransferFunctionChanged(vtkObject *caller, unsigned long, void*, void*, vtkCommand *);
 
+};
+
+class USVisualizerWidgetFullRP : public USVisualizerWidget
+{
+    Q_OBJECT
+protected:
+  Nf::RPFullVolumeCreator *m_frpvc;
+
+public: 
+  USVisualizerWidgetFullRP();
+
+  virtual void Initialize(vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf);
+
+  //Add a frame of RPData to the volume
+  virtual void AddRPData(Nf::RPData data);
 };
 
 class USVisualizer : public QWidget, public Nf::Resizable, public Nf::ParameterCollection
@@ -95,9 +116,21 @@ protected:
   QGridLayout *m_layout;
 
 public:
-  USVisualizer(QWidget *parent);
-  ~USVisualizer();
-  void UpdateSize(QSize sz);
+  USVisualizer(QWidget *parent, USVisualizerWidget *usVis = NULL);
+  virtual ~USVisualizer();
+  virtual void UpdateSize(QSize sz);
+  virtual void AddRPData(Nf::RPData rp);
+  virtual void Initialize(Nf::RPData rp);
 
   std::vector < QVTKWidget * > GetRepaintList();
+};
+
+class USVisualizerFullRP : public USVisualizer
+{
+  Q_OBJECT
+
+public:
+  USVisualizerFullRP(QWidget *parent);
+  virtual void AddRPData(Nf::RPData rp);
+  virtual void Initialize();
 };

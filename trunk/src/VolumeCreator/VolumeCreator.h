@@ -101,6 +101,7 @@ namespace Nf {
   class RPVolumeCreator : public VolumeCreator
   {
   protected:
+    bool m_init;                                                                //Are we initialized
     s32 m_index;                                                                //Current frame index.  Valid when m_rm != RPVM_READ_ALL              
     bool m_newData;                                                             //New data since last GetNew() call?
     Volume m_volume;                                                            //Self explanatory
@@ -109,21 +110,21 @@ namespace Nf {
     vtkSmartPointer<vtkImageImport> m_importer;
 
     //User Parameters
-    std::tr1::shared_ptr < Nf::BoolParameter > m_initialize;                    //initialize
-    std::tr1::shared_ptr < Nf::FileParameter > m_usFile;                        //ultrasound file)
     std::tr1::shared_ptr < Nf::EnumParameter > m_originLoc;                     //location of origin with respect to first frame
 
   public:
     RPVolumeCreator();
     virtual ~RPVolumeCreator();
     Volume *GetNew();
-    virtual void Start() = 0;
+    virtual void Start();
+    virtual void AddRPData(RPData rp);
     virtual Vec3i GetVolumeDims();
     virtual u16 * GetVolumeOriginData();
     virtual Cubed GetVolumeCubeExtent() const;
     virtual Cubed GetVolumePhysicalExtent() const;
     virtual Matrix33d GetVolumeOrientation() const;
-    virtual void Reinitialize() = 0;
+    virtual s32 Initialize(RPData rp);
+    virtual void Reinitialize();
     void Release();
     vtkSmartPointer<vtkImageImport> GetImporter();
     CLASS_CALLBACK(Reinitialize, RPVolumeCreator);
@@ -136,10 +137,14 @@ namespace Nf {
     virtual ~RPFullVolumeCreator();
     s32 Initialize();
     void Start();
+    virtual void AddRPData(RPData rp);
 
   protected:
     void Reinitialize();
     CLASS_CALLBACK(Reinitialize, RPFullVolumeCreator);
+
+    std::tr1::shared_ptr < Nf::FileParameter > m_usFile;                        //ultrasound file)
+    std::tr1::shared_ptr < Nf::BoolParameter > m_initialize;                    //initialize
   };
 
 #if 0

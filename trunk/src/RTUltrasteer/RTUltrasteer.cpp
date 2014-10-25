@@ -62,9 +62,9 @@ void RTUltrasteer::resizeEvent(QResizeEvent *event)
   QSize menuSize = m_params->size();
   QSize usVisSz = m_usVis->size();
   QSize rpSz = m_rpWidget->size();
-  s32 w = totalSize.width()-menuSize.width()-50;
-  m_usVis->UpdateSize(QSize(w, usVisSz.height()-50));
-  m_rpWidget->UpdateSize(QSize(w, rpSz.height()-50));
+  s32 w = totalSize.width()-menuSize.width()-10;
+  m_usVis->UpdateSize(QSize(w, usVisSz.height()-10));
+  m_rpWidget->UpdateSize(QSize(w, rpSz.height()-10));
 }
 
 #define EL_VALUE(vec, i) ((i) == 0 ? vec.x : ((i) == 1 ? vec.y : vec.z))
@@ -412,7 +412,8 @@ void RTUltrasteer::CreateUSVisualizer()
   m_usDock = new QDockWidget(tr("Ultrasound Volume Visualizer"), this);
   m_usDock->setAllowedAreas(Qt::AllDockWidgetAreas);
 
-  m_usVis = new USVisualizer(NULL);
+  m_usVis = new USVisualizerFullRP(NULL);
+  m_usVis->Initialize();
   m_usDock->setWidget(m_usVis);
   
   addDockWidget(Qt::RightDockWidgetArea, m_usDock);

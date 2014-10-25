@@ -243,12 +243,12 @@ namespace Nf {
     , VolumeCreator()
     , m_newData(false)
     , m_cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0)
+    , m_init(false)
+    , m_importer(NULL)
   {
     m_importer = vtkSmartPointer<vtkImageImport>::New();
-    ADD_BOOL_PARAMETER(m_initialize, "Initialize", CALLBACK_POINTER(Reinitialize, RPVolumeCreator), this, false);
-    ADD_OPEN_FILE_PARAMETER(m_usFile, "US File Data", CALLBACK_POINTER(Reinitialize, RPVolumeCreator), this, "V:/NeedleScan/Feb13_LiverScan/Scan 1/scan.b8", "Any File (*.*)");
     ADD_ENUM_PARAMETER(m_originLoc, "Start Loc.", CALLBACK_POINTER(Reinitialize, RPVolumeCreator), this, QtEnums::VOLUME_ORIGIN_LOCATION::VOL_RIGHT, "VOLUME_ORIGIN_LOCATION");
-    ADD_CHILD_COLLECTION(m_volume);
+    ADD_CHILD_COLLECTION(&m_volume);
   }
 
   RPVolumeCreator::~RPVolumeCreator()
@@ -261,9 +261,76 @@ namespace Nf {
     return m_newData ? &m_volume : NULL;
   }
 
+  s32 RPVolumeCreator::Initialize(RPData rp)
+  {
+    Matrix44d tPose = Matrix44d::FromCvMat(rp.gps.pose);
+    Matrix33d pose = tPose.GetOrientation();
+
+    Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, rp.gps.pos);
+    Vec2d start(320.0, 0.0);
+    Vec2d mpp = m_volume.GetMPP();
+    Vec2d mppScale(mpp.x/1000.0, mpp.y/1000.0);
+
+    Vec3d x_axis = rpImageCoordToWorldCoord3(Vec2d(1.0,0.0), posePos, m_cal, start, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, start, mppScale);  //tPose*calibration*Vec4d(1.0, 0.0, (1.0)*mpp.x, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, (0.0)*mpp.x, 0.0);
+    Vec3d y_axis = rpImageCoordToWorldCoord3(Vec2d(0.0,1.0), posePos, m_cal, start, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, start, mppScale);//tPose*calibration*Vec4d(1.0, 1.0*mpp.y, 0.0, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, 0.0, 0.0);
+    x_axis = x_axis.normalized();
+    y_axis = y_axis.normalized();
+    Vec3d z_axis = x_axis.cross(y_axis);
+
+    s32 rv = m_volume.InitializeVolume(this, Matrix33d::FromCols(x_axis,y_axis,z_axis), 
+      rpImageCoordToWorldCoord3(Vec2d(rp.b8->width/2.0, rp.b8->height/2.0), posePos, m_cal, start, mppScale),
+      (QtEnums::VOLUME_ORIGIN_LOCATION)m_originLoc->GetValue());
+
+    //vtkImageData importer
+    Vec3d spacing = m_volume.GetSpacing();
+    Vec3i dims = m_volume.GetDims();
+    if(m_importer == NULL)
+      m_importer = vtkSmartPointer<vtkImageImport>::New();
+    m_importer->SetDataSpacing(spacing.x, spacing.y, spacing.z);
+    m_importer->SetDataOrigin(0,0,0);
+    m_importer->SetWholeExtent(0, dims.x-1, 0, dims.y-1, 0, dims.z-1);
+    m_importer->SetDataExtentToWholeExtent();
+    m_importer->SetDataScalarTypeToUnsignedChar();
+    m_importer->SetNumberOfScalarComponents(1);
+    m_importer->SetImportVoidPointer(this->GetVolumeOriginData());
+    m_importer->Update();
+    m_importer->Modified();
+
+    m_init = true;
+
+    return rv;
+  }
+  
+  void RPVolumeCreator::Start()
+  {
+    assert(0);
+  }
+
+  void RPVolumeCreator::Reinitialize()
+  {
+    m_volume.Release();
+    m_init = false;
+  }
+
+  void RPVolumeCreator::AddRPData(RPData rp)
+  {
+    if(!rp.gps.valid)
+      return;
+
+    if(!m_init && !Initialize(rp))
+      assert(0);
+
+    Matrix44d tPose = Matrix44d::FromCvMat(rp.gps.pose);
+    Matrix33d pose = tPose.GetOrientation();
+
+    m_volume.AddFrame(rp.b8, pose, rp.gps.pos, m_cal);
+    m_importer->Modified();
+  }
+
   void RPVolumeCreator::Release()
   {
     m_volume.Release();
+    m_init = false;
   }
 
   Vec3i RPVolumeCreator::GetVolumeDims()
@@ -307,7 +374,8 @@ namespace Nf {
   RPFullVolumeCreator::RPFullVolumeCreator()
     : RPVolumeCreator()
   {
-    s32 x = 0;
+    ADD_BOOL_PARAMETER(m_initialize, "Initialize", CALLBACK_POINTER(Reinitialize, RPVolumeCreator), this, false);
+    ADD_OPEN_FILE_PARAMETER(m_usFile, "US File Data", CALLBACK_POINTER(Reinitialize, RPVolumeCreator), this, "V:/NeedleScan/Feb13_LiverScan/Scan 1/scan.b8", "Any File (*.*)");
   }
 
   RPFullVolumeCreator::~RPFullVolumeCreator()
@@ -333,45 +401,20 @@ namespace Nf {
       return -1;
     }
 
-    Matrix44d tPose = Matrix44d::FromCvMat(rp.gps.pose);
-    Matrix33d pose = tPose.GetOrientation();
-
-    Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, rp.gps.pos);
-    Vec2d start(320.0, 0.0);
-    Vec2d mpp = m_volume.GetMPP();
-    Vec2d mppScale(mpp.x/1000.0, mpp.y/1000.0);
-
-    Vec3d x_axis = rpImageCoordToWorldCoord3(Vec2d(1.0,0.0), posePos, m_cal, start, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, start, mppScale);  //tPose*calibration*Vec4d(1.0, 0.0, (1.0)*mpp.x, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, (0.0)*mpp.x, 0.0);
-    Vec3d y_axis = rpImageCoordToWorldCoord3(Vec2d(0.0,1.0), posePos, m_cal, start, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, start, mppScale);//tPose*calibration*Vec4d(1.0, 1.0*mpp.y, 0.0, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, 0.0, 0.0);
-    x_axis = x_axis.normalized();
-    y_axis = y_axis.normalized();
-    Vec3d z_axis = x_axis.cross(y_axis);
-
-    s32 rv = m_volume.InitializeVolume(this, Matrix33d::FromCols(x_axis,y_axis,z_axis), 
-      rpImageCoordToWorldCoord3(Vec2d(rp.b8->width/2.0, rp.b8->height/2.0), posePos, m_cal, start, mppScale),
-      (QtEnums::VOLUME_ORIGIN_LOCATION)m_originLoc->GetValue());
-
+    s32 rv = RPVolumeCreator::Initialize(rp);
     rp.Release();
 
-    //vtkImageData importer
-    Vec3d spacing = m_volume.GetSpacing();
-    Vec3i dims = m_volume.GetDims();
-    m_importer = vtkSmartPointer<vtkImageImport>::New();
-    m_importer->SetDataSpacing(spacing.x, spacing.y, spacing.z);
-    m_importer->SetDataOrigin(0,0,0);
-    m_importer->SetWholeExtent(0, dims.x-1, 0, dims.y-1, 0, dims.z-1);
-    m_importer->SetDataExtentToWholeExtent();
-    m_importer->SetDataScalarTypeToUnsignedChar();
-    m_importer->SetNumberOfScalarComponents(1);
-    m_importer->SetImportVoidPointer(this->GetVolumeOriginData());
-    m_importer->Update();
-    m_importer->Modified();
+    return rv;
+  }
 
-    return 0;
+  void RPFullVolumeCreator::AddRPData(RPData rp)
+  {
+    assert(0);
   }
 
   void RPFullVolumeCreator::Reinitialize()
   {
+    m_importer->SetImportVoidPointer(NULL);
     m_volume.Release();
     Initialize();
     Start();

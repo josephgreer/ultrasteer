@@ -21,14 +21,16 @@
 
 using namespace Nf;
 
-USVisualizerWidget::USVisualizerWidget(vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf)
+USVisualizerWidget::USVisualizerWidget(RPVolumeCreator *rpvc)
 : Nf::ResizableQVTKWidget(NULL, QSize(VIS_WIDTH, VIS_HEIGHT))
 , Nf::ParameterCollection("Ultrasound Visualization")
 , m_volumeAxes(NULL)
 , m_volume(NULL)
-, m_otf(otf)
-, m_ctf(ctf)
 {
+  if(rpvc == NULL)
+    rpvc = new RPVolumeCreator();
+  m_rpvc = rpvc;
+
   ADD_BOOL_PARAMETER(m_showVolumeExtent, "Show Volume Extent", CALLBACK_POINTER(onShowVolumeExtentChanged, USVisualizerWidget), this, true);
   ADD_BOOL_PARAMETER(m_showVolumeAxes, "Show Volume Axes", CALLBACK_POINTER(onShowVolumeAxesChanged, USVisualizerWidget), this, false);
   ADD_ACTION_PARAMETER(m_setViewXY, "Set View XY", CALLBACK_POINTER(onSetViewXY, USVisualizerWidget), this, true); 
@@ -59,8 +61,8 @@ void USVisualizerWidget::onShowVolumeAxesChanged()
 void USVisualizerWidget::SetUSVisView(s32 axis1, s32 axis2)
 {
   vtkSmartPointer <vtkCamera> camera = vtkSmartPointer<vtkCamera>::New();
-  Vec3d up = m_rpvc.GetVolumeOrientation().Col(axis1);
-  Vec3d focal = m_rpvc.GetVolumeOrientation().Col(axis2);
+  Vec3d up = m_rpvc->GetVolumeOrientation().Col(axis1);
+  Vec3d focal = m_rpvc->GetVolumeOrientation().Col(axis2);
   camera->SetPosition(0,0,0);
   camera->SetFocalPoint(focal.x, focal.y, focal.z);
   camera->SetViewUp(up.x, up.y, up.z);
@@ -96,13 +98,13 @@ void USVisualizerWidget::onSetRenderMode()
 
     vtkSmartPointer<vtkVolumeRayCastMapper> volumeMapper =
       vtkSmartPointer<vtkVolumeRayCastMapper>::New();
-    volumeMapper->SetInputConnection(m_rpvc.GetImporter()->GetOutputPort(0));
+    volumeMapper->SetInputConnection(m_rpvc->GetImporter()->GetOutputPort(0));
     volumeMapper->SetVolumeRayCastFunction(rayCastFunction); 
     m_volume->Modified();
     m_volume->SetMapper(volumeMapper);
   } else if(m_renderMode->GetValue() == QtEnums::VisRenderMethod::Texture_2D) {
     vtkSmartPointer<vtkVolumeTextureMapper3D> volumeMapper = vtkSmartPointer<vtkVolumeTextureMapper3D>::New();
-    volumeMapper->SetInputConnection(m_rpvc.GetImporter()->GetOutputPort(0));
+    volumeMapper->SetInputConnection(m_rpvc->GetImporter()->GetOutputPort(0));
     m_volume->Modified();
     m_volume->SetMapper(volumeMapper);
   } else {
@@ -145,44 +147,22 @@ static void outputCube(Cubed cube)
   outputMatrix(cube.m_axes);
 }
 
-void USVisualizerWidget::Initialize()
+void USVisualizerWidget::Initialize(vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf)
 {
-#if 0
-  // Sphere
-  vtkSmartPointer<vtkSphereSource> sphereSource = 
-    vtkSmartPointer<vtkSphereSource>::New();
-  //sphereSource->Update();
-  vtkSmartPointer<vtkPolyDataMapper> sphereMapper =
-    vtkSmartPointer<vtkPolyDataMapper>::New();
-  sphereMapper->SetInputConnection(sphereSource->GetOutputPort());
-  vtkSmartPointer<vtkActor> sphereActor = 
-    vtkSmartPointer<vtkActor>::New();
-  sphereActor->SetMapper(sphereMapper);
+  m_ctf = ctf;
+  m_otf = otf;
 
-  vtkSmartPointer<vtkRenderer> renderer = 
-    vtkSmartPointer<vtkRenderer>::New();
-  renderer->AddActor(sphereActor);
-  renderer->SetBackground(0.0, 0.0, 0.0);
-  this->GetRenderWindow()->AddRenderer(renderer);
-
-#else
   m_renderer = 
     vtkSmartPointer<vtkRenderer>::New();
   m_renderer->SetBackground(0.0, 0.0, 0.0);
 
-  //Volume visualization
-
-  //Raw volume data
-  m_rpvc.Initialize();
-  m_rpvc.Start();
-
-  Vec3i dims = m_rpvc.GetVolumeDims();
-  Cubed volExtent = m_rpvc.GetVolumeCubeExtent();
-  Cubed physExtent = m_rpvc.GetVolumePhysicalExtent();
+  Vec3i dims = m_rpvc->GetVolumeDims();
+  Cubed volExtent = m_rpvc->GetVolumeCubeExtent();
+  Cubed physExtent = m_rpvc->GetVolumePhysicalExtent();
 
   //Volumne
-  Matrix33d orientation = m_rpvc.GetVolumeOrientation();
-  Matrix44d volTrans = Matrix44d::FromOrientationAndTranslation(m_rpvc.GetVolumeOrientation(), volExtent.m_ul);
+  Matrix33d orientation = m_rpvc->GetVolumeOrientation();
+  Matrix44d volTrans = Matrix44d::FromOrientationAndTranslation(m_rpvc->GetVolumeOrientation(), volExtent.m_ul);
   m_volume = vtkSmartPointer<vtkVolume>::New();
   onSetRenderMode();
   m_volume->PokeMatrix(volTrans.GetVTKMatrix());
@@ -234,7 +214,19 @@ void USVisualizerWidget::Initialize()
   cam->Zoom(1.5);
   this->m_renderer->SetActiveCamera(cam);
 
-#endif
+
+}
+
+void USVisualizerWidget::Initialize(RPData rp, vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf)
+{
+  //Raw volume data
+  m_rpvc->Initialize(rp);
+  Initialize(ctf, otf);
+}
+
+void USVisualizerWidget::AddRPData(RPData rp)
+{
+  m_rpvc->AddRPData(rp);
 }
 
 void USVisualizerWidget::Execute(vtkObject *caller, unsigned long, void*)
@@ -262,24 +254,49 @@ void USVisualizerWidget::TransferFunctionChanged(vtkObject *caller, unsigned lon
   this->repaint();
 }
 
-USVisualizer::USVisualizer(QWidget *parent)
+
+USVisualizerWidgetFullRP::USVisualizerWidgetFullRP()
+: USVisualizerWidget((RPVolumeCreator *)new RPFullVolumeCreator())
+{
+}
+
+void USVisualizerWidgetFullRP::Initialize(vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf)
+{
+  RPFullVolumeCreator * rpvc = (RPFullVolumeCreator *)m_rpvc;
+  rpvc->Initialize();
+  rpvc->Start();
+
+  USVisualizerWidget::Initialize(ctf, otf);
+}
+
+void USVisualizerWidgetFullRP::AddRPData(RPData data)
+{
+  assert(0);
+}
+
+USVisualizer::USVisualizer(QWidget *parent, USVisualizerWidget *usVis)
 : QWidget(parent)
 , Nf::ParameterCollection("Ultrasound Volume Visualizer")
 {
   m_tfWidget = new VTKTransferFunctionWidget();
-  m_usVis = new USVisualizerWidget(m_tfWidget->GetColorTransferFunction(), m_tfWidget->GetOpacityTransferFunction());
+  if(usVis == NULL)
+    usVis = new USVisualizerWidget();
+  m_usVis = usVis;
 
   m_layout = new QGridLayout(parent);
   m_layout->addWidget(m_tfWidget, 0, 0);
   m_layout->addWidget(m_usVis, 1, 0);
   this->setLayout(m_layout);
 
-  m_tfWidget->Initialize();
-  m_usVis->Initialize();
-
   m_tfWidget->SetInteractionObserver(m_usVis);
 
-  ADD_CHILD_COLLECTION(*m_usVis);
+  ADD_CHILD_COLLECTION(m_usVis);
+}
+
+void USVisualizer::Initialize(RPData rp)
+{
+  m_tfWidget->Initialize();
+  m_usVis->Initialize(rp, m_tfWidget->GetColorTransferFunction(), m_tfWidget->GetOpacityTransferFunction());
 }
 
 USVisualizer::~USVisualizer()
@@ -300,4 +317,26 @@ void USVisualizer::UpdateSize(QSize sz)
 {
   m_tfWidget->UpdateSize(QSize(sz.width()-10, (sz.height()/4)-10));
   m_usVis->UpdateSize(QSize(sz.width()-10, (sz.height()*3/4)-10));
+}
+
+void USVisualizer::AddRPData(RPData rp)
+{
+  m_usVis->AddRPData(rp);
+}
+
+USVisualizerFullRP::USVisualizerFullRP(QWidget *parent)
+: USVisualizer(parent, (USVisualizerWidget *)new USVisualizerWidgetFullRP())
+{
+}
+
+void USVisualizerFullRP::Initialize()
+{
+  USVisualizerWidgetFullRP * usVis = (USVisualizerWidgetFullRP *)m_usVis;
+  m_tfWidget->Initialize();
+  usVis->Initialize(m_tfWidget->GetColorTransferFunction(), m_tfWidget->GetOpacityTransferFunction());
+}
+
+void USVisualizerFullRP::AddRPData(RPData rp)
+{
+  assert(0);
 }
