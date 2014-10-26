@@ -8,6 +8,7 @@ namespace Nf {
     : m_dims(0,0,0)
     , m_im(NULL)
     , Nf::ParameterCollection("Volume")
+    , Nf::Reinitializer()
   {
     ADD_VEC3D_PARAMETER(m_spacing, "Physical Voxel Spacing (um)", CALLBACK_POINTER(Reinitialize, Volume), this, Vec3d(83.0*4, 83.0*4, 83.0*4), 
       Vec3d(83.0, 83.0, 83.0), Vec3d(2000,2000,2000), Vec3d(1,1,1));
@@ -182,12 +183,6 @@ namespace Nf {
     }
   }
 
-  void Volume::Reinitialize()
-  {
-    assert(m_reinit != NULL);
-    m_reinit->Reinitialize();
-  }
-
   Cubed Volume::GetCubeExtent() const
   {
     Vec3d spacing = GetSpacing();
@@ -224,6 +219,7 @@ namespace Nf {
   ////////////////////////////////////////////////////////
   VolumeCreator::VolumeCreator()
     : ParameterCollection("Volume Creator")
+    , Reinitializer()
   {
 
   }
@@ -261,8 +257,9 @@ namespace Nf {
     return m_newData ? &m_volume : NULL;
   }
 
-  s32 RPVolumeCreator::Initialize(RPData rp)
+  s32 RPVolumeCreator::Initialize(RPData rp, Reinitializer *reinit)
   {
+    m_reinit = reinit;
     Matrix44d tPose = Matrix44d::FromCvMat(rp.gps.pose);
     Matrix33d pose = tPose.GetOrientation();
 
@@ -306,18 +303,12 @@ namespace Nf {
     assert(0);
   }
 
-  void RPVolumeCreator::Reinitialize()
-  {
-    m_volume.Release();
-    m_init = false;
-  }
-
   void RPVolumeCreator::AddRPData(RPData rp)
   {
     if(!rp.gps.valid)
       return;
 
-    if(!m_init && !Initialize(rp))
+    if(!m_init && !Initialize(rp, m_reinit))
       assert(0);
 
     Matrix44d tPose = Matrix44d::FromCvMat(rp.gps.pose);
@@ -382,7 +373,7 @@ namespace Nf {
   {
   }
 
-  s32 RPFullVolumeCreator::Initialize()
+  s32 RPFullVolumeCreator::Initialize(Reinitializer *reinit)
   {
     //TODO RPReader pointers created below are leaked.
     std::string fname = m_usFile->GetValue();
@@ -401,7 +392,7 @@ namespace Nf {
       return -1;
     }
 
-    s32 rv = RPVolumeCreator::Initialize(rp);
+    s32 rv = RPVolumeCreator::Initialize(rp, reinit);
     rp.Release();
 
     return rv;
@@ -410,14 +401,6 @@ namespace Nf {
   void RPFullVolumeCreator::AddRPData(RPData rp)
   {
     assert(0);
-  }
-
-  void RPFullVolumeCreator::Reinitialize()
-  {
-    m_importer->SetImportVoidPointer(NULL);
-    m_volume.Release();
-    Initialize();
-    Start();
   }
 
   void RPFullVolumeCreator::Start()

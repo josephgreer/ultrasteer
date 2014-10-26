@@ -12,8 +12,20 @@ namespace Nf {
 
   class Reinitializer
   {
+  protected:
+    Reinitializer *m_reinit;
+
   public:
-    virtual void Reinitialize() = 0;
+    Reinitializer() 
+      : m_reinit(NULL)
+    {
+    }
+
+    virtual void Reinitialize()
+    {
+      if(m_reinit)
+        m_reinit->Reinitialize();
+    }
   };
 
   class Volume : public Nf::ParameterCollection, public Reinitializer
@@ -47,8 +59,6 @@ namespace Nf {
     std::tr1::shared_ptr < Nf::Vec3dParameter > m_extent;                       //volume extent (physical units
     std::tr1::shared_ptr < Nf::Vec2dParameter > m_mpp;                          //Vector containing microns per pixel of b-mode image in x&y dimensions
 
-    Reinitializer *m_reinit;
-
     IplImage *m_im;
 
   public:
@@ -75,19 +85,16 @@ namespace Nf {
 
     void AddFrame(const IplImage *image, const Matrix33d &pose, const Vec3d &pos, const Matrix44d &calibration);
 
-    virtual void Reinitialize();
-
     CLASS_CALLBACK(Reinitialize, Volume);
   };
 
 
-  class VolumeCreator : public vtkImageImport, public ParameterCollection, public Reinitializer
+  class VolumeCreator : public ParameterCollection, public Reinitializer
   {
   public:
     VolumeCreator();
     virtual ~VolumeCreator();
     virtual Volume *GetNew() = 0;
-    virtual void Reinitialize() = 0;
   };
 
   typedef enum
@@ -105,7 +112,6 @@ namespace Nf {
     s32 m_index;                                                                //Current frame index.  Valid when m_rm != RPVM_READ_ALL              
     bool m_newData;                                                             //New data since last GetNew() call?
     Volume m_volume;                                                            //Self explanatory
-    RPFileReaderCollection m_rpReaders;                                         //What will actually do the reading for us
     Matrix44d m_cal;                                                            //Calibration Matrix for transducer (maps image coords to world coords)
     vtkSmartPointer<vtkImageImport> m_importer;
 
@@ -123,26 +129,25 @@ namespace Nf {
     virtual Cubed GetVolumeCubeExtent() const;
     virtual Cubed GetVolumePhysicalExtent() const;
     virtual Matrix33d GetVolumeOrientation() const;
-    virtual s32 Initialize(RPData rp);
-    virtual void Reinitialize();
+    virtual s32 Initialize(RPData rp, Reinitializer *reinit);
     void Release();
     vtkSmartPointer<vtkImageImport> GetImporter();
     CLASS_CALLBACK(Reinitialize, RPVolumeCreator);
   };
 
-  class RPFullVolumeCreator : public RPVolumeCreator, public Reinitializer
+  class RPFullVolumeCreator : public RPVolumeCreator
   {
   public:
     RPFullVolumeCreator();
     virtual ~RPFullVolumeCreator();
-    s32 Initialize();
+    s32 Initialize(Reinitializer *reinit);
     void Start();
     virtual void AddRPData(RPData rp);
-
-  protected:
-    void Reinitialize();
     CLASS_CALLBACK(Reinitialize, RPFullVolumeCreator);
 
+  protected:
+
+    RPFileReaderCollection m_rpReaders;                                         //What will actually do the reading for us
     std::tr1::shared_ptr < Nf::FileParameter > m_usFile;                        //ultrasound file)
     std::tr1::shared_ptr < Nf::BoolParameter > m_initialize;                    //initialize
   };

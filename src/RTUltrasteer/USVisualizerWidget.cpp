@@ -115,6 +115,12 @@ void USVisualizerWidget::onSetRenderMode()
 
 void USVisualizerWidget::Reinitialize()
 {
+  m_rpvc->Release();
+  m_renderer->RemoveAllViewProps();
+  this->GetRenderWindow()->RemoveRenderer(m_renderer);
+  m_rpvc->Release();
+  Initialize(m_last, m_ctf, m_otf);
+  Reinitializer::Reinitialize();
 }
 
 
@@ -220,13 +226,15 @@ void USVisualizerWidget::Initialize(vtkSmartPointer<vtkColorTransferFunction> ct
 void USVisualizerWidget::Initialize(RPData rp, vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf)
 {
   //Raw volume data
-  m_rpvc->Initialize(rp);
+  m_rpvc->Initialize(rp, (Reinitializer *)this);
   Initialize(ctf, otf);
 }
 
 void USVisualizerWidget::AddRPData(RPData rp)
 {
   m_rpvc->AddRPData(rp);
+  m_last.Release();
+  m_last = rp.Clone();
 }
 
 void USVisualizerWidget::Execute(vtkObject *caller, unsigned long, void*)
@@ -263,7 +271,7 @@ USVisualizerWidgetFullRP::USVisualizerWidgetFullRP()
 void USVisualizerWidgetFullRP::Initialize(vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf)
 {
   RPFullVolumeCreator * rpvc = (RPFullVolumeCreator *)m_rpvc;
-  rpvc->Initialize();
+  rpvc->Initialize(this);
   rpvc->Start();
 
   USVisualizerWidget::Initialize(ctf, otf);
@@ -272,6 +280,16 @@ void USVisualizerWidgetFullRP::Initialize(vtkSmartPointer<vtkColorTransferFuncti
 void USVisualizerWidgetFullRP::AddRPData(RPData data)
 {
   assert(0);
+}
+
+void USVisualizerWidgetFullRP::Reinitialize()
+{
+  m_rpvc->Release();
+  m_renderer->RemoveAllViewProps();
+  this->GetRenderWindow()->RemoveRenderer(m_renderer);
+  m_rpvc->Release();
+  Initialize(m_ctf, m_otf);
+  Reinitializer::Reinitialize();
 }
 
 USVisualizer::USVisualizer(QWidget *parent, USVisualizerWidget *usVis)

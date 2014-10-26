@@ -140,6 +140,24 @@ namespace Nf
       return *this;
     }
 
+    RPData Clone()
+    {
+      RPData rv;
+      if(this->b8)
+        rv.b8 = cvCloneImage(this->b8);
+      if(this->color)
+        rv.b8 = cvCloneImage(this->color);
+      if(this->sig)
+        rv.sig = cvCloneImage(this->sig);
+      if(this->var)
+        rv.var = cvCloneImage(this->var);
+
+      rv.gps = this->gps;
+      rv.mpp = this->mpp;
+
+      return rv;
+    }
+
     void Release()
     {
       if(this->b8)

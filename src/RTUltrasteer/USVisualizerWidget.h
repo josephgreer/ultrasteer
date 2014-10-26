@@ -15,7 +15,7 @@
 #include <QGridLayout>
 #include "VTKTransferFunctionWidget.h"
 
-class USVisualizerWidget : public Nf::ResizableQVTKWidget, public Nf::ParameterCollection
+class USVisualizerWidget : public Nf::ResizableQVTKWidget, public Nf::ParameterCollection, public Nf::Reinitializer
 {
     Q_OBJECT
 public: 
@@ -80,8 +80,7 @@ public:
 
 
   //reinitialize callback
-  void Reinitialize();
-  CLASS_CALLBACK(Reinitialize, USVisualizerWidget);
+  virtual void Reinitialize();
 
 
   //For changes to the transfer function
@@ -89,6 +88,9 @@ public:
 
 public slots:
   void TransferFunctionChanged(vtkObject *caller, unsigned long, void*, void*, vtkCommand *);
+
+protected:
+  Nf::RPData m_last;
 
 };
 
@@ -105,6 +107,9 @@ public:
 
   //Add a frame of RPData to the volume
   virtual void AddRPData(Nf::RPData data);
+
+  //reinitialize callback
+  virtual void Reinitialize();
 };
 
 class USVisualizer : public QWidget, public Nf::Resizable, public Nf::ParameterCollection
