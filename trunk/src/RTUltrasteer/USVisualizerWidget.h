@@ -112,13 +112,14 @@ public:
   virtual void Reinitialize();
 };
 
-class USVisualizer : public QWidget, public Nf::Resizable, public Nf::ParameterCollection
+class USVisualizer : public Nf::ResizableQWidget, public Nf::ParameterCollection, public Nf::Reinitializer
 {
   Q_OBJECT
 protected:
   USVisualizerWidget *m_usVis;
   VTKTransferFunctionWidget *m_tfWidget;
   QGridLayout *m_layout;
+  bool m_init;
 
 public:
   USVisualizer(QWidget *parent, USVisualizerWidget *usVis = NULL);
@@ -126,6 +127,10 @@ public:
   virtual void UpdateSize(QSize sz);
   virtual void AddRPData(Nf::RPData rp);
   virtual void Initialize(Nf::RPData rp);
+  virtual void Reinitialize();
+  CLASS_CALLBACK(Reinitialize, USVisualizer);
+
+  std::tr1::shared_ptr < Nf::BoolParameter > m_clear;
 
   std::vector < QVTKWidget * > GetRepaintList();
 };

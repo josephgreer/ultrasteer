@@ -26,6 +26,7 @@ USVisualizerWidget::USVisualizerWidget(RPVolumeCreator *rpvc)
 , Nf::ParameterCollection("Ultrasound Visualization")
 , m_volumeAxes(NULL)
 , m_volume(NULL)
+, m_renderer(NULL)
 {
   if(rpvc == NULL)
     rpvc = new RPVolumeCreator();
@@ -116,10 +117,12 @@ void USVisualizerWidget::onSetRenderMode()
 void USVisualizerWidget::Reinitialize()
 {
   m_rpvc->Release();
-  m_renderer->RemoveAllViewProps();
-  this->GetRenderWindow()->RemoveRenderer(m_renderer);
-  m_rpvc->Release();
-  Initialize(m_last, m_ctf, m_otf);
+  if(m_renderer != NULL) {
+    m_renderer->RemoveAllViewProps();
+    this->GetRenderWindow()->RemoveRenderer(m_renderer);
+  }
+  if(m_last.gps.valid && m_last.b8)
+    Initialize(m_last, m_ctf, m_otf);
   Reinitializer::Reinitialize();
 }
 
@@ -293,8 +296,9 @@ void USVisualizerWidgetFullRP::Reinitialize()
 }
 
 USVisualizer::USVisualizer(QWidget *parent, USVisualizerWidget *usVis)
-: QWidget(parent)
-, Nf::ParameterCollection("Ultrasound Volume Visualizer")
+: Nf::ParameterCollection("Ultrasound Volume Visualizer")
+, Nf::ResizableQWidget(parent, QSize(VIS_WIDTH, VIS_HEIGHT))
+, m_init(false)
 {
   m_tfWidget = new VTKTransferFunctionWidget();
   if(usVis == NULL)
@@ -308,13 +312,22 @@ USVisualizer::USVisualizer(QWidget *parent, USVisualizerWidget *usVis)
 
   m_tfWidget->SetInteractionObserver(m_usVis);
 
+  ADD_ACTION_PARAMETER(m_clear, "Clear", CALLBACK_POINTER(Reinitialize, USVisualizer), this, false);
   ADD_CHILD_COLLECTION(m_usVis);
+}
+
+void USVisualizer::Reinitialize()
+{
+  if(m_init) {
+    m_usVis->Reinitialize();
+  }
 }
 
 void USVisualizer::Initialize(RPData rp)
 {
   m_tfWidget->Initialize();
   m_usVis->Initialize(rp, m_tfWidget->GetColorTransferFunction(), m_tfWidget->GetOpacityTransferFunction());
+  m_init = true;
 }
 
 USVisualizer::~USVisualizer()
@@ -333,12 +346,15 @@ std::vector < QVTKWidget * > USVisualizer::GetRepaintList()
 
 void USVisualizer::UpdateSize(QSize sz)
 {
-  m_tfWidget->UpdateSize(QSize(sz.width()-10, (sz.height()/4)-10));
-  m_usVis->UpdateSize(QSize(sz.width()-10, (sz.height()*3/4)-10));
+  ResizableQWidget::UpdateSize(sz);
+  m_tfWidget->UpdateSize(QSize(sz.width()-20, (sz.height()/4)-10));
+  m_usVis->UpdateSize(QSize(sz.width()-20, (sz.height()*3/4)-10));
 }
 
 void USVisualizer::AddRPData(RPData rp)
 {
+  if(!m_init)
+    Initialize(rp);
   m_usVis->AddRPData(rp);
 }
 

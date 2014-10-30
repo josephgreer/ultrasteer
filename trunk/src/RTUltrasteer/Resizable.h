@@ -9,16 +9,23 @@
 
 namespace Nf
 {
+#if 0
   class Resizable
   {
   public:
     virtual void UpdateSize(QSize sz) = 0;
   };
+#endif
 
-  class ResizableQVTKWidget : public QVTKWidget, public Resizable
+  class ResizableQObject 
   {
-    Q_OBJECT 
+  public:
+    virtual void UpdateGeometry() = 0;
+    virtual void Connect(QObject *signaler, const char *signal, const char *slot) = 0;
+  };
 
+  class Resizable : public virtual ResizableQObject
+  {
   protected: 
     QSize m_sz;
     QSize m_minSz;
@@ -26,16 +33,53 @@ namespace Nf
     QTimer *m_resizeTimer2;
 
   public:
-    ResizableQVTKWidget(QWidget *parent, QSize sz);
+    Resizable(QSize sz);
 
     virtual void UpdateSize(QSize sz);
     virtual QSize sizeHint() const;
     virtual QSize minimumSizeHint() const;
 
-  public slots:
-    void onResize();
-    void onResize2();
+    virtual void onResize();
+    virtual void onResize2();
   };
+
+  class ResizableQVTKWidget : public QVTKWidget, public Resizable
+  {
+    Q_OBJECT
+
+  protected: 
+
+  public:
+    ResizableQVTKWidget(QWidget *parent, QSize sz);
+    virtual void UpdateGeometry();
+    virtual void Connect(QObject *signaler, const char *signal, const char *slot);
+    virtual QSize sizeHint() const;
+    virtual QSize minimumSizeHint() const;
+
+  public slots:
+    virtual void onResize();
+    virtual void onResize2();
+  };
+
+  class ResizableQWidget : public QWidget, public Resizable
+  {
+    Q_OBJECT
+
+  protected: 
+
+  public:
+    ResizableQWidget(QWidget *parent, QSize sz);
+    virtual void UpdateGeometry();
+    virtual void Connect(QObject *signaler, const char *signal, const char *slot);
+    virtual QSize sizeHint() const;
+    virtual QSize minimumSizeHint() const;
+
+  public slots:
+    virtual void onResize();
+    virtual void onResize2();
+  };
+
+
 }
 
 #endif // RESIZABLE_H

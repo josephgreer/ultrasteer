@@ -159,22 +159,39 @@ namespace Nf
       return m_step;
     }
 
+    //Sets the UIElement class.  This is set in GUI code that actually creates
+    //a UI manifestation of this element
+    virtual void SetUIElement(std::tr1::shared_ptr < UIElement < T > > element)
+    {
+      m_element = element;
+      NumberUIElement<T> * el = (NumberUIElement<T> *)m_element.get();
+      el->SetMin(m_min);
+      el->SetMax(m_max);
+      el->SetStep(m_step);
+    }
+
     void SetMin(T min)
     {
+      m_min = min;
       NumberUIElement<T> * nui = (NumberUIElement<T> *)(&(*m_element));
-      nui->SetMin(min);
+      if(nui)
+        nui->SetMin(m_min);
     }
 
-    void SetMax(T min)
+    void SetMax(T max)
     {
+      m_max = max;
       NumberUIElement<T> * nui = (NumberUIElement<T> *)(&(*m_element));
-      nui->SetMax(min);
+      if(nui) 
+        nui->SetMax(m_max);
     }
 
-    void SetStep(T min)
+    void SetStep(T step)
     {
+      m_step = step;
       NumberUIElement<T> * nui = (NumberUIElement<T> *)(&(*m_element));
-      nui->SetStep(min);
+      if(nui)
+        nui->SetStep(m_step);
     }
   };
 
