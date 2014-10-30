@@ -4,29 +4,42 @@ namespace Nf
 {
   RPWidget::RPWidget(QWidget *parent)
     : Nf::ParameterCollection("RP Image Viewer")
-    , QWidget(parent)
+    , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
     , m_rpReaders(NULL)
   {
-    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, RPWidget), this, "V:/NeedleScan/Feb13_LiverScan/Scan 1/scan.b8", "Any File (*.*)");
-    ADD_INT_PARAMETER(m_frame, "Frame Index", CALLBACK_POINTER(onUpdateFrame, RPWidget), this, 1, 1, 100, 1);
 
     m_imageViewer = std::tr1::shared_ptr<ImageViewerWidget>(new ImageViewerWidget(parent));
+    m_usVis = std::tr1::shared_ptr<USVisualizer>(new USVisualizer(parent, NULL));
 
     m_layout = new QGridLayout(parent);
     m_layout->addWidget((QWidget *)(m_imageViewer.get()), 0, 0);
+    m_layout->addWidget((QWidget *)(m_usVis.get()), 0, 1);
     this->setLayout(m_layout);
+
+    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, RPWidget), this, "V:/NeedleScan/Feb13_LiverScan/Scan 1/scan.b8", "Any File (*.*)");
+    ADD_INT_PARAMETER(m_frame, "Frame Index", CALLBACK_POINTER(onUpdateFrame, RPWidget), this, 1, 1, 100, 1);
+    ADD_CHILD_COLLECTION(m_usVis.get());
+    ADD_CHILD_COLLECTION(m_imageViewer.get());
+
+    onUpdateFile();
   }
 
   RPWidget::~RPWidget()
   {
   }
 
-  
+  void RPWidget::UpdateGeometry()
+  {
+    this->updateGeometry();
+  }
+
   void RPWidget::UpdateSize(QSize sz)
   {
     s32 ml, mr, mu, mb;
+    ResizableQWidget::UpdateSize(sz);
     m_layout->getContentsMargins(&ml, &mu, &mr, &mb);
-    m_imageViewer->UpdateSize(QSize(sz.width()-10, sz.height()-2*(mr+ml)));
+    m_imageViewer->UpdateSize(QSize(sz.width()/2-10, sz.height()-2*(mr+ml)));
+    m_usVis->UpdateSize(QSize(sz.width()/2-10, sz.height()-2*(mr+ml)));
   }
 
   void RPWidget::onUpdateFile()
@@ -53,6 +66,8 @@ namespace Nf
 
     m_frame->SetMax(nframes);
 
+    m_usVis->Reinitialize();
+    
     onUpdateFrame();
   }
 
@@ -63,11 +78,12 @@ namespace Nf
 
     m_data = m_rpReaders->GetRPData(m_frame->GetValue());
     m_imageViewer->SetImage(m_data.b8);
+    m_usVis->AddRPData(m_data);
   }
 
   std::vector < QVTKWidget * > RPWidget::GetChildWidgets()
   {
-    std::vector < QVTKWidget * > res;
+    std::vector < QVTKWidget * > res = m_usVis->GetRepaintList();
     res.push_back(m_imageViewer.get());
     return res;
   }

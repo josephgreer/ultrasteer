@@ -197,9 +197,9 @@ namespace Nf
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
       QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
 
-      x->setMinimum(max.x);
-      y->setMinimum(max.y);
-      z->setMinimum(max.z);
+      x->setMaximum(max.x);
+      y->setMaximum(max.y);
+      z->setMaximum(max.z);
     }
 
     void SetStep(Vec3d step)
@@ -210,9 +210,9 @@ namespace Nf
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
       QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
 
-      x->setMinimum(step.x);
-      y->setMinimum(step.y);
-      z->setMinimum(step.z);
+      x->setSingleStep(step.x);
+      y->setSingleStep(step.y);
+      z->setSingleStep(step.z);
     }
   };
 
@@ -258,9 +258,9 @@ namespace Nf
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
       QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
 
-      x->setMinimum(max.x);
-      y->setMinimum(max.y);
-      z->setMinimum(max.z);
+      x->setMaximum(max.x);
+      y->setMaximum(max.y);
+      z->setMaximum(max.z);
     }
 
     void SetStep(Vec3f step)
@@ -271,9 +271,9 @@ namespace Nf
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
       QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
 
-      x->setMinimum(step.x);
-      y->setMinimum(step.y);
-      z->setMinimum(step.z);
+      x->setSingleStep(step.x);
+      y->setSingleStep(step.y);
+      z->setSingleStep(step.z);
     }
   };
 
@@ -319,9 +319,9 @@ namespace Nf
       QSpinBox *y = (QSpinBox *)item->obj[1];
       QSpinBox *z = (QSpinBox *)item->obj[2];
 
-      x->setMinimum(max.x);
-      y->setMinimum(max.y);
-      z->setMinimum(max.z);
+      x->setMaximum(max.x);
+      y->setMaximum(max.y);
+      z->setMaximum(max.z);
     }
 
     void SetStep(Vec3i step)
@@ -332,9 +332,9 @@ namespace Nf
       QSpinBox *y = (QSpinBox *)item->obj[1];
       QSpinBox *z = (QSpinBox *)item->obj[2];
 
-      x->setMinimum(step.x);
-      y->setMinimum(step.y);
-      z->setMinimum(step.z);
+      x->setSingleStep(step.x);
+      y->setSingleStep(step.y);
+      z->setSingleStep(step.z);
     }
   };
 
@@ -376,8 +376,8 @@ namespace Nf
       QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
 
-      x->setMinimum(max.x);
-      y->setMinimum(max.y);
+      x->setMaximum(max.x);
+      y->setMaximum(max.y);
     }
 
     void SetStep(Vec2d step)
@@ -387,8 +387,8 @@ namespace Nf
       QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
 
-      x->setMinimum(step.x);
-      y->setMinimum(step.y);
+      x->setSingleStep(step.x);
+      y->setSingleStep(step.y);
     }
   };
 
@@ -430,8 +430,8 @@ namespace Nf
       QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
 
-      x->setMinimum(max.x);
-      y->setMinimum(max.y);
+      x->setMaximum(max.x);
+      y->setMaximum(max.y);
     }
 
     void SetStep(Vec2f step)
@@ -441,8 +441,8 @@ namespace Nf
       QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
 
-      x->setMinimum(step.x);
-      y->setMinimum(step.y);
+      x->setSingleStep(step.x);
+      y->setSingleStep(step.y);
     }
   };
 
@@ -484,8 +484,8 @@ namespace Nf
       QSpinBox *x = (QSpinBox *)item->obj[0];
       QSpinBox *y = (QSpinBox *)item->obj[1];
 
-      x->setMinimum(max.x);
-      y->setMinimum(max.y);
+      x->setMaximum(max.x);
+      y->setMaximum(max.y);
     }
 
     void SetStep(Vec2i step)
@@ -495,8 +495,8 @@ namespace Nf
       QSpinBox *x = (QSpinBox *)item->obj[0];
       QSpinBox *y = (QSpinBox *)item->obj[1];
 
-      x->setMinimum(step.x);
-      y->setMinimum(step.y);
+      x->setSingleStep(step.x);
+      y->setSingleStep(step.y);
     }
   };
 
