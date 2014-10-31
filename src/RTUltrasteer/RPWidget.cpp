@@ -38,8 +38,8 @@ namespace Nf
     s32 ml, mr, mu, mb;
     ResizableQWidget::UpdateSize(sz);
     m_layout->getContentsMargins(&ml, &mu, &mr, &mb);
-    m_imageViewer->UpdateSize(QSize(sz.width()/2-10, sz.height()-2*(mr+ml)));
-    m_usVis->UpdateSize(QSize(sz.width()/2-10, sz.height()-2*(mr+ml)));
+    m_imageViewer->UpdateSize(QSize(sz.width()/2-10, sz.height()));
+    m_usVis->UpdateSize(QSize(sz.width()/2-10, sz.height()));
   }
 
   void RPWidget::onUpdateFile()

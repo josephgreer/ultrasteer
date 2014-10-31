@@ -32,7 +32,7 @@ USVisualizerWidget::USVisualizerWidget(RPVolumeCreator *rpvc)
     rpvc = new RPVolumeCreator();
   m_rpvc = rpvc;
 
-  ADD_BOOL_PARAMETER(m_showVolumeExtent, "Show Volume Extent", CALLBACK_POINTER(onShowVolumeExtentChanged, USVisualizerWidget), this, true);
+  ADD_BOOL_PARAMETER(m_showVolumeExtent, "Show Volume Extent", CALLBACK_POINTER(onShowVolumeExtentChanged, USVisualizerWidget), this, false);
   ADD_BOOL_PARAMETER(m_showVolumeAxes, "Show Volume Axes", CALLBACK_POINTER(onShowVolumeAxesChanged, USVisualizerWidget), this, false);
   ADD_ACTION_PARAMETER(m_setViewXY, "Set View XY", CALLBACK_POINTER(onSetViewXY, USVisualizerWidget), this, true); 
   ADD_ACTION_PARAMETER(m_setViewXZ, "Set View XZ", CALLBACK_POINTER(onSetViewXZ, USVisualizerWidget), this, true); 
@@ -347,8 +347,8 @@ std::vector < QVTKWidget * > USVisualizer::GetRepaintList()
 void USVisualizer::UpdateSize(QSize sz)
 {
   ResizableQWidget::UpdateSize(sz);
-  m_tfWidget->UpdateSize(QSize(sz.width()-20, (sz.height()/4)-10));
-  m_usVis->UpdateSize(QSize(sz.width()-20, (sz.height()*3/4)-10));
+  m_tfWidget->UpdateSize(QSize(sz.width()-20, (sz.height()/4)));
+  m_usVis->UpdateSize(QSize(sz.width()-20, (sz.height()*3/4)));
 }
 
 void USVisualizer::AddRPData(RPData rp)

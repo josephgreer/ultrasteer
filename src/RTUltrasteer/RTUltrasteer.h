@@ -545,13 +545,30 @@ namespace Nf
   };
 }
 
-class RTUltrasteer : public QMainWindow
+namespace Nf 
+{
+  struct DockWidgetInfo
+  {
+    QDockWidget *dock;
+    BoolParameter *param;
+    QTreeWidgetItem *root;
+  };
+}
+
+class RTUltrasteer : public QMainWindow, public Nf::ParameterCollection
 {
     Q_OBJECT
 
 public:
     RTUltrasteer(QWidget *parent = 0, Qt::WFlags flags = 0);
     ~RTUltrasteer();
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_usDockVisible;
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_rpWidgetVisible;
+    void onSetDocksVisible();
+    CLASS_CALLBACK(onSetDocksVisible, RTUltrasteer);
+
 
 private:
     Ui::RTUltrasteerClass ui;
@@ -569,10 +586,12 @@ private:
     void CreateMenuDock();
     void CreateRPDock();
     void resizeEvent(QResizeEvent *event);
+    void Resize();
 
     void CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollection &collection, const std::vector < QVTKWidget * > & repainters);
 
-    std::vector < QTreeWidgetItem * > m_roots;
+    //Holds all potential main dock windows
+    std::map < std::string, Nf::DockWidgetInfo > m_roots;
 };
 
 #endif // RTULTRASTEER_H

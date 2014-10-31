@@ -29,8 +29,11 @@ namespace Nf
 }
 
 
+using namespace Nf;
+
 RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
     : QMainWindow(parent, flags)
+    , Nf::ParameterCollection("RTUltrasteer")
     , m_menu(NULL)
     , m_params(NULL)
     , m_usDock(NULL)
@@ -38,11 +41,18 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
 {
   ui.setupUi(this);
 
+  ADD_BOOL_PARAMETER(m_usDockVisible, "Show Full US Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
+  ADD_BOOL_PARAMETER(m_rpWidgetVisible, "Show Incremental Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
+
   CreateUSVisualizer();
   CreateMenuDock();
   CreateRPDock();
 
   this->tabifyDockWidget(m_rpDock, m_usDock);
+
+  QTreeWidgetItem * rt = new QTreeWidgetItem(m_params);
+  rt->setText(0, this->GetName());
+  CreateUIElements(rt, *this, std::vector<QVTKWidget *>());
 
   QTreeWidgetItem * usVis = new QTreeWidgetItem(m_params);
   usVis->setText(0, m_usVis->GetName());
@@ -52,11 +62,47 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   rp->setText(0, m_rpWidget->GetName());
   CreateUIElements(rp, *m_rpWidget, m_rpWidget->GetChildWidgets());
 
-  m_roots.push_back(usVis);
+  //Add to our map of root dock windows
+  m_roots[std::string(m_usVis->GetName())].dock = m_usDock;
+  m_roots[std::string(m_usVis->GetName())].param = m_usDockVisible.get();
+  m_roots[std::string(m_usVis->GetName())].root = usVis;
+  m_roots[std::string(m_rpWidget->GetName())].dock = m_rpDock;
+  m_roots[std::string(m_rpWidget->GetName())].param = m_rpWidgetVisible.get();
+  m_roots[std::string(m_rpWidget->GetName())].root = rp;
+
+  QDockWidget *last = NULL;
+  for(std::map < std::string, DockWidgetInfo >::iterator i=m_roots.begin(); i!=m_roots.end(); i++) {
+    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, i->second.dock);
+    if(last)
+      this->tabifyDockWidget(last, i->second.dock);
+    last = i->second.dock;
+  }
+
+  rp->setExpanded(true);
+
+  onSetDocksVisible();
+}
+
+void RTUltrasteer::onSetDocksVisible()
+{
+  //First dock widget we've encountered 
+  QDockWidget *first = NULL;
+
   m_params->expandAll();
+
+  for(std::map<std::string, Nf::DockWidgetInfo >::iterator i=m_roots.begin(); i!=m_roots.end(); i++) {
+    i->second.dock->setHidden(!i->second.param->GetValue());
+    if(!i->second.param->GetValue())
+      i->second.root->setExpanded(false);
+  }
 }
 
 void RTUltrasteer::resizeEvent(QResizeEvent *event)
+{
+  Resize();
+}
+
+void RTUltrasteer::Resize()
 {
   QSize totalSize = this->size();
   QSize menuSize = m_params->size();
@@ -416,7 +462,6 @@ void RTUltrasteer::CreateUSVisualizer()
   m_usVis->Initialize();
   m_usDock->setWidget(m_usVis);
   
-  addDockWidget(Qt::RightDockWidgetArea, m_usDock);
   m_usDock->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
   m_usVis->addAction(m_usDock->toggleViewAction());
 }
@@ -429,7 +474,6 @@ void RTUltrasteer::CreateRPDock()
   m_rpWidget = new Nf::RPWidget(m_rpDock);
   m_rpDock->setWidget(m_rpWidget);
   
-  addDockWidget(Qt::RightDockWidgetArea, m_rpDock);
   m_rpDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
 
