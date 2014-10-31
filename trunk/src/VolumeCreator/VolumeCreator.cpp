@@ -7,6 +7,7 @@ namespace Nf {
   Volume::Volume()
     : m_dims(0,0,0)
     , m_im(NULL)
+    , m_data(NULL)
     , Nf::ParameterCollection("Volume")
     , Nf::Reinitializer()
   {
@@ -72,7 +73,8 @@ namespace Nf {
 
   void Volume::Release()
   {
-    _aligned_free(m_data);
+    if(m_data != NULL)
+      _aligned_free(m_data);    
     m_data = NULL;
     m_rowStride = -1;
     m_sliceStride = -1;
