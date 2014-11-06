@@ -135,4 +135,40 @@ namespace Nf
   {
     return m_minSz;
   }
+
+  ResizableQMainWindow::ResizableQMainWindow(QWidget *parent, QSize sz)
+    : Resizable(sz)
+    , QMainWindow(parent)
+  {
+  }
+
+  void ResizableQMainWindow::UpdateGeometry()
+  {
+    this->updateGeometry();
+  }
+
+  void ResizableQMainWindow::Connect(QObject *signaler, const char *signal, const char *slot)
+  {
+    connect(signaler, signal, this, slot);
+  }
+
+  void ResizableQMainWindow::onResize()
+  {
+    Resizable::onResize();
+  }
+
+  void ResizableQMainWindow::onResize2()
+  {
+    Resizable::onResize2();
+  }
+
+  QSize ResizableQMainWindow::sizeHint() const
+  {
+    return m_sz;
+  }
+
+  QSize ResizableQMainWindow::minimumSizeHint() const
+  {
+    return m_minSz;
+  }
 }

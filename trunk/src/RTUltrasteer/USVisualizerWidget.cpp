@@ -101,6 +101,7 @@ void USVisualizerWidget::onSetRenderMode()
       vtkSmartPointer<vtkVolumeRayCastMapper>::New();
     volumeMapper->SetInputConnection(m_rpvc->GetImporter()->GetOutputPort(0));
     volumeMapper->SetVolumeRayCastFunction(rayCastFunction); 
+    volumeMapper->SetBlendModeToMaximumIntensity();
     m_volume->Modified();
     m_volume->SetMapper(volumeMapper);
   } else if(m_renderMode->GetValue() == QtEnums::VisRenderMethod::Texture_2D) {
@@ -187,6 +188,7 @@ void USVisualizerWidget::Initialize(vtkSmartPointer<vtkColorTransferFunction> ct
 
   //Volume Renderer
   m_renderer->AddViewProp(m_volume);
+  m_renderer->TwoSidedLightingOn();
 
   //Cube Visualization
   u8 cubeColor[3] = {27, 161, 226};

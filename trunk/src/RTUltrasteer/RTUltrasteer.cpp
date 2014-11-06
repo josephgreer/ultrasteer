@@ -95,6 +95,8 @@ void RTUltrasteer::onSetDocksVisible()
     if(!i->second.param->GetValue())
       i->second.root->setExpanded(false);
   }
+
+  Resize();
 }
 
 void RTUltrasteer::resizeEvent(QResizeEvent *event)
