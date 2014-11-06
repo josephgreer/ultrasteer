@@ -18,6 +18,35 @@ namespace Nf {
     ADD_VEC3D_PARAMETER(m_extent, "Volume Extent (cm)", CALLBACK_POINTER(Reinitialize, Volume), this, Vec3d(6,6,6), Vec3d(2,2,2), Vec3d(15,15,15), Vec3d(0.1,0.1,0.1));
   }
 
+
+  static void outputMatrix(Matrix44d matrix)
+  {
+    NTrace("[%f %f %f %f; %f %f %f %f; %f %f %f %f; %f %f %f %f]\n", 
+      matrix.m_data[0][0], matrix.m_data[0][1], matrix.m_data[0][2], matrix.m_data[0][3],
+      matrix.m_data[1][0], matrix.m_data[1][1], matrix.m_data[1][2], matrix.m_data[1][3],
+      matrix.m_data[2][0], matrix.m_data[2][1], matrix.m_data[2][2], matrix.m_data[2][3],
+      matrix.m_data[3][0], matrix.m_data[3][1], matrix.m_data[3][2], matrix.m_data[3][3]);
+  }
+
+
+  static void outputMatrix(Matrix33d matrix)
+  {
+    NTrace("[%f %f %f; %f %f %f; %f %f %f]\n", 
+      matrix.m_data[0][0], matrix.m_data[0][1], matrix.m_data[0][2], 
+      matrix.m_data[1][0], matrix.m_data[1][1], matrix.m_data[1][2], 
+      matrix.m_data[2][0], matrix.m_data[2][1], matrix.m_data[2][2]);
+  }
+
+  static void outputVector(Vec4d vec)
+  {
+    NTrace("[%f %f %f %f]\n", vec.x, vec.y, vec.z, vec.w);
+  }
+
+  static void outputVector(Vec3d vec)
+  {
+    NTrace("[%f %f %f]\n", vec.x, vec.y, vec.z);
+  }
+
   s32 Volume::InitializeVolume(Reinitializer *reinit, Matrix33d &orientation, Vec3d frameOrigin, QtEnums::VOLUME_ORIGIN_LOCATION config)
   {
     m_reinit = reinit;
@@ -32,7 +61,13 @@ namespace Nf {
     m_sliceStride = m_dims.x*m_dims.y;
 
     //Matrix stores axes of volume in physical coordinates
-    Matrix33d axes = Matrix33d::Diaganol(extent*0.5)*orientation;
+    Matrix33d axes = orientation*Matrix33d::Diaganol(extent.x*0.5, extent.y*0.5, extent.z);
+    f64 mag1 = axes.Col(0).magnitude();
+    f64 mag2 = axes.Col(1).magnitude();
+    f64 mag3 = axes.Col(2).magnitude();
+    f64 xy = axes.Col(0).dot(axes.Col(1));
+    f64 xz = axes.Col(0).dot(axes.Col(2));
+    f64 yz = axes.Col(1).dot(axes.Col(2));
     Matrix33d modAxes;
     switch(config) {
       case QtEnums::VOLUME_ORIGIN_LOCATION::VOL_LEFT: 
@@ -67,6 +102,19 @@ namespace Nf {
     
     m_volumeToWorld = Matrix44d::FromOrientationAndTranslation(m_orientation*Matrix33d::Diaganol(spacing),m_origin);
     m_worldToVolume = m_volumeToWorld.Inverse();
+
+    NTrace("Frame Origin:  \n");
+    outputVector(frameOrigin);
+    NTrace("Orientation:  \n");
+    outputMatrix(orientation);
+    NTrace("axes:  \n");
+    outputMatrix(axes);
+    NTrace("worldToVolume:  \n");
+    outputMatrix(m_worldToVolume);
+    NTrace("volumeToWorld:  \n");
+    outputMatrix(m_volumeToWorld);
+    NTrace("Origin:  \n");
+    outputVector(m_origin);
 
     return m_data != NULL ? 1 : 0;
   }
@@ -161,7 +209,7 @@ namespace Nf {
     //TODO:  Check that rectangle falls within bounds of volume
 
     for(s32 y=0; y<im->height; y++) {
-      const u8 *psrc = (const u8 *)(image->imageData+y*image->widthStep);
+      const u8 *psrc = (const u8 *)(im->imageData+y*im->widthStep);
       for(s32 x=0; x<im->width; x++) {
         //Map image coord to world coord
         world = rpImageCoordToWorldCoord4(Vec2d(x/imscale,y/imscale), posePos, calibration, start, scale);
@@ -180,9 +228,21 @@ namespace Nf {
           continue;
 
         //Cast to u16 and write to volume
-        *GetCoordData(gridI) = (u16)psrc[x];
+        *GetCoordData(gridI) = ((u16)psrc[x]);
       }
     }
+
+#if 0
+    Vec3d st = WorldCoordinatesToVolumeCoordinates(rpImageCoordToWorldCoord3(Vec2d(0/imscale,0/imscale), posePos, calibration, start, scale));
+    u16 *psrc = GetSlice((s32)(st.z+0.5));
+    IplImage *imtest = cvCreateImageHeader(cvSize(m_dims.x, m_dims.y), IPL_DEPTH_16U, 1);
+    imtest->widthStep = m_dims.x*2;
+    imtest->imageData = (s8 *)psrc;
+    cvSaveImage("C:/test.bmp", imtest);
+    cvReleaseImageHeader(&imtest);
+    s32 x = 0;
+#endif
+
   }
 
   Cubed Volume::GetCubeExtent() const
@@ -190,7 +250,7 @@ namespace Nf {
     Vec3d spacing = GetSpacing();
     Vec3d extent(m_dims.x*spacing.x, m_dims.y*spacing.y, m_dims.z*spacing.z);
     Vec3d ul = m_origin;
-    return Cubed(ul, Matrix33d::Diaganol(extent)*m_orientation);
+    return Cubed(ul, m_orientation*Matrix33d::Diaganol(extent));
   }
 
   Cubed Volume::GetPhysicalExtent() const
@@ -289,7 +349,7 @@ namespace Nf {
     m_importer->SetDataOrigin(0,0,0);
     m_importer->SetWholeExtent(0, dims.x-1, 0, dims.y-1, 0, dims.z-1);
     m_importer->SetDataExtentToWholeExtent();
-    m_importer->SetDataScalarTypeToUnsignedChar();
+    m_importer->SetDataScalarTypeToUnsignedShort();
     m_importer->SetNumberOfScalarComponents(1);
     m_importer->SetImportVoidPointer(this->GetVolumeOriginData());
     m_importer->Update();
