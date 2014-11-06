@@ -18,11 +18,12 @@ VTKTransferFunctionWidget::VTKTransferFunctionWidget()
 , m_ccp(NULL)
 {
   m_opacity = vtkSmartPointer<vtkPiecewiseFunction>::New();
+  m_col = vtkSmartPointer<vtkColorTransferFunction>::New();
+
   m_opacity->AddPoint(0., 0);
   m_opacity->AddPoint(75, 0.75);
   m_opacity->AddPoint(255, 1.0);
 
-  m_col = vtkSmartPointer<vtkColorTransferFunction>::New();
   m_col->AddRGBPoint(0, 0, 0, 0);
   m_col->AddRGBPoint(128, 0.5, 0.5, 0.5);
   m_col->AddRGBPoint(255, 1, 1, 1);

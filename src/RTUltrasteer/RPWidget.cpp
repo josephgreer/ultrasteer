@@ -11,10 +11,14 @@ namespace Nf
     m_imageViewer = std::tr1::shared_ptr<ImageViewerWidget>(new ImageViewerWidget(parent));
     m_usVis = std::tr1::shared_ptr<USVisualizer>(new USVisualizer(parent, NULL));
 
-    m_layout = new QGridLayout(parent);
-    m_layout->addWidget((QWidget *)(m_imageViewer.get()), 0, 0);
-    m_layout->addWidget((QWidget *)(m_usVis.get()), 0, 1);
-    this->setLayout(m_layout);
+    m_usVisDock = new QDockWidget(this);
+    m_imViewDock = new QDockWidget(this);
+
+    m_usVisDock->setWidget(m_usVis);
+    m_imageViewer->setWidget(m_imageViewer);
+    addDockWidget(Qt::DockWidgetArea::LeftDockWidgetArea, m_imViewDock);
+    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_usVisDock);
+
 
     ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, RPWidget), this, "V:/NeedleScan/Feb13_LiverScan/Scan 1/scan.b8", "Any File (*.*)");
     ADD_INT_PARAMETER(m_frame, "Frame Index", CALLBACK_POINTER(onUpdateFrame, RPWidget), this, 1, 1, 100, 1);

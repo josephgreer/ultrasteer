@@ -6,6 +6,7 @@
 #include <QSize>
 #include "UICore.h"
 #include <QVTKWidget.h>
+#include <QMainWindow.h>
 
 namespace Nf
 {
@@ -78,6 +79,25 @@ namespace Nf
     virtual void onResize();
     virtual void onResize2();
   };
+
+  class ResizableQMainWindow : public QMainWindow, public Resizable
+  {
+    Q_OBJECT
+
+  protected: 
+
+  public:
+    ResizableQMainWindow(QWidget *parent, QSize sz);
+    virtual void UpdateGeometry();
+    virtual void Connect(QObject *signaler, const char *signal, const char *slot);
+    virtual QSize sizeHint() const;
+    virtual QSize minimumSizeHint() const;
+
+  public slots:
+    virtual void onResize();
+    virtual void onResize2();
+  };
+
 
 
 }
