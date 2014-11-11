@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 FIND_PACKAGE (VTK)
 IF (VTK_FOUND)
-   INCLUDE(${USE_VTK_FILE})
+   INCLUDE(${VTK_USE_FILE})
 ENDIF(VTK_FOUND)
 
 # Find QT 
