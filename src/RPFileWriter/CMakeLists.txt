@@ -22,7 +22,7 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_SOURCE_DIR}
   ../Segment
   ../RPFileReader
-  C:/Ulterius/sdk611/ulterius/inc
+  ${UlteriusDir}/inc
   ${CMAKE_CURRENT_SOURCE_DIR}/../../external/
 ) 
 

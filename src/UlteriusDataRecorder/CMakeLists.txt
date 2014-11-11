@@ -22,13 +22,14 @@ IF (VTK_FOUND)
    INCLUDE(${USE_VTK_FILE})
 ENDIF(VTK_FOUND)
 
+MESSAGE(${UlteriusDir})
 INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/../Segment
   ${CMAKE_CURRENT_SOURCE_DIR}/../RPFileReader
   ${CMAKE_CURRENT_SOURCE_DIR}/../RPFileWriter
   ${CMAKE_CURRENT_SOURCE_DIR}/../UlteriusDataGrabber
-  C:/Ulterius/sdk611/ulterius/inc
+  ${UlteriusDir}/inc
 ) 
 
 ADD_EXECUTABLE(UlteriusDataRecorder WIN32
@@ -41,5 +42,5 @@ SET_TARGET_PROPERTIES(UlteriusDataRecorder PROPERTIES LINK_FLAGS_DEBUG /SUBSYSTE
 SET_TARGET_PROPERTIES(UlteriusDataRecorder PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:windows)
  #Must be lowercase windows
 
-TARGET_LINK_LIBRARIES(UlteriusDataRecorder RPFileReader RPFileWriter ${OpenCV_LIBS} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} C:/Ulterius/sdk611/ulterius/lib/ulterius_old.lib)
+TARGET_LINK_LIBRARIES(UlteriusDataRecorder RPFileReader RPFileWriter ${OpenCV_LIBS} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${UlteriusDir}/lib/ulterius_old.lib)
 

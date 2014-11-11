@@ -27,7 +27,7 @@ INCLUDE_DIRECTORIES(
   ../Segment
   ../RPFileReader
   ../RPFileWriter
-  C:/Ulterius/sdk611/ulterius/inc
+  ${UlteriusDir}/inc
 ) 
 
 ADD_EXECUTABLE(UlteriusDataGrabber WIN32
@@ -42,5 +42,5 @@ SET_TARGET_PROPERTIES(UlteriusDataGrabber PROPERTIES LINK_FLAGS_DEBUG /SUBSYSTEM
 SET_TARGET_PROPERTIES(UlteriusDataGrabber PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:windows)
  #Must be lowercase windows
 
-TARGET_LINK_LIBRARIES(UlteriusDataGrabber RPFileReader ${OpenCV_LIBS} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} C:/Ulterius/sdk611/ulterius/lib/ulterius_old.lib)
+TARGET_LINK_LIBRARIES(UlteriusDataGrabber RPFileReader ${OpenCV_LIBS} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${UlteriusDir}/lib/ulterius_old.lib)
 
