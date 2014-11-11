@@ -5,6 +5,7 @@
 close all;
 clearvars -except points;
 clc;
+dbstop in RPreadgps;
 fname = 'Y:/NeedleScan/Feb13_LiverScan/Scan 4/scan';
 f = strcat(fname, '.b8');
 fcol = fopen(f, 'r');

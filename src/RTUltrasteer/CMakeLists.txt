@@ -28,6 +28,7 @@ INCLUDE_DIRECTORIES(
   ../VolumeCreator
   ../Segment
   ../RPFileReader
+  C:/Ulterius/sdk611/ulterius/inc
 ) 
 
 SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp USVisualizerWidget.cpp UICore.cpp VTKTransferFunctionWidget.cpp FileWidget.cpp Resizable.cpp ImageViewerWidget.cpp RPWidget.cpp)
@@ -69,5 +70,5 @@ SET_TARGET_PROPERTIES(RTUltrasteer PROPERTIES LINK_FLAGS_DEBUG /SUBSYSTEM:window
 SET_TARGET_PROPERTIES(RTUltrasteer PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:windows)
  #Must be lowercase windows
 
-TARGET_LINK_LIBRARIES(RTUltrasteer VolumeCreator RPFileReader ${OpenCV_LIBS} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${ITK_LIBRARIES} ${VTK_LIBRARIES})
+TARGET_LINK_LIBRARIES(RTUltrasteer VolumeCreator RPFileReader ${OpenCV_LIBS} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${ITK_LIBRARIES} ${VTK_LIBRARIES} C:/Ulterius/sdk611/ulterius/lib/ulterius_old.lib)
 
