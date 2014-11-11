@@ -13,7 +13,7 @@ INCLUDE_DIRECTORIES(
 	${OPENCV_INCLUDE_DIRS} 
 	${CMAKE_CURRENT_SOURCE_DIR}/../Segment
 	${CMAKE_CURRENT_SOURCE_DIR}/../UlteriusDataGrabber
-	C:/Ulterius/sdk611/ulterius/inc
+	${UlteriusDir}/inc
 	${CMAKE_CURRENT_SOURCE_DIR}/../../external/
 )
 
