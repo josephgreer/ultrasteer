@@ -117,7 +117,6 @@ namespace Nf
 
 
 	cv::Mat(4,4,CV_64F,me).copyTo(data->pose);
-  data->pose = data->pose.t();
 
     for(int i=0; i<5; i++) {
       data->offset[i] = *(double *)&raw[idx];  idx += sizeof(double);
