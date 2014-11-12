@@ -1,22 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 
-PROJECT(Control)
+PROJECT(RobotHardware)
 
 IF(COMMAND CMAKE_POLICY)
 	   CMAKE_POLICY(SET CMP0003 NEW)
 ENDIF(COMMAND CMAKE_POLICY)
-
-FIND_PACKAGE(ITK)
-IF(ITK_FOUND)
-	INCLUDE(${ITK_USE_FILE})
-ELSE(ITK_FOUND)
-	MESSAGE(FATAL_ERROR "Cannot build InsightApplications without ITK.  Please set ITK_DIR.")
-ENDIF(ITK_FOUND)
-
-FIND_PACKAGE (VTK)
-IF (VTK_FOUND)
-   INCLUDE(${USE_VTK_FILE})
-ENDIF(VTK_FOUND)
 
 # Find QT 
 FIND_PACKAGE(Qt4 REQUIRED)
@@ -25,17 +13,13 @@ INCLUDE( ${QT_USE_FILE} )
 INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_BINARY_DIR} #this is where ui_ImageViewerUI.h is generated
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../inc/
-  ${CMAKE_CURRENT_SOURCE_DIR}/../RealTimeUltrasteer
-  ${CMAKE_CURRENT_SOURCE_DIR}/../Segment
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/alglib/src
 ) 
 
-SET(ControlSrcs RobotControl.cpp UnscentedKalmanFilter.cpp MotionController.cpp SerialBuffer.cpp SerialCommHelper.cpp RollDevice.cpp InsertionDevice.cpp DeviceNotification.cpp NeedleSteeringRobot.cpp)
+SET(ControlSrcs MotionController.cpp SerialBuffer.cpp SerialCommHelper.cpp RollDevice.cpp InsertionDevice.cpp DeviceNotification.cpp NeedleSteeringRobot.cpp)
 
 SET(ControlHeaders NeedleSteeringRobot.h)
 
-SET(ControlOtherHeaders RobotControl.h UnscentedKalmanFilter.h MotionController.h MotionControllerException.h SerialBuffer.h SerialCommHelper.h RollDevice.h InsertionDevice.h DeviceNotification.h)
+SET(ControlOtherHeaders MotionController.h MotionControllerException.h SerialBuffer.h SerialCommHelper.h RollDevice.h InsertionDevice.h DeviceNotification.h)
 
 # for generate qt aditional files 
 QT4_WRAP_CPP(MOCSrcs ${ControlHeaders} )
@@ -46,7 +30,7 @@ SOURCE_GROUP("Generated" FILES
   ${MOCSrcs}
 )
 
-ADD_LIBRARY(Control STATIC
+ADD_LIBRARY(RobotHardware STATIC
 	${ControlSrcs}
 	${ControlHeaders}
 	${MOCSrcs}
