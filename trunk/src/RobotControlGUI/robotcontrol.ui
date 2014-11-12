@@ -1,0 +1,728 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>RobotControlClass</class>
+ <widget class="QMainWindow" name="RobotControlClass">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>569</width>
+    <height>293</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>RobotControl</string>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <widget class="QWidget" name="layoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>551</width>
+      <height>257</height>
+     </rect>
+    </property>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="1" column="1">
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QLCDNumber" name="insertion_pos"/>
+       </item>
+       <item>
+        <widget class="QPushButton" name="InitInsertion">
+         <property name="text">
+          <string>Initialize Insertion</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="insert2mm">
+         <property name="text">
+          <string>Insert 3 mm</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="retract2mm">
+         <property name="text">
+          <string>Retract 20 mm</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="insert30rpm">
+         <property name="text">
+          <string>Insert 30 rpm</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="retract30rpm">
+         <property name="text">
+          <string>Retract 30 rpm</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="stopInsertion">
+         <property name="text">
+          <string>Stop Insertion</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="homeInsertion">
+         <property name="text">
+          <string>Home Insertion</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label">
+       <property name="font">
+        <font>
+         <pointsize>13</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Roll Stage</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignBottom|Qt::AlignHCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="label_2">
+       <property name="font">
+        <font>
+         <pointsize>13</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Insertion Stage</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignBottom|Qt::AlignHCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QLCDNumber" name="roll_pos"/>
+       </item>
+       <item>
+        <widget class="QPushButton" name="InitRoll">
+         <property name="text">
+          <string>Intialize Roll</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="rotatePosInc">
+         <property name="text">
+          <string>10 deg. Positive Rotation</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="rotateNegInc">
+         <property name="text">
+          <string>10 deg. Negative Rotation</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="maxPosVelocity">
+         <property name="text">
+          <string>Max. Positive Rotation</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="maxNegVelocity">
+         <property name="text">
+          <string>Max. Negative Rotation</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="stopMotor">
+         <property name="text">
+          <string>Stop Rotation</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="homeRoll">
+         <property name="text">
+          <string>Home Roll</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="0" column="2">
+      <widget class="QLabel" name="label_3">
+       <property name="font">
+        <font>
+         <pointsize>13</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Duty Cycle Control</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignBottom|Qt::AlignHCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>Depth (mm)</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QSpinBox" name="DC_depth_setting">
+             <property name="maximum">
+              <number>100</number>
+             </property>
+             <property name="singleStep">
+              <number>10</number>
+             </property>
+             <property name="value">
+              <number>20</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>Duty cycle (%)</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QSpinBox" name="DC_setting">
+             <property name="minimum">
+              <number>25</number>
+             </property>
+             <property name="maximum">
+              <number>100</number>
+             </property>
+             <property name="value">
+              <number>50</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QGridLayout" name="gridLayout_3">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>Angle (deg)</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLCDNumber" name="DC_Angle_Display">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="numDigits">
+              <number>3</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0" colspan="2">
+            <widget class="QDial" name="DC_angle_setting">
+             <property name="maximum">
+              <number>360</number>
+             </property>
+             <property name="invertedAppearance">
+              <bool>true</bool>
+             </property>
+             <property name="wrapping">
+              <bool>true</bool>
+             </property>
+             <property name="notchTarget">
+              <double>15.000000000000000</double>
+             </property>
+             <property name="notchesVisible">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QPushButton" name="dutyCycle">
+         <property name="text">
+          <string>Execute Duty-Cycled Insertion</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QPushButton" name="vibrationOn">
+           <property name="text">
+            <string>Buzz On</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="vibrationOff">
+           <property name="text">
+            <string>Buzz Off</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <item>
+          <widget class="QPushButton" name="ditherOn">
+           <property name="text">
+            <string>Dither On</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="ditherOff">
+           <property name="text">
+            <string>Dither Off</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources>
+  <include location="robotcontrol.qrc"/>
+ </resources>
+ <connections>
+  <connection>
+   <sender>InitInsertion</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>InitializeInsertion()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>269</x>
+     <y>97</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>179</x>
+     <y>119</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>InitRoll</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>InitializeRoll()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>277</x>
+     <y>123</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>299</x>
+     <y>199</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>stopMotor</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>StopMotor()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>290</x>
+     <y>223</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>299</x>
+     <y>199</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotateNegInc</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>RotNegInc()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>90</x>
+     <y>169</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>91</x>
+     <y>112</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>maxPosVelocity</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>SetMaxPosVelocity()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>90</x>
+     <y>67</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>91</x>
+     <y>112</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>maxNegVelocity</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>SetMaxNegVelocity()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>90</x>
+     <y>104</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>91</x>
+     <y>112</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>retract2mm</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>Retract2mm()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>266</x>
+     <y>108</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>180</x>
+     <y>112</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>insert2mm</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>Insert2mm()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>266</x>
+     <y>79</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>180</x>
+     <y>112</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>insert30rpm</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>Insert30rpm()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>266</x>
+     <y>137</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>180</x>
+     <y>112</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>retract30rpm</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>Retract30rpm()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>266</x>
+     <y>166</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>180</x>
+     <y>112</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>stopInsertion</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>StopInsertion()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>266</x>
+     <y>195</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>180</x>
+     <y>112</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotatePosInc</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>RotPosInc()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>94</x>
+     <y>195</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>180</x>
+     <y>112</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>dutyCycle</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>ExecuteDutyCycle()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>403</x>
+     <y>119</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>275</x>
+     <y>116</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>DC_depth_setting</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>SetDCInsDist(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>310</x>
+     <y>341</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>285</x>
+     <y>269</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>DC_setting</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>SetDCPercent(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>428</x>
+     <y>136</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>288</x>
+     <y>117</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>DC_angle_setting</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>SetDCAngle(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>507</x>
+     <y>127</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>288</x>
+     <y>117</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>DC_angle_setting</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>DC_Angle_Display</receiver>
+   <slot>display(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>389</x>
+     <y>400</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>431</x>
+     <y>341</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>homeInsertion</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>homeInsertion()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>239</x>
+     <y>224</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>283</x>
+     <y>129</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>homeRoll</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>homeRoll()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>85</x>
+     <y>224</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>283</x>
+     <y>129</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>vibrationOn</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>vibrationOn()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>377</x>
+     <y>224</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>283</x>
+     <y>247</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>vibrationOff</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>vibrationOff()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>499</x>
+     <y>224</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>283</x>
+     <y>247</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ditherOn</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>DitherOn()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>377</x>
+     <y>226</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>290</x>
+     <y>276</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ditherOff</sender>
+   <signal>clicked()</signal>
+   <receiver>RobotControlClass</receiver>
+   <slot>DitherOff()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>499</x>
+     <y>226</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>290</x>
+     <y>276</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>InitializeRoll()</slot>
+  <slot>StopMotor()</slot>
+  <slot>RotNegInc()</slot>
+  <slot>SetMaxPosVelocity()</slot>
+  <slot>SetMaxNegVelocity()</slot>
+  <slot>InitializeInsertion()</slot>
+  <slot>Insert2mm()</slot>
+  <slot>Retract2mm()</slot>
+  <slot>Insert30rpm()</slot>
+  <slot>Retract30rpm()</slot>
+  <slot>StopInsertion()</slot>
+  <slot>RotPosInc()</slot>
+  <slot>ExecuteDutyCycle()</slot>
+  <slot>SetDCPercent(int)</slot>
+  <slot>SetDCInsDist(int)</slot>
+  <slot>SetDCAngle(int)</slot>
+  <slot>homeRoll()</slot>
+  <slot>homeInsertion()</slot>
+  <slot>vibrationOn()</slot>
+  <slot>vibrationOff()</slot>
+  <slot>DitherOn()</slot>
+  <slot>DitherOff()</slot>
+ </slots>
+</ui>
