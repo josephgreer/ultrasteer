@@ -4,7 +4,7 @@ namespace Nf
 {
   RPWidget::RPWidget(QWidget *parent)
     : Nf::ParameterCollection("RP Image Viewer")
-    , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
+    , ResizableQMainWindow(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
     , m_rpReaders(NULL)
   {
 
@@ -14,8 +14,8 @@ namespace Nf
     m_usVisDock = new QDockWidget(this);
     m_imViewDock = new QDockWidget(this);
 
-    m_usVisDock->setWidget(m_usVis);
-    m_imageViewer->setWidget(m_imageViewer);
+    m_usVisDock->setWidget(m_usVis.get());
+    m_imViewDock->setWidget(m_imageViewer.get());
     addDockWidget(Qt::DockWidgetArea::LeftDockWidgetArea, m_imViewDock);
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_usVisDock);
 
@@ -39,9 +39,7 @@ namespace Nf
 
   void RPWidget::UpdateSize(QSize sz)
   {
-    s32 ml, mr, mu, mb;
-    ResizableQWidget::UpdateSize(sz);
-    m_layout->getContentsMargins(&ml, &mu, &mr, &mb);
+    ResizableQMainWindow::UpdateSize(sz);
     m_imageViewer->UpdateSize(QSize(sz.width()/2-10, sz.height()));
     m_usVis->UpdateSize(QSize(sz.width()/2-10, sz.height()));
   }
