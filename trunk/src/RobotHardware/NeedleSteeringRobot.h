@@ -1,9 +1,17 @@
+/// class:		NeedleSteeringRobot
+/// brief:		Encapsulates the functionality of the entire needle steering robot, 
+///				including all 3DOF.
+///
+///	author:		Troy Adebar
+///	date:		November 13, 2014
+
 #pragma once
 
 #include <QDebug>
 #include <time.h>
 #include "RollDevice.h"
 #include "InsertionDevice.h"
+#include "ArticulationDevice.h"
 #include "qtimer.h"
 #include "time.h"
 
@@ -17,24 +25,26 @@ public:
 	void processSweep();
 
 	void InitializeRoll(QString Com);
-	bool InitializeInsertion(QString Com);
+	void InitializeInsertion(QString Com);
+	void InitializeArticulation(QString Com);
 	void InsertIncremental(float MM);
 	void RotateIncremental(float Deg);
+	void ArticulateIncremental(float Deg);
 	void SetInsertionVelocity(float RPM);
 	void SetRotationVelocity(float RPM);
 	void DisableAll(void);
-	void DutyCycleSteer(float DC, float angle, float insDist);
 	void HomeRoll(void);
 	void HomeInsertion(void);
 	void setVibration(bool);
 	double getRollAngle(void);
 	double getInsMM(void);
-	void cancelDutyCycling(void);
-
+	//void cancelDutyCycling(void);
+	//void DutyCycleSteer(float DC, float angle, float insDist);
 
 private:
 	RollDevice m_RollDevice;
 	InsertionDevice m_InsertionDevice;
+	ArticulationDevice m_ArticulationDevice;
 	QTimer polling_timer, dwell_timer;
 	clock_t m_roll_start, m_roll_stop;
 	double m_DC_InsTarg, m_DC_RollTarg;

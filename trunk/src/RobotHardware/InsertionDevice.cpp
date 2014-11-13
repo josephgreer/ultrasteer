@@ -7,8 +7,8 @@
 #define INSERTION_DEVICE_ID		1		//Network ID of the insertion MCDC	
 #define CORRIDOR				20		//Default corridor value
 #define FAULHABER_ONE_ROTATION	2000	//# of encoder ticks in one full rotation (without factoring in the gear ratio) 
-#define SPUR_GEAR_RATIO			19.7/1.0 //Gear ratio for the maxon motor
-#define SLIDE_PITCH				10.0	//MM travelled for one rotation of the linear slide
+#define SPUR_GEAR_RATIO			5.9/1.0 //Gear ratio for the maxon motor
+#define SLIDE_PITCH				2.54	//MM travelled for one rotation of the linear slide
 #define MIN_ENCODER_LIMIT		-30000	//Minimum encoder limit that the motor will not be able to travel past
 #define MAX_ENCODER_LIMIT		30000	//Maximum encoder limit that the motor will not be able to travel past
 #define CURRENT_LIMIT			3000	//Faulhaber motor peak current limit of 3000mA 	

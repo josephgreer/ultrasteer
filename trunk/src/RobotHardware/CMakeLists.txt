@@ -15,11 +15,11 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_SOURCE_DIR}
 ) 
 
-SET(ControlSrcs MotionController.cpp SerialBuffer.cpp SerialCommHelper.cpp RollDevice.cpp InsertionDevice.cpp DeviceNotification.cpp NeedleSteeringRobot.cpp)
+SET(ControlSrcs MotionController.cpp SerialBuffer.cpp SerialCommHelper.cpp RollDevice.cpp InsertionDevice.cpp ArticulationDevice.cpp DeviceNotification.cpp NeedleSteeringRobot.cpp)
 
 SET(ControlHeaders NeedleSteeringRobot.h)
 
-SET(ControlOtherHeaders MotionController.h MotionControllerException.h SerialBuffer.h SerialCommHelper.h RollDevice.h InsertionDevice.h DeviceNotification.h)
+SET(ControlOtherHeaders MotionController.h MotionControllerException.h SerialBuffer.h SerialCommHelper.h RollDevice.h InsertionDevice.h ArticulationDevice.h DeviceNotification.h)
 
 # for generate qt aditional files 
 QT4_WRAP_CPP(MOCSrcs ${ControlHeaders} )

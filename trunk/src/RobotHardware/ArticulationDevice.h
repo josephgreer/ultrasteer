@@ -1,20 +1,19 @@
-/// class:		RollDevice
-/// brief:		Encapsulates the functionality of the roll device. 
+/// class:		ArticulationDevice
+/// brief:		Encapsulates the functionality of the needle tip articulation device. 
 ///				Inherits functionality from MotionController class.
 ///
 ///	author:		Troy Adebar
-///	date:		March 25, 2013
-
+///	date:		November 13, 2014
 
 #pragma once
 
 #include "MotionController.h"
 
-class RollDevice :	public MotionController
+class ArticulationDevice :	public MotionController
 {
 public: //Methods
-	RollDevice(void);
-	~RollDevice(void);
+	ArticulationDevice(void);
+	~ArticulationDevice(void);
 	void Init(QString comPort);
 	void ReEnable(void);
 	int ConvertAngleToPosition(float angle);
@@ -32,5 +31,5 @@ private:	//Attributes
 	float m_max;
 	float m_incr;
 	float m_currentAngle;
-	bool m_isRollerLocked;
+	bool m_isArticulationLocked;
 };
