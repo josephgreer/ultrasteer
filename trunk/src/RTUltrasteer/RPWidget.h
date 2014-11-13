@@ -11,18 +11,16 @@
 
 namespace Nf
 {
-  class RPWidget : public ResizableQMainWindow, public ParameterCollection
+  class RPWidget : public ResizableQWidget, public ParameterCollection
   {
     Q_OBJECT 
 
   protected:
     std::tr1::shared_ptr < ImageViewerWidget> m_imageViewer;
-    QDockWidget *m_imViewDock;
     std::tr1::shared_ptr < USVisualizer > m_usVis;
-    QDockWidget *m_usVisDock;
-
     RPFileReaderCollection *m_rpReaders;
     RPData m_data;
+    QGridLayout *m_layout;
 
   public:
     RPWidget(QWidget *parent);

@@ -4,21 +4,17 @@ namespace Nf
 {
   RPWidget::RPWidget(QWidget *parent)
     : Nf::ParameterCollection("RP Image Viewer")
-    , ResizableQMainWindow(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
+    , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
     , m_rpReaders(NULL)
   {
 
     m_imageViewer = std::tr1::shared_ptr<ImageViewerWidget>(new ImageViewerWidget(parent));
     m_usVis = std::tr1::shared_ptr<USVisualizer>(new USVisualizer(parent, NULL));
 
-    m_usVisDock = new QDockWidget(this);
-    m_imViewDock = new QDockWidget(this);
-
-    m_usVisDock->setWidget(m_usVis.get());
-    m_imViewDock->setWidget(m_imageViewer.get());
-    addDockWidget(Qt::DockWidgetArea::LeftDockWidgetArea, m_imViewDock);
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, m_usVisDock);
-
+    m_layout = new QGridLayout(parent);
+    m_layout->addWidget((QWidget *)(m_imageViewer.get()), 0, 0);
+    m_layout->addWidget((QWidget *)(m_usVis.get()), 0, 1);
+    this->setLayout(m_layout);
 
     ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, RPWidget), this, "V:/NeedleScan/Feb13_LiverScan/Scan 1/scan.b8", "Any File (*.*)");
     ADD_INT_PARAMETER(m_frame, "Frame Index", CALLBACK_POINTER(onUpdateFrame, RPWidget), this, 1, 1, 100, 1);
@@ -39,7 +35,9 @@ namespace Nf
 
   void RPWidget::UpdateSize(QSize sz)
   {
-    ResizableQMainWindow::UpdateSize(sz);
+    s32 ml, mr, mu, mb;
+    ResizableQWidget::UpdateSize(sz);
+    m_layout->getContentsMargins(&ml, &mu, &mr, &mb);
     m_imageViewer->UpdateSize(QSize(sz.width()/2-10, sz.height()));
     m_usVis->UpdateSize(QSize(sz.width()/2-10, sz.height()));
   }
