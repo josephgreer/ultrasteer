@@ -142,7 +142,7 @@ namespace Nf {
     uDataDesc desc = GetImageDesc(tp);
 
 
-    CvSize size = cvSize(640, 480);
+    CvSize size = cvSize(desc.w, desc.h);
     RPData rp;
     switch(tp) {
         case RPF_BPOST8: 

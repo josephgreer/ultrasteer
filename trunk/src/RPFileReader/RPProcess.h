@@ -33,9 +33,10 @@ namespace Nf {
 
   typedef struct {
     std::deque < HandleSet > queue;
-    QMutex lock;
+    QMutex *lock;
     u8 done;
     RPUlteriusProcessManager *owner;
+    std::map < RP_TYPE, uDataDesc > descs;
   } ThreadContext;
 
   class RPUlteriusProcessManager : RPReaderCollection {
@@ -58,8 +59,7 @@ namespace Nf {
     std::map < RP_TYPE, uDataDesc > m_descs;
     DatumQueue m_queue;
     GpsQueue m_qGps;
-    QMutex m_lock;
-    QMutex m_handleLock;
+    QMutex *m_lock;
     ThreadContext m_tContext;
     u32 m_enabledTypes;
     f32 m_msPerFrame;

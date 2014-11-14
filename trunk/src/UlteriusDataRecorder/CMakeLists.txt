@@ -31,14 +31,14 @@ INCLUDE_DIRECTORIES(
   ${UlteriusDir}/inc
 ) 
 
-ADD_EXECUTABLE(UlteriusDataRecorder WIN32
+ADD_EXECUTABLE(UlteriusDataRecorder
 	UlteriusDataRecorder.cpp
 )
 
-SET_TARGET_PROPERTIES(UlteriusDataRecorder PROPERTIES LINK_FLAGS_DEBUG /SUBSYSTEM:windows)
+#SET_TARGET_PROPERTIES(UlteriusDataRecorder PROPERTIES LINK_FLAGS_DEBUG /SUBSYSTEM:windows)
  #Must be lowercase windows
 
-SET_TARGET_PROPERTIES(UlteriusDataRecorder PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:windows)
+#SET_TARGET_PROPERTIES(UlteriusDataRecorder PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:windows)
  #Must be lowercase windows
 
 TARGET_LINK_LIBRARIES(UlteriusDataRecorder RPFileReader RPFileWriter ${OpenCV_LIBS} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${UlteriusDir}/lib/ulterius_old.lib)

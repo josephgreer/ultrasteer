@@ -64,7 +64,7 @@ int main( int argc, const char* argv[] )
   f32 framerate = atof(argv[10]);
 
   //RPUlteriusReaderCollection rpReaders(ip);
-  RPUlteriusProcessManager rpReaders("192.168.1.5",framerate);
+  RPUlteriusProcessManager rpReaders(ip,framerate);
   if(mask&RPF_BPOST32) {
     printf("Enabling bpost32\n");
     rpReaders.EnableType(RPF_BPOST32, 1);
@@ -154,5 +154,5 @@ int main( int argc, const char* argv[] )
     delete writers;
   }
 
-
+  return 0;
 }
