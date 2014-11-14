@@ -38,12 +38,15 @@ namespace Nf {
     RPUlteriusReader(const char *ip, RP_TYPE type);
 		virtual ~RPUlteriusReader();
 
+    uDataDesc GetDesc(RP_TYPE type);
+
 	protected:
     RP_TYPE m_type;
     uDataDesc m_desc;
 		ulterius* m_ulterius;
 		RPDataQueue m_queue;
 	  QMutex m_lock;
+    std::map<RP_TYPE, uDataDesc> m_descs;
 	};
 
 };

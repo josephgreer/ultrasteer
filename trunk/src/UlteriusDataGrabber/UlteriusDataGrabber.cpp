@@ -37,6 +37,8 @@ int main( int argc, const char* argv[] )
   RPUlteriusReader reader(ip, (RP_TYPE)type);
 #endif
 
+  uDataDesc desc = reader.GetDesc(RPF_BPOST32);
+
   //bool wait = true;
   //while(wait)
   //  int x = 0;
@@ -88,7 +90,8 @@ int main( int argc, const char* argv[] )
   //}
 
 
-  u8 *mem = (u8 *)calloc(640*480*4+sizeof(RPDatumHeader), 1);
+  u32 bufSz = desc.h*desc.w*4+sizeof(RPDatumHeader);
+  u8 *mem = (u8 *)calloc(bufSz+sizeof(RPDatumHeader), 1);
   if(!mem) {
     printf("Error allocating memory\n");
     return -1;
@@ -125,6 +128,11 @@ int main( int argc, const char* argv[] )
     }
 #endif
 
+    if(sizeof(RPDatumHeader)+data.header.nBytes > bufSz) {
+      printf("UlteriusDataGrabber:  Pipe buffer size too small bufferSize: %d, currentSz: %d\n", 
+        bufSz, sizeof(RPDatumHeader)+data.header.nBytes);
+      assert(0);
+    }
     memcpy(mem, &data.header, sizeof(RPDatumHeader));
     memcpy(mem+sizeof(RPDatumHeader), data.data, data.header.nBytes);
     s32 nBytes = sizeof(RPDatumHeader)+data.header.nBytes;
