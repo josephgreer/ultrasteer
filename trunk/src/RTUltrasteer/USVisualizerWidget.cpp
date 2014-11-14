@@ -25,6 +25,7 @@ USVisualizerWidget::USVisualizerWidget(RPVolumeCreator *rpvc)
 : Nf::ResizableQVTKWidget(NULL, QSize(VIS_WIDTH, VIS_HEIGHT))
 , Nf::ParameterCollection("Ultrasound Visualization")
 , m_volumeAxes(NULL)
+, m_frameBoundaries((CubeVisualizer *)NULL)
 , m_volume(NULL)
 , m_renderer(NULL)
 {
@@ -32,8 +33,9 @@ USVisualizerWidget::USVisualizerWidget(RPVolumeCreator *rpvc)
     rpvc = new RPVolumeCreator();
   m_rpvc = rpvc;
 
-  ADD_BOOL_PARAMETER(m_showVolumeExtent, "Show Volume Extent", CALLBACK_POINTER(onShowVolumeExtentChanged, USVisualizerWidget), this, false);
-  ADD_BOOL_PARAMETER(m_showVolumeAxes, "Show Volume Axes", CALLBACK_POINTER(onShowVolumeAxesChanged, USVisualizerWidget), this, false);
+  ADD_BOOL_PARAMETER(m_showVolumeExtent, "Show Volume Extent", CALLBACK_POINTER(onShowExtrasChanged, USVisualizerWidget), this, false);
+  ADD_BOOL_PARAMETER(m_showVolumeAxes, "Show Volume Axes", CALLBACK_POINTER(onShowExtrasChanged, USVisualizerWidget), this, false);
+  ADD_BOOL_PARAMETER(m_showFrameBoundaries, "Show Frame Boundary", CALLBACK_POINTER(onShowExtrasChanged, USVisualizerWidget), this, false);
   ADD_ACTION_PARAMETER(m_setViewXY, "Set View XY", CALLBACK_POINTER(onSetViewXY, USVisualizerWidget), this, true); 
   ADD_ACTION_PARAMETER(m_setViewXZ, "Set View XZ", CALLBACK_POINTER(onSetViewXZ, USVisualizerWidget), this, true); 
   ADD_ACTION_PARAMETER(m_setViewYZ, "Set View YZ", CALLBACK_POINTER(onSetViewYZ, USVisualizerWidget), this, true); 
@@ -41,29 +43,35 @@ USVisualizerWidget::USVisualizerWidget(RPVolumeCreator *rpvc)
   ADD_CHILD_COLLECTION(m_rpvc);
 }
 
-void USVisualizerWidget::onShowVolumeExtentChanged()
-{
-  if(m_showVolumeExtent->GetValue() && m_extentVis) {
-    m_renderer->AddActor(m_extentVis->GetActor());
-  } else if(m_extentVis) {
-    m_renderer->RemoveActor(m_extentVis->GetActor());
-  }
-}
-
-void USVisualizerWidget::onShowVolumeAxesChanged()
+void USVisualizerWidget::onShowExtrasChanged()
 {
   if(m_showVolumeAxes->GetValue() && m_volumeAxes != NULL) {
     m_renderer->AddActor(m_volumeAxes);
   } else if(m_volumeAxes) {
     m_renderer->RemoveActor(m_volumeAxes);
   }
+  if(m_showVolumeExtent->GetValue() && m_extentVis) {
+    m_renderer->AddActor(m_extentVis->GetActor());
+  } else if(m_extentVis) {
+    m_renderer->RemoveActor(m_extentVis->GetActor());
+  }
+  UpdateFrameBoundaries();
+}
+
+void USVisualizerWidget::UpdateFrameBoundaries()
+{
+  if(m_showFrameBoundaries->GetValue() && m_frameBoundaries) {
+    m_renderer->AddActor(m_frameBoundaries->GetActor());
+  } else if(m_frameBoundaries) {
+    m_renderer->RemoveActor(m_frameBoundaries->GetActor());
+  }
 }
 
 void USVisualizerWidget::SetUSVisView(s32 axis1, s32 axis2)
 {
   vtkSmartPointer <vtkCamera> camera = vtkSmartPointer<vtkCamera>::New();
-  Vec3d up = m_rpvc->GetVolumeOrientation().Col(axis1);
-  Vec3d focal = m_rpvc->GetVolumeOrientation().Col(axis2);
+  Vec3d up = m_rpvc->GetVolumeOrientation().Col(axis1)*-1.0;
+  Vec3d focal = m_rpvc->GetVolumeOrientation().Col(axis2)*-1.0;
   camera->SetPosition(0,0,0);
   camera->SetFocalPoint(focal.x, focal.y, focal.z);
   camera->SetViewUp(up.x, up.y, up.z);
@@ -183,6 +191,7 @@ void USVisualizerWidget::Initialize(vtkSmartPointer<vtkColorTransferFunction> ct
     vtkSmartPointer<vtkVolumeProperty>::New();
   volumeProperty->SetColor(m_ctf);
   volumeProperty->SetScalarOpacity(m_otf);
+  volumeProperty->SetInterpolationTypeToLinear();
 
   m_volume->SetProperty(volumeProperty);
 
@@ -193,7 +202,6 @@ void USVisualizerWidget::Initialize(vtkSmartPointer<vtkColorTransferFunction> ct
   //Cube Visualization
   u8 cubeColor[3] = {27, 161, 226};
   m_extentVis = std::tr1::shared_ptr < CubeVisualizer > (new CubeVisualizer(volExtent, cubeColor));
-  onShowVolumeExtentChanged();
 
   //Volume Axes Visualization
   m_volumeAxes = vtkSmartPointer<vtkAxesActor>::New();
@@ -213,7 +221,7 @@ void USVisualizerWidget::Initialize(vtkSmartPointer<vtkColorTransferFunction> ct
   //axesTransform->RotateZ(volOr[2]);  axesTransform->RotateX(volOr[0]);  axesTransform->RotateY(volOr[1]);  
   //m_volumeAxes->SetUserTransform(axesTransform);
   m_volumeAxes->PokeMatrix(volTrans.GetVTKMatrix());
-  onShowVolumeAxesChanged();
+  onShowExtrasChanged();
 
   this->GetRenderWindow()->AddRenderer(m_renderer);
 
@@ -240,6 +248,12 @@ void USVisualizerWidget::AddRPData(RPData rp)
   m_rpvc->AddRPData(rp);
   m_last.Release();
   m_last = rp.Clone();
+
+  u8 cubeColor[3] = {128, 0, 0};
+  if(m_frameBoundaries)
+    m_renderer->RemoveActor(m_frameBoundaries->GetActor());
+  m_frameBoundaries = std::tr1::shared_ptr < CubeVisualizer > (new CubeVisualizer(rp.GetFrameBoundaries(m_rpvc->GetCal(), m_rpvc->GetMPP()), cubeColor));
+  UpdateFrameBoundaries();
 }
 
 void USVisualizerWidget::Execute(vtkObject *caller, unsigned long, void*)
@@ -248,6 +262,8 @@ void USVisualizerWidget::Execute(vtkObject *caller, unsigned long, void*)
     vtkSmartPointer<vtkVolumeProperty>::New();
   volumeProperty->SetColor(m_ctf);
   volumeProperty->SetScalarOpacity(m_otf);
+  volumeProperty->SetInterpolationTypeToLinear();
+  volumeProperty->ShadeOff();
 
   m_volume->SetProperty(volumeProperty);
   m_volume->Modified();

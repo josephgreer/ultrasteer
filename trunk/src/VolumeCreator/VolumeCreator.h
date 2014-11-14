@@ -129,6 +129,8 @@ namespace Nf {
     virtual Cubed GetVolumeCubeExtent() const;
     virtual Cubed GetVolumePhysicalExtent() const;
     virtual Matrix33d GetVolumeOrientation() const;
+    virtual Vec2d GetMPP() const { return m_volume.GetMPP(); }
+    virtual Matrix44d GetCal() const { return m_cal; }
     virtual s32 Initialize(RPData rp, Reinitializer *reinit);
     void Release();
     vtkSmartPointer<vtkImageImport> GetImporter();
