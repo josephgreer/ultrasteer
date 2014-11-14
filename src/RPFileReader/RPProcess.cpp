@@ -29,12 +29,16 @@ namespace Nf {
     ThreadContext *ctxt = (ThreadContext *)pData;
 
     HANDLE handles[10];
-    s32 maxBytes = 640*480*4+sizeof(RPDatumHeader);
-    u8 *buf = (u8 *)calloc(640*480*4+sizeof(RPDatumHeader), 1);
+    uDataDesc desc = ctxt->descs[RPF_BPOST32];
+    s32 maxBytes = desc.w*desc.h*4+sizeof(RPDatumHeader);
+    u8 *buf = (u8 *)calloc(desc.w*desc.h*4+sizeof(RPDatumHeader), 1);
     while(!ctxt->done) {
-      if(!ctxt->lock.tryLock(45)) {
+      if(!ctxt->lock->tryLock(45)) {
         continue;
       }
+
+      if(ctxt->queue.size() == 0)
+        continue;
 
       for(s32 i=0; i<(s32)ctxt->queue.size(); i++)
         handles[i] = ctxt->queue[i].hWrite;
@@ -62,10 +66,11 @@ namespace Nf {
         //Reset the write event and signal read event for client process
         ResetEvent(handles[idx]);
         SetEvent(ctxt->queue[idx].hRead);
-        //unlock handle lock since we're done with them
-        ctxt->lock.unlock();
 
-        //Now add the data to the queue
+        //unlock handle lock since we're done with them
+        ctxt->lock->unlock();
+
+        //Now add the data to the queue (lock is relocked in AddData())
         ctxt->owner->AddData(&datum);
       } else if(rv-WAIT_ABANDONED_0 >= 0 && rv-WAIT_ABANDONED_0 < (s32)ctxt->queue.size()) {
         NTrace("RPProcess threadProc, Abandoned event\n");
@@ -77,7 +82,7 @@ namespace Nf {
         NTrace("RPProcess threadProc, Hmm not sure what happend waiting for event to be signaled\n");
         ASSERT(0);
       } else {
-        ctxt->lock.unlock();
+        ctxt->lock->unlock();
       }
 
     }
@@ -109,8 +114,12 @@ namespace Nf {
 
     m_dataAvailable = 0;
 
+    m_lock = new QMutex();
+
     m_tContext.owner = this;
     m_tContext.done = 0;
+    m_tContext.lock = m_lock;
+    m_tContext.descs = m_descs;
     CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)threadProc, &m_tContext, 0, 0);
   }
 
@@ -270,7 +279,7 @@ namespace Nf {
     }
     //set to a high number so it takes a while to report again
     m_dataAvailable = 20;
-    if(!m_lock.tryLock(30)) {
+    if(!m_lock->tryLock(30)) {
       printf("GetNextRPData():   Could not acquire lock\n");
       return RPData();
     }
@@ -315,7 +324,7 @@ namespace Nf {
       m_qGps.pop_front();
     }
 
-    m_lock.unlock();
+    m_lock->unlock();
     return res;
   }
 
@@ -331,17 +340,19 @@ namespace Nf {
       NTrace("RPUlteriusProcessManager::EnableType, Already receiving this type\n");
     }
 
-    if(!m_handleLock.tryLock(60)) {
+    if(!m_lock->tryLock(60)) {
       NTrace("RPUlteriusProcessManager::EnableType, Failed to acquire handleLock\n");
     }
+
+    uDataDesc desc = m_descs[RPF_BPOST32];
 
     s32 nBytes;
     if(type == RPF_GPS)
       nBytes = sizeof(RPDatumHeader)+3*sizeof(GPS_Data);
     else if(type == RPF_BPOST8)
-      nBytes = sizeof(RPDatumHeader)+3*640*480;
+      nBytes = sizeof(RPDatumHeader)+3*desc.w*desc.h;
     else
-      nBytes = sizeof(RPDatumHeader)+3*640*480*4;
+      nBytes = sizeof(RPDatumHeader)+3*desc.w*desc.h*4;
     HandleSet handle;
     char baseStr[] = "AC87ED25-C831-44f1-A0A1-675F661C2460";
     char pipeName[500];
@@ -401,26 +412,30 @@ namespace Nf {
     char startString[800];
     sprintf(pName, "%s_%d", baseStr, type);
 #ifdef _DEBUG
-    sprintf(startString, "C:/Users/Joey/Documents/svn/Cinder/Trunk/Projects/ColorTrack/Debug/Build/UlteriusDataGrabber.exe -ip %s -n %s -t %d",
+    sprintf(startString, "C:/Users/Joey/Documents/ultrasteer/build/UlteriusDataGrabber/Debug/UlteriusDataGrabber.exe -ip %s -n %s -t %d",
       m_ip, pName, type);
 #else
-    sprintf(startString, "C:/Users/Joey/Documents/svn/Cinder/Trunk/Projects/ColorTrack/Release/Build/UlteriusDataGrabber.exe -ip %s -n %s -t %d",
+    sprintf(startString, "C:/Users/Joey/Documents/ultrasteer/build/UlteriusDataGrabber/Release/UlteriusDataGrabber.exe -ip %s -n %s -t %d",
       m_ip, pName, type);
 #endif
     //Now Create the process
     STARTUPINFOA info = {sizeof(info)};
     PROCESS_INFORMATION pi;
-    if(!CreateProcessA(NULL, (LPSTR)startString, NULL, NULL, FALSE, 0, NULL, NULL, &info, &pi)) {
+    if(!CreateProcessA(NULL, (LPSTR)startString, NULL, NULL, FALSE, CREATE_BREAKAWAY_FROM_JOB, NULL, NULL, &info, &pi)) {
       NTrace("RPUlteriusProcessManager::EnableType, Error creating process %d\n", GetLastError());
       ASSERT(0);
     }
 
+    NTrace("ghJob %d\n", ghJob);
+
     //Assign the process to our global job object
     if(0 == AssignProcessToJobObject( ghJob, pi.hProcess)) {
-      NTrace("Failure to assign process to job object\n");
+      NTrace("Failure to assign process to job object %d\n", GetLastError());
     }
 
-    m_handleLock.unlock();
+    Sleep(30);
+
+    m_lock->unlock();
 
     m_enabledTypes |= type;
 
@@ -448,7 +463,6 @@ namespace Nf {
 
   s32 RPUlteriusProcessManager::AddData(const RPDatum *data)
   {
-    CvSize size = cvSize(640, 480);
     RPData rp;
     u32 tick = data->header.tick;
 
@@ -459,6 +473,7 @@ namespace Nf {
     //NTrace("Type %d Tick %d\n", type, tick);
 
     uDataDesc desc = m_descs[type];
+    CvSize size = cvSize(desc.w, desc.h);
     switch(type) {
         case RPF_BPOST8: 
           {
@@ -532,7 +547,7 @@ namespace Nf {
           break;
     }
 
-    if(!m_lock.tryLock(45)) {
+    if(!m_lock->tryLock(45)) {
       releaseRPData(&rp);
       return 0;
     }
@@ -638,7 +653,7 @@ namespace Nf {
       m_qGps.pop_front();
     }
 
-    m_lock.unlock();
+    m_lock->unlock();
     return 1;
   }
 
