@@ -23,11 +23,24 @@ namespace Nf {
     m_ulterius->connect(ip);
     m_ulterius->setSharedMemoryStatus(0);
     m_ulterius->setCallback(onNewData);
+    
+    //save off all the data descriptors
+    s32 nTypes = sizeof(RP_TYPE_LIST)/sizeof(RP_TYPE_LIST[0]);
+    uDataDesc desc;
+    for(s32 i=0; i<nTypes; i++) {
+      m_ulterius->getDataDescriptor((uData)RP_TYPE_LIST[i], desc);
+      m_descs[(RP_TYPE)RP_TYPE_LIST[i]] = desc;
+    }
 
     bool rv = m_ulterius->setDataToAcquire(type);
     ASSERT(rv);
 
     gThis = this;
+  }
+
+  uDataDesc RPUlteriusReader::GetDesc(RP_TYPE type)
+  {
+    return m_descs[type];
   }
 
   RPUlteriusReader::~RPUlteriusReader()
