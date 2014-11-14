@@ -40,6 +40,9 @@ public:
   vtkSmartPointer<vtkAxesActor> m_volumeAxes;
   std::tr1::shared_ptr < Nf::CubeVisualizer > m_extentVis;
 
+  //Frame Boundaries
+  std::tr1::shared_ptr < Nf::CubeVisualizer > m_frameBoundaries;
+
   //Parameters
 
   //colorTransferFunction
@@ -50,13 +53,14 @@ public:
 
   //showVolumeExtent
   std::tr1::shared_ptr < Nf::BoolParameter > m_showVolumeExtent;
-  void onShowVolumeExtentChanged();
-  CLASS_CALLBACK(onShowVolumeExtentChanged, USVisualizerWidget);
+  void onShowExtrasChanged();
+  CLASS_CALLBACK(onShowExtrasChanged, USVisualizerWidget);
 
   //showVolumeAxes
   std::tr1::shared_ptr < Nf::BoolParameter > m_showVolumeAxes;
-  void onShowVolumeAxesChanged();
-  CLASS_CALLBACK(onShowVolumeAxesChanged, USVisualizerWidget);
+
+  //showFrameBoundaries
+  std::tr1::shared_ptr < Nf::BoolParameter > m_showFrameBoundaries;
 
   //setViewXY
   std::tr1::shared_ptr < Nf::BoolParameter > m_setViewXY;
@@ -91,6 +95,7 @@ public slots:
 
 protected:
   Nf::RPData m_last;
+  void UpdateFrameBoundaries();
 
 };
 

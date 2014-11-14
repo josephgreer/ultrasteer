@@ -1,5 +1,6 @@
 #include "ImageViewerWidget.h"
 #include <vtkCamera.h>
+#include <vtkDataObject.h>
 
 namespace Nf
 {
@@ -15,6 +16,8 @@ namespace Nf
     m_imAct = vtkSmartPointer<vtkImageActor>::New();
     m_renderer = vtkSmartPointer<vtkRenderer>::New();
     m_interactor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
+    m_flip = vtkSmartPointer<vtkImageFlip>::New();
+
 
 #if 0
     m_importer->SetDataOrigin(0,0,0);
@@ -51,7 +54,6 @@ namespace Nf
     m_importer->SetImportVoidPointer(m_im->imageData);
     m_importer->Update();
     m_importer->Modified();
-
     if(!m_init) {
 #if 0
       m_mapper->SetInputData(m_importer->GetOutput(0));
@@ -62,7 +64,10 @@ namespace Nf
       m_imageActor->SetPosition(0,0);
       m_renderer->AddActor2D(m_imageActor);
 #else
-      m_imAct->SetInputData(m_importer->GetOutput());
+      m_flip->SetFilteredAxes(1);
+      m_flip->SetInputData((vtkDataObject *)m_importer->GetOutput());
+      m_flip->Update();
+      m_imAct->SetInputData(m_flip->GetOutput());
       m_renderer->AddActor2D(m_imAct);
 #endif
 
@@ -76,9 +81,9 @@ namespace Nf
       // Render and start interaction
       m_interactor->SetRenderWindow(this->GetRenderWindow());
       m_interactor->Initialize();
-      m_renderer->ResetCamera();
+      f64 *bounds = m_imAct->GetBounds();
+      m_renderer->ResetCamera(bounds);
       vtkCamera *cam = m_renderer->GetActiveCamera();
-      cam->Zoom(2.0);
       m_renderer->SetActiveCamera(cam);
     } 
 

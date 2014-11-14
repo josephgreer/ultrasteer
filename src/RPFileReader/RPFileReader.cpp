@@ -264,6 +264,7 @@ namespace Nf
 
   RPFileReaderCollection::RPFileReaderCollection() 
     : m_type(RPF_NULL_TYPE)
+    , m_gps(NULL)
   {
   }
 

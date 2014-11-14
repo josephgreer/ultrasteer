@@ -98,6 +98,17 @@ namespace Nf
     }
   };
 
+  inline Vec3d rpImageCoordToWorldCoord3(const Vec2d &image, const Matrix44d &posePos, const Matrix44d &calibration, const Vec2d &start, const Vec2d &scale)
+  {
+    Vec4d world =  posePos*calibration*Vec4d(1, (image.y-start.y)*scale.y, (image.x-start.x)*scale.x, 1.0);
+    return Vec3d(world.x, world.y, world.z);
+  }
+
+  inline Vec4d rpImageCoordToWorldCoord4(const Vec2d &image, const Matrix44d &posePos, const Matrix44d &calibration, const Vec2d &start, const Vec2d &scale)
+  {
+    return posePos*calibration*Vec4d(1, (image.y-start.y)*scale.y, (image.x-start.x)*scale.x, 1.0);
+  }
+
   //NOTE:  WE CO-OPT alphaEnabled to store clock tick when image arrived from ulterius.
   //alphaEnabled is ignored by openCv
   struct RPData {
@@ -138,6 +149,23 @@ namespace Nf
       this->mpp = rhs.mpp;
       this->gps = rhs.gps;
       return *this;
+    }
+
+    Cubed GetFrameBoundaries(Matrix44d cal, Vec2d mpp)
+    {
+      mpp = mpp*(1.0/1000.0);
+      Matrix44d tPose = Matrix44d::FromCvMat(this->gps.pose);
+      Matrix33d pose = tPose.GetOrientation();
+      Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, this->gps.pos);
+      Vec3d ul = rpImageCoordToWorldCoord3(Vec2d(0,0), posePos, cal, Vec2d(320, 0), mpp);
+      Vec3d ur = rpImageCoordToWorldCoord3(Vec2d(this->b8->width,0), posePos, cal, Vec2d(320, 0), mpp); 
+      Vec3d bl = rpImageCoordToWorldCoord3(Vec2d(0,this->b8->height), posePos, cal, Vec2d(320, 0), mpp); 
+
+      Vec3d xaxis = (ur-ul);
+      Vec3d yaxis = (bl-ul);
+      Vec3d zaxis = Vec3d(0,0,0);
+
+      return Cubed(ul, Matrix33d::FromCols(xaxis, yaxis, zaxis));
     }
 
     RPData Clone()

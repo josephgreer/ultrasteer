@@ -28,7 +28,7 @@ static bool checkFullSet(const RPData *data, u32 enabledTypes)
 {
   //GPS is kept in another stream and assembled at the end
   enabledTypes &= ~RPF_GPS;
-  if(enabledTypes&RPF_BPOST8 && !data->b8)
+  if((enabledTypes&RPF_BPOST8) && !data->b8)
     return false;
   if(((enabledTypes&RPF_COLOR)||(enabledTypes&RPF_BPOST32)) && !data->color)
     return false;
@@ -62,7 +62,7 @@ int main( int argc, const char* argv[] )
     readers.AddReader(RPF_BPOST8, (RPReader *)new RPFileReader(fname));
   }
   if(mask&RPF_BPOST32) {
-    char ext[] = "col";
+    char ext[] = "b32";
     sprintf(fname, "%s.%s", baseName, ext);
     readers.AddReader(RPF_BPOST32, (RPReader *)new RPFileReader(fname));
   }
@@ -80,10 +80,15 @@ int main( int argc, const char* argv[] )
   cvNamedWindow("Display Window");
   RPData data = readers.GetNextRPData();
   while(checkFullSet(&data, mask)) {
-    RPData data = readers.GetNextRPData();
-    cvShowImage("Display Window", data.color);
     releaseRPData(&data);
-    s32 x = 0;
+    data = readers.GetNextRPData();
+    IplImage *im = NULL;
+    if(mask&RPF_BPOST32 || mask&RPF_COLOR)
+      im = data.color;
+    else
+      im = data.b8;
+    cvShowImage("Display Window", im);
+    cvWaitKey(30);
   }
 
   return 0;
