@@ -6,324 +6,433 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>569</width>
-    <height>293</height>
+    <width>612</width>
+    <height>399</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>RobotControl</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <widget class="QWidget" name="layoutWidget">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>10</y>
-      <width>551</width>
-      <height>257</height>
-     </rect>
-    </property>
-    <layout class="QGridLayout" name="gridLayout">
-     <item row="1" column="1">
-      <layout class="QVBoxLayout" name="verticalLayout_2">
-       <item>
-        <widget class="QLCDNumber" name="insertion_pos"/>
-       </item>
-       <item>
-        <widget class="QPushButton" name="InitInsertion">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="font">
+         <font>
+          <pointsize>14</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Roll Stage</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignBottom|Qt::AlignHCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="font">
+         <font>
+          <pointsize>14</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Insertion Stage</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignBottom|Qt::AlignHCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_3">
+        <property name="font">
+         <font>
+          <pointsize>14</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Articulation Stage</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignBottom|Qt::AlignHCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="1" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLCDNumber" name="roll_pos"/>
+      </item>
+      <item>
+       <widget class="QLCDNumber" name="insertion_pos"/>
+      </item>
+      <item>
+       <widget class="QLCDNumber" name="articulation_pos">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="2" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QPushButton" name="InitRoll">
+        <property name="text">
+         <string>Intialize Roll</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="InitInsertion">
+        <property name="text">
+         <string>Initialize Insertion</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="InitArticulation">
+        <property name="text">
+         <string>Initialize Articulation</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="3" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QPushButton" name="rotatePosInc">
+          <property name="text">
+           <string>10 deg. Positive Rotation</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="rotateNegInc">
+          <property name="text">
+           <string>10 deg. Negative Rotation</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="rotatePosVel">
+          <property name="text">
+           <string>Max. Positive Rotation</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="rotateNegVel">
+          <property name="text">
+           <string>Max. Negative Rotation</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="stopRoll">
+          <property name="text">
+           <string>Stop Roll</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="homeRoll">
+          <property name="text">
+           <string>Home Roll</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QPushButton" name="insertPosInc">
+          <property name="text">
+           <string>Insert 10 mm</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="insertNegInc">
+          <property name="text">
+           <string>Retract 10 mm</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="insertPosVel">
+          <property name="text">
+           <string>Insert 10 mm/s</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="insertNegVel">
+          <property name="text">
+           <string>Retract 10 mm/s</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="stopInsertion">
+          <property name="text">
+           <string>Stop Insertion</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="homeInsertion">
+          <property name="text">
+           <string>Home Insertion</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <property name="spacing">
+         <number>9</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_5">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>-30</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QScrollBar" name="articulationScrollBar">
+          <property name="minimum">
+           <number>-30</number>
+          </property>
+          <property name="maximum">
+           <number>30</number>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_4">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>30</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+    <item row="4" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout_6">
+      <item>
+       <widget class="QComboBox" name="rollPort">
+        <item>
          <property name="text">
-          <string>Initialize Insertion</string>
+          <string>COM1</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="insert2mm">
+        </item>
+        <item>
          <property name="text">
-          <string>Insert 3 mm</string>
+          <string>COM2</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="retract2mm">
+        </item>
+        <item>
          <property name="text">
-          <string>Retract 20 mm</string>
+          <string>COM3</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="insert30rpm">
+        </item>
+        <item>
          <property name="text">
-          <string>Insert 30 rpm</string>
+          <string>COM4</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="retract30rpm">
+        </item>
+        <item>
          <property name="text">
-          <string>Retract 30 rpm</string>
+          <string>COM5</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="stopInsertion">
+        </item>
+        <item>
          <property name="text">
-          <string>Stop Insertion</string>
+          <string>COM6</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="homeInsertion">
+        </item>
+        <item>
          <property name="text">
-          <string>Home Insertion</string>
+          <string>COM7</string>
          </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item row="0" column="0">
-      <widget class="QLabel" name="label">
-       <property name="font">
-        <font>
-         <pointsize>13</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Roll Stage</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignBottom|Qt::AlignHCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QLabel" name="label_2">
-       <property name="font">
-        <font>
-         <pointsize>13</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Insertion Stage</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignBottom|Qt::AlignHCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <layout class="QVBoxLayout" name="verticalLayout">
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <item>
-        <widget class="QLCDNumber" name="roll_pos"/>
-       </item>
-       <item>
-        <widget class="QPushButton" name="InitRoll">
+        </item>
+        <item>
          <property name="text">
-          <string>Intialize Roll</string>
+          <string>COM8</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="rotatePosInc">
+        </item>
+        <item>
          <property name="text">
-          <string>10 deg. Positive Rotation</string>
+          <string>COM9</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="rotateNegInc">
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="insertionPort">
+        <item>
          <property name="text">
-          <string>10 deg. Negative Rotation</string>
+          <string>COM1</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="maxPosVelocity">
+        </item>
+        <item>
          <property name="text">
-          <string>Max. Positive Rotation</string>
+          <string>COM2</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="maxNegVelocity">
+        </item>
+        <item>
          <property name="text">
-          <string>Max. Negative Rotation</string>
+          <string>COM3</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="stopMotor">
+        </item>
+        <item>
          <property name="text">
-          <string>Stop Rotation</string>
+          <string>COM4</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="homeRoll">
+        </item>
+        <item>
          <property name="text">
-          <string>Home Roll</string>
+          <string>COM5</string>
          </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item row="0" column="2">
-      <widget class="QLabel" name="label_3">
-       <property name="font">
-        <font>
-         <pointsize>13</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Duty Cycle Control</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignBottom|Qt::AlignHCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="2">
-      <layout class="QVBoxLayout" name="verticalLayout_3">
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout">
-         <item>
-          <layout class="QGridLayout" name="gridLayout_2">
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_4">
-             <property name="text">
-              <string>Depth (mm)</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QSpinBox" name="DC_depth_setting">
-             <property name="maximum">
-              <number>100</number>
-             </property>
-             <property name="singleStep">
-              <number>10</number>
-             </property>
-             <property name="value">
-              <number>20</number>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_5">
-             <property name="text">
-              <string>Duty cycle (%)</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QSpinBox" name="DC_setting">
-             <property name="minimum">
-              <number>25</number>
-             </property>
-             <property name="maximum">
-              <number>100</number>
-             </property>
-             <property name="value">
-              <number>50</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QGridLayout" name="gridLayout_3">
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_6">
-             <property name="text">
-              <string>Angle (deg)</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLCDNumber" name="DC_Angle_Display">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="numDigits">
-              <number>3</number>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0" colspan="2">
-            <widget class="QDial" name="DC_angle_setting">
-             <property name="maximum">
-              <number>360</number>
-             </property>
-             <property name="invertedAppearance">
-              <bool>true</bool>
-             </property>
-             <property name="wrapping">
-              <bool>true</bool>
-             </property>
-             <property name="notchTarget">
-              <double>15.000000000000000</double>
-             </property>
-             <property name="notchesVisible">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <widget class="QPushButton" name="dutyCycle">
+        </item>
+        <item>
          <property name="text">
-          <string>Execute Duty-Cycled Insertion</string>
+          <string>COM6</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_2">
-         <item>
-          <widget class="QPushButton" name="vibrationOn">
-           <property name="text">
-            <string>Buzz On</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="vibrationOff">
-           <property name="text">
-            <string>Buzz Off</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_5">
-         <item>
-          <widget class="QPushButton" name="ditherOn">
-           <property name="text">
-            <string>Dither On</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="ditherOff">
-           <property name="text">
-            <string>Dither Off</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-      </layout>
-     </item>
-    </layout>
-   </widget>
+        </item>
+        <item>
+         <property name="text">
+          <string>COM7</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>COM8</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>COM9</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="articulationPort">
+        <item>
+         <property name="text">
+          <string>COM1</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>COM2</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>COM3</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>COM4</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>COM5</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>COM6</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>COM7</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>COM8</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>COM9</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+   <zorder></zorder>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
  </widget>
@@ -365,10 +474,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>stopMotor</sender>
+   <sender>stopRoll</sender>
    <signal>clicked()</signal>
    <receiver>RobotControlClass</receiver>
-   <slot>StopMotor()</slot>
+   <slot>StopRoll()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>290</x>
@@ -397,10 +506,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>maxPosVelocity</sender>
+   <sender>rotatePosVel</sender>
    <signal>clicked()</signal>
    <receiver>RobotControlClass</receiver>
-   <slot>SetMaxPosVelocity()</slot>
+   <slot>RotatePosVel()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>90</x>
@@ -413,10 +522,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>maxNegVelocity</sender>
+   <sender>rotateNegVel</sender>
    <signal>clicked()</signal>
    <receiver>RobotControlClass</receiver>
-   <slot>SetMaxNegVelocity()</slot>
+   <slot>RotateNegVel()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>90</x>
@@ -429,10 +538,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>retract2mm</sender>
+   <sender>insertNegInc</sender>
    <signal>clicked()</signal>
    <receiver>RobotControlClass</receiver>
-   <slot>Retract2mm()</slot>
+   <slot>InsertNegInc()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>266</x>
@@ -445,10 +554,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>insert2mm</sender>
+   <sender>insertPosInc</sender>
    <signal>clicked()</signal>
    <receiver>RobotControlClass</receiver>
-   <slot>Insert2mm()</slot>
+   <slot>InsertPosInc()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>266</x>
@@ -461,10 +570,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>insert30rpm</sender>
+   <sender>insertPosVel</sender>
    <signal>clicked()</signal>
    <receiver>RobotControlClass</receiver>
-   <slot>Insert30rpm()</slot>
+   <slot>InsertPosVel()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>266</x>
@@ -477,10 +586,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>retract30rpm</sender>
+   <sender>insertNegVel</sender>
    <signal>clicked()</signal>
    <receiver>RobotControlClass</receiver>
-   <slot>Retract30rpm()</slot>
+   <slot>InsertNegVel()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>266</x>
@@ -525,90 +634,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>dutyCycle</sender>
-   <signal>clicked()</signal>
-   <receiver>RobotControlClass</receiver>
-   <slot>ExecuteDutyCycle()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>403</x>
-     <y>119</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>275</x>
-     <y>116</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>DC_depth_setting</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>RobotControlClass</receiver>
-   <slot>SetDCInsDist(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>310</x>
-     <y>341</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>285</x>
-     <y>269</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>DC_setting</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>RobotControlClass</receiver>
-   <slot>SetDCPercent(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>428</x>
-     <y>136</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>288</x>
-     <y>117</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>DC_angle_setting</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>RobotControlClass</receiver>
-   <slot>SetDCAngle(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>507</x>
-     <y>127</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>288</x>
-     <y>117</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>DC_angle_setting</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>DC_Angle_Display</receiver>
-   <slot>display(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>389</x>
-     <y>400</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>431</x>
-     <y>341</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>homeInsertion</sender>
    <signal>clicked()</signal>
    <receiver>RobotControlClass</receiver>
-   <slot>homeInsertion()</slot>
+   <slot>HomeInsertion()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>239</x>
@@ -624,7 +653,7 @@
    <sender>homeRoll</sender>
    <signal>clicked()</signal>
    <receiver>RobotControlClass</receiver>
-   <slot>homeRoll()</slot>
+   <slot>HomeRoll()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>85</x>
@@ -637,92 +666,54 @@
    </hints>
   </connection>
   <connection>
-   <sender>vibrationOn</sender>
+   <sender>InitArticulation</sender>
    <signal>clicked()</signal>
    <receiver>RobotControlClass</receiver>
-   <slot>vibrationOn()</slot>
+   <slot>InitializeArticulation()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>377</x>
-     <y>224</y>
+     <x>470</x>
+     <y>102</y>
     </hint>
     <hint type="destinationlabel">
-     <x>283</x>
-     <y>247</y>
+     <x>337</x>
+     <y>165</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>vibrationOff</sender>
-   <signal>clicked()</signal>
+   <sender>articulationScrollBar</sender>
+   <signal>valueChanged(int)</signal>
    <receiver>RobotControlClass</receiver>
-   <slot>vibrationOff()</slot>
+   <slot>SetArticulationAngle(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>499</x>
-     <y>224</y>
+     <x>470</x>
+     <y>204</y>
     </hint>
     <hint type="destinationlabel">
-     <x>283</x>
-     <y>247</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ditherOn</sender>
-   <signal>clicked()</signal>
-   <receiver>RobotControlClass</receiver>
-   <slot>DitherOn()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>377</x>
-     <y>226</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>290</x>
-     <y>276</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ditherOff</sender>
-   <signal>clicked()</signal>
-   <receiver>RobotControlClass</receiver>
-   <slot>DitherOff()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>499</x>
-     <y>226</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>290</x>
-     <y>276</y>
+     <x>337</x>
+     <y>165</y>
     </hint>
    </hints>
   </connection>
  </connections>
  <slots>
   <slot>InitializeRoll()</slot>
-  <slot>StopMotor()</slot>
+  <slot>StopRoll()</slot>
   <slot>RotNegInc()</slot>
-  <slot>SetMaxPosVelocity()</slot>
-  <slot>SetMaxNegVelocity()</slot>
+  <slot>RotatePosVel()</slot>
+  <slot>RotateNegVel()</slot>
   <slot>InitializeInsertion()</slot>
-  <slot>Insert2mm()</slot>
-  <slot>Retract2mm()</slot>
-  <slot>Insert30rpm()</slot>
-  <slot>Retract30rpm()</slot>
+  <slot>InsertPosInc()</slot>
+  <slot>InsertNegInc()</slot>
+  <slot>InsertPosVel()</slot>
+  <slot>InsertNegVel()</slot>
   <slot>StopInsertion()</slot>
   <slot>RotPosInc()</slot>
-  <slot>ExecuteDutyCycle()</slot>
-  <slot>SetDCPercent(int)</slot>
-  <slot>SetDCInsDist(int)</slot>
-  <slot>SetDCAngle(int)</slot>
-  <slot>homeRoll()</slot>
-  <slot>homeInsertion()</slot>
-  <slot>vibrationOn()</slot>
-  <slot>vibrationOff()</slot>
-  <slot>DitherOn()</slot>
-  <slot>DitherOff()</slot>
+  <slot>HomeRoll()</slot>
+  <slot>HomeInsertion()</slot>
+  <slot>InitializeArticulation()</slot>
+  <slot>SetArticulationAngle(int)</slot>
  </slots>
 </ui>
