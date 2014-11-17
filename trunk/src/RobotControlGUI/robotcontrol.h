@@ -16,37 +16,32 @@ public:
 private:
 	Ui::RobotControlClass ui;
 	NeedleSteeringRobot m_robot;
-	bool m_rollInit, m_insInit;
+	bool m_rollInit, m_insInit, m_artInit;
+	bool m_displayTimerOn;
 	double m_DC_angle, m_DC_percent, m_DC_ins_dist;
-	QTimer m_insertRollQueryTimer;
+	QTimer m_DisplayQueryTimer;
 
 private slots:
 	void InitializeRoll(void);
-	void SetMaxPosVelocity(void);
-	void SetMaxNegVelocity(void);
-	void StopMotor(void);
 	void RotPosInc(void);
 	void RotNegInc(void);
+	void RotatePosVel(void);
+	void RotateNegVel(void);
+	void StopRoll(void);
+	void HomeRoll(void);
+
 	void InitializeInsertion(void);
-	void Insert2mm(void);
-	void Retract2mm(void);
-	void Insert30rpm(void);
-	void Retract30rpm(void);
+	void InsertPosInc(void);
+	void InsertNegInc(void);
+	void InsertPosVel(void);
+	void InsertNegVel(void);
 	void StopInsertion(void);
-	void ExecuteDutyCycle(void);
-	void SetDCPercent(int);
-	void SetDCInsDist(int);
-	void SetDCAngle(int);
-	void homeRoll(void);
-	void homeInsertion(void);
-	void vibrationOn(void);
-	void vibrationOff(void);
-	void DitherOn(void);
-	void DitherOff(void);
-	void onCheckInsertRoll(void);
-	
-private:
-	void EnableDCControls(bool enable);
+	void HomeInsertion(void);
+
+	void InitializeArticulation(void);
+	void SetArticulationAngle(int);
+
+	void onDisplayQuery(void);
 };
 
 #endif // ROBOTCONTROL_H
