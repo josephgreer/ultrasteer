@@ -109,6 +109,6 @@ float InsertionDevice::GetMM()
 ///	\post		Leadscrew pitch is returned
 float InsertionDevice::GetPitch()
 {
-	return SLIDE_PITCH;
+	return SLIDE_PITCH/SPUR_GEAR_RATIO;
 }
 

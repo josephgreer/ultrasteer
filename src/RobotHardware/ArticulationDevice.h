@@ -21,6 +21,7 @@ public: //Methods
 	float GetAngle(void);	
 	void SetDefaultVelocity(void);
 	void setVibration(bool);
+	void GetAngleLimits(float* min, float* max);
 	
 private:	//Methods
 	void SetLimits(void);

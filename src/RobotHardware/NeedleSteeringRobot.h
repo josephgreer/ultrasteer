@@ -8,12 +8,11 @@
 #pragma once
 
 #include <QDebug>
-#include <time.h>
 #include "RollDevice.h"
 #include "InsertionDevice.h"
 #include "ArticulationDevice.h"
 #include "qtimer.h"
-#include "time.h"
+#include <time.h>
 
 class NeedleSteeringRobot : public QObject 
 {
@@ -25,19 +24,21 @@ public:
 	void processSweep();
 
 	void InitializeRoll(QString Com);
-	void InitializeInsertion(QString Com);
+	bool InitializeInsertion(QString Com);
 	void InitializeArticulation(QString Com);
 	void InsertIncremental(float MM);
 	void RotateIncremental(float Deg);
-	void ArticulateIncremental(float Deg);
+	void SetArticulationAngle(float Deg);
 	void SetInsertionVelocity(float RPM);
 	void SetRotationVelocity(float RPM);
 	void DisableAll(void);
 	void HomeRoll(void);
 	void HomeInsertion(void);
+	void HomeArticulation(void);
 	void setVibration(bool);
 	double getRollAngle(void);
 	double getInsMM(void);
+	double getArticulationAngle(void);
 	//void cancelDutyCycling(void);
 	//void DutyCycleSteer(float DC, float angle, float insDist);
 
@@ -50,8 +51,8 @@ private:
 	double m_DC_InsTarg, m_DC_RollTarg;
 	double m_DC;
 
-private slots:
-	void OnDwellTimeout(void);
-	void OnPollTimeout(void);
+//private slots:
+		//void OnDwellTimeout(void);
+		//void OnPollTimeout(void);
 };
 
