@@ -2,9 +2,6 @@
 #include "math.h"
 #include <iostream>
 #include <fstream>
-#include "RollDevice.h"
-#include "InsertionDevice.h"
-#include "ArticulationDevice.h"
 #include <time.h>
 
 #define PI 3.14159265
@@ -28,13 +25,14 @@ void NeedleSteeringRobot::InitializeRoll(QString Com)
 	m_RollDevice.EnableDevice();
 }
 
-void NeedleSteeringRobot::InitializeInsertion(QString Com)
+bool NeedleSteeringRobot::InitializeInsertion(QString Com)
 {
 	m_InsertionDevice.Init(Com);
 	m_InsertionDevice.EnableDevice();
 	// Short pause to allow communication to sync up.
 	Sleep(10);
 	m_InsertionDevice.HomingSequence();
+	return true;
 }
 
 void NeedleSteeringRobot::InitializeArticulation(QString Com)
@@ -62,18 +60,33 @@ void NeedleSteeringRobot::RotateIncremental(float Deg)
 	m_RollDevice.SetPosition(new_roll_pos,false);
 }
 
-void NeedleSteeringRobot::ArticulateIncremental(float Deg)
+void NeedleSteeringRobot::SetArticulationAngle(float Deg)
 {
 	m_ArticulationDevice.ClearExistingData();
-	long roll_pos = m_RollDevice.GetPosition();
-	long diff = m_RollDevice.ConvertAngleToPosition(Deg);
-	long new_roll_pos = roll_pos + diff;
-	m_RollDevice.SetPosition(new_roll_pos,false);
+	
+	// Check that the desired position is within allowable limits
+	float max,min;
+	m_ArticulationDevice.GetAngleLimits(&min,&max);
+	if (Deg > max)
+		Deg = max;
+	if (Deg < min)
+		Deg = min;
+
+	int pos = m_ArticulationDevice.ConvertAngleToPosition(Deg);
+	m_ArticulationDevice.SetPosition(pos,false);
 }
 
-
-void NeedleSteeringRobot::SetInsertionVelocity(float RPM)
+void NeedleSteeringRobot::SetInsertionVelocity(float MMPS)
 {
+	// get the number of mm for one motor turn
+	float MMPR = m_InsertionDevice.GetPitch();
+	
+	// divide mm per second to get rotations per second
+	float RPS = MMPS /MMPR;
+
+	// mulitply by 60 to get rotations per minute
+	float RPM = RPS*60.0;
+	
 	m_InsertionDevice.SetVelocity(RPM);
 }
 
@@ -96,6 +109,12 @@ void NeedleSteeringRobot::HomeRoll(void)
 	m_RollDevice.SetPosition(current_pos-delta);
 }
 
+void NeedleSteeringRobot::HomeArticulation(void)
+{
+	// Returns articulation to the zero position
+	m_ArticulationDevice.SetPosition(0);
+}
+
 void NeedleSteeringRobot::HomeInsertion(void)
 {
 	// Returns insertion device to the home position
@@ -114,12 +133,18 @@ double NeedleSteeringRobot::getRollAngle(void)
 	return m_RollDevice.GetAngle();
 }
 
-//double NeedleSteeringRobot::getInsMM(void)
-//{
-//	// Returns the current angle of the needle
-//	return m_InsertionDevice.GetMM();
-//}
-//
+double NeedleSteeringRobot::getArticulationAngle(void)
+{
+	// Returns the current angle of the needle
+	return m_ArticulationDevice.GetAngle();
+}
+
+double NeedleSteeringRobot::getInsMM(void)
+{
+	// Returns the current angle of the needle
+	return m_InsertionDevice.GetMM();
+}
+
 //// brief: 
 //void NeedleSteeringRobot::DutyCycleSteer(float DC, float angle, float InsDist)
 //{

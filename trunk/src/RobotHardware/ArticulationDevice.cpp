@@ -9,8 +9,8 @@
 #define CORRIDOR				20				//Default corridor value
 #define FAULHABER_ONE_ROTATION	4096			//# of encoder ticks in one full rotation (without factoring in the gear ratio) 
 #define SPUR_GEAR_RATIO			141.0*2.0/0.375	//Gear ratio for the faulhaber motor + pinion gear combo
-#define MIN_ANGLE_LIMIT			-30				//Minimum encoder limit that the motor will not be able to travel past
-#define MAX_ANGLE_LIMIT			30				//Maximum encoder limit that the motor will not be able to travel past
+#define MIN_ANGLE_LIMIT			-30.0			//Minimum encoder limit that the motor will not be able to travel past
+#define MAX_ANGLE_LIMIT			30.0			//Maximum encoder limit that the motor will not be able to travel past
 #define CURRENT_LIMIT			2000			//Faulhaber motor peak current limit of 3000mA 	
 #define MAX_VELOCITY			377				//Roll device velocity when it is not moving in no increments mode
 /**********************************************************************************/
@@ -103,6 +103,13 @@ float ArticulationDevice::GetAngle()
 {
 	m_currentAngle = ConvertPositionToAngle( this->GetPosition() );
 	return m_currentAngle;
+}
+
+/// \brief		Get the motion limits of the articulation device
+void ArticulationDevice::GetAngleLimits(float* min, float* max)
+{
+	*min = MIN_ANGLE_LIMIT;
+	*max = MAX_ANGLE_LIMIT;
 }
 
 /// \brief		Set the digital output of the MCDC
