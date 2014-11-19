@@ -51,10 +51,10 @@ namespace Nf
     int bl[2];
     int probe;
     int txf;
-    int sf;
-    int dr;
-    int ld;
-    int extra;
+    int sf;        
+    int dr;           //co-opted for mpp
+    int ld;           //co-opted for origin_x
+    int extra;        //co-opted for origin_y
   } RPFileHeader;
 #pragma pack(pop)
 
@@ -98,13 +98,13 @@ namespace Nf
     }
   };
 
-  inline Vec3d rpImageCoordToWorldCoord3(const Vec2d &image, const Matrix44d &posePos, const Matrix44d &calibration, const Vec2d &start, const Vec2d &scale)
+  inline Vec3d rpImageCoordToWorldCoord3(const Vec2d &image, const Matrix44d &posePos, const Matrix44d &calibration, Vec2d &start, const Vec2d &scale)
   {
     Vec4d world =  posePos*calibration*Vec4d(1, (image.y-start.y)*scale.y, (image.x-start.x)*scale.x, 1.0);
     return Vec3d(world.x, world.y, world.z);
   }
 
-  inline Vec4d rpImageCoordToWorldCoord4(const Vec2d &image, const Matrix44d &posePos, const Matrix44d &calibration, const Vec2d &start, const Vec2d &scale)
+  inline Vec4d rpImageCoordToWorldCoord4(const Vec2d &image, const Matrix44d &posePos, const Matrix44d &calibration, Vec2d &start, const Vec2d &scale)
   {
     return posePos*calibration*Vec4d(1, (image.y-start.y)*scale.y, (image.x-start.x)*scale.x, 1.0);
   }
@@ -118,6 +118,7 @@ namespace Nf
     IplImage *var;
     GPS_Data gps;
     f32 mpp;
+    Vec2d origin;
     Squarei roi;
 
     RPData() 
@@ -128,6 +129,7 @@ namespace Nf
       var = NULL;
       mpp = 0;
       gps.valid = 0;
+      origin = Vec2d(0,0);
     }
 
     RPData(const RPData &rp)
@@ -138,6 +140,7 @@ namespace Nf
       this->var = rp.var;
       this->mpp = rp.mpp;
       this->gps = rp.gps;
+      this->origin = rp.origin;
     }
 
     RPData operator=(const RPData &rhs)
@@ -148,18 +151,19 @@ namespace Nf
       this->var = rhs.var;
       this->mpp = rhs.mpp;
       this->gps = rhs.gps;
+      this->origin = rhs.origin;
       return *this;
     }
 
-    Cubed GetFrameBoundaries(Matrix44d cal, Vec2d mpp)
+    Cubed GetFrameBoundaries(Matrix44d cal)
     {
-      mpp = mpp*(1.0/1000.0);
       Matrix44d tPose = Matrix44d::FromCvMat(this->gps.pose);
       Matrix33d pose = tPose.GetOrientation();
       Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, this->gps.pos);
-      Vec3d ul = rpImageCoordToWorldCoord3(Vec2d(0,0), posePos, cal, Vec2d(320, 0), mpp);
-      Vec3d ur = rpImageCoordToWorldCoord3(Vec2d(this->b8->width,0), posePos, cal, Vec2d(320, 0), mpp); 
-      Vec3d bl = rpImageCoordToWorldCoord3(Vec2d(0,this->b8->height), posePos, cal, Vec2d(320, 0), mpp); 
+      Vec2d scale(this->mpp/1000.0, this->mpp/1000.0);
+      Vec3d ul = rpImageCoordToWorldCoord3(Vec2d(0,0), posePos, cal, this->origin, scale);
+      Vec3d ur = rpImageCoordToWorldCoord3(Vec2d(this->b8->width,0), posePos, cal, this->origin, scale); 
+      Vec3d bl = rpImageCoordToWorldCoord3(Vec2d(0,this->b8->height), posePos, cal, this->origin, scale); 
 
       Vec3d xaxis = (ur-ul);
       Vec3d yaxis = (bl-ul);

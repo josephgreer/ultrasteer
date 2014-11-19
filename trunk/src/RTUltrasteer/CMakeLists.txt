@@ -28,6 +28,7 @@ INCLUDE_DIRECTORIES(
   ../VolumeCreator
   ../Segment
   ../RPFileReader
+  ../UlteriusDataGrabber
   ${UlteriusDir}/inc
 ) 
 

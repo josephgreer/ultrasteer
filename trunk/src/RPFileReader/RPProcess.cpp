@@ -37,8 +37,11 @@ namespace Nf {
         continue;
       }
 
-      if(ctxt->queue.size() == 0)
+      if(ctxt->queue.size() == 0) {
+        ctxt->lock->unlock();
+        Sleep(45);
         continue;
+      }
 
       for(s32 i=0; i<(s32)ctxt->queue.size(); i++)
         handles[i] = ctxt->queue[i].hWrite;
@@ -93,7 +96,9 @@ namespace Nf {
 
   }
 
-  RPUlteriusProcessManager::RPUlteriusProcessManager(const char *ip, f32 framerate)
+  RPUlteriusProcessManager::RPUlteriusProcessManager(const char *ip, f64 mpp, Vec2d origin, f32 framerate)
+    : m_mpp(mpp)
+    , m_origin(origin)
   {
     m_enabledTypes = 0;
     //11 fps by default
@@ -325,6 +330,8 @@ namespace Nf {
     }
 
     m_lock->unlock();
+    res.origin = m_origin;
+    res.mpp = (f32)m_mpp;
     return res;
   }
 
@@ -340,7 +347,7 @@ namespace Nf {
       NTrace("RPUlteriusProcessManager::EnableType, Already receiving this type\n");
     }
 
-    if(!m_lock->tryLock(60)) {
+    if(!m_lock->tryLock(1000)) {
       NTrace("RPUlteriusProcessManager::EnableType, Failed to acquire handleLock\n");
     }
 

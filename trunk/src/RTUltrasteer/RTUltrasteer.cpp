@@ -42,13 +42,13 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   ui.setupUi(this);
 
   ADD_BOOL_PARAMETER(m_usDockVisible, "Show Full US Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
-  ADD_BOOL_PARAMETER(m_rpWidgetVisible, "Show Incremental Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
+  ADD_BOOL_PARAMETER(m_rpFileWidgetVisible, "Show Incremental Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
+  ADD_BOOL_PARAMETER(m_rpStreamingWidgetVisible, "Show Streaming Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
 
   CreateUSVisualizer();
   CreateMenuDock();
-  CreateRPDock();
-
-  this->tabifyDockWidget(m_rpDock, m_usDock);
+  CreateRPFileDock();
+  CreateRPStreamingDock();
 
   QTreeWidgetItem * rt = new QTreeWidgetItem(m_params);
   rt->setText(0, this->GetName());
@@ -58,17 +58,24 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   usVis->setText(0, m_usVis->GetName());
   CreateUIElements(usVis, *m_usVis, m_usVis->GetRepaintList());
 
-  QTreeWidgetItem * rp = new QTreeWidgetItem(m_params);
-  rp->setText(0, m_rpWidget->GetName());
-  CreateUIElements(rp, *m_rpWidget, m_rpWidget->GetChildWidgets());
+  QTreeWidgetItem * rpF = new QTreeWidgetItem(m_params);
+  rpF->setText(0, "RPFileDock");
+  CreateUIElements(rpF, *m_rpFileWidget, m_rpFileWidget->GetChildWidgets());
+
+  QTreeWidgetItem * rpS = new QTreeWidgetItem(m_params);
+  rpS->setText(0, "RPStreamingDock");
+  CreateUIElements(rpS, *m_rpStreamingWidget, m_rpStreamingWidget->GetChildWidgets());
 
   //Add to our map of root dock windows
-  m_roots[std::string(m_usVis->GetName())].dock = m_usDock;
-  m_roots[std::string(m_usVis->GetName())].param = m_usDockVisible.get();
-  m_roots[std::string(m_usVis->GetName())].root = usVis;
-  m_roots[std::string(m_rpWidget->GetName())].dock = m_rpDock;
-  m_roots[std::string(m_rpWidget->GetName())].param = m_rpWidgetVisible.get();
-  m_roots[std::string(m_rpWidget->GetName())].root = rp;
+  m_roots[std::string("USDock")].dock = m_usDock;
+  m_roots[std::string("USDock")].param = m_usDockVisible.get();
+  m_roots[std::string("USDock")].root = usVis;
+  m_roots[std::string("RPFileDock")].dock = m_rpFileDock;
+  m_roots[std::string("RPFileDock")].param = m_rpFileWidgetVisible.get();
+  m_roots[std::string("RPFileDock")].root = rpF;
+  m_roots[std::string("RPStreamingDock")].dock = m_rpStreamingDock;
+  m_roots[std::string("RPStreamingDock")].param = m_rpStreamingWidgetVisible.get();
+  m_roots[std::string("RPStreamingDock")].root = rpS;
 
   QDockWidget *last = NULL;
   for(std::map < std::string, DockWidgetInfo >::iterator i=m_roots.begin(); i!=m_roots.end(); i++) {
@@ -77,8 +84,6 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
       this->tabifyDockWidget(last, i->second.dock);
     last = i->second.dock;
   }
-
-  rp->setExpanded(true);
 
   onSetDocksVisible();
 }
@@ -109,10 +114,12 @@ void RTUltrasteer::Resize()
   QSize totalSize = this->size();
   QSize menuSize = m_params->size();
   QSize usVisSz = m_usVis->size();
-  QSize rpSz = m_rpWidget->size();
+  QSize rpFileSz = m_rpFileWidget->size();
+  QSize rpStreamingSz = m_rpStreamingWidget->size();
   s32 w = totalSize.width()-menuSize.width()-10;
   m_usVis->UpdateSize(QSize(w, usVisSz.height()-10));
-  m_rpWidget->UpdateSize(QSize(w, rpSz.height()-10));
+  m_rpFileWidget->UpdateSize(QSize(w, rpFileSz.height()-10));
+  m_rpStreamingWidget->UpdateSize(QSize(w, rpStreamingSz.height()-10));
 }
 
 #define EL_VALUE(vec, i) ((i) == 0 ? vec.x : ((i) == 1 ? vec.y : vec.z))
@@ -468,15 +475,26 @@ void RTUltrasteer::CreateUSVisualizer()
   m_usVis->addAction(m_usDock->toggleViewAction());
 }
 
-void RTUltrasteer::CreateRPDock()
+void RTUltrasteer::CreateRPFileDock()
 {
-  m_rpDock = new QDockWidget(tr("RPDock"), this);
-  m_rpDock->setAllowedAreas(Qt::AllDockWidgetAreas);
+  m_rpFileDock = new QDockWidget(tr("RPFileDock"), this);
+  m_rpFileDock->setAllowedAreas(Qt::AllDockWidgetAreas);
 
-  m_rpWidget = new Nf::RPWidget(m_rpDock);
-  m_rpDock->setWidget(m_rpWidget);
+  m_rpFileWidget = new Nf::RPFileWidget(m_rpFileDock);
+  m_rpFileDock->setWidget(m_rpFileWidget);
   
-  m_rpDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
+  m_rpFileDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
+}
+
+void RTUltrasteer::CreateRPStreamingDock()
+{
+  m_rpStreamingDock = new QDockWidget(tr("RPStreamingDock"), this);
+  m_rpStreamingDock->setAllowedAreas(Qt::AllDockWidgetAreas);
+
+  m_rpStreamingWidget = new Nf::RPStreamingWidget(m_rpStreamingDock);
+  m_rpStreamingDock->setWidget(m_rpStreamingWidget);
+  
+  m_rpStreamingDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
 
 
@@ -508,4 +526,8 @@ RTUltrasteer::~RTUltrasteer()
     delete m_usVis;
   if(m_usDock)
     delete m_usDock;
+  if(m_rpFileDock)
+    delete m_rpFileDock;
+  if(m_rpStreamingDock)
+    delete m_rpStreamingDock;
 }

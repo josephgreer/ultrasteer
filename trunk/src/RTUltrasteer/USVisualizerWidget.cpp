@@ -90,12 +90,12 @@ void USVisualizerWidget::onSetViewXY()
 
 void USVisualizerWidget::onSetViewXZ()
 {
-  SetUSVisView(2,1);
+  SetUSVisView(0,1);
 }
 
 void USVisualizerWidget::onSetViewYZ()
 {
-  SetUSVisView(2,0);
+  SetUSVisView(1,0);
 }
 
 void USVisualizerWidget::onSetRenderMode()
@@ -252,7 +252,18 @@ void USVisualizerWidget::AddRPData(RPData rp)
   u8 cubeColor[3] = {128, 0, 0};
   if(m_frameBoundaries)
     m_renderer->RemoveActor(m_frameBoundaries->GetActor());
-  m_frameBoundaries = std::tr1::shared_ptr < CubeVisualizer > (new CubeVisualizer(rp.GetFrameBoundaries(m_rpvc->GetCal(), m_rpvc->GetMPP()), cubeColor));
+  m_frameBoundaries = std::tr1::shared_ptr < CubeVisualizer > (new CubeVisualizer(rp.GetFrameBoundaries(m_rpvc->GetCal()), cubeColor));
+  UpdateFrameBoundaries();
+}
+
+void USVisualizerWidget::UpdatePos(RPData rp)
+{
+  m_last.Release();
+  m_last = rp.Clone();
+  u8 cubeColor[3] = {128, 0, 0};
+  if(m_frameBoundaries)
+    m_renderer->RemoveActor(m_frameBoundaries->GetActor());
+  m_frameBoundaries = std::tr1::shared_ptr < CubeVisualizer > (new CubeVisualizer(rp.GetFrameBoundaries(m_rpvc->GetCal()), cubeColor));
   UpdateFrameBoundaries();
 }
 
@@ -374,6 +385,11 @@ void USVisualizer::AddRPData(RPData rp)
   if(!m_init)
     Initialize(rp);
   m_usVis->AddRPData(rp);
+}
+
+void USVisualizer::UpdatePos(Nf::RPData rp)
+{
+  m_usVis->UpdatePos(rp);
 }
 
 USVisualizerFullRP::USVisualizerFullRP(QWidget *parent)

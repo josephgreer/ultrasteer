@@ -83,7 +83,7 @@ namespace Nf {
     Vec3d WorldCoordinatesToVolumeCoordinates(Vec3d worldCoords);
     Vec3d VolumeCoordinatesToWorldCoordinates(Vec3d volCoords);
 
-    void AddFrame(const IplImage *image, const Matrix33d &pose, const Vec3d &pos, const Matrix44d &calibration);
+    void AddFrame(const IplImage *image, const Matrix33d &pose, const Vec3d &pos, const Matrix44d &calibration, Vec2d &origin, Vec2d &mpp);
 
     CLASS_CALLBACK(Reinitialize, Volume);
   };

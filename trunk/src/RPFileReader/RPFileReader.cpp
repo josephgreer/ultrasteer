@@ -77,6 +77,9 @@ namespace Nf
       assert(0);
     }
 
+    rv.mpp = header->dr;
+    rv.origin = Vec2d(header->ld, header->extra);
+
     return rv;
   }
 
@@ -311,10 +314,18 @@ namespace Nf
       switch(i->first) {
           case RPF_BPOST8:
             rv.b8 = temp.b8;
+            if(temp.origin.x > 0 && temp.origin.y > 0)
+              rv.origin = temp.origin;
+            if(temp.mpp)
+              rv.mpp = temp.mpp;
             break;
           case RPF_BPOST32:
           case RPF_COLOR:
             rv.color = temp.color;
+            if(temp.origin.x > 0 && temp.origin.y > 0)
+              rv.origin = temp.origin;
+            if(temp.mpp)
+              rv.mpp = temp.mpp;
             break;
           case RPF_COLOR_CVV:
             rv.sig = temp.sig;
@@ -342,6 +353,11 @@ namespace Nf
       header = m_readers[RPF_COLOR]->GetHeader();
     rv.roi = Squarei(Vec2i(header.ul[0], header.ul[1]), Vec2i(header.br[0], header.br[1]));
 
+    if(rv.origin.x == 0 && rv.origin.y == 0)
+      rv.origin = Vec2d(320.0, 0.0);
+    if(rv.mpp == 0)
+      rv.mpp = 83;
+
     return rv;
   }
 
@@ -355,10 +371,18 @@ namespace Nf
       switch(i->first) {
           case RPF_BPOST8:
             rv.b8 = temp.b8;
+            if(temp.origin.x > 0 && temp.origin.y > 0)
+              rv.origin = temp.origin;
+            if(temp.mpp)
+              rv.mpp = temp.mpp;
             break;
           case RPF_BPOST32:
           case RPF_COLOR:
             rv.color = temp.color;
+            if(temp.origin.x > 0 && temp.origin.y > 0)
+              rv.origin = temp.origin;
+            if(temp.mpp)
+              rv.mpp = temp.mpp;
             break;
           case RPF_COLOR_CVV:
             rv.sig = temp.sig;
@@ -385,6 +409,11 @@ namespace Nf
     else
       header = m_readers[RPF_COLOR]->GetHeader();
     rv.roi = Squarei(Vec2i(header.ul[0], header.ul[1]), Vec2i(header.br[0], header.br[1]));
+
+    if(rv.origin.x == 0 && rv.origin.y == 0)
+      rv.origin = Vec2d(320.0, 0.0);
+    if(rv.mpp == 0)
+      rv.mpp = 83;
     
     return rv;
   }
@@ -400,10 +429,18 @@ namespace Nf
       switch(i->first) {
           case RPF_BPOST8:
             rv.b8 = temp.b8;
+            if(temp.origin.x > 0 && temp.origin.y > 0)
+              rv.origin = temp.origin;
+            if(temp.mpp)
+              rv.mpp = temp.mpp;
             break;
           case RPF_BPOST32:
           case RPF_COLOR:
             rv.color = temp.color;
+            if(temp.origin.x > 0 && temp.origin.y > 0)
+              rv.origin = temp.origin;
+            if(temp.mpp)
+              rv.mpp = temp.mpp;
             break;
           case RPF_COLOR_CVV:
             rv.sig = temp.sig;
@@ -430,6 +467,11 @@ namespace Nf
     else
       header = m_readers[RPF_COLOR]->GetHeader();
     rv.roi = Squarei(Vec2i(header.ul[0], header.ul[1]), Vec2i(header.br[0], header.br[1]));
+
+    if(rv.origin.x == 0 && rv.origin.y == 0)
+      rv.origin = Vec2d(320.0, 0.0);
+    if(rv.mpp == 0)
+      rv.mpp = 83;
     
     return rv;
   }

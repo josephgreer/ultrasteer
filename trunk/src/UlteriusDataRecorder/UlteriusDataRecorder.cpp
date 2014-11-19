@@ -1,5 +1,6 @@
 #include <conio.h>
 #include <stdio.h>
+#include "math.h"
 #include "RPFileReader.h"
 #include "RPUlterius.h"
 #include "RPFileWriter.h"
@@ -9,7 +10,7 @@ using namespace Nf;
 
 static void printUsage()
 {
-  printf("UlteriusDataRecorder.exe -ip xxx.xxx.xxx.xxx -d directory -n name -t typeMask -f framerate\n");
+  printf("UlteriusDataRecorder.exe -ip xxx.xxx.xxx.xxx -d directory -n name -t typeMask -mpp mpp -ox origin_x -oy origin_y -f framerate\n");
 }
 
 static void releaseRPData(RPData *rp)
@@ -43,7 +44,7 @@ static RPFileHeader RPFileHeader_uDataDesc(const uDataDesc &desc)
 
 int main( int argc, const char* argv[] )
 {
-  if(argc < 11) {
+  if(argc < 17) {
     printUsage();
     return 0;
   }
@@ -61,10 +62,15 @@ int main( int argc, const char* argv[] )
 
   s32 mask = atoi(argv[8]);
 
-  f32 framerate = atof(argv[10]);
+  f64 mpp = atof(argv[10]);
+
+  f64 ox = atof(argv[12]);
+  f64 oy = atof(argv[14]);
+
+  f32 framerate = atof(argv[16]);
 
   //RPUlteriusReaderCollection rpReaders(ip);
-  RPUlteriusProcessManager rpReaders(ip,framerate);
+  RPUlteriusProcessManager rpReaders(ip,mpp,Vec2d(ox,oy),framerate);
   if(mask&RPF_BPOST32) {
     printf("Enabling bpost32\n");
     rpReaders.EnableType(RPF_BPOST32, 1);
@@ -149,6 +155,9 @@ int main( int argc, const char* argv[] )
 
   printf("\nCleaning up...\n");
   header.frames = frame;
+  header.dr = (s32)(mpp+0.5);
+  header.ld = (s32)(ox+0.5);
+  header.extra = (s32)(oy+0.5);
   if(writers) {
     writers->Cleanup(&header);
     delete writers;
