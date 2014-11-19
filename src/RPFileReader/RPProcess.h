@@ -49,7 +49,7 @@ namespace Nf {
     s32 AddData(const RPDatum *data);
     void SetFrameRate(f32 framerate);
 
-    RPUlteriusProcessManager(const char *ip, f32 framerate=11.0f);
+    RPUlteriusProcessManager(const char *ip, f64 mpp, Vec2d origin, f32 framerate=11.0f);
     virtual ~RPUlteriusProcessManager();
 
     void EnableType(RP_TYPE type, u8 enable);
@@ -65,5 +65,7 @@ namespace Nf {
     f32 m_msPerFrame;
     ulterius m_ulterius;
     s32 m_dataAvailable;
+    Vec2d m_origin;
+    f64 m_mpp;
   };
 };

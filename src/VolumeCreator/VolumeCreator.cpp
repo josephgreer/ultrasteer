@@ -11,7 +11,7 @@ namespace Nf {
     , Nf::ParameterCollection("Volume")
     , Nf::Reinitializer()
   {
-    ADD_VEC3D_PARAMETER(m_spacing, "Physical Voxel Spacing (um)", CALLBACK_POINTER(Reinitialize, Volume), this, Vec3d(83.0*4, 83.0*4, 83.0*4), 
+    ADD_VEC3D_PARAMETER(m_spacing, "Physical Voxel Spacing (um)", CALLBACK_POINTER(Reinitialize, Volume), this, Vec3d(83.0*4, 83.0*4, 2000.0), 
       Vec3d(83.0, 83.0, 83.0), Vec3d(2000,2000,2000), Vec3d(1,1,1));
     ADD_FLOAT_PARAMETER(m_imscale, "Image Scale", CALLBACK_POINTER(Reinitialize, Volume), this, 0.5, 0.05, 1, 0.01);
     ADD_VEC2D_PARAMETER(m_mpp, "Microns Per Pixel (um/px)", CALLBACK_POINTER(Reinitialize, Volume), this, Vec2d(83.0,83.0), Vec2d(0,0), Vec2d(2000,2000), Vec2d(0.1,0.1));
@@ -175,9 +175,8 @@ namespace Nf {
   }
 
 
-  void Volume::AddFrame(const IplImage *image, const Matrix33d &pose, const Vec3d &pos, const Matrix44d &calibration)
+  void Volume::AddFrame(const IplImage *image, const Matrix33d &pose, const Vec3d &pos, const Matrix44d &calibration, Vec2d &origin, Vec2d &mpp)
   {
-    Vec2d mpp = m_mpp->GetValue();
     f32 imscale = m_imscale->GetValue();
 
     //TODO OPTIMIZE!!!!!
@@ -188,7 +187,6 @@ namespace Nf {
       cvResize(image, m_im);
       im = m_im;
     }        
-    Vec2d start(320,0);
     Vec2d scale(mpp.x/1000.0, mpp.y/1000.0);
     Vec4d imc, sensor, world, grid;
     Vec3i gridI;
@@ -201,7 +199,7 @@ namespace Nf {
       const u8 *psrc = (const u8 *)(im->imageData+y*im->widthStep);
       for(s32 x=0; x<im->width; x++) {
         //Map image coord to world coord
-        world = rpImageCoordToWorldCoord4(Vec2d(x/imscale,y/imscale), posePos, calibration, start, scale);
+        world = rpImageCoordToWorldCoord4(Vec2d(x/imscale,y/imscale), posePos, calibration, origin, scale);
 
         if(x == 160 && y == 120)
           int x = 0;
@@ -315,18 +313,18 @@ namespace Nf {
     Matrix33d pose = tPose.GetOrientation();
 
     Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, rp.gps.pos);
-    Vec2d start(320.0, 0.0);
-    Vec2d mpp = m_volume.GetMPP();
+    Vec2d mpp(rp.mpp,rp.mpp);
+    Vec2d origin = rp.origin;
     Vec2d mppScale(mpp.x/1000.0, mpp.y/1000.0);
 
-    Vec3d x_axis = rpImageCoordToWorldCoord3(Vec2d(1.0,0.0), posePos, m_cal, start, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, start, mppScale);  //tPose*calibration*Vec4d(1.0, 0.0, (1.0)*mpp.x, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, (0.0)*mpp.x, 0.0);
-    Vec3d y_axis = rpImageCoordToWorldCoord3(Vec2d(0.0,1.0), posePos, m_cal, start, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, start, mppScale);//tPose*calibration*Vec4d(1.0, 1.0*mpp.y, 0.0, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, 0.0, 0.0);
+    Vec3d x_axis = rpImageCoordToWorldCoord3(Vec2d(1.0,0.0), posePos, m_cal, origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, origin, mppScale);  //tPose*calibration*Vec4d(1.0, 0.0, (1.0)*mpp.x, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, (0.0)*mpp.x, 0.0);
+    Vec3d y_axis = rpImageCoordToWorldCoord3(Vec2d(0.0,1.0), posePos, m_cal, origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, origin, mppScale);//tPose*calibration*Vec4d(1.0, 1.0*mpp.y, 0.0, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, 0.0, 0.0);
     x_axis = x_axis.normalized();
     y_axis = y_axis.normalized();
     Vec3d z_axis = x_axis.cross(y_axis);
 
     s32 rv = m_volume.InitializeVolume(this, Matrix33d::FromCols(x_axis,y_axis,z_axis), 
-      rpImageCoordToWorldCoord3(Vec2d(rp.b8->width/2.0, rp.b8->height/2.0), posePos, m_cal, start, mppScale),
+      rpImageCoordToWorldCoord3(Vec2d(rp.b8->width/2.0, rp.b8->height/2.0), posePos, m_cal, origin, mppScale),
       (QtEnums::VOLUME_ORIGIN_LOCATION)m_originLoc->GetValue());
 
     //vtkImageData importer
@@ -365,7 +363,7 @@ namespace Nf {
     Matrix44d tPose = Matrix44d::FromCvMat(rp.gps.pose);
     Matrix33d pose = tPose.GetOrientation();
 
-    m_volume.AddFrame(rp.b8, pose, rp.gps.pos, m_cal);
+    m_volume.AddFrame(rp.b8, pose, rp.gps.pos, m_cal,rp.origin,Vec2d(rp.mpp, rp.mpp));
     m_importer->Modified();
   }
 
@@ -417,7 +415,7 @@ namespace Nf {
     : RPVolumeCreator()
   {
     ADD_BOOL_PARAMETER(m_initialize, "Initialize", CALLBACK_POINTER(Reinitialize, RPVolumeCreator), this, false);
-    ADD_OPEN_FILE_PARAMETER(m_usFile, "US File Data", CALLBACK_POINTER(Reinitialize, RPVolumeCreator), this, "V:/NeedleScan/Feb13_LiverScan/Scan 1/scan.b8", "Any File (*.*)");
+    ADD_OPEN_FILE_PARAMETER(m_usFile, "US File Data", CALLBACK_POINTER(Reinitialize, RPVolumeCreator), this, "V:/NeedleScan/test2/scan.b8", "Any File (*.*)");
   }
 
   RPFullVolumeCreator::~RPFullVolumeCreator()
@@ -466,7 +464,7 @@ namespace Nf {
         tPose = Matrix44d::FromCvMat(rp.gps.pose);
         pose = tPose.GetOrientation();
 
-        m_volume.AddFrame(rp.b8, pose, rp.gps.pos, m_cal);
+        m_volume.AddFrame(rp.b8, pose, rp.gps.pos, m_cal, rp.origin, Vec2d(rp.mpp, rp.mpp));
         rp.Release();
 
         rp = m_rpReaders.GetNextRPData();

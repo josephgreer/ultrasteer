@@ -565,7 +565,9 @@ public:
 
     std::tr1::shared_ptr < Nf::BoolParameter > m_usDockVisible;
 
-    std::tr1::shared_ptr < Nf::BoolParameter > m_rpWidgetVisible;
+    std::tr1::shared_ptr < Nf::BoolParameter > m_rpStreamingWidgetVisible;
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_rpFileWidgetVisible;
     void onSetDocksVisible();
     CLASS_CALLBACK(onSetDocksVisible, RTUltrasteer);
 
@@ -579,12 +581,16 @@ private:
     QDockWidget *m_menu;
     QTreeWidget *m_params;
 
-    QDockWidget *m_rpDock;
-    Nf::RPWidget *m_rpWidget;
+    QDockWidget *m_rpFileDock;
+    Nf::RPFileWidget *m_rpFileWidget;
+
+    QDockWidget *m_rpStreamingDock;
+    Nf::RPStreamingWidget *m_rpStreamingWidget;
 
     void CreateUSVisualizer();
     void CreateMenuDock();
-    void CreateRPDock();
+    void CreateRPFileDock();
+    void CreateRPStreamingDock();
     void resizeEvent(QResizeEvent *event);
     void Resize();
 

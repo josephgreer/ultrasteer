@@ -33,6 +33,9 @@ public:
   //Add a frame of RPData to the volume
   virtual void AddRPData(Nf::RPData data);
 
+  //Add a frame of RPData to update the current pos for reinitialization
+  virtual void UpdatePos(Nf::RPData rp);
+
   //Volume
   vtkSmartPointer<vtkVolume> m_volume;
 
@@ -131,6 +134,7 @@ public:
   virtual ~USVisualizer();
   virtual void UpdateSize(QSize sz);
   virtual void AddRPData(Nf::RPData rp);
+  virtual void UpdatePos(Nf::RPData rp);
   virtual void Initialize(Nf::RPData rp);
   virtual void Reinitialize();
   CLASS_CALLBACK(Reinitialize, USVisualizer);
