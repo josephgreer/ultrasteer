@@ -186,6 +186,7 @@ namespace Nf
 
       rv.gps = this->gps;
       rv.mpp = this->mpp;
+      rv.origin = this->origin;
 
       return rv;
     }

@@ -50,7 +50,7 @@ namespace Nf
     , m_rpReaders(NULL)
   {
 
-    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, RPFileWidget), this, "V:/NeedleScan/Feb13_LiverScan/Scan 1/scan.b8", "Any File (*.*)");
+    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, RPFileWidget), this, "V:/NeedleScan/test4/scan.b8", "Any File (*.*)");
     ADD_INT_PARAMETER(m_frame, "Frame Index", CALLBACK_POINTER(onUpdateFrame, RPFileWidget), this, 1, 1, 100, 1);
 
     onUpdateFile();
