@@ -273,38 +273,40 @@ void Propello::onTick(int framenum)
 		bool zUpdateAvail, steeringComplete; 
 
 		zUpdateAvail = false;
-		if(m_mutex.tryLock() && m_ns) {
+		if(m_mutex.tryLock()) {
+			if(m_ns) {
 
-			//QImageToIplImage creates a deep copy of bmode/doppler image data
-			//therefore we can unlock after these functions are called.
-			IplImage *bmode = QImageToIplImage(wBImage->getBmode());
-			IplImage *doppler = QImageToIplImage(wBImage->getDoppler());
+				//QImageToIplImage creates a deep copy of bmode/doppler image data
+				//therefore we can unlock after these functions are called.
+				IplImage *bmode = QImageToIplImage(wBImage->getBmode());
+				IplImage *doppler = QImageToIplImage(wBImage->getDoppler());
 
-			m_mutex.unlock();
+				m_mutex.unlock();
 
-			probeInfo nfo; portaGetProbeInfo(nfo);
-			Nf::ProbeImageCoordTransform transform(framenum, fpv, portaGetParam(prmMotorSteps), nfo);
-			Nf::PolyCurve model;
-			IplImage *dis = m_ns->UpdateModel(&model, doppler, bmode, (Nf::ImageCoordTransform *)&transform);
-			wBImage->SetDisplayImage(IplImageToQImage(dis));
+				probeInfo nfo; portaGetProbeInfo(nfo);
+				Nf::ProbeImageCoordTransform transform(framenum, fpv, portaGetParam(prmMotorSteps), nfo);
+				Nf::PolyCurve model;
+				IplImage *dis = m_ns->UpdateModel(&model, doppler, bmode, (Nf::ImageCoordTransform *)&transform);
+				wBImage->SetDisplayImage(IplImageToQImage(dis));
 
 
-			//For now, update is available every sweep.
-			zUpdateAvail = framenum > 0 && ((framenum%fpv)==0);
-			Nf::NTrace("Framenum %d fpv %d\n", framenum, fpv);
+				//For now, update is available every sweep.
+				zUpdateAvail = framenum > 0 && ((framenum%fpv)==0);
+				Nf::NTrace("Framenum %d fpv %d\n", framenum, fpv);
 
-			//Translate tip estimate to vector of form
-			//[tipPos tipOrientation] where tipOrientation is axis-angle representation
-			if(zUpdateAvail)
-				z = PolyCurveToNeedleTip(&model);
+				//Translate tip estimate to vector of form
+				//[tipPos tipOrientation] where tipOrientation is axis-angle representation
+				if(zUpdateAvail)
+					z = PolyCurveToNeedleTip(&model);
 
-			cvReleaseImage(&bmode);
-			cvReleaseImage(&doppler);
-		} else if(!m_ns){
-			IplImage *temp = QImageToIplImage(wBImage->getDoppler());
-			wBImage->SetDisplayImage(IplImageToQImage(temp));
-			cvReleaseImage(&temp);
-			m_mutex.unlock();
+				cvReleaseImage(&bmode);
+				cvReleaseImage(&doppler);
+			} else {
+				IplImage *temp = QImageToIplImage(wBImage->getDoppler());
+				wBImage->SetDisplayImage(IplImageToQImage(temp));
+				cvReleaseImage(&temp);
+				m_mutex.unlock();
+			}
 		}
 
 		if( zUpdateAvail )
@@ -321,8 +323,8 @@ void Propello::onTick(int framenum)
 				DisplayErrorBox(1);
 			}
 		}
-	} else {
-		IplImage *temp = QImageToIplImage(wBImage->getDoppler());
+	} else if(m_mutex.tryLock()) {
+		IplImage *temp = QImageToIplImage(mode == ColourMode ? wBImage->getDoppler() : wBImage->getBmode());
 		wBImage->SetDisplayImage(IplImageToQImage(temp));
 		cvReleaseImage(&temp);
 		m_mutex.unlock();
@@ -606,7 +608,7 @@ void Propello::onDataSelection(int index)
 	else if (index == 4)
 	{
 		mode = ColourMode;
-		setDopplerSettings(1400, 550, 1);
+		//setDopplerSettings(1400, 550, 1);
 	}
 
 	loadMode(mode, 0);
