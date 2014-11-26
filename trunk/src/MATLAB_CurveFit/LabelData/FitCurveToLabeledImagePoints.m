@@ -17,13 +17,17 @@ gpsheader = ReadHeader(fgps);
 %     fprintf('pos x pos y posz %f %f %f\n', gpsnt.pos(1), gpsnt.pos(2), gpsnt.pos(3));
 % end
 
+if(~exist('nskip'))
+    nskip = 1;
+end
+
 
 fitPoints = [];
 indices = [];
 
 firstGps = [];
-for i=1:gpsheader.nframes
-    gps = RPreadgps(fgps, gpsheader);
+for i=1:floor(gpsheader.nframes/nskip)
+    gps = RPreadgpsindex(fgps, gpsheader,1+(i-1)*nskip);
     if(i == 1)
         firstGps = gps;
     end

@@ -44,11 +44,13 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   ADD_BOOL_PARAMETER(m_usDockVisible, "Show Full US Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_rpFileWidgetVisible, "Show Incremental Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
   ADD_BOOL_PARAMETER(m_rpStreamingWidgetVisible, "Show Streaming Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
+  ADD_BOOL_PARAMETER(m_robotHWWidgetVisible, "Show Robot HW Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
 
   CreateUSVisualizer();
   CreateMenuDock();
   CreateRPFileDock();
   CreateRPStreamingDock();
+  CreateRobotHWDock();
 
   QTreeWidgetItem * rt = new QTreeWidgetItem(m_params);
   rt->setText(0, this->GetName());
@@ -66,6 +68,10 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   rpS->setText(0, "RPStreamingDock");
   CreateUIElements(rpS, *m_rpStreamingWidget, m_rpStreamingWidget->GetChildWidgets());
 
+  QTreeWidgetItem * rpRHW = new QTreeWidgetItem(m_params);
+  rpRHW->setText(0, "RobotHW");
+  CreateUIElements(rpRHW, *m_robotHWWidget, m_robotHWWidget->GetChildWidgets());
+
   //Add to our map of root dock windows
   m_roots[std::string("USDock")].dock = m_usDock;
   m_roots[std::string("USDock")].param = m_usDockVisible.get();
@@ -76,6 +82,9 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   m_roots[std::string("RPStreamingDock")].dock = m_rpStreamingDock;
   m_roots[std::string("RPStreamingDock")].param = m_rpStreamingWidgetVisible.get();
   m_roots[std::string("RPStreamingDock")].root = rpS;
+  m_roots[std::string("RobotHWDock")].dock = m_robotHWDock;
+  m_roots[std::string("RobotHWDock")].param = m_robotHWWidgetVisible.get();
+  m_roots[std::string("RobotHWDock")].root = rpRHW;
 
   QDockWidget *last = NULL;
   for(std::map < std::string, DockWidgetInfo >::iterator i=m_roots.begin(); i!=m_roots.end(); i++) {
@@ -495,6 +504,17 @@ void RTUltrasteer::CreateRPStreamingDock()
   m_rpStreamingDock->setWidget(m_rpStreamingWidget);
   
   m_rpStreamingDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
+}
+
+void RTUltrasteer::CreateRobotHWDock()
+{
+  m_robotHWDock = new QDockWidget(tr("RobotHWDock"), this);
+  m_robotHWDock->setAllowedAreas(Qt::AllDockWidgetAreas);
+
+  m_robotHWWidget = new Nf::RobotHardwareWidget(m_robotHWDock);
+  m_robotHWDock->setWidget(m_robotHWWidget);
+  
+  m_robotHWDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
 
 

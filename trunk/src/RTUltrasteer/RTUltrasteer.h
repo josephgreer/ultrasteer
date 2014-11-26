@@ -17,6 +17,7 @@
 #include "FileWidget.h"
 #include "USVisualizerWidget.h"
 #include "RPWidget.h"
+#include "RobotHardwareWidget.h"
 
 namespace Nf
 {
@@ -568,6 +569,8 @@ public:
     std::tr1::shared_ptr < Nf::BoolParameter > m_rpStreamingWidgetVisible;
 
     std::tr1::shared_ptr < Nf::BoolParameter > m_rpFileWidgetVisible;
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_robotHWWidgetVisible;
     void onSetDocksVisible();
     CLASS_CALLBACK(onSetDocksVisible, RTUltrasteer);
 
@@ -587,10 +590,14 @@ private:
     QDockWidget *m_rpStreamingDock;
     Nf::RPStreamingWidget *m_rpStreamingWidget;
 
+    QDockWidget *m_robotHWDock;
+    Nf::RobotHardwareWidget *m_robotHWWidget;
+
     void CreateUSVisualizer();
     void CreateMenuDock();
     void CreateRPFileDock();
     void CreateRPStreamingDock();
+    void CreateRobotHWDock();
     void resizeEvent(QResizeEvent *event);
     void Resize();
 

@@ -356,8 +356,10 @@ namespace Nf
 
     if(rv.origin.x == 0 && rv.origin.y == 0)
       rv.origin = Vec2d(320.0, 0.0);
-    if(rv.mpp == 0)
+    if(rv.mpp == 0) {
       rv.mpp = 83;
+      rv.gps.pose = rv.gps.pose.t();
+    }
 
     return rv;
   }
@@ -413,8 +415,10 @@ namespace Nf
 
     if(rv.origin.x == 0 && rv.origin.y == 0)
       rv.origin = Vec2d(320.0, 0.0);
-    if(rv.mpp == 0)
+    if(rv.mpp == 0) {
       rv.mpp = 83;
+      rv.gps.pose = rv.gps.pose.t();
+    }
     
     return rv;
   }
@@ -471,8 +475,10 @@ namespace Nf
 
     if(rv.origin.x == 0 && rv.origin.y == 0)
       rv.origin = Vec2d(320.0, 0.0);
-    if(rv.mpp == 0)
+    if(rv.mpp == 0) {
       rv.mpp = 83;
+      rv.gps.pose = rv.gps.pose.t();
+    }
     
     return rv;
   }

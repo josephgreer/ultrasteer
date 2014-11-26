@@ -68,6 +68,7 @@ namespace Nf
       m_flip->SetInputData((vtkDataObject *)m_importer->GetOutput());
       m_flip->Update();
       m_imAct->SetInputData(m_flip->GetOutput());
+      //m_imAct->SetInputData(m_importer->GetOutput());
       m_renderer->AddActor2D(m_imAct);
 #endif
 
@@ -86,6 +87,8 @@ namespace Nf
       vtkCamera *cam = m_renderer->GetActiveCamera();
       m_renderer->SetActiveCamera(cam);
     } 
+    m_flip->Modified();
+    m_flip->Update();
 
     m_init = true;
     this->repaint();

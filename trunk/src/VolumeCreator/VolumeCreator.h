@@ -57,7 +57,8 @@ namespace Nf {
     std::tr1::shared_ptr < Nf::Vec3dParameter > m_spacing;                      //spacing (physical units)
     std::tr1::shared_ptr < Nf::FloatParameter > m_imscale;                      //scale factor
     std::tr1::shared_ptr < Nf::Vec3dParameter > m_extent;                       //volume extent (physical units
-    std::tr1::shared_ptr < Nf::Vec2dParameter > m_mpp;                          //Vector containing microns per pixel of b-mode image in x&y dimensions
+    std::tr1::shared_ptr < Nf::Vec2iParameter > m_cropHorz;                     //Horizontal Crop
+    std::tr1::shared_ptr < Nf::Vec2iParameter > m_cropVert;                     //Vertical Crop
 
     IplImage *m_im;
 
@@ -78,7 +79,6 @@ namespace Nf {
     u16 * GetCoordData(Vec3i coord);
     Cubed GetCubeExtent() const;
     Cubed GetPhysicalExtent() const;
-    Vec2d GetMPP() const;
 
     Vec3d WorldCoordinatesToVolumeCoordinates(Vec3d worldCoords);
     Vec3d VolumeCoordinatesToWorldCoordinates(Vec3d volCoords);
@@ -129,7 +129,6 @@ namespace Nf {
     virtual Cubed GetVolumeCubeExtent() const;
     virtual Cubed GetVolumePhysicalExtent() const;
     virtual Matrix33d GetVolumeOrientation() const;
-    virtual Vec2d GetMPP() const { return m_volume.GetMPP(); }
     virtual Matrix44d GetCal() const { return m_cal; }
     virtual s32 Initialize(RPData rp, Reinitializer *reinit);
     void Release();
