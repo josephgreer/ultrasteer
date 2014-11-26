@@ -14,8 +14,9 @@ namespace Nf {
     ADD_VEC3D_PARAMETER(m_spacing, "Physical Voxel Spacing (um)", CALLBACK_POINTER(Reinitialize, Volume), this, Vec3d(83.0*4, 83.0*4, 2000.0), 
       Vec3d(83.0, 83.0, 83.0), Vec3d(2000,2000,2000), Vec3d(1,1,1));
     ADD_FLOAT_PARAMETER(m_imscale, "Image Scale", CALLBACK_POINTER(Reinitialize, Volume), this, 0.5, 0.05, 1, 0.01);
-    ADD_VEC2D_PARAMETER(m_mpp, "Microns Per Pixel (um/px)", CALLBACK_POINTER(Reinitialize, Volume), this, Vec2d(83.0,83.0), Vec2d(0,0), Vec2d(2000,2000), Vec2d(0.1,0.1));
     ADD_VEC3D_PARAMETER(m_extent, "Volume Extent (cm)", CALLBACK_POINTER(Reinitialize, Volume), this, Vec3d(6,6,6), Vec3d(2,2,2), Vec3d(15,15,15), Vec3d(0.1,0.1,0.1));
+    ADD_VEC2I_PARAMETER(m_cropHorz, "Horziontal Crop", NULL, this, Vec2i(0,0), Vec2i(0,0), Vec2i(500,500), Vec2i(1,1));
+    ADD_VEC2I_PARAMETER(m_cropVert, "Vertical Crop", NULL, this, Vec2i(0,0), Vec2i(0,0), Vec2i(500,500), Vec2i(1,1));
   }
 
 
@@ -193,11 +194,14 @@ namespace Nf {
 
     Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, pos);
 
+    Vec2i cropH = m_cropHorz->GetValue();
+    Vec2i cropV = m_cropVert->GetValue();
+
     //TODO:  Check that rectangle falls within bounds of volume
 
-    for(s32 y=0; y<im->height; y++) {
+    for(s32 y=cropV.x; y<im->height-cropV.y; y++) {
       const u8 *psrc = (const u8 *)(im->imageData+y*im->widthStep);
-      for(s32 x=0; x<im->width; x++) {
+      for(s32 x=cropH.x; x<im->width-cropH.y; x++) {
         //Map image coord to world coord
         world = rpImageCoordToWorldCoord4(Vec2d(x/imscale,y/imscale), posePos, calibration, origin, scale);
 
@@ -250,12 +254,6 @@ namespace Nf {
   Vec3i Volume::GetDims() const
   {
     return m_dims;
-  }
-
-  
-  Vec2d Volume::GetMPP() const
-  {
-    return m_mpp->GetValue();
   }
 
   ////////////////////////////////////////////////////////
@@ -364,6 +362,9 @@ namespace Nf {
     Matrix44d tPose = Matrix44d::FromCvMat(rp.gps.pose);
     Matrix33d pose = tPose.GetOrientation();
 
+    Nf::NTrace("ROI x y w h %d %d %d %d\n", rp.roi.ul.x, rp.roi.ul.y, (rp.roi.lr-rp.roi.ul).x, (rp.roi.lr-rp.roi.ul).y);
+    if(rp.roi.lr.x > rp.roi.ul.x && rp.roi.lr.y > rp.roi.ul.y)
+      cvSetImageROI(rp.b8, cvRect(rp.roi.ul.x, rp.roi.ul.y, (rp.roi.lr-rp.roi.ul).x, (rp.roi.lr-rp.roi.ul).y)); 
     m_volume.AddFrame(rp.b8, pose, rp.gps.pos, m_cal,rp.origin,Vec2d(rp.mpp, rp.mpp));
     m_importer->Modified();
   }
@@ -416,7 +417,7 @@ namespace Nf {
     : RPVolumeCreator()
   {
     ADD_BOOL_PARAMETER(m_initialize, "Initialize", CALLBACK_POINTER(Reinitialize, RPVolumeCreator), this, false);
-    ADD_OPEN_FILE_PARAMETER(m_usFile, "US File Data", CALLBACK_POINTER(Reinitialize, RPVolumeCreator), this, "V:/NeedleScan/test2/scan.b8", "Any File (*.*)");
+    ADD_OPEN_FILE_PARAMETER(m_usFile, "US File Data", CALLBACK_POINTER(Reinitialize, RPVolumeCreator), this, "V:/NeedleScan/test4/scan.b8", "Any File (*.*)");
   }
 
   RPFullVolumeCreator::~RPFullVolumeCreator()

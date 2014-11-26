@@ -33,8 +33,8 @@ if(size(points,1) > 0)
 end
 for i=start:nskip:header.nframes
     hold off;
-    im = RPreadframe(fcol, header);
-    gps = RPreadgps(fgps, gpsheader);
+    im = RPreadframeindex(fcol, header,i);
+    gps = RPreadgpsindex(fgps, gpsheader,i);
     gpsPrev = gps;
     imshow(im,[0 255]); colormap(gray);
     title(i);
@@ -57,3 +57,6 @@ end
 figure;
 scatter3(gpoints(:,1), gpoints(:,2), gpoints(:,3));
 daspect([1 1 1]);
+xlabel('x');
+ylabel('y');
+zlabel('z');

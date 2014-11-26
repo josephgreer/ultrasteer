@@ -50,7 +50,7 @@ namespace Nf
     , m_rpReaders(NULL)
   {
 
-    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, RPFileWidget), this, "V:/NeedleScan/test4/scan.b8", "Any File (*.*)");
+    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, RPFileWidget), this, "V:/NeedleScan/11_19_14_Liverscan/Scan4_CurvedFull/scan.b8", "Any File (*.*)");
     ADD_INT_PARAMETER(m_frame, "Frame Index", CALLBACK_POINTER(onUpdateFrame, RPFileWidget), this, 1, 1, 100, 1);
 
     onUpdateFile();
@@ -125,7 +125,7 @@ namespace Nf
       Sleep(30);  //Wait for old processes to die
       m_rpReaders->EnableType(RPF_BPOST8, 1);
       m_rpReaders->EnableType(RPF_GPS,1);
-      Sleep(30);
+      Sleep(300);
 
       m_data = m_rpReaders->GetNextRPData();
       m_usVis->Initialize(m_data);
@@ -134,7 +134,7 @@ namespace Nf
       if(!m_tick) {
         m_tick = std::tr1::shared_ptr<QTimer>(new QTimer());
         connect(m_tick.get(), SIGNAL(timeout()), this, SLOT(onTick()));
-        m_tick->setInterval(60);
+        m_tick->setInterval(90);
         m_tick->start();
       }
     }
