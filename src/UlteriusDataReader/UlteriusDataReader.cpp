@@ -77,8 +77,11 @@ int main( int argc, const char* argv[] )
     readers.AddGPSReader((RPGPSReaderBasic *)new RPGPSReader(fname));
   }
 
+  CvFont font;
+  cvInitFont(&font, CV_FONT_HERSHEY_SIMPLEX, 1, 1);
   cvNamedWindow("Display Window");
   RPData data = readers.GetNextRPData();
+  s32 i=1;
   while(checkFullSet(&data, mask)) {
     releaseRPData(&data);
     data = readers.GetNextRPData();
@@ -87,8 +90,12 @@ int main( int argc, const char* argv[] )
       im = data.color;
     else
       im = data.b8;
+    char txt[100] = {0};
+    sprintf(txt, "Frame %d", i);
+    cvPutText(im, txt, cvPoint(100,100), &font, cvScalar(255, 255, 255, 255));
     cvShowImage("Display Window", im);
-    cvWaitKey(30);
+    cvWaitKey(0);
+    i++;
   }
 
   return 0;

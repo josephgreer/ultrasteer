@@ -5,7 +5,7 @@
 close all;
 clearvars -except points gpoints;
 clc;
-fname = 'Y:/NeedleScan/test2/scan';
+fname = 'Y:/NeedleScan/11_26_14/Scan4/scan';
 f = strcat(fname, '.b8');
 fcol = fopen(f, 'r');
 f = strcat(fname, '.gps1');
