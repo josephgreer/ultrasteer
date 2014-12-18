@@ -1,4 +1,4 @@
-% x = needle tip statee state
+% x = needle tip state
 %   x.pos % position of needle tip frame n timesteps back
 %   x.R  % orientation of needle tip frame n timesteps back
 %   x.rho radius of curvature (mm)
