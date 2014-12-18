@@ -28,7 +28,7 @@ xs{1} = x;
 uc = u{1};
 uc.dtheta = 0;
 
-for i=2:params.n
+for i=2:length(u)
     xc = xs{i-1};
     % reverse for propagating backward in time
     xc.R(:,3) = -xc.R(:,3);
