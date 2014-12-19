@@ -9,7 +9,7 @@ params.dt = 1/10;                                                           %sim
 
 % process noise parameters
 params.muOrientation = [0; 0; 0];                                           %orientation process noise mean
-params.sigmaOrientation = diag([pi/1000, pi/1000, pi/1000]);                %orientation process noise std
+params.sigmaOrientation = diag(0.1*[pi/1000, pi/1000, pi/1000]);                %orientation process noise std
 params.muPos = [0; 0; 0];                                                   %position process noise mean
 params.sigmaPos = zeros(3,3);%diag([.25 .25 .25]);                          %position process noise std
 params.muRho = 0;                                                           %needle radius of curvature process noise mean
@@ -46,7 +46,7 @@ params.initPosMu = [0; 0; 0];                                               %pos
 params.drawMeasurement = 1; 
 params.drawUSFrame = 0;
 params.drawTipFrame = 1;
-params.drawPastTipFrames = 1;
+params.drawPastTipFrames = 0;
 
 % output video parameters
 params.writeVideo = 0;
@@ -54,7 +54,7 @@ params.videoFile = 'C:/position.avi';
 
 % initial state of needle
 xcurr.pos = [0; 0; 0];
-xcurr.R = eye(3);
+xcurr.q = RotationMatrixToQuat(eye(3));
 xcurr.rho = 60;        % 10 cm roc
 
 flipped = false;
@@ -93,7 +93,7 @@ for t=0:params.dt:params.simulationTime
     
     %flip it for an s-curve optionally
     if(t > 3 && ~flipped)
-        uc.dtheta = pi;
+        uc.dtheta = pi/4;
         flipped = 1;
         
         
