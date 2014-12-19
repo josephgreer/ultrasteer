@@ -23,6 +23,5 @@ xk1 = propagateNeedleTip(x, u, params);
 
 % add noise to x0, R, and rho
 xk1.pos = xk1.pos+noisePos;
-%xk1.R = Rz(noiseTheta(3))*Ry(noiseTheta(2))*Rx(noiseTheta(1))*xk1.R;
 xk1.rho = max(xk1.rho+mvnrnd(params.muRho, params.sigmaRho),10);
 end
