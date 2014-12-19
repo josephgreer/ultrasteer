@@ -31,20 +31,12 @@ uc.dtheta = 0;
 for i=2:length(u)
     xc = xs{i-1};
     % reverse for propagating backward in time
-    R = QuatToRotationMatrix(xc.q);
-    R(:,3) = -R(:,3);
-    R(:,1) = -R(:,1);
-    
-    xc.q = RotationMatrixToQuat(R);
+    xc.q = quatmult(xc.q, AxisAngleToQuat(pi*[0; 1; 0]));
     
     xc = propagateNeedleTip(xc,uc,params);
     xs{i} = xc;
     
-    R = QuatToRotationMatrix(xs{i}.q);
-    R(:,3) = -R(:,3);
-    R(:,1) = -R(:,1);
-    xs{i}.q = RotationMatrixToQuat(R);
-    uc = u{i};
-    uc.dtheta = -u{i-1}.dtheta;
+    xs{i}.q = quatmult(xs{i}.q, AxisAngleToQuat(pi*[0; 1; 0]));
+    uc = u{i-1};
 end
 end
