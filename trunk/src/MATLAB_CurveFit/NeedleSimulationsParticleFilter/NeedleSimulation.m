@@ -44,13 +44,13 @@ params.initPosMu = [0; 0; 0];                                               %pos
 params.particlesInit = 0;                                                    %are particles initialized?
 
 % drawing parameters
-params.drawMeasurement = 0; 
+params.drawMeasurement = 1; 
 params.drawUSFrame = 0;
 params.drawTipFrame = 0;
 params.drawPastTipFrames = 0;
 params.drawParticlePos = 0;
-params.drawParticleOrientation = 1;
-params.drawParticlesNs = 1;
+params.drawParticleOrientation = 0;
+params.drawParticlesNs = 5;
 
 % output video parameters
 params.writeVideo = 0;
@@ -89,7 +89,9 @@ if(params.writeVideo)
     open(writerObj);
 end
 
-handles = [];
+particleHandles = [];
+tipFrameHandles = [];
+usFrameHandles = [];
 for t=0:params.dt:params.simulationTime
     %current command
     uc.v = 10;          %10mm/s
@@ -112,9 +114,6 @@ for t=0:params.dt:params.simulationTime
     xd = [xlast.pos xcurr.pos]';
     plot3(xd(:,1), xd(:,2), xd(:,3), 'k', 'LineWidth', 2);
     hold on;
-    if(~isempty(handles))
-        delete(handles);
-    end
     
     % shift our command history down
     u(2:params.n) = u(1:params.n-1);
@@ -137,19 +136,17 @@ for t=0:params.dt:params.simulationTime
     
     % draw auxillary information if these params are enabled
     if(params.drawTipFrame && params.drawPastTipFrames)
-        handles = drawFrames(1, xs(1:4:end), 20);
+        tipFrameHandles = drawFrames(1, xs(1:4:end), 20, tipFrameHandles);
     elseif(params.drawTipFrame)
-        handles = drawFrames(1, xs(1), 20);
-    else
-        handles = [];
+        tipFrameHandles = drawFrames(1, xs(1), 20, tipFrameHandles);
     end
     
     if(params.particlesInit)
-        handles = [handles; drawParticles(1,xp,params)];
+        particleHandles = drawParticles(1,xp,params, particleHandles);
     end
     
     if(~isempty(measurement))
-        handles = [handles;drawUSFrame(measurement,params)];
+        usFrameHandles = drawUSFrame(measurement,params, usFrameHandles);
     end
    
     if(~isempty(writerObj))
