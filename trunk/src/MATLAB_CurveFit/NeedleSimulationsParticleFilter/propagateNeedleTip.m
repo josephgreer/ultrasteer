@@ -15,7 +15,7 @@ dl = u.v*params.dt;
 % k' coordinate system expressed in global coordinates.
 % note rotation order is flipped because using intrinsic rotations with
 % extrinisc rotation matrices
-kp = quatmult(x.q,RotationMatrixToQuat(Rz(u.dtheta)));
+kp = quatmult(x.q,AxisAngleToQuat(u.dtheta*[0; 0; 1]));
 
 % location of tip expressed in Rk' coordinates
 kp_x = [0; x.rho*(1-cos(dl/x.rho)); x.rho*sin(dl/x.rho)];
@@ -30,5 +30,5 @@ x1.rho = x.rho;
 % needle tip's z-axis then rotated about the needle tip's x axis due to
 % following the curved arc.  Note taht rotation order is flipped due to
 % intrinsic axis rotations used rather than extrinsic.
-x1.q = quatmult(kp,RotationMatrixToQuat(Rx(-dl/x.rho)));
+x1.q = quatmult(kp,AxisAngleToQuat(-dl/x.rho*[1; 0; 0]));
 end
