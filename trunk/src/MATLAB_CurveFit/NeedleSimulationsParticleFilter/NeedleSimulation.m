@@ -9,7 +9,7 @@ params.dt = 1/10;                                                           %sim
 
 % process noise parameters
 params.muOrientation = [0; 0; 0];                                           %orientation process noise mean
-params.sigmaOrientation = diag(1/5*[pi/1000, pi/1000, pi/1000]);                %orientation process noise std
+params.sigmaOrientation = diag(1/1*[pi/1000, pi/1000, pi/1000]);                %orientation process noise std
 params.muPos = [0; 0; 0];                                                   %position process noise mean
 params.sigmaPos = zeros(3,3);%diag([.25 .25 .25]);                          %position process noise std
 params.muRho = 0;                                                           %needle radius of curvature process noise mean
@@ -35,18 +35,22 @@ params.onNeedleDopplerSigma = 0.2;                                          %Dop
 % particle filter parameters
 params.n = 40;                                                              %only keep track of current state
 params.np = 100;                                                            %number of particles
-params.initOrientationSigma = diag([pi/1000, pi/1000, pi/100]);             %orientation sigma for initial distribution of particles
-params.initOrientationMu = diag([0 0 0]);                                   %orientation mu for initial distribution of particles
+params.initOrientationSigma = diag(5*[pi/1000, pi/1000, pi/100]);             %orientation sigma for initial distribution of particles
+params.initOrientationMu = [0;0;0];                                   %orientation mu for initial distribution of particles
 params.initRhoSigma = 3;                                                    %rho sigma for initial distribution of particles
 params.initRhoMu = 0;                                                       %rho mu for initial distribution of particles
-params.initPosSigma = diag([1 1 1]);                                        %pos sigma for initial distribution of particles
+params.initPosSigma = diag([5 5 5]);                                        %pos sigma for initial distribution of particles
 params.initPosMu = [0; 0; 0];                                               %pos mu for initial distribution of particles
+params.particlesInit = 0;                                                    %are particles initialized?
 
 % drawing parameters
-params.drawMeasurement = 1; 
+params.drawMeasurement = 0; 
 params.drawUSFrame = 0;
-params.drawTipFrame = 1;
-params.drawPastTipFrames = 1;
+params.drawTipFrame = 0;
+params.drawPastTipFrames = 0;
+params.drawParticlePos = 0;
+params.drawParticleOrientation = 1;
+params.drawParticlesNs = 1;
 
 % output video parameters
 params.writeVideo = 0;
@@ -55,7 +59,7 @@ params.videoFile = 'C:/position.avi';
 % initial state of needle
 xcurr.pos = [0; 0; 0];
 xcurr.q = RotationMatrixToQuat(eye(3));
-xcurr.rho = 80;        % 10 cm roc
+xcurr.rho = 60;        % 10 cm roc
 
 flipped = false;
 
@@ -123,6 +127,12 @@ for t=0:params.dt:params.simulationTime
     measurement = [];
     if(t > 2)
         measurement = generateRandomMeasurement(xcurr, u, params);
+        if(~params.particlesInit)
+            xp = initializeParticles(xcurr, params);
+            params.particlesInit = 1;
+        else
+            xp = propagateParticles(xp,uc,params);
+        end
     end
     
     % draw auxillary information if these params are enabled
@@ -132,6 +142,10 @@ for t=0:params.dt:params.simulationTime
         handles = drawFrames(1, xs(1), 20);
     else
         handles = [];
+    end
+    
+    if(params.particlesInit)
+        handles = [handles; drawParticles(1,xp,params)];
     end
     
     if(~isempty(measurement))

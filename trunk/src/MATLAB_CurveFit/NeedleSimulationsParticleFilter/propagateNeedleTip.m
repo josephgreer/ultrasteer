@@ -1,6 +1,6 @@
 % x = needle tip state
 %   x.pos % position of needle tip frame n timesteps back
-%   x.R  % orientation of needle tip frame n timesteps back
+%   x.q  % orientation of needle tip frame n timesteps back
 %   x.rho radius of curvature (mm)
 % u = control input
 %   u.v         = insertion velocity (mm/s)

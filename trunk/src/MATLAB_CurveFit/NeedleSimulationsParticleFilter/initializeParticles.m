@@ -1,22 +1,29 @@
 % intialize particles based on true state of needle 
 % x = needle tip state
 %   x.pos % position of needle tip frame n timesteps back
-%   x.R  % orientation of needle tip frame n timesteps back
+%   x.q  % orientation of needle tip frame n timesteps back
 %   x.rho radius of curvature (mm)
-% u = control input
-%   u{1}        = current action
-%   u{2}        = action 1 timestamp back
-%   ...
-%   u{n}        = action n timestamps back
-%   u{i}.v         = insertion velocity
-%   u{i}.dtheta    = rotation about needle's axis
-%   u{i}.dc        = duty cycle ratio
 % params = simulation parameters
 % see ../NeedleSimulation.m for description of parameters
-function xp = initializeParticles(x, u, params)
+function xp = initializeParticles(x, params)
 xp = {};
 % for each particle
+posNoise = mvnrnd(params.initPosMu,params.initPosSigma,params.np);
+pos = repmat(x.pos',params.np,1);
+pos = pos+posNoise;
+
+rhoNoise = mvnrnd(params.initRhoMu, params.initRhoSigma, params.np);
+rho = repmat(x.rho, params.np, 1);
+rho = rho+rhoNoise;
+
+orientationNoise = mvnrnd(params.initOrientationMu, params.initOrientationSigma, params.np);
+
 for p=1:params.np
-    xp{p}.pos = params.
+    xp{p}.pos = pos(p,:)';
+    xp{p}.q = quatmult(x.q,AxisAngleToQuat(orientationNoise(p,:)'));
+    xp{p}.rho = rho(p);
 end
+
+xp = xp';
+
 end

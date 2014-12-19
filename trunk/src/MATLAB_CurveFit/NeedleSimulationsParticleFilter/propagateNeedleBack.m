@@ -1,6 +1,6 @@
 % x = needle tip statee state
 %   x.x0 % position of needle tip frame n timesteps back
-%   x.R  % orientation of needle tip frame n timesteps back
+%   x.q  % orientation of needle tip frame n timesteps back
 %   x.rho radius of curvature (mm)
 
 % u{1} = control input that lead to xs(1)

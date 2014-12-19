@@ -1,7 +1,7 @@
 %% state update dynamics
 % x = current needle tip state
 %   x.pos % current position of needle tip frame 
-%   x.R  % current orientation of needle tip 
+%   x.q  % current orientation of needle tip 
 %   x.rho current radius of curvature
 % u = control input
 %   u{1}        = current action
