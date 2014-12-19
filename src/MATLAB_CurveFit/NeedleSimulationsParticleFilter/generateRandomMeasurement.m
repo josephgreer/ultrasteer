@@ -53,7 +53,8 @@ orientationPertubation = mvnrnd(params.frameOrientationMu, params.frameOrientati
 measurementNoise = mvnrnd(params.measurementOffsetMu, params.measurementOffsetSigma);
 
 %frame orientation
-Rf = xus.R*Rx(orientationPertubation(1))*Ry(orientationPertubation(2))*Rz(orientationPertubation(3));
+R = QuatToRotationMatrix(xus.q);
+Rf = R*Rx(orientationPertubation(1))*Ry(orientationPertubation(2))*Rz(orientationPertubation(3));
 
 %position measurement
 posMeas = xus.pos+Rf(:,1)*measurementNoise(1)+Rf(:,2)*measurementNoise(2);

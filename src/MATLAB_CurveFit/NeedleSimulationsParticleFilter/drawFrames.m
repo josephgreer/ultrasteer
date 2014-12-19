@@ -4,7 +4,7 @@ figure(fig);
 
 for i=1:length(x)
     hold on;
-    R = x{i}.R*scale;
+    R = QuatToRotationMatrix(x{i}.q)*scale;
     xx = x{i}.pos+R(:,1);
     xy = x{i}.pos+R(:,2);
     xz = x{i}.pos+R(:,3);

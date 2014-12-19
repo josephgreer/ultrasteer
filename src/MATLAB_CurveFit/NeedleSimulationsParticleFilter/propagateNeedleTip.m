@@ -12,16 +12,16 @@ function x1 = propagateNeedleTip(x, u, params)
 dl = u.v*params.dt;
 
 
-% Rk' coordinate system expressed in global coordinates.
+% k' coordinate system expressed in global coordinates.
 % note rotation order is flipped because using intrinsic rotations with
 % extrinisc rotation matrices
-Rkp = x.R*Rz(u.dtheta);
+kp = quatmult(x.q,RotationMatrixToQuat(Rz(u.dtheta)));
 
 % location of tip expressed in Rk' coordinates
 kp_x = [0; x.rho*(1-cos(dl/x.rho)); x.rho*sin(dl/x.rho)];
 
 % convert needle tip location into global coordinates
-x1.pos = Rkp*kp_x+x.pos;
+x1.pos = quatrot(kp,kp_x)+x.pos;
 % pass through rho
 x1.rho = x.rho;
 
@@ -30,5 +30,5 @@ x1.rho = x.rho;
 % needle tip's z-axis then rotated about the needle tip's x axis due to
 % following the curved arc.  Note taht rotation order is flipped due to
 % intrinsic axis rotations used rather than extrinsic.
-x1.R = Rkp*Rx(-dl/x.rho);
+x1.q = quatmult(kp,RotationMatrixToQuat(Rx(-dl/x.rho)));
 end
