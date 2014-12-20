@@ -22,6 +22,7 @@ for p=1:params.np
     xp{p}.pos = pos(p,:)';
     xp{p}.q = quatmult(x.q,AxisAngleToQuat(orientationNoise(p,:)'));
     xp{p}.rho = rho(p);
+    xp{p}.w = 1;
 end
 
 xp = xp';

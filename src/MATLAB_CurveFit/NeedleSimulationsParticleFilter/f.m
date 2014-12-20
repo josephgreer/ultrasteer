@@ -17,8 +17,11 @@ function xk1 = f(x,u,params)
 %orienation noise angles
 noiseTheta = mvnrnd(params.muOrientation, params.sigmaOrientation)';
 noisePos = mvnrnd(params.muPos, params.sigmaPos)';
+noiseVel = mvnrnd(params.muVelocity, params.sigmaVelocity);
 
 x.q = quatmult(x.q,AxisAngleToQuat(noiseTheta));
+
+u.v = u.v+noiseVel;
 xk1 = propagateNeedleTip(x, u, params);
 
 % add noise to x0, R, and rho

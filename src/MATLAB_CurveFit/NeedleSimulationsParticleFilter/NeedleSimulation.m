@@ -9,11 +9,13 @@ params.dt = 1/10;                                                           %sim
 
 % process noise parameters
 params.muOrientation = [0; 0; 0];                                           %orientation process noise mean
-params.sigmaOrientation = diag(1/1*[pi/1000, pi/1000, pi/1000]);                %orientation process noise std
+params.sigmaOrientation = diag(1/5*[pi/1000, pi/1000, pi/1000]);                %orientation process noise std
 params.muPos = [0; 0; 0];                                                   %position process noise mean
 params.sigmaPos = zeros(3,3);%diag([.25 .25 .25]);                          %position process noise std
 params.muRho = 0;                                                           %needle radius of curvature process noise mean
 params.sigmaRho = 3;                                                        %needle radius of curvature process noise std
+params.muVelocity = 0;
+params.sigmaVelocity = 5;                                                   %velocity sigma
 params.simulationTime = 15;                                                 %simulate 10 seconds of insertion
 
 % ultrasound dimensions/parameters
@@ -27,13 +29,13 @@ params.frameOrientationSigma = diag([pi/1000, pi/1000, pi/1000]);           %fra
 % measurement noise parameters
 params.measurementOffsetMu = [0; 0];                                        %zero measurement noise offset
 params.measurementOffsetSigma = diag([83*20*1e-3 83*20*1e-3]);              %5 pixels of measurement noise
-params.offNeedleDopplerMode = 2;                                            %Doppler strength of measurement off needle distributed according to lognormal dist
-params.offNeedleDopplerSigma = 0.2;                                         %Doppler strength of measurement off needle distributed according to lognormal dist
-params.onNeedleDopplerMode = 10;                                            %Doppler strength of measurement on needle distributed according to lognormal dist
-params.onNeedleDopplerSigma = 0.2;                                          %Doppler strength of measurement on needle distributed according to lognormal dist
+params.offNeedleDopplerMu = 0.882;                                            %Doppler strength of measurement off needle distributed according to lognormal dist
+params.offNeedleDopplerSigma = 0.939;                                         %Doppler strength of measurement off needle distributed according to lognormal dist
+params.onNeedleDopplerMu = 2.33;                                            %Doppler strength of measurement on needle distributed according to lognormal dist
+params.onNeedleDopplerSigma = 0.17;                                          %Doppler strength of measurement on needle distributed according to lognormal dist
 
 % particle filter parameters
-params.n = 40;                                                              %only keep track of current state
+params.n = 20;                                                              %only keep track of current state
 params.np = 100;                                                            %number of particles
 params.initOrientationSigma = diag(5*[pi/1000, pi/1000, pi/100]);             %orientation sigma for initial distribution of particles
 params.initOrientationMu = [0;0;0];                                   %orientation mu for initial distribution of particles
@@ -46,11 +48,11 @@ params.particlesInit = 0;                                                    %ar
 % drawing parameters
 params.drawMeasurement = 1; 
 params.drawUSFrame = 0;
-params.drawTipFrame = 0;
+params.drawTipFrame = 1;
 params.drawPastTipFrames = 0;
-params.drawParticlePos = 0;
+params.drawParticlePos = 1;
 params.drawParticleOrientation = 0;
-params.drawParticlesNs = 5;
+params.drawParticlesNs = 1;
 
 % output video parameters
 params.writeVideo = 0;
@@ -124,13 +126,19 @@ for t=0:params.dt:params.simulationTime
     
     % if we're far enough along, start generating random US measurements
     measurement = [];
-    if(t > 2)
+    if(t > 4)
         measurement = generateRandomMeasurement(xcurr, u, params);
         if(~params.particlesInit)
             xp = initializeParticles(xcurr, params);
             params.particlesInit = 1;
         else
             xp = propagateParticles(xp,uc,params);
+            pw = measureParticles(xp,u,measurement,params);
+            pids = [];
+            for i=1:length(xp)
+                pids = [pids;find(rand <= cumsum(pw),1)];
+            end
+            xpu = {xp{pids}}';
         end
     end
     
@@ -143,6 +151,10 @@ for t=0:params.dt:params.simulationTime
     
     if(params.particlesInit)
         particleHandles = drawParticles(1,xp,params, particleHandles);
+        if(exist('xpu'))
+            particleHandles = drawParticles(1,xpu,params,particleHandles);
+            xp = xpu;
+        end
     end
     
     if(~isempty(measurement))
