@@ -12,6 +12,11 @@
 %   u{i}.dtheta    = rotation about needle's axis
 %   u{i}.dc        = duty cycle ratio
 % params = simulation parameters
+% return measurement
+%  measurement.pos = [x;y;z] is location of measurement
+%  measurement.doppler = doppler response
+%  measurement.ful,fbl,fbr,fur = us frame positions
+%  measurement.bx = measurement.fbl-measurement.fur
 % see ../NeedleSimulation.m for description of parameters
 function measurement = generateRandomMeasurement(x, u, params)
 axisLoc = mvnrnd(params.axialMu, params.axialSigma);
@@ -26,8 +31,7 @@ if(axisLoc > 0)
     %propagate forward by axisLoc mm
     xus = propagateNeedleTip(x,uc,params);
     
-    measurement.doppler = lognrnd(log(params.offNeedleDopplerMode)+params.offNeedleDopplerSigma^2,...
-        params.offNeedleDopplerSigma);
+    measurement.doppler = lognrnd(params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
 else
     %US frame behind tip
     dist = 0;
@@ -42,8 +46,7 @@ else
     xus = propagateNeedleBack(x,us,params);
     xus = xus{endid};
     
-    measurement.doppler = lognrnd(log(params.onNeedleDopplerMode)+params.onNeedleDopplerSigma^2,...
-        params.onNeedleDopplerSigma);
+    measurement.doppler = lognrnd(params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
 end
 
 % orientation perturbation of US frame
@@ -64,4 +67,8 @@ measurement.ful = xus.pos-Rf(:,1)*params.ush/2-Rf(:,2)*params.usw/2;
 measurement.fbl = xus.pos+Rf(:,1)*params.ush/2-Rf(:,2)*params.usw/2;
 measurement.fbr = xus.pos+Rf(:,1)*params.ush/2+Rf(:,2)*params.usw/2;
 measurement.fur = xus.pos-Rf(:,1)*params.ush/2+Rf(:,2)*params.usw/2;
+measurement.bx = measurement.fur-measurement.ful;  measurement.bx = measurement.bx/norm(measurement.bx);
+measurement.by = measurement.fbl-measurement.ful;  measurement.by = measurement.by/norm(measurement.by);
+measurement.uv = [measurement.bx(1:2) measurement.by(1:2)]\(measurement.pos(1:2)-measurement.ful(1:2));
+assert(sum(abs(measurement.ful+[measurement.bx measurement.by]*measurement.uv-measurement.pos)) < 1e-6);
 end
