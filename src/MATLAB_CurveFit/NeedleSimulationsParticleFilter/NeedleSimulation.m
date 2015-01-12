@@ -11,7 +11,7 @@ params.dt = 1/10;                                                           %sim
 params.muOrientation = [0; 0; 0];                                           %orientation process noise mean
 params.sigmaOrientation = diag(1/5*[pi/1000, pi/1000, pi/1000]);                %orientation process noise std
 params.muPos = [0; 0; 0];                                                   %position process noise mean
-params.sigmaPos = zeros(3,3);%diag([.25 .25 .25]);                          %position process noise std
+params.sigmaPos = diag(0*[1 1 1]);                          %position process noise std
 params.muRho = 0;                                                           %needle radius of curvature process noise mean
 params.sigmaRho = 3;                                                        %needle radius of curvature process noise std
 params.muVelocity = 0;
@@ -22,7 +22,7 @@ params.simulationTime = 15;                                                 %sim
 params.usw = 83*630*1e-3;                                                   %physical width of ultrasound frame (mm)
 params.ush = 83*480*1e-3;                                                   %phyiscal height of ultrasound frame (mm)
 params.axialMu = 0;                                                         %(>0) ahead of needle tip, (<0) behind needle tip 0 is on
-params.axialSigma = 30;                                                     %sigma of where the image plane is wrt to needle tip (mm)
+params.axialSigma = 20;                                                     %sigma of where the image plane is wrt to needle tip (mm)
 params.frameOrientationMu = [0; 0; 0];                                      %frame orientation mu
 params.frameOrientationSigma = diag([pi/1000, pi/1000, pi/1000]);           %frame orientation sigma
 
@@ -47,12 +47,15 @@ params.particlesInit = 0;                                                    %ar
 
 % drawing parameters
 params.drawMeasurement = 1; 
-params.drawUSFrame = 0;
+params.drawUSFrame = 1;
 params.drawTipFrame = 1;
 params.drawPastTipFrames = 0;
 params.drawParticlePos = 1;
 params.drawParticleOrientation = 0;
 params.drawParticlesNs = 1;
+params.drawExpectedPos = 1;
+params.drawExpectedOrientation = 0;
+params.drawTruePos = 1;
 
 % output video parameters
 params.writeVideo = 0;
@@ -126,19 +129,21 @@ for t=0:params.dt:params.simulationTime
     
     % if we're far enough along, start generating random US measurements
     measurement = [];
-    if(t > 4)
+    if(t > 2)
         measurement = generateRandomMeasurement(xcurr, u, params);
         if(~params.particlesInit)
-            xp = initializeParticles(xcurr, params);
+            fakeCurr = xcurr;
+            fakeCurr.rho = 80;
+            xp = initializeParticles(fakeCurr, params);
+            xpe = expectedValueOfParticles(xp,params);
             params.particlesInit = 1;
         else
             xp = propagateParticles(xp,uc,params);
             pw = measureParticles(xp,u,measurement,params);
-            pids = [];
-            for i=1:length(xp)
-                pids = [pids;find(rand <= cumsum(pw),1)];
-            end
+            pids = sample(pw, length(xp));
             xpu = {xp{pids}}';
+            xpe = expectedValueOfParticles(xp,params);
+            xpeu = expectedValueOfParticles(xpu, params);
         end
     end
     
@@ -150,9 +155,9 @@ for t=0:params.dt:params.simulationTime
     end
     
     if(params.particlesInit)
-        particleHandles = drawParticles(1,xp,params, particleHandles);
+        particleHandles = drawParticles(1,xp, xpe,xcurr,params, particleHandles);
         if(exist('xpu'))
-            particleHandles = drawParticles(1,xpu,params,particleHandles);
+            particleHandles = drawParticles(1,xpu, xpe,xcurr, params,particleHandles);
             xp = xpu;
         end
     end

@@ -21,11 +21,11 @@ Q = diag([0.1,0.1,0.6,0.001,0.001,0.001]); % measured variance
 
 %JOEY: MULTIPLY Q BY A FACTOR IF YOU WANT TO CHANGE VARIATIONS IN CURVE
 % EG:
- Q = Q*0; %<---- Gives ideal needle steering model
+% Q = Q*0; %<---- Gives ideal needle steering model
 % Q = Q*0.00001;
 % Q = Q*0.001;
 % Q = Q*0.1;
-% Q = Q*1; %<---- Approximates experimentally measured deviation from model
+ Q = Q*1; %<---- Approximates experimentally measured deviation from model
 
 %% Run simulation loop ----------------------------------------------------
 display(N)
