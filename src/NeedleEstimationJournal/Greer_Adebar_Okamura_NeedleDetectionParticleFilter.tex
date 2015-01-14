@@ -1,0 +1,220 @@
+
+%% bare_jrnl_transmag.tex
+%% V1.4
+%% 2012/12/27
+%% by Michael Shell
+%% see http://www.michaelshell.org/
+%% for current contact information.
+%%
+%% This is a skeleton file demonstrating the use of IEEEtran.cls
+%% (requires IEEEtran.cls version 1.8 or later) with an IEEE 
+%% Transactions on Magnetics journal paper.
+%%
+%% Support sites:
+%% http://www.michaelshell.org/tex/ieeetran/
+%% http://www.ctan.org/tex-archive/macros/latex/contrib/IEEEtran/
+%% and
+%% http://www.ieee.org/
+
+\documentclass[journal,transmag]{IEEEtran}
+\usepackage[cmex10]{amsmath}
+\usepackage[]{amsfonts,amssymb}
+\usepackage{algorithmic}
+\usepackage{array}
+\usepackage[pdftex]{graphicx}
+
+\begin{document}
+%
+% paper title
+% can use linebreaks \\ within to get better formatting as desired
+% Do not put math or special symbols in the title.
+\title{State Estimation of Steerable Needles Using Tracked 2D Doppler Ultrasound}
+
+
+% author names and affiliations
+% transmag papers use the long conference author name format.
+
+\author{\IEEEauthorblockN{Joseph D. Greer\IEEEauthorrefmark{1},
+Troy K. Adebar\IEEEauthorrefmark{1},
+Allison M. Okamura\IEEEauthorrefmark{1}, 
+\IEEEauthorblockA{\IEEEauthorrefmark{1}Deparment of Mechanical Engineering,
+Stanford University, Stanford, CA 94305 USA}
+\thanks{Manuscript received December 1, 2012; revised December 27, 2012. 
+Corresponding author: M. Shell (email: http://www.michaelshell.org/contact.html).}}
+}
+
+% The paper headers
+\markboth{Journal of \LaTeX\ Class Files,~Vol.~11, No.~4, December~2012}%
+{Shell \MakeLowercase{\textit{et al.}}: Bare Demo of IEEEtran.cls for Journals}
+% The only time the second header will appear is for the odd numbered pages
+% after the title page when using the twoside option.
+% 
+% *** Note that you probably will NOT want to include the author's ***
+% *** name in the headers of peer review papers.                   ***
+% You can use \ifCLASSOPTIONpeerreview for conditional compilation here if
+% you desire.
+
+% for Transactions on Magnetics papers, we must declare the abstract and
+% index terms PRIOR to the title within the \IEEEtitleabstractindextext
+% IEEEtran command as these need to go into the title area created by
+% \maketitle.
+% As a general rule, do not put math, special symbols or citations
+% in the abstract or keywords.
+\IEEEtitleabstractindextext{%
+\begin{abstract}
+The abstract goes here.
+\end{abstract}
+
+% Note that keywords are not normally used for peerreview papers.
+\begin{IEEEkeywords}
+IEEEtran, journal, \LaTeX, magnetics, paper, template.
+\end{IEEEkeywords}}
+
+
+
+% make the title area
+\maketitle
+
+
+% To allow for easy dual compilation without having to reenter the
+% abstract/keywords data, the \IEEEtitleabstractindextext text will
+% not be used in maketitle, but will appear (i.e., to be "transported")
+% here as \IEEEdisplaynontitleabstractindextext when the compsoc 
+% or transmag modes are not selected <OR> if conference mode is selected 
+% - because all conference papers position the abstract like regular
+% papers do.
+\IEEEdisplaynontitleabstractindextext
+% \IEEEdisplaynontitleabstractindextext has no effect when using
+% compsoc or transmag under a non-conference mode.
+
+
+
+
+% For peer review papers, you can put extra information on the cover
+% page as needed:
+% \ifCLASSOPTIONpeerreview
+% \begin{center} \bfseries EDICS Category: 3-BBND \end{center}
+% \fi
+%
+% For peerreview papers, this IEEEtran command inserts a page break and
+% creates the second title. It will be ignored for other modes.
+\IEEEpeerreviewmaketitle
+
+
+
+\section{Introduction}
+\IEEEPARstart{C}{ontinuous} state estimation of a steerable needle for closed loop control using freehand 2D Doppler ultrasound.
+
+\section{Methods}
+\subsection{Static Needle Segmentation}
+Repeat MICCAI paper.
+
+\subsection{Kinematic Model}
+\begin{figure}[!t]
+\centering
+\includegraphics[scale=0.9]{Figures/NeedleKinematics.pdf}
+\caption{Needle Kinematics}
+\label{fig_nk}
+\end{figure}
+
+In this work, we use the unicycle kinematic model proposed in \cite{Park2005}.  This model has previously been used and validated for closed loop control of steerable needles in \cite{Majewicz2013} and \cite{adebar2014recursive}.  In the unicycle kinematic model, steerable needles are assumed to naturally follow circular paths of constant curvature in a plane determined by the orientation and position of the needle's tip.  Control of the needle is achieved through two degrees of freedom, insertion and rotation of the needle about its axis.
+
+\subsubsection{Needle Steering State}
+Figure \ref{fig_nk} provides a diagram of the unicycle kinematic model for needle steering.  At an arbitrary time-step, $k$, the state of the system, $\mathbf{x}_k = \left[\vec{p}_k, R_k\right]^\top$ is completely defined by the position of the needle tip, $\vec{p}_k$ and the orientation of a frame attached to the needle tip, $R_k = \left[\hat{x}_k,\hat{y}_k,\hat{z}_k\right]$.
+
+\subsubsection{Stochastic State Update}
+In \cite{adebar2014recursive}, a stochastic state update equation,
+\begin{equation*}
+\mathbf{x}_{k+1} = f(\mathbf{x}_k, \mathbf{u}_k, \mathbf{w}_k)
+\end{equation*}  
+was described for the unicycle kinematic model, where $\mathbf{x}_{k+1}$ is the needle's state at time-step $k+1$. $\mathbf{u}_k$ and $\mathbf{w}_k$ are the control and disturbance vectors at time $k$ and are described below.  
+
+At each time-step, the needle is rotated about its axis by $\delta \theta_k$ and inserted a distance $l_k$.  These actions define the control input 
+\begin{equation*}
+\mathbf{u}_k = \left[l_k, \delta\theta_k\right]^\top
+\end{equation*}  
+
+During an insertion, the unicycle kinematic model assumes the needle will travel along a circular arc.  The radius of curvature of this arc, $\rho$ is assumed to be constant and is affected by the stiffness of both the tissue and needle.  
+
+$\mathbf{x}_{k+1}$ is calculated by first rotating the coordinate frame attached the needle tip, $R_k$, about $\hat{z}_k$ by $\delta \theta$ to yield an intermediate frame $R' = [\hat{x}', \hat{y}', \hat{z}']$.  The needle tip position is then moved along a $l_k/\rho$ radian arc of length $l_k$ to yield a new tip position, $\vec{p}_{k+1}$.  Finally, $R'$ is rotated by $\l_k/\rho$ about $\hat{x}'$ to yield an updated coordinate frame, $R_{k+1}$ so that $\hat{z}_{k+1}$ is tangent with the needle's trajectory at time $k+1$.  
+ 
+\section{Conclusion}
+The conclusion goes here.
+
+
+% use section* for acknowledgement
+\section*{Acknowledgment}
+The authors would like to thank...
+
+
+% trigger a \newpage just before the given reference
+% number - used to balance the columns on the last page
+% adjust value as needed - may need to be readjusted if
+% the document is modified later
+%\IEEEtriggeratref{8}
+% The "triggered" command can be changed if desired:
+%\IEEEtriggercmd{\enlargethispage{-5in}}
+
+% references section
+
+% can use a bibliography generated by BibTeX as a .bbl file
+% BibTeX documentation can be easily obtained at:
+% http://www.ctan.org/tex-archive/biblio/bibtex/contrib/doc/
+% The IEEEtran BibTeX style support page is at:
+% http://www.michaelshell.org/tex/ieeetran/bibtex/
+%\bibliographystyle{IEEEtran}
+% argument is your BibTeX string definitions and bibliography database(s)
+%\bibliography{IEEEabrv,../bib/paper}
+%
+% <OR> manually copy in the resultant .bbl file
+% set second argument of \begin to the number of references
+% (used to reserve space for the reference number labels box)
+\bibliographystyle{IEEEtran} 
+\bibliography{library}
+
+% biography section
+% 
+% If you have an EPS/PDF photo (graphicx package needed) extra braces are
+% needed around the contents of the optional argument to biography to prevent
+% the LaTeX parser from getting confused when it sees the complicated
+% \includegraphics command within an optional argument. (You could create
+% your own custom macro containing the \includegraphics command to make things
+% simpler here.)
+%\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{mshell}}]{Michael Shell}
+% or if you just want to reserve a space for a photo:
+
+\begin{IEEEbiography}{Michael Shell}
+Biography text here.
+\end{IEEEbiography}
+
+% if you will not have a photo at all:
+\begin{IEEEbiographynophoto}{John Doe}
+Biography text here.
+\end{IEEEbiographynophoto}
+
+% insert where needed to balance the two columns on the last page with
+% biographies
+%\newpage
+
+\begin{IEEEbiographynophoto}{Jane Doe}
+Biography text here.
+\end{IEEEbiographynophoto}
+
+% You can push biographies down or up by placing
+% a \vfill before or after them. The appropriate
+% use of \vfill depends on what kind of text is
+% on the last page and whether or not the columns
+% are being equalized.
+
+%\vfill
+
+% Can be used to pull up biographies so that the bottom of the last one
+% is flush with the other column.
+%\enlargethispage{-5in}
+
+
+
+% that's all folks
+\end{document}
+
+
