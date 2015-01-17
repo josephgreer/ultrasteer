@@ -136,7 +136,9 @@ At each time-step, the needle is rotated about its axis by $\delta \theta_k$ and
 
 During an insertion, the unicycle kinematic model assumes the needle will travel along a circular arc.  The radius of curvature of this arc, $\rho$ is assumed to be constant and is affected by the stiffness of both the tissue and needle.  
 
-$\mathbf{x}_{k+1}$ is calculated by first rotating the coordinate frame attached the needle tip, $R_k$, about $\hat{z}_k$ by $\delta \theta$ to yield an intermediate frame $R' = [\hat{x}', \hat{y}', \hat{z}']$.  The needle tip position is then moved along a $l_k/\rho$ radian arc of length $l_k$ to yield a new tip position, $\vec{p}_{k+1}$.  Finally, $R'$ is rotated by $\l_k/\rho$ about $\hat{x}'$ to yield an updated coordinate frame, $R_{k+1}$ so that $\hat{z}_{k+1}$ is tangent with the needle's trajectory at time $k+1$.  
+$\mathbf{x}^{\text{ideal}}_{k+1}$ is first calculated assuming no process noise.  This is done by rotating the coordinate frame attached to the needle tip, $R_k$, about $\hat{z}_k$ by $\delta \theta$ radians to yield an intermediate frame $R' = [\hat{x}', \hat{y}', \hat{z}']$.  The needle tip position is then moved along a $l_k/\rho$ radian arc segment of length $l_k$ to yield a new tip position, $\vec{p}^{\text{ideal}}_{k+1}$.  Finally, $R'$ is rotated by $\l_k/\rho$ radians about $\hat{x}'$ to yield an updated coordinate frame, $R^{\text{ideal}}_{k+1}$ so that $\hat{z}_{k+1}$ is tangent with the needle's trajectory at time $k+1$.  
+
+The needle state update is assumed to have error from both inaccuracies in the model as well as disturbances such as tissue in-homogeneity, vasculature, and tissue fascia.  Because of this, the ideal unicycle kinematic model was modified in \cite{adebar2014recursive} to account for error in both position and orientation, making it a stochastic state update.  This is done by adding a position error $\vec{w}_k$ to $\vec{p}^{\text{ideal}}_{k+1}$ to yield $\vec{p}_{k+1}$ and applying a rotation error, $W_k$ to yield $R_{k+1}$.  
  
 \section{Conclusion}
 The conclusion goes here.
