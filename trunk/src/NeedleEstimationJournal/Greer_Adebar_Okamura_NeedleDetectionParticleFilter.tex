@@ -23,6 +23,11 @@
 \usepackage{array}
 \usepackage[pdftex]{graphicx}
 
+\newcommand{\bvar}[2]{\mathbf{#1}_{#2}}
+\newcommand{\stateest}[1][k]{p(\mathbf{x}_{#1}|\mathbf{z}_{1...#1},\mathbf{u}_{1...#1})}
+\newcommand{\meas}[1][k]{p(\mathbf{z}_{#1}|\mathbf{x}_{#1})}
+\newcommand{\motion}[1][k]{p(\mathbf{x}_{#1}|\mathbf{x}_{#1-1},\mathbf{u}_{#1})}
+
 \begin{document}
 %
 % paper title
@@ -105,11 +110,10 @@ IEEEtran, journal, \LaTeX, magnetics, paper, template.
 \section{Introduction}
 \IEEEPARstart{C}{ontinuous} state estimation of a steerable needle for closed loop control using freehand 2D Doppler ultrasound.
 
-\section{Methods}
-\subsection{Static Needle Segmentation}
+\section{Static Needle Segmentation}
 Repeat MICCAI paper.
 
-\subsection{Kinematic Model}
+\section{Probabilistic State Estimation}
 \begin{figure}[!t]
 \centering
 \includegraphics[scale=0.9]{Figures/NeedleKinematics.pdf}
@@ -117,28 +121,64 @@ Repeat MICCAI paper.
 \label{fig_nk}
 \end{figure}
 
-In this work, we use the unicycle kinematic model proposed in \cite{Park2005}.  This model has previously been used and validated for closed loop control of steerable needles in \cite{Majewicz2013} and \cite{adebar2014recursive}.  In the unicycle kinematic model, steerable needles are assumed to naturally follow circular paths of constant curvature in a plane determined by the orientation and position of the needle's tip.  Control of the needle is achieved through two degrees of freedom, insertion and rotation of the needle about its axis.
+In this work, the state estimation problem for steerable needles is formulated in the Bayesian Filtering framework described in \cite{Thrun:2005}.
+\begin{align}  \label{eqn:stateest}
+&\underbrace{\stateest}_{\text{current state estimate}} = \eta \underbrace{\motion}_{\text{motion model}} \underbrace{\meas}_{\text{measurement model}}
+\end{align}
+The left side of equation (\ref{eqn:stateest}) is a probability distribution representing the needle's state, $\bvar{x}{k}$.  With certain independence assumptions for the needle's states and measurements \cite{Thrun:2005}, this probability distribution can be decomposed into three separate distributions. Each component distribution of the state estimate can be computed in an efficient manner:  a motion model describes how the system responds to input $\bvar{u}{k}$, a measurement model, and the previous time-step's state estimate.
+
 
 \subsubsection{Needle Steering State}
-Figure \ref{fig_nk} provides a diagram of the unicycle kinematic model for needle steering.  At an arbitrary time-step, $k$, the state of the system, $\mathbf{x}_k = \left[\vec{p}_k, R_k\right]^\top$ is completely defined by the position of the needle tip, $\vec{p}_k$ and the orientation of a frame attached to the needle tip, $R_k = \left[\hat{x}_k,\hat{y}_k,\hat{z}_k\right]$.
+Figure \ref{fig_nk} provides a diagram of the unicycle kinematic model for needle steering.  In this model, the state of the system $\bvar{x}{k} =  \left[\vec{p}_k, R_k\right]^\top$ is completely defined by the position of the needle tip, $\vec{p}_k$ and the orientation of a frame attached to the needle tip, $R_k = \left[\hat{x}_k,\hat{y}_k,\hat{z}_k\right]$.  In addition to the tip position and orientation,  we augment the unicycle kinematic model state with the $N$ most recent command inputs $\bvar{u}{k-1...k-N}$
+\begin{equation*}
+\bvar{x}{k} =  \left[\underbrace{\vec{p}_k,}_{\text{tip position}} \underbrace{R_k,}_{\text{tip orienation}} \underbrace{\bvar{u}{k-1...k-N}}_{\text{previous commands}}\right]^\top
+\end{equation*}
+These command inputs are described in section \ref{subsec:unicycle} below.
 
-\subsubsection{Stochastic State Update}
+
+\subsubsection{Motion Model} \label{subsec:unicycle}
+In this work, we use the unicycle kinematic model proposed in \cite{Park2005}.  This model has previously been used and validated for closed loop control of steerable needles in \cite{Majewicz2013} and \cite{adebar2014recursive}.  In the unicycle kinematic model, steerable needles are assumed to naturally follow circular paths of constant curvature in a plane determined by the orientation and position of the needle's tip.  Control of the needle is achieved through two degrees of freedom, insertion and rotation of the needle about its axis.
+
 In \cite{adebar2014recursive}, a stochastic state update equation,
 \begin{equation*}
-\mathbf{x}_{k+1} = f(\mathbf{x}_k, \mathbf{u}_k, \mathbf{w}_k)
+\bvar{x}{k+1} = f(\bvar{x}{k}, \bvar{u}{k}, \bvar{w}{k})
 \end{equation*}  
-was described for the unicycle kinematic model, where $\mathbf{x}_{k+1}$ is the needle's state at time-step $k+1$. $\mathbf{u}_k$ and $\mathbf{w}_k$ are the control and disturbance vectors at time $k$ and are described below.  
+was described for the unicycle kinematic model, where $\bvar{x}{k+1}$ is the needle's state at time-step $k+1$. $\bvar{u}{k}$ and $\bvar{w}{k}$ are the control and disturbance vectors at time $k$ and are described below.  
 
 At each time-step, the needle is rotated about its axis by $\delta \theta_k$ and inserted a distance $l_k$.  These actions define the control input 
 \begin{equation*}
-\mathbf{u}_k = \left[l_k, \delta\theta_k\right]^\top
+\bvar{u}{k} = \left[l_k, \delta\theta_k\right]^\top
 \end{equation*}  
 
-During an insertion, the unicycle kinematic model assumes the needle will travel along a circular arc.  The radius of curvature of this arc, $\rho$ is assumed to be constant and is affected by the stiffness of both the tissue and needle.  
+During an insertion, the unicycle kinematic model assumes the needle will travel along a circular arc.  The radius of curvature of this arc, $\rho$, is assumed to be constant and is governed by the stiffness of both the tissue and needle.  
 
-$\mathbf{x}^{\text{ideal}}_{k+1}$ is first calculated assuming no process noise.  This is done by rotating the coordinate frame attached to the needle tip, $R_k$, about $\hat{z}_k$ by $\delta \theta$ radians to yield an intermediate frame $R' = [\hat{x}', \hat{y}', \hat{z}']$.  The needle tip position is then moved along a $l_k/\rho$ radian arc segment of length $l_k$ to yield a new tip position, $\vec{p}^{\text{ideal}}_{k+1}$.  Finally, $R'$ is rotated by $\l_k/\rho$ radians about $\hat{x}'$ to yield an updated coordinate frame, $R^{\text{ideal}}_{k+1}$ so that $\hat{z}_{k+1}$ is tangent with the needle's trajectory at time $k+1$.  
+A state update is first calculated assuming no process noise, producing a new ideal state, $\bvar{x}{k+1}^{\text{ideal}} = \left[\vec{p}^{\text{ideal}}_{k+1}, R^{\text{ideal}}_{k+1}\right]$.  This is done by rotating the coordinate frame attached to the needle tip, $R_k$, about $\hat{z}_k$ by $\delta \theta$ radians to yield an intermediate frame $R' = [\hat{x}', \hat{y}', \hat{z}']$:
+\begin{equation*}
+R' = R_{\hat{z}_k}(\delta\theta)R_k
+\end{equation*}
+In the plane defined by intermediate tip frame axes $\hat{y}'_k$ and $\hat{z}'_k$, the tip position is moved along a $\frac{l_k}{\rho}$ radian arc segment of length $l_k$ to yield a new tip position, $\vec{p}^{\text{ideal}}_{k+1}$.  Finally, $R'$ is rotated by $\frac{\l_k}{\rho}$ radians about $\hat{x}'$ to yield an updated coordinate frame
+\begin{equation*}
+R^{\text{ideal}}_{k+1} = [\hat{x}^{\text{ideal}}_k, \hat{y}^{\text{ideal}}_k, \hat{z}^{\text{ideal}}_k] = R_{\hat{x}'_k}\left(\frac{l_k}{\rho}\right)R'
+\end{equation*}
+so that $\hat{z}^{\text{ideal}}_{k+1}$ is tangent with the ideal needle's trajectory at time $k+1$.  
 
-The needle state update is assumed to have error from both inaccuracies in the model as well as disturbances such as tissue in-homogeneity, vasculature, and tissue fascia.  Because of this, the ideal unicycle kinematic model was modified in \cite{adebar2014recursive} to account for error in both position and orientation, making it a stochastic state update.  This is done by adding a position error $\vec{w}_k$ to $\vec{p}^{\text{ideal}}_{k+1}$ to yield $\vec{p}_{k+1}$ and applying a rotation error, $W_k$ to yield $R_{k+1}$.  
+The ideal needle state update described above has error from both inaccuracies in the kinematic model as well as disturbances such as tissue in-homogeneity, vasculature, and tissue fascia.  Because of this, the ideal unicycle kinematic model was modified in \cite{adebar2014recursive} to account for error in both position and orientation.  These errors are captured in the process noise random variable 
+\begin{equation*}
+\bvar{w} = \left[\vec{w}_{p_k}, W_{R_k}\right]
+\end{equation*}  
+which has a position noise component, $\vec{w}_{p_k}$ and an orientation noise component, $W_{R_k}$.  $\vec{w}_{p_k}$ is added to $\vec{p}^{\text{ideal}}_{k+1}$ to yield the final position $\vec{p}_{k+1}$.
+Similarly, the orientation noise component perturbs $R^{ideal}_{k+1}$ to yield the final orientation $R_{k+1}$
+\begin{align*}
+\vec{p}_{k+1} &= \vec{p}^{\text{ideal}}_{k+1}+\vec{w}_{p_k} \\
+R_{k+1} &= W_{R_k}R^{\text{ideal}}_{k+1}
+\end{align*}
+With a state transition function, $f$, a motion model can be computed as 
+\begin{align*}
+& p(\bvar{x}{k}|\bvar{x}{k-1},\bvar{u}{k}) = \int_{\bvar{x}{k-1}} p(X_k = \bvar{x}{k} | u_k, \bvar{x}{k-1}) \mathrm{d}\bvar{x}{k-1}
+\end{align*}
+
+\subsection{Measurement Model} \label{subsec:measurement}
+As described in section \ref{subsec:unicycle}, a key assumption of the unicycle kinematic model for steerable needles is that the only part of the needle that is important for predicting its future movement due to a control input $bvar{u}_k$ is the tip of the needle.  
  
 \section{Conclusion}
 The conclusion goes here.
