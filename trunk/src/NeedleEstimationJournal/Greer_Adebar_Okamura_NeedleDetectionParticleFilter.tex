@@ -22,6 +22,7 @@
 \usepackage{algorithmic}
 \usepackage{array}
 \usepackage[pdftex]{graphicx}
+\usepackage{breqn}
 
 \newcommand{\bvar}[2]{\mathbf{#1}_{#2}}
 \newcommand{\stateest}[1][k]{p(\mathbf{x}_{#1}|\mathbf{z}_{1...#1},\mathbf{u}_{1...#1})}
@@ -125,18 +126,18 @@ In this work, the state estimation problem for steerable needles is formulated i
 \begin{align}  \label{eqn:stateest}
 &\underbrace{\stateest}_{\text{current state estimate}} = \eta \underbrace{\motion}_{\text{motion model}} \underbrace{\meas}_{\text{measurement model}}
 \end{align}
-The left side of equation (\ref{eqn:stateest}) is a probability distribution representing the needle's state, $\bvar{x}{k}$.  With certain independence assumptions for the needle's states and measurements \cite{Thrun:2005}, this probability distribution can be decomposed into three separate distributions. Each component distribution of the state estimate can be computed in an efficient manner:  a motion model describes how the system responds to input $\bvar{u}{k}$, a measurement model, and the previous time-step's state estimate.
+The left side of equation (\ref{eqn:stateest}) is a probability distribution representing the needle's state, $\bvar{x}{k}$.  With certain independence assumptions for the needle's states and measurements \cite{Thrun:2005}, this probability distribution can be decomposed into two distributions. Each component distribution of the state estimate can be computed in an efficient manner:  a motion model describes how the system responds to input $\bvar{u}{k}$, and a measurement model captures the distribution of measurements one would expect given the system's state.   In practice, we implement the Bayesian filtering using a particle filter \cite{Thrun:2005}.
 
 
-\subsubsection{Needle Steering State}
-Figure \ref{fig_nk} provides a diagram of the unicycle kinematic model for needle steering.  In this model, the state of the system $\bvar{x}{k} =  \left[\vec{p}_k, R_k\right]^\top$ is completely defined by the position of the needle tip, $\vec{p}_k$ and the orientation of a frame attached to the needle tip, $R_k = \left[\hat{x}_k,\hat{y}_k,\hat{z}_k\right]$.  In addition to the tip position and orientation,  we augment the unicycle kinematic model state with the $N$ most recent command inputs $\bvar{u}{k-1...k-N}$
+\subsection{Needle Steering State} \label{subsec:state}
+Figure \ref{fig_nk} provides a diagram of the unicycle kinematic model for needle steering.  In this model, the state of the system $\bvar{x}{k} =  \left[\vec{p}_k, R_k\right]^\top$ is completely defined by the position of the needle tip, $\vec{p}_k$ and the orientation of a frame attached to the needle tip, $R_k = \left[\hat{x}_k,\hat{y}_k,\hat{z}_k\right] \in \text{SO(3)}$.  In addition to the tip position and orientation,  we augment the unicycle kinematic model state with the $N$ most recent command inputs $\bvar{u}{k-1...k-N}$
 \begin{equation*}
-\bvar{x}{k} =  \left[\underbrace{\vec{p}_k,}_{\text{tip position}} \underbrace{R_k,}_{\text{tip orienation}} \underbrace{\bvar{u}{k-1...k-N}}_{\text{previous commands}}\right]^\top
+\bvar{x}{k} =  \left[\underbrace{\vec{p}_k,}_{\text{tip position}} \underbrace{R_k,}_{\text{tip orienation}} \underbrace{\bvar{u}{k-1,...,k-N}}_{\text{previous commands}}\right]^\top
 \end{equation*}
 These command inputs are described in section \ref{subsec:unicycle} below.
 
 
-\subsubsection{Motion Model} \label{subsec:unicycle}
+\subsection{Motion Model} \label{subsec:unicycle}
 In this work, we use the unicycle kinematic model proposed in \cite{Park2005}.  This model has previously been used and validated for closed loop control of steerable needles in \cite{Majewicz2013} and \cite{adebar2014recursive}.  In the unicycle kinematic model, steerable needles are assumed to naturally follow circular paths of constant curvature in a plane determined by the orientation and position of the needle's tip.  Control of the needle is achieved through two degrees of freedom, insertion and rotation of the needle about its axis.
 
 In \cite{adebar2014recursive}, a stochastic state update equation,
@@ -172,13 +173,17 @@ Similarly, the orientation noise component perturbs $R^{ideal}_{k+1}$ to yield t
 \vec{p}_{k+1} &= \vec{p}^{\text{ideal}}_{k+1}+\vec{w}_{p_k} \\
 R_{k+1} &= W_{R_k}R^{\text{ideal}}_{k+1}
 \end{align*}
-With a state transition function, $f$, a motion model can be computed as 
+With the stochastic state update function, $f$, the probability of being in state $x_k$ can be calculated given a previous state and action.  Therefore the motion model can be calculated as 
 \begin{align*}
 & p(\bvar{x}{k}|\bvar{x}{k-1},\bvar{u}{k}) = \int_{\bvar{x}{k-1}} p(X_k = \bvar{x}{k} | u_k, \bvar{x}{k-1}) \mathrm{d}\bvar{x}{k-1}
 \end{align*}
-
+In practice, the motion model distribution is approximated in the particle filter as the particle propagation step.
 \subsection{Measurement Model} \label{subsec:measurement}
-As described in section \ref{subsec:unicycle}, a key assumption of the unicycle kinematic model for steerable needles is that the only part of the needle that is important for predicting its future movement due to a control input $bvar{u}_k$ is the tip of the needle.  
+In this work, a combination of Doppler and B-mode images from a tracked 2D transducer are used for sensing the steerable needle.  As described in section \ref{sec:imageproc} each image is processed to produce a measurement
+\begin{dmath*}
+\bvar{z}{k} = \left[\underbrace{x_{\text{im}},y_{\text{im}},}_{\text{image coords.}} \underbrace{d,}_{\text{Doppler response}} \underbrace{\vec{p}_{\text{us}},}_{\text{transducer pos.}} \underbrace{R_{\text{us}}}_{\text{transducer orientation}}\right]^\top
+\end{dmath*}
+
  
 \section{Conclusion}
 The conclusion goes here.
