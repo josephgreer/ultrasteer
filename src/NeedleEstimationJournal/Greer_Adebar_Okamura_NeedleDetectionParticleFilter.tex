@@ -25,9 +25,13 @@
 \usepackage{breqn}
 
 \newcommand{\bvar}[2]{\mathbf{#1}_{#2}}
-\newcommand{\stateest}[1][k]{p(\mathbf{x}_{#1}|\mathbf{z}_{1...#1},\mathbf{u}_{1...#1})}
-\newcommand{\meas}[1][k]{p(\mathbf{z}_{#1}|\mathbf{x}_{#1})}
-\newcommand{\motion}[1][k]{p(\mathbf{x}_{#1}|\mathbf{x}_{#1-1},\mathbf{u}_{#1})}
+\newcommand{\stateest}[1][k]{p(\mathbf{x}_{#1} \mid \mathbf{z}_{1...#1},\mathbf{u}_{1...#1})}
+\newcommand{\meas}[1][k]{p(\mathbf{z}_{#1} \mid \mathbf{x}_{#1})}
+\newcommand{\motion}[1][k]{p(\mathbf{x}_{#1} \mid \mathbf{x}_{#1-1},\mathbf{u}_{#1})}
+\newcommand{\imcoords}{(x_{\text{im}},y_{\text{im}})}
+\newcommand{\usorientation}{R_{\text{us}}}
+\newcommand{\uspos}{\vec{p}_{\text{us}}}
+\newcommand{\shaftcoords}{\left[x_{\text{shaft}},y_{\text{shaft}}\right]^\top}
 
 \begin{document}
 %
@@ -130,11 +134,10 @@ The left side of equation (\ref{eqn:stateest}) is a probability distribution rep
 
 
 \subsection{Needle Steering State} \label{subsec:state}
-Figure \ref{fig_nk} provides a diagram of the unicycle kinematic model for needle steering.  In this model, the state of the system $\bvar{x}{k} =  \left[\vec{p}_k, R_k\right]^\top$ is completely defined by the position of the needle tip, $\vec{p}_k$ and the orientation of a frame attached to the needle tip, $R_k = \left[\hat{x}_k,\hat{y}_k,\hat{z}_k\right] \in \text{SO(3)}$.  In addition to the tip position and orientation,  we augment the unicycle kinematic model state with the $N$ most recent command inputs $\bvar{u}{k-1...k-N}$
-\begin{equation*}
-\bvar{x}{k} =  \left[\underbrace{\vec{p}_k,}_{\text{tip position}} \underbrace{R_k,}_{\text{tip orienation}} \underbrace{\bvar{u}{k-1,...,k-N}}_{\text{previous commands}}\right]^\top
-\end{equation*}
-These command inputs are described in section \ref{subsec:unicycle} below.
+Figure \ref{fig_nk} provides a diagram of the unicycle kinematic model for needle steering.  In this model, the state of the system $\bvar{x}{k} =  \left[\vec{p}_k, R_k\right]^\top$ is completely defined by the position of the needle tip, $\vec{p}_k$ and the orientation of a frame attached to the needle tip, $R_k = \left[\hat{x}_k,\hat{y}_k,\hat{z}_k\right] \in \text{SO(3)}$.  For state estimation, we augment the unicycle kinematic state with the ultrasound transducer position and orientation, $\usorientation$ and $\uspos$.  This information is provided by an electromagnetic tracker which is fixed to the ultrasound transducer.  Finally,  we also augment the unicycle kinematic model state with the $N$ most recent command inputs $\bvar{u}{k-1...k-N}$.  This makes it possible to estimate the shaft's position and orientation, which is important for the measurement model described in section \ref{subsec:measurement} below.
+\begin{dmath*}
+\bvar{x}{k} =  \left[\underbrace{\vec{p}_k,}_{\text{tip pos.}} \underbrace{R_k,}_{\text{tip orientation}} \underbrace{\vec{p}_{\text{us}},}_{\text{transducer pos.}} \underbrace{R_{\text{us}},}_{\text{transducer orientation}} \underbrace{\bvar{u}{k-1,...,k-N}}_{\text{previous commands}}\right]^\top
+\end{dmath*}
 
 
 \subsection{Motion Model} \label{subsec:unicycle}
@@ -157,7 +160,7 @@ A state update is first calculated assuming no process noise, producing a new id
 \begin{equation*}
 R' = R_{\hat{z}_k}(\delta\theta)R_k
 \end{equation*}
-In the plane defined by intermediate tip frame axes $\hat{y}'_k$ and $\hat{z}'_k$, the tip position is moved along a $\frac{l_k}{\rho}$ radian arc segment of length $l_k$ to yield a new tip position, $\vec{p}^{\text{ideal}}_{k+1}$.  Finally, $R'$ is rotated by $\frac{\l_k}{\rho}$ radians about $\hat{x}'$ to yield an updated coordinate frame
+In the plane defined by intermediate tip frame axes $\hat{y}'_k$ and $\hat{z}'_k$, the tip position is moved along a $\frac{l_k}{\rho}$ radian arc segment of length $l_k$ to yield a new tip position, $\vec{p}^{\text{ideal}}_{k+1}$.  Finally, $R'$ is rotated by $\frac{l_k}{\rho}$ radians about $\hat{x}'$ to yield an updated coordinate frame
 \begin{equation*}
 R^{\text{ideal}}_{k+1} = [\hat{x}^{\text{ideal}}_k, \hat{y}^{\text{ideal}}_k, \hat{z}^{\text{ideal}}_k] = R_{\hat{x}'_k}\left(\frac{l_k}{\rho}\right)R'
 \end{equation*}
@@ -165,7 +168,7 @@ so that $\hat{z}^{\text{ideal}}_{k+1}$ is tangent with the ideal needle's trajec
 
 The ideal needle state update described above has error from both inaccuracies in the kinematic model as well as disturbances such as tissue in-homogeneity, vasculature, and tissue fascia.  Because of this, the ideal unicycle kinematic model was modified in \cite{adebar2014recursive} to account for error in both position and orientation.  These errors are captured in the process noise random variable 
 \begin{equation*}
-\bvar{w} = \left[\vec{w}_{p_k}, W_{R_k}\right]
+\bvar{w}{k} = \left[\vec{w}_{p_k}, W_{R_k}\right]
 \end{equation*}  
 which has a position noise component, $\vec{w}_{p_k}$ and an orientation noise component, $W_{R_k}$.  $\vec{w}_{p_k}$ is added to $\vec{p}^{\text{ideal}}_{k+1}$ to yield the final position $\vec{p}_{k+1}$.
 Similarly, the orientation noise component perturbs $R^{ideal}_{k+1}$ to yield the final orientation $R_{k+1}$
@@ -173,18 +176,35 @@ Similarly, the orientation noise component perturbs $R^{ideal}_{k+1}$ to yield t
 \vec{p}_{k+1} &= \vec{p}^{\text{ideal}}_{k+1}+\vec{w}_{p_k} \\
 R_{k+1} &= W_{R_k}R^{\text{ideal}}_{k+1}
 \end{align*}
-With the stochastic state update function, $f$, the probability of being in state $x_k$ can be calculated given a previous state and action.  Therefore the motion model can be calculated as 
+With the stochastic state update function, $f$, an estimate of the probability of being in state $x_k$ can be calculated given a previous state, action, and disturbance.  Therefore the motion model can be calculated as 
 \begin{align*}
-& p(\bvar{x}{k}|\bvar{x}{k-1},\bvar{u}{k}) = \int_{\bvar{x}{k-1}} p(X_k = \bvar{x}{k} | u_k, \bvar{x}{k-1}) \mathrm{d}\bvar{x}{k-1}
+& p(\bvar{x}{k} \mid \bvar{x}{k-1},\bvar{u}{k}) = \int_{\bvar{x}{k-1}} p(X_k = \bvar{x}{k} \mid u_k, \bvar{x}{k-1}) \mathrm{d}\bvar{x}{k-1}
 \end{align*}
-In practice, the motion model distribution is approximated in the particle filter as the particle propagation step.
+In practice, the motion model distribution is approximated in the particle filter by sampling $\motion$ repeatedly, which is straightforward, given $f$.
 \subsection{Measurement Model} \label{subsec:measurement}
-In this work, a combination of Doppler and B-mode images from a tracked 2D transducer are used for sensing the steerable needle.  As described in section \ref{sec:imageproc} each image is processed to produce a measurement
-\begin{dmath*}
-\bvar{z}{k} = \left[\underbrace{x_{\text{im}},y_{\text{im}},}_{\text{image coords.}} \underbrace{d,}_{\text{Doppler response}} \underbrace{\vec{p}_{\text{us}},}_{\text{transducer pos.}} \underbrace{R_{\text{us}}}_{\text{transducer orientation}}\right]^\top
-\end{dmath*}
+\begin{figure}[]
+\centering
+\includegraphics[scale=1]{Figures/NeedleMeasurements.pdf}
+\caption{Needle Measurement Model}
+\label{fig_mm}
+\end{figure}
+It is assumed that the ultrasound transducer is positioned so that ultrasound image plane is near the needle tip, but not on it.  In other words, the needle tip is not directly observed.  Nevertheless, by using the unicycle kinematic model and command history, hypothesis needle tip states can be propagated backward in time to shaft positions.  Because of this, measurements of the needle shaft indirectly provide information about the needle tip.
 
- 
+In this work, a combination of Doppler and B-mode images from a tracked 2D transducer are used for sensing the steerable needle.  As described in section \ref{sec:imageproc}, each image is processed to produce a measurement
+\begin{dmath*}
+\bvar{z}{k} = \left[\underbrace{x_{\text{im}},y_{\text{im}},}_{\text{image coords.}} \underbrace{d}_{\text{Doppler response}}\right]^\top
+\end{dmath*}
+Figure \ref{fig_mm} illustrates the components of a measurement, $\bvar{z}{k}$.  $\imcoords$ represents the estimated intersection of the needle shaft and ultrasound plane in image coordinates and $d$ is the Doppler response corresponding to the intersection.
+
+The measurement model can be explicitly written as $\meas = p(x_{\text{im}}, y_{\text{im}}, d \mid \bvar{x}{k})$.  It is assumed that the probability of a Doppler response is independent of shaft measurement location, so that the measurement model can be decomposed into a Doppler probability and image location probability, which are calculated separately. 
+\begin{align*}
+p(x_{\text{im}}, y_{\text{im}}, d \mid \bvar{x}{k}) = p(d \mid \bvar{x}{k}) p(x_{\text{im}}, y_{\text{im}} \mid \bvar{x}{k})
+\end{align*}
+
+The image location probability provides information about the needle tip's orientation, lateral position, and radius of curvature.  Let $\shaftcoords$ be the coordinates that locate the point of intersection between the needle shaft and image plane in image coordinates.  Given $\bvar{x}{k}$, $\shaftcoords$ can be calculated by first propagating the needle tip and orientation, $\vec{p}_k, R_k$, backward through the unicycle kinematic model until the shaft segment between two time-steps intersects the image plane.  This is done using command history $\bvar{u}{k-1,...,k-N}$.  The point of intersection is converted to image coordinates using $\uspos$ and $\usorientation$.  It is assumed the location measurement $\left[x_{\text{im}}, y_{\text{im}}\right]^\top = \shaftcoords + \vec{w}_{\text{im}}$ where $\vec{w}_{\text{im}} \sim \mathcal{N}(\vec{0}, \sigma_{\text{im}}^2 I)$.  This implies
+\begin{equation*}
+p(x_{\text{im}},y_{\text{im}}) = 
+\end{equation*} 
 \section{Conclusion}
 The conclusion goes here.
 
