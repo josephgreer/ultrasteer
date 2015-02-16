@@ -8,6 +8,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function uc = commandFcn(t, params)
 global flipped;
+if(t == 0)
+    flipped = false;
+end
+
 uc.v = 10;          %10mm/s
 uc.dc = 0;          %no-duty cycle
 

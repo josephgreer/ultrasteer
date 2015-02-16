@@ -9,6 +9,7 @@ function results = runSimulation(params, commandFcn)
 % results structure
 results.states = {};
 results.estimatedStates = {};
+results.time = [];
 
 
 % initial state of needle
@@ -82,6 +83,12 @@ for t=0:params.dt:params.simulationTime
             xpu = {xp{pids}}';
             xpe = expectedValueOfParticles(xp,params);
             xpeu = expectedValueOfParticles(xpu, params);
+            % save off state
+            results.states = vertcat(results.states, xcurr);
+            %save off estimated state
+            results.estimatedStates = vertcat(results.estimatedStates, xpeu);
+            % save off time
+            results.time = vertcat(results.time, t);
         end
     end
     

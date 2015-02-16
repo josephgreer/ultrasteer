@@ -6,9 +6,12 @@ clear; clc; close all;
 params = initParamsForSimulation();
 
 % custom parameters
-params.doParticleFilter = 0;
+params.doParticleFilter = 1;
+params.np = 50;
+params.simulationTime = 8;
 
-global flipped;
-flipped = false;
+%params.initPosMu = [10; 10; 10];                                               %pos mu for initial distribution of particles
 
-runSimulation(params, @(t,params)(commandFcn(t, params)));
+results = runSimulation(params, @(t,params)(commandFcn(t, params)));
+
+plotParticleFilterResults(results,2);
