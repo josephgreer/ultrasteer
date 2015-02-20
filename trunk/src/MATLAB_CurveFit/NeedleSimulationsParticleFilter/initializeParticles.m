@@ -7,8 +7,9 @@
 % see ../NeedleSimulation.m for description of parameters
 function xp = initializeParticles(x, params)
 xp = {};
+
 % for each particle
-posNoise = mvnrnd(params.initPosMu,params.initPosSigma,params.np);
+posNoise = mvnrnd(QuatToRotationMatrix(x.q)*params.initPosMu,params.initPosSigma,params.np);
 pos = repmat(x.pos',params.np,1);
 pos = pos+posNoise;
 

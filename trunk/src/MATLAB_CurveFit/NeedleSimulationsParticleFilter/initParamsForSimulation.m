@@ -25,7 +25,9 @@ params.simulationTime = 15;                                                 %sim
 params.usw = 83*630*1e-3;                                                   %physical width of ultrasound frame (mm)
 params.ush = 83*480*1e-3;                                                   %phyiscal height of ultrasound frame (mm)
 params.axialMu = 0;                                                         %(>0) ahead of needle tip, (<0) behind needle tip 0 is on
-params.axialSigma = 20;                                                     %sigma of where the image plane is wrt to needle tip (mm)
+params.doRandomTransducerPositioning = 0;                                   % if this parameter is 0 => transducer moves randomly according to parameters axialSigma and axialMu.  Else swep sinusoidally.
+params.axialSigma = 10;                                                     %sigma of where the image plane is wrt to needle tip (mm)
+params.axialFrequency = 0.3;                                                % number of sweeps over the tip per second
 params.frameOrientationMu = [0; 0; 0];                                      %frame orientation mu
 params.frameOrientationSigma = diag([pi/1000, pi/1000, pi/1000]);           %frame orientation sigma
 
