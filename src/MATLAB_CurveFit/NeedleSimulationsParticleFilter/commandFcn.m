@@ -16,7 +16,7 @@ uc.v = 10;          %10mm/s
 uc.dc = 0;          %no-duty cycle
 
 %flip it for an s-curve optionally
-if(t > 3 && ~flipped)
+if(t > 100 && ~flipped)
     uc.dtheta = pi/2;
     flipped = 1;
 else

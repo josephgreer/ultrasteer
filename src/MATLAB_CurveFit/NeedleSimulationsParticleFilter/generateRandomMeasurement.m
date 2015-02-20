@@ -11,6 +11,7 @@
 %   u{i}.v         = insertion velocity
 %   u{i}.dtheta    = rotation about needle's axis
 %   u{i}.dc        = duty cycle ratio
+%  t =  current time step (seconds)
 % params = simulation parameters
 % return measurement
 %  measurement.pos = [x;y;z] is location of measurement
@@ -18,8 +19,12 @@
 %  measurement.ful,fbl,fbr,fur = us frame positions
 %  measurement.bx = measurement.fbl-measurement.fur
 % see ../NeedleSimulation.m for description of parameters
-function measurement = generateRandomMeasurement(x, u, params)
-axisLoc = mvnrnd(params.axialMu, params.axialSigma);
+function measurement = generateRandomMeasurement(x, u, t, params)
+if(params.doRandomTransducerPositioning)
+    axisLoc = mvnrnd(params.axialMu, params.axialSigma);
+else
+    axisLoc = params.axialMu+params.axialSigma*sin(2*pi*params.axialFrequency*t-pi/2);
+end
 
 % US frame is ahead of needle tip
 if(axisLoc > 0)

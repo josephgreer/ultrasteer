@@ -70,7 +70,7 @@ for t=0:params.dt:params.simulationTime
     % if we're far enough along, start generating random US measurements
     measurement = [];
     if(t > params.particleInitTime)
-        measurement = generateRandomMeasurement(xcurr, u, params);
+        measurement = generateRandomMeasurement(xcurr, u, t, params);
         if(~params.particlesInit)
             fakeCurr = xcurr;
             xp = initializeParticles(fakeCurr, params);
