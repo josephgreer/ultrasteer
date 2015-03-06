@@ -53,3 +53,31 @@ for i = -90:90
     end
 end
 
+
+%%
+
+C = rand(100,100,100);
+ind = find(C(:) < 0.5);
+for j = ind'
+    size(j)
+    pause;
+end
+
+
+%%
+
+colormap(   [   0 0 0;
+                1 1 0;
+                0 1 0; ] );
+    
+            
+            
+%%
+
+
+
+
+
+
+
+

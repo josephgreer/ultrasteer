@@ -10,6 +10,8 @@ itr = data.itr;
 
 % Extract indices for groups of points
 indRch = find( data.V(:) > 0 )';     % points already labeled reachable
+% index = randperm(numel(indRch));
+% indRch = indRch(index);
 indUnk = find( data.V(:) == 0)'; % possible points not labeled reachable
 tic
 %% The first iteration
@@ -56,15 +58,21 @@ if itr == 1
     end
     
 end
-
+toc
 %% The second iteration
-if itr == 2
+if itr == 3
     
     % Loop through all points
     for i = indUnk
         
         % Loop through all reachable nodes from the previous planning iteration
-        for j = intersect( data.closer{i}, indRch )
+        for j = indRch
+                       
+            % Check that the current point is farther along the insertion
+            dist = dot(data.entry.v, data.pts.coords.XYZ(i,:)' - data.entry.p);
+            if dist <= data.paths(itr-1).node(j).d
+                continue;
+            end
             
             % Solve for the arc connecting a/v_i with b
             a   =   data.paths(itr-1).node(j).p;

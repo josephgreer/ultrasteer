@@ -33,10 +33,6 @@ l = 25;
 entry.sheath.coords = [entry.p-l.*entry.v entry.p];
 data.entry = entry;
 
-% % Save the insertion sheath as the first path "end node"
-% data.paths(1).node(1).p = entry.p;
-% data.paths(1).node(1).v = entry.v;
-% data.paths(1).node(1).d = 0;
 
 %% Render the meshes
 % Initialize
@@ -87,7 +83,7 @@ pts.min = floor(min(fv.vertices));
 pts.max = ceil(max(fv.vertices));
     
 % Define spacing in each direction    
-pts.del  = [1 1 1];
+pts.del  = [15 15 15];
 
 % Create the grid of points
 for i = 1:3
@@ -108,14 +104,6 @@ data.pts = pts;
 
 % Save the "reachable" value struct
 data.V = zeros(pts.dim);
-
-%% Rank points in terms of distance along entry vector
-pt  = [X(:)'; Y(:)'; Z(:)'] - repmat(entry.p,1,data.pts.Npts);
-dst = dot(pt,repmat(entry.v,1,data.pts.Npts));
-for i = 1:length(dst)
-    closer{i} = find( dst < dst(i) );
-end
-data.closer = closer;
 
 %% Identify non-target points
 % Exclude points outside the mesh
