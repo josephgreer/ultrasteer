@@ -5,24 +5,38 @@
 %
 %
 %% Initialize
-clear all; clc; tic;
-
+% clear all; 
+clc; tic;
+data.count = 1;
 
 %% Define the minimum achievable curvature
 data.Rmin = 50;     % mm
 
 
 %% Import an STL mesh, returning a PATCH-compatible face-vertex structure
-fv = stlread('liver.stl');
+fv = stlread('stl/liver.stl');
 data.mesh.lv = fv;
 
 
 %% Define a bounding cylinder around the hepatic vessels
-ptl = stlread('portalveins.stl');
-hep = stlread('hepaticveins.stl');
+ptl = stlread('stl/portalveins.stl');
+hep = stlread('stl/hepaticveins.stl');
 data.mesh.obs(1) = ptl;
 data.mesh.obs(2) = hep;
 
+
+%% Define the insertion point and orientation
+% Define insertion point, vector, and length
+entry.p = [97 -80 0]';
+entry.v = [-1 1 0]'./sqrt(2); % Must be a unit vector
+l = 25;
+entry.sheath.coords = [entry.p-l.*entry.v entry.p];
+data.entry = entry;
+
+% % Save the insertion sheath as the first path "end node"
+% data.paths(1).node(1).p = entry.p;
+% data.paths(1).node(1).v = entry.v;
+% data.paths(1).node(1).d = 0;
 
 %% Render the meshes
 % Initialize
@@ -57,6 +71,11 @@ view([145 25]);
 camlight('headlight');
 material('dull');
 
+% Draw the insertion sheath
+sth = data.entry.sheath.coords;
+plot3(sth(1,:),sth(2,:),sth(3,:),'k','LineWidth',10);
+plot3(sth(1,2),sth(2,2),sth(3,2),'k*','LineWidth',10);
+
 % Format the plot
 grid on;
 set(gcf,'color','w');
@@ -68,7 +87,7 @@ pts.min = floor(min(fv.vertices));
 pts.max = ceil(max(fv.vertices));
     
 % Define spacing in each direction    
-pts.del  = [15 15 15];
+pts.del  = [1 1 1];
 
 % Create the grid of points
 for i = 1:3
@@ -82,7 +101,7 @@ pts.coords.XYZ = [X(:) Y(:) Z(:)];
 
 % Record the grid dimensions and total number of points
 pts.dim = size(X);
-pts.Npts = length(pts.coords);
+pts.Npts = length(pts.coords.XYZ);
 
 % Save the points struct
 data.pts = pts;
@@ -90,6 +109,13 @@ data.pts = pts;
 % Save the "reachable" value struct
 data.V = zeros(pts.dim);
 
+%% Rank points in terms of distance along entry vector
+pt  = [X(:)'; Y(:)'; Z(:)'] - repmat(entry.p,1,data.pts.Npts);
+dst = dot(pt,repmat(entry.v,1,data.pts.Npts));
+for i = 1:length(dst)
+    closer{i} = find( dst < dst(i) );
+end
+data.closer = closer;
 
 %% Identify non-target points
 % Exclude points outside the mesh
@@ -129,82 +155,101 @@ view([145 25]);
 grid on;
 set(gcf,'color','w');
 
-%% Define the insertion point and orientation
-% Define insertion point, vector, and length
-entry.p = [97 -80 0]';
-entry.v = [1 1 0]'./sqrt(2); % Must be a unit vector
-l = 25;
-entry.sheath.coords = [entry.p-l.*entry.v entry.p];
-data.entry = entry;
-
-% Save the insertion sheath as the first path "end node"
-data.paths(1).node(1).p = entry.p;
-data.paths(1).node(1).v = entry.v;
-data.paths(1).node(1).d = 0;
-
-% Record the initial reachable matrix (no points reachable)
-data.reachable = zeros(data.pts.Npts,1);
 
 %% Find reachable points on first iteration
 data.itr = 1;
 data = checkReachable(data);  
 
+
 %% Find reachable points on second iteration
 data = checkReachable(data);  
 
-%% Render the reachable points
-% Initialize
-figure(3); clf; hold on;
 
-% Render the original data points
-plot3(pts.coords(:,1), pts.coords(:,2), pts.coords(:,3), ...
-    'ko', 'LineWidth',0.2);
+% %% Render the reachable points
+% % Initialize
+% figure(3); clf; hold on;
+% 
+% % Render the original data points
+% plot3(pts.coords(:,1), pts.coords(:,2), pts.coords(:,3), ...
+%     'ko', 'LineWidth',0.2);
+% 
+% % Exclude the unreachable data points
+% pts.coords((repmat(~logical(data.reachable),1,3))) = [];
+% pts.coords = reshape(pts.coords,[],3);
+% 
+% % Render the reachable data points
+% plot3(pts.coords(:,1), pts.coords(:,2), pts.coords(:,3), ...
+%     'ro','MarkerFaceColor','r','LineWidth',0.2);
+% 
+% % Fix the axes scaling, and set a nice view angle
+% axis('image');
+% view([145 25]);
+% 
+% % Draw the insertion sheath
+% sth = data.entry.sheath.coords;
+% plot3(sth(1,:),sth(2,:),sth(3,:),'k','LineWidth',10);
+% 
+% % Format the plot
+% grid on;
+% set(gcf,'color','w');
 
-% Exclude the unreachable data points
-pts.coords((repmat(~logical(data.reachable),1,3))) = [];
-pts.coords = reshape(pts.coords,[],3);
-
-% Render the reachable data points
-plot3(pts.coords(:,1), pts.coords(:,2), pts.coords(:,3), ...
-    'ro','MarkerFaceColor','r','LineWidth',0.2);
-
-% Fix the axes scaling, and set a nice view angle
-axis('image');
-view([145 25]);
-
-% Draw the insertion sheath
-sth = data.entry.sheath.coords;
-plot3(sth(1,:),sth(2,:),sth(3,:),'k','LineWidth',10);
-
-% Format the plot
-grid on;
-set(gcf,'color','w');
 
 %% Visualize the reachable workspace
 % Initialize
 figure(4); clf; hold on;
 
-% Resample data to volumes
-Xv = reshape(data.pts.coords(:,1),nx,ny,nz);
-Yv = reshape(data.pts.coords(:,2),nx,ny,nz);
-Zv = reshape(data.pts.coords(:,3),nx,ny,nz);
-Vv = reshape(data.reachable,nx,ny,nz);
-
 % Define plane locations in each axis
-Sx = [50];
+Sx = [];
 Sy = [];
-Sz = -60:30:60;
+Sz = [10 50];
+
+% Define color contours
+cvals = [0 1 2];
 
 % Draw contours
-contourslice(   Xv, Yv, Zv, Sx, Sy, Sz  );
+contourslice(   data.pts.coords.X, ...
+                data.pts.coords.Y, ...
+                data.pts.coords.Z, ...
+                data.V, ...
+                Sx, Sy, Sz, ...
+                cvals   );
             
 % Format the plot
 grid on; 
 axis equal;
 set(gcf,'color','w');
+colorbar;
+
+
+%% Visualize the reachable workspace
+% Initialize
+figure(5); clf; hold on;
+
+% Define plane locations in each axis
+Sx = [];
+Sy = [];
+Sz = [10 50];
+
+% Define color contours
+cvals = [0 1 2];
+
+% Draw contours
+contourslice(   data.pts.coords.X, ...
+                data.pts.coords.Y, ...
+                data.pts.coords.Z, ...
+                data.V, ...
+                Sx, Sy, Sz, ...
+                cvals   );
+            
+% Format the plot
+grid on; 
+axis equal;
+set(gcf,'color','w');
+colorbar;
+
 
 %% Print results
-PercentReachable = nnz(data.reachable) / data.pts.Npts * 100; 
+PercentReachable = nnz(data.V > 0) / nnz(data.V >= 0)*100; 
 fprintf('\n\n')
 
 fprintf('--------------------------------------------------------------\n')
@@ -220,6 +265,7 @@ fprintf('\n')
 fprintf('--------------------------------------------------------------\n')
 fprintf('--------------------------------------------------------------\n')
 
-
+%% Save the results
+save('FirstResults','data');
 
 % eof
