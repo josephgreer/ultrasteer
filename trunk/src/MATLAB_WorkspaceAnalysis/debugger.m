@@ -74,7 +74,22 @@ colormap(   [   0 0 0;
             
 %%
 
+% indUnrch = find( data.V(:) < 0 )';     % points already labeled reachable
+indUnrch = randi(50,1000,10);
+Nbadpts = numel(indUnrch);
 
+badPts = data.pts.coords.XYZ(indUnrch,:)';
+badPts = repmat(badPts,[1,1,25]);
+
+arcPts = rand(3,25,1);
+arcPts = permute(arcPts,[1,3,2]);
+arcPts = repmat(arcPts,[1,Nbadpts,1]);
+
+tic
+vecs = arcPts-badPts;
+dist = sum(vecs.^2,2);
+bad = any(dist(:) < 1);
+toc
 
 
 

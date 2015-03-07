@@ -6,21 +6,22 @@
 %
 %% Initialize
 % clear all; 
-clc; tic;
+clc; tic; 
 data.count = 1;
 
-%% Define the minimum achievable curvature
-data.Rmin = 50;     % mm
+%% Define some constants
+data.Rmin       = 50;     % [mm] the minimum achievable curvature
+data.Narcpts    = 25;     % the number of points check on each arc
+data.del        = 5;     % [mm] the voxel dimension for sampling
+Ncoarse         = 10;      % number of coarse resample elements for speedup
 
 
-%% Import an STL mesh, returning a PATCH-compatible face-vertex structure
+%% Import STL meshes, returning PATCH-compatible face-vertex structures
+fprintf( 'Importing .stl files...\n'); tic;
 fv = stlread('stl/liver.stl');
-data.mesh.lv = fv;
-
-
-%% Define a bounding cylinder around the hepatic vessels
 ptl = stlread('stl/portalveins.stl');
 hep = stlread('stl/hepaticveins.stl');
+data.mesh.lv = fv;
 data.mesh.obs(1) = ptl;
 data.mesh.obs(2) = hep;
 
@@ -76,18 +77,23 @@ plot3(sth(1,2),sth(2,2),sth(3,2),'k*','LineWidth',10);
 grid on;
 set(gcf,'color','w');
 
+fprintf( 'Done in %.2f seconds...\n',toc );
+
 
 %% Define sampling points
+fprintf( 'Defining sample points...\n'); tic;
+
 % Measure extents of model
 pts.min = floor(min(fv.vertices)); 
 pts.max = ceil(max(fv.vertices));
     
-% Define spacing in each direction    
-pts.del  = [15 15 15];
+% Define spacing in each direction
+del = 15;
+pts.del  = [data.del data.del data.del];
 
 % Create the grid of points
 for i = 1:3
-    vxyz{i} = pts.min(i):pts.del(i):pts.max(i);
+    vxyz{i} = pts.min(i): pts.del(i): pts.max(i);
 end
 [X,Y,Z] = meshgrid(vxyz{1},vxyz{2},vxyz{3});
 pts.coords.X = X;
@@ -105,7 +111,8 @@ data.pts = pts;
 % Save the "reachable" value struct
 data.V = zeros(pts.dim);
 
-%% Identify non-target points
+
+%% Identify points in obstacles and outside liver
 % Exclude points outside the mesh
 inlv = inpolyhedron(data.mesh.lv,data.pts.coords.XYZ);
 data.V(~inlv) = -1;
@@ -120,6 +127,49 @@ if( any(strcmp('obs',fieldnames(data.mesh))) )
     data.V(ineither) = -1;
     data.V = reshape(data.V,data.pts.dim);
 end
+
+
+%% Create "bad points" to detect obstacle collisons and capsule breach
+% Find coordinates for all exterior and obstacle points
+indUnrch = find( data.V(:) < 0 )';     
+badCoords = data.pts.coords.XYZ(indUnrch,:)';
+% Exclude blocks of points that are clearly outside the liver
+bdblk{1} = find(badCoords(1,:) <= 30 & badCoords(2,:) < 0);
+bdblk{2} = find(badCoords(1,:) <= 40 & badCoords(3,:) < -20);
+bdblk{3} = find(badCoords(1,:) >= 150 & badCoords(2,:) > 80);
+badCoords(:,unique([bdblk{:}])) = [];
+NtotalbadPts = length(badCoords);
+
+fprintf( 'Done in %.2f seconds...\n',toc );
+
+
+%% Define a coarser mesh for multi-level speedup
+fprintf( 'Defining a coarse mesh for speedup...\n'); tic;
+
+Del = (data.pts.max - data.pts.min)./Ncoarse;
+for i = 1:3
+    vxyz{i} = data.pts.min(i)+Del(i)/2: Del(i): data.pts.max(i)-Del(i)/2;
+end
+[X,Y,Z] = meshgrid(vxyz{1},vxyz{2},vxyz{3});
+coords = [X(:) Y(:) Z(:)]';
+coarsePts.coords = repmat(coords,[1,1,data.Narcpts]);
+coarsePts.N = length(coords);
+
+% Associate the badPts with with coarser mesh blocks
+for i = 1:length(coarsePts.coords)
+    coarsePt = squeeze(coarsePts.coords(:,i,1));
+    
+    blkInd = all( abs(badCoords-repmat(coarsePt,1,NtotalbadPts)) < ...
+    repmat(Del',1,NtotalbadPts),1);
+
+    badPts(i).coords = repmat(badCoords(:,blkInd),[1,1,data.Narcpts]);
+    badPts(i).N = nnz(blkInd);
+end
+
+%% Save the coarse points and bad points
+data.coarsePts = coarsePts;
+data.badPts = badPts;
+data.Del = Del;
 
 %% Render the target points
 % Initialize
@@ -142,6 +192,8 @@ view([145 25]);
 % Format the plot
 grid on;
 set(gcf,'color','w');
+
+fprintf( 'Done in %.2f seconds...\n',toc );
 
 
 %% Find reachable points on first iteration

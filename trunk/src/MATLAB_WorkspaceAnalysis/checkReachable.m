@@ -10,8 +10,8 @@ itr = data.itr;
 
 % Extract indices for groups of points
 indRch = find( data.V(:) > 0 )';     % points already labeled reachable
-% index = randperm(numel(indRch));
-% indRch = indRch(index);
+index = randperm(numel(indRch));
+indRch = indRch(index);
 indUnk = find( data.V(:) == 0)'; % possible points not labeled reachable
 tic
 %% The first iteration
@@ -32,20 +32,31 @@ if itr == 1
             continue;
         end
         
-        % Check if arc leaves the liver
-        if (   any( ~inpolyhedron(data.mesh.lv,pts') ) )
-            continue;
-        end
+        % Check if arc leaves liver or hits obstacles
+        % First check what coarse blocks the arc hits
+        arcPts = permute(pts,[1,3,2]);
+        arcPts = repmat(arcPts,[1,data.coarsePts.N,1]);
+        vecs = arcPts-data.coarsePts.coords;
         
-        % Check if arc passes thru obstacles
-        inobs = zeros(Ncp,length(data.mesh.obs));
-        for k = 1:length(data.mesh.obs)
-            inobs(:,k) = inpolyhedron(data.mesh.obs(k),pts');
+        coarseInd = find( any( all( abs(vecs) < ...
+            repmat(data.Del',[1,data.coarsePts.N,data.Narcpts]),1),3));
+       
+        % Next check each coarse block for collisons
+        flag = false;
+        for k = coarseInd
+            arcPts = permute(pts,[1,3,2]);
+            arcPts = repmat(arcPts,[1,data.badPts(k).N,1]);
+            vecs = arcPts-data.badPts(k).coords;
+            dist = sum(vecs.^2,1);
+            if( any(dist(:) < ((data.del/2)^2)) )
+                flag = true;
+                break;
+            end
         end
-        if ( any(inobs(:)) )
-            continue
-        end
-                
+        if(flag)
+            continue;
+        end            
+       
         % Otherwise record the path end node...
         dist = dot(data.entry.v, data.pts.coords.XYZ(i,:)' - data.entry.p);
         data.paths(itr).node(i).d = dist;
@@ -58,9 +69,10 @@ if itr == 1
     end
     
 end
-toc
+fprintf( 'First iteration runtime is %.2f seconds...\n',toc );
+tic
 %% The second iteration
-if itr == 3
+if itr == 2
     
     % Loop through all points
     for i = indUnk
@@ -86,18 +98,29 @@ if itr == 3
                 continue;
             end
             
-            % Check if arc leaves the liver
-            if (   any( ~inpolyhedron(data.mesh.lv,pts') ) )
-                continue;
-            end
+            % Check if arc leaves liver or hits obstacles
+            % First check what coarse blocks the arc hits
+            arcPts = permute(pts,[1,3,2]);
+            arcPts = repmat(arcPts,[1,data.coarsePts.N,1]);
+            vecs = arcPts-data.coarsePts.coords;
             
-            % Check if arc passes thru obstacles
-            inobs = zeros(Ncp,length(data.mesh.obs));
-            for k = 1:length(data.mesh.obs)
-                inobs(:,k) = inpolyhedron(data.mesh.obs(k),pts');
+            coarseInd = find( any( all( abs(vecs) < ...
+                repmat(data.Del',[1,data.coarsePts.N,data.Narcpts]),1),3));
+            
+            % Next check each coarse block for collisons
+            flag = false;
+            for k = coarseInd
+                arcPts = permute(pts,[1,3,2]);
+                arcPts = repmat(arcPts,[1,data.badPts(k).N,1]);
+                vecs = arcPts-data.badPts(k).coords;
+                dist = sum(vecs.^2,1);
+                if( any(dist(:) < ((data.del/2)^2)) )
+                    flag = true;
+                    break;
+                end
             end
-            if ( any(inobs(:)) )
-                continue
+            if(flag)
+                continue;
             end
             
             % Otherwise record the path end node...
@@ -115,6 +138,5 @@ if itr == 3
         end
     end
 end
-
+fprintf( 'Second iteration runtime is %.2f seconds...\n',toc );
 data.itr = data.itr + 1;
-toc
