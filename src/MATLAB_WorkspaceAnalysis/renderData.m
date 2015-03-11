@@ -33,7 +33,7 @@ patch(data.mesh.obs(2), ...
 axis('image');
 
 % Add a camera light, and tone down the specular highlighting
-view([145 25]);
+view([0 90]);
 camlight('headlight');
 material('dull');
 
@@ -41,6 +41,11 @@ material('dull');
 sth = data.entry.sheath.coords;
 plot3(sth(1,:),sth(2,:),sth(3,:),'k','LineWidth',10);
 plot3(sth(1,2),sth(2,2),sth(3,2),'k*','LineWidth',10);
+
+% Label the axes
+xlabel('x-direction');
+ylabel('y-direction');
+zlabel('z-direction');
 
 % Format the plot
 grid on;
@@ -63,7 +68,12 @@ plot3(tX, tY, tZ,'k.','LineWidth',0.2);
 
 % Fix the axes scaling, and set a nice view angle
 axis('image');
-view([145 25]);
+view([0 90]);
+
+% Label the axes
+xlabel('x-direction');
+ylabel('y-direction');
+zlabel('z-direction');
 
 % Format the plot
 grid on;
@@ -87,43 +97,60 @@ plot3(tX, tY, tZ,'r.','LineWidth',0.2);
 
 % Fix the axes scaling, and set a nice view angle
 axis('image');
-view([145 25]);
+view([0 90]);
 
 % Draw the insertion sheath
 sth = data.entry.sheath.coords;
 plot3(sth(1,:),sth(2,:),sth(3,:),'k','LineWidth',10);
+
+% Label the axes
+xlabel('x-direction');
+ylabel('y-direction');
+zlabel('z-direction');
 
 % Format the plot
 grid on;
 set(gcf,'color','w');
 
 
-%% Visualize the reachable workspace
+%% Visualize the reachable workspace in a 2D slice
 % Initialize
 figure(4); clf; hold on;
 
 % Define plane locations in each axis
-Sx = [];
-Sy = [];
-Sz = [10 50];
+Sz = [0 0];
 
 % Define color contours
 cvals = [0 1 2];
 
-% Draw contours
-contourslice(   data.fineVol.coords.X, ...
-                data.fineVol.coords.Y, ...
-                data.fineVol.coords.Z, ...
-                data.fineVol.V, ...
-                Sx, Sy, Sz, ...
-                cvals   );
-            
-% Format the plot
-grid on; 
-axis equal;
-set(gcf,'color','w');
-colorbar;
+% Define color map
+cmap = [    0 0 0; 
+            1 0 0; 
+            0 1 0; 
+            1 1 0    ];
 
+% Show reachability of the fine mesh
+i = data.fineVol.coords.Z == Sz(1);
+subplot(2,1,1)
+fineIm = data.fineVol.V(i);
+fineIm = reshape(fineIm,data.fineVol.dim(1:2));
+fineIm = flipud(fineIm);
+imagesc(fineIm);
+colormap(cmap);
+colorbar;
+axis image; axis off;
+title('Reachable workspace with \rho = 50 mm');
+
+% Show reachability of the coarse mesh
+i = data.coarseVol.coords.Z == Sz(2);
+subplot(2,1,2)
+coarseIm = data.coarseVol.V(i);
+coarseIm = reshape(coarseIm,data.coarseVol.dim(1:2));
+coarseIm = flipud(coarseIm);
+imagesc(coarseIm);
+colormap(cmap);
+colorbar;
+axis image; axis off;
 
 %% Print results
 PercentReachable = nnz(data.fineVol.V > 0) / nnz(data.fineVol.V >= 0)*100; 
@@ -134,7 +161,7 @@ fprintf('--------------------------------------------------------------\n')
 
 fprintf('\n')
 fprintf( 'Total runtime is %.2f minutes...\n',...
-    toc/60 );
+    sum(data.runtimes)/60 );
 fprintf( 'With Rmin = %.2f, %.2f%% of the workspace is reachable...\n',...
     data.Rmin, PercentReachable );
 fprintf('\n')
