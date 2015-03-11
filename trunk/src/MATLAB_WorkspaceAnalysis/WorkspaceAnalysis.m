@@ -6,62 +6,87 @@
 %
 %% Initialize
 % clear all; 
-clc; tic; 
+clc; 
+tic; 
 clear data inobs;
 
-%% Define some constants
-Rmin       = 50;                % [mm] the minimum achievable curvature
-Narcpts    = 25;                % the number of points check on each arc
-fineDel    = 15;                % [mm] the voxel dimension for fine vol
-coarseDel  = 25;                % [mm] the voxel dimension for coarse vol
-p          = [97 -80 0]';       % introducer point
-v          = [-1 1 0]'./sqrt(2);% introducer vector (unit vector)
+%% Define some initialization values/constants
+in.Rmin          = 10;             % [mm] the minimum achievable curvature
+in.darcpts       = 8;              % [mm] the linear spacing between arc pts
 
+in.fineVol.del   = 1;              % [mm] the voxel dimension for fine vol
+in.fineVol.slc   = {[],[],0};      % [mm] the position of slices for 2D anal
+
+in.coarseVol.del = 30;             % [mm] the voxel dimension for coarse vol
+in.coarseVol.slc = {[],[],[]};     % [mm] the position of slices for 2D anal
+
+
+in.p             = [97 -80 0]';    % introducer point
+in.v             = [0 1 0]';       % introducer vector (unit vector)
+
+t                = [];             % vector of runtimes in seconds
 
 %% Intialize the data struct
-fprintf( 'Initializing data struct...\n'); tic;
-data = initialize( Rmin, Narcpts, p, v );
-fprintf( 'Done in %.2f seconds...\n\n',toc );
+tic;
+fprintf( 'Initializing data struct...\n'); 
+data = initialize( in );
+t = [t toc];
+fprintf( 'Done in %.2f seconds...\n\n',t(end) );
 
 
 %% Define fine and coarse volumes
+tic;
 fprintf( 'Defining fine volume...\n'); tic;
-data = createVolume(data,'fineVol',[fineDel fineDel fineDel]');
-fprintf( 'Done in %.2f seconds...\n\n',toc );
+data = createVolume(data,'fineVol',in);
+t = [t toc];
+fprintf( 'Done in %.2f seconds...\n\n',t(end) );
 
-fprintf( 'Defining coarse volume...\n'); tic;
-data = createVolume(data,'coarseVol',[coarseDel coarseDel coarseDel]');
-fprintf( 'Done in %.2f seconds...\n\n',toc );
+tic;
+fprintf( 'Defining coarse volume...\n'); 
+data = createVolume(data,'coarseVol',in);
+t = [t toc];
+fprintf( 'Done in %.2f seconds...\n\n',t(end) );
 
 
 %% Create boundaries at mesh points to check entering/leaving liver 
-fprintf( 'Creating boundaries...\n'); tic;
+tic;
+fprintf( 'Creating boundaries...\n'); 
 data = createBoundaries(data,'coarseVol');
-fprintf( 'Done in %.2f seconds...\n\n',toc );
+t = [t toc];
+fprintf( 'Done in %.2f seconds...\n\n',t(end) );
 
 
 %% Find reachable points on first iteration
+tic;
 fprintf( 'Checking single-arc paths...\n'); tic;
 data.itr = 1;
 data = checkReachable(data);
-fprintf( 'Done in %.2f seconds...\n\n',toc );  
+t = [t toc];
+fprintf( 'Done in %.2f seconds...\n\n',t(end) );
 
 
 %% Find reachable points on second iteration
-fprintf( 'Checking double-arc paths...\n'); tic;
+tic;
+fprintf( 'Checking double-arc paths...\n'); 
 data = checkReachable(data); 
-fprintf( 'Done in %.2f seconds...\n\n',toc );   
+t = [t toc];
+fprintf( 'Done in %.2f seconds...\n\n',t(end) );
 
 
 %% Visualize the results
-fprintf( 'Visualizing results...\n'); tic;
+tic;
+fprintf( 'Visualizing results...\n');
+data.runtimes = t;
 data = renderData(data);
-fprintf( 'Done in %.2f seconds...\n\n',toc );
+t = [t toc];
+fprintf( 'Done in %.2f seconds...\n\n',t(end) );
 
 
 %% Save the results
-fprintf( 'Saving results...\n'); tic;
+tic;
+fprintf( 'Saving results...\n');
 save('FirstResults','data');
-fprintf( 'Done in %.2f seconds...\n\n',toc );
+t = [t toc];
+fprintf( 'Done in %.2f seconds...\n\n',t(end) );
 
 % eof

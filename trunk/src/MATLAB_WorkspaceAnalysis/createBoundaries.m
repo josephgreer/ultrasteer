@@ -22,7 +22,7 @@ for i = 1:vol.Npts
     repmat(vol.del,1,N),1);
 
     boundaries.coords(i).XYZ = coords(:,ind);
-    boundaries.coords(i).mXYZ = repmat(coords(:,ind),[1,1,data.Narcpts]);
+    boundaries.coords(i).mXYZ = repmat(coords(:,ind),[1,1,100]);
     boundaries.N(i) = nnz(ind);
 end
 
