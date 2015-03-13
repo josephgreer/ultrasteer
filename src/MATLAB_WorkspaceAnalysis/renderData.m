@@ -131,15 +131,15 @@ cmap = [    0 0 0;
 
 % Show reachability of the fine mesh
 i = data.fineVol.coords.Z == Sz(1);
-subplot(2,1,1)
-fineIm = data.fineVol.V(i);
-fineIm = reshape(fineIm,data.fineVol.dim(1:2));
-fineIm = flipud(fineIm);
-imagesc(fineIm);
-colormap(cmap);
-colorbar;
-axis image; axis off;
-title('Reachable workspace with \rho = 50 mm');
+% subplot(2,1,1)
+% fineIm = data.fineVol.V(i);
+% fineIm = reshape(fineIm,data.fineVol.dim(1:2));
+% fineIm = flipud(fineIm);
+% imagesc(fineIm);
+% colormap(cmap);
+% colorbar;
+% axis image; axis off;
+% title('Reachable workspace with \rho = 50 mm');
 
 % Show reachability of the coarse mesh
 i = data.coarseVol.coords.Z == Sz(2);

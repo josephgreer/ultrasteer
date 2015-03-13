@@ -15,11 +15,9 @@ function [ rho,c,pts,v_e ] = findCircle( a,b,v_i,d )
 % -------------------------------------------------------------------------
 %% First check to see if point b happens to lie exactly along v_i from a
 ab = b-a;
-s = ab./v_i;
 angle = acos(dot(ab,v_i)./norm(ab)./norm(v_i));
 
 if (angle == pi) || (angle == 0)
-    display('perfect shot!');
     u = v_i./norm(v_i);
     smax = norm(ab);
     s = 0:d:smax;
@@ -39,7 +37,7 @@ if (angle == pi) || (angle == 0)
     end
     v_e = u;
     c = [inf inf inf]';
-    rho = 999;
+    rho = 777;
     return;
 end
     

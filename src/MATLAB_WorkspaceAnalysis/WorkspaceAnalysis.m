@@ -12,17 +12,24 @@ clear data inobs;
 
 %% Define some initialization values/constants
 in.Rmin          = 10;             % [mm] the minimum achievable curvature
-in.darcpts       = 8;              % [mm] the linear spacing between arc pts
+in.darcpts       = 2;              % [mm] the linear spacing between arc pts
 
-in.fineVol.del   = 1;              % [mm] the voxel dimension for fine vol
-in.fineVol.slc   = {[],[],0};      % [mm] the position of slices for 2D anal
+in.fineVol.del   = 4;              % [mm] the voxel dimension for fine vol
+in.fineVol.slc   = {[],[35],[]};     % [mm] the position of slices for 2D anal
+% in.fineVol.slc   = {[],[],[]};     % [mm] the position of slices for 2D anal
+
 
 in.coarseVol.del = 30;             % [mm] the voxel dimension for coarse vol
 in.coarseVol.slc = {[],[],[]};     % [mm] the position of slices for 2D anal
 
 
-in.p             = [97 -80 0]';    % introducer point
-in.v             = [0 1 0]';       % introducer vector (unit vector)
+% v1
+in.p             = [157 35 -20]';           % introducer point
+in.v             = [-1 0 0]';              % introducer vector
+
+% v2
+% in.p             = [0 90 50]';            % introducer point
+% in.v             = [1 -1 0]'./sqrt(2);    % introducer vector 
 
 t                = [];             % vector of runtimes in seconds
 

@@ -21,7 +21,7 @@ for i = 1:3
     if isempty(volSpecs.slc{i})
         vxyz{i} = vol.min(i): vol.del(i): vol.max(i);
     else
-        vxyz{i} = in.slices{i};
+        vxyz{i} = volSpecs.slc{i};
     end
 end
 [X,Y,Z] = meshgrid(vxyz{1},vxyz{2},vxyz{3});
