@@ -14,17 +14,17 @@ n = 20;
 if itr == 1
     
     % Loop through all possible fine voxels not labelled reachable
+    fprintf( '    fine paths...\n');
     fineUnkInd = find( data.fineVol.V(:) == 0)';
     NfineUnkInd = length(fineUnkInd);
-    for ii = 1:length(fineUnkInd);
+    for ii = 1:NfineUnkInd;
         i = fineUnkInd(ii);
         
         % Display an update every 25 percent of the way
         if ismember(ii,round(linspace(1,NfineUnkInd,n)))
             fprintf( '    %.2f%% done at %.2f seconds...\n',...
                 ii/NfineUnkInd*100,toc);
-        end      
-        
+        end    
         
         % Check the voxel for reachability
         [ reachable, node, rho ] = ...
@@ -43,6 +43,7 @@ if itr == 1
     
   
     % Loop through all possible coarse voxels not labelled reachable
+    fprintf( '    coarse paths...\n');
     crseUnkInd = find( data.coarseVol.V(:) == 0)';
     NcoarseUnkInd = length(crseUnkInd);
     
@@ -52,7 +53,7 @@ if itr == 1
         % Display an update every 25 percent of the way
         if ismember(ii,round(linspace(1,NcoarseUnkInd,n)))
             fprintf( '    %.2f%% done at %.2f seconds...\n',...
-                ii/numel(NcoarseUnkInd)*100,toc);
+                ii/NcoarseUnkInd*100,toc);
         end
                 
         % Check the voxel for reachability
@@ -71,10 +72,9 @@ if itr == 1
 end
 
 %% The second iteration
-if itr == 2
-    
-    
+if itr == 2   
     % Loop through all possible fine voxels not labelled reachable
+    fprintf( '    fine paths...\n');
     fineUnkInd = find( data.fineVol.V(:) == 0)';
     NfineUnkInd = length(fineUnkInd);
     for ii = 1:length(fineUnkInd);
@@ -97,14 +97,14 @@ if itr == 2
             if dist <= data.coarsePaths(itr-1).node(j).d
                 continue;
             end
-                        
+                                    
             % Check the voxel for reachability
             [ reachable, node, rho ] = ...
                 isReachable(    data.coarsePaths(itr-1).node(j).p, ...
                                 data.fineVol.coords.XYZ(:,i), ...
                                 data.coarsePaths(itr-1).node(j).v, ...
                                 data );
-            
+                                        
             % If it's reachable, save the node and matrix values...
             if ( reachable )
                 data.finePaths(itr).node = node;
@@ -137,6 +137,18 @@ end
 % Solve for the arc connecting insertion with each point
 [ rho,~,pts,v_e ] = findCircle(a,b,v_i,data.darcpts);
 
+% Check if b is inside the insertion sheath
+if rho == 999 % indicates the line was seen as straight
+    ab = b-a;
+    angle = acos(dot(ab,v_i)./norm(ab)./norm(v_i));
+    if angle == pi
+        node = [];
+        reachable = false;
+        NarcPts = 0;
+        return;
+    end
+end
+
 % Check if arc is too tight
 if (   rho < data.Rmin  )
     node = [];
@@ -165,10 +177,31 @@ arcPts = repmat(arcPts,[1,sum([data.boundaries.N(coarseInd)]),1]);
 bdyPts = [data.boundaries.coords(coarseInd).mXYZ];
 vecs = arcPts-bdyPts(:,:,1:NarcPts);
 dist = sum(vecs.^2,1);
+
+stlFlag = false;
 if( any(dist(:) < ((min(data.darcpts)/2)^2)) )
-    node = [];
-    reachable = false;
-    return;
+    Perform final check to make sure this point is unreachable
+    Check if arc leaves the liver stl
+    if (   any( ~inpolyhedron(data.mesh.lv,pts') ) )
+        stlFlag = true;
+    end
+    
+    if(~stlFlag)
+        % Check if arc passes thru obstacles
+        inobs = zeros(NarcPts,length(data.mesh.obs));
+        for k = 1:length(data.mesh.obs)
+            inobs(:,k) = inpolyhedron(data.mesh.obs(k),pts');
+        end
+        if ( any(inobs(:)) )
+            stlFlag = true;
+        end
+    end
+    
+    if stlFlag
+        node = [];
+        reachable = false;
+        return;
+    end
 end
 
 % Otherwise record the path end node...
