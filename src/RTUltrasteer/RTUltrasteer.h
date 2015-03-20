@@ -18,6 +18,7 @@
 #include "USVisualizerWidget.h"
 #include "RPWidget.h"
 #include "RobotHardwareWidget.h"
+#include "Teleoperation2DWidget.h"
 
 namespace Nf
 {
@@ -571,6 +572,9 @@ public:
     std::tr1::shared_ptr < Nf::BoolParameter > m_rpFileWidgetVisible;
 
     std::tr1::shared_ptr < Nf::BoolParameter > m_robotHWWidgetVisible;
+    
+    std::tr1::shared_ptr < Nf::BoolParameter > m_teleoperation2DWidgetVisible;
+
     void onSetDocksVisible();
     CLASS_CALLBACK(onSetDocksVisible, RTUltrasteer);
 
@@ -593,11 +597,15 @@ private:
     QDockWidget *m_robotHWDock;
     Nf::RobotHardwareWidget *m_robotHWWidget;
 
+    QDockWidget *m_teleoperation2DDock;
+    Nf::Teleoperation2DWidget *m_teleoperation2DWidget;
+
     void CreateUSVisualizer();
     void CreateMenuDock();
     void CreateRPFileDock();
     void CreateRPStreamingDock();
     void CreateRobotHWDock();
+    void CreateTeleoperation2DDock();
     void resizeEvent(QResizeEvent *event);
     void Resize();
 
