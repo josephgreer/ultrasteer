@@ -5,14 +5,14 @@
 #include "qdebug.h"
 
 /********************** Hardware Specific Parameters ******************************/
-#define ROLL_DEVICE_ID			0		//Network ID of the roll MCDC	
-#define CORRIDOR				20		//Default corridor value
-#define FAULHABER_ONE_ROTATION	400		//# of encoder ticks in one full rotation (without factoring in the gear ratio) 
-#define SPUR_GEAR_RATIO			1539.0/65.0*4.0/0.5 //Gear ratio for the maxon motor gearhead + pinion gears
-#define MIN_ANGLE_LIMIT			-90		//Minimum encoder limit that the motor will not be able to travel past
-#define MAX_ANGLE_LIMIT			-90		//Maximum encoder limit that the motor will not be able to travel past
-#define CURRENT_LIMIT			3000	//Faulhaber motor peak current limit of 3000mA 	
-#define MAX_VELOCITY			377		//Roll device velocity when it is not moving in no increments mode
+#define ROLL_DEVICE_ID			0						//Network ID of the roll MCDC	
+#define CORRIDOR				20						//Default corridor value
+#define FAULHABER_ONE_ROTATION	400						//# of encoder ticks in one full rotation (without factoring in the gear ratio) 
+#define SPUR_GEAR_RATIO			(1539.0/65.0*4.0/0.5)	//Gear ratio for the maxon motor gearhead + pinion gears
+#define MIN_ANGLE_LIMIT			-90						//Minimum encoder limit that the motor will not be able to travel past
+#define MAX_ANGLE_LIMIT			-90						//Maximum encoder limit that the motor will not be able to travel past
+#define CURRENT_LIMIT			3000					//Faulhaber motor peak current limit of 3000mA 	
+#define MAX_VELOCITY			377						//Roll device velocity when it is not moving in no increments mode
 /**********************************************************************************/
 
 bool RollDevice::m_created = false;

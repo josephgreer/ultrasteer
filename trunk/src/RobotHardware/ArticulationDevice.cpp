@@ -5,14 +5,14 @@
 #include "qdebug.h"
 
 /********************** Hardware Specific Parameters ******************************/
-#define ARTICULATION_DEVICE_ID	2				//Network ID of the articulation MCDC	
-#define CORRIDOR				20				//Default corridor value
-#define FAULHABER_ONE_ROTATION	4096			//# of encoder ticks in one full rotation (without factoring in the gear ratio) 
-#define SPUR_GEAR_RATIO			141.0*2.0/0.375	//Gear ratio for the faulhaber motor + pinion gear combo
-#define MIN_ANGLE_LIMIT			-30.0			//Minimum encoder limit that the motor will not be able to travel past
-#define MAX_ANGLE_LIMIT			30.0			//Maximum encoder limit that the motor will not be able to travel past
-#define CURRENT_LIMIT			2000			//Faulhaber motor peak current limit of 3000mA 	
-#define MAX_VELOCITY			377				//Roll device velocity when it is not moving in no increments mode
+#define ARTICULATION_DEVICE_ID	2									//Network ID of the articulation MCDC	
+#define CORRIDOR				20									//Default corridor value
+#define FAULHABER_ONE_ROTATION	4096								//# of encoder ticks in one full rotation (without factoring in the gear ratio) 
+#define SPUR_GEAR_RATIO			(141.0)*2.0/0.375					//Gear ratio for the faulhaber motor + pinion gear + cable drive
+#define MIN_ANGLE_LIMIT			-5.0								//Minimum encoder limit that the motor will not be able to travel past
+#define MAX_ANGLE_LIMIT			90.0								//Maximum encoder limit that the motor will not be able to travel past
+#define CURRENT_LIMIT			2000								//Faulhaber motor peak current limit of 3000mA 	
+#define MAX_VELOCITY			377									//Roll device velocity when it is not moving in no increments mode
 /**********************************************************************************/
 
 bool ArticulationDevice::m_created = false;
@@ -110,13 +110,4 @@ void ArticulationDevice::GetAngleLimits(float* min, float* max)
 {
 	*min = MIN_ANGLE_LIMIT;
 	*max = MAX_ANGLE_LIMIT;
-}
-
-/// \brief		Set the digital output of the MCDC
-///	\details	Sets the FAULT pin to either high-impedance or GND
-/// \pre		MCDC DIGOUT is set to true
-///	\post		FAULT output pin is set based on OnOff
-void ArticulationDevice::setVibration(bool OnOff)
-{
-	MotionController::setDigitalOutput(OnOff);
 }
