@@ -1,6 +1,6 @@
-#define ROLLPORT 8
+#define ROLLPORT 5
 #define INSPORT 7
-#define ARTPORT 5
+#define ARTPORT 8
 
 #include "robotcontrol.h"
 #include <QtGui>
@@ -155,12 +155,12 @@ void RobotControl::InsertNegInc(void)
 
 void RobotControl::InsertPosVel(void)
 {
-	m_robot.SetInsertionVelocity(5);
+	m_robot.SetInsertionVelocity(2);
 }
 
 void RobotControl::InsertNegVel(void)
 {
-	m_robot.SetInsertionVelocity(-5);
+	m_robot.SetInsertionVelocity(-2);
 }
 
 void RobotControl::StopInsertion(void)
