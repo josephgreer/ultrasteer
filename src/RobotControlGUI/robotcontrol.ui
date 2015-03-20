@@ -191,14 +191,14 @@
         <item>
          <widget class="QPushButton" name="insertPosVel">
           <property name="text">
-           <string>Insert 10 mm/s</string>
+           <string>Insert 2 mm/s</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QPushButton" name="insertNegVel">
           <property name="text">
-           <string>Retract 10 mm/s</string>
+           <string>Retract 2 mm/s</string>
           </property>
          </widget>
         </item>
@@ -239,17 +239,17 @@
            </font>
           </property>
           <property name="text">
-           <string>-30</string>
+           <string>-5</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QScrollBar" name="articulationScrollBar">
           <property name="minimum">
-           <number>-30</number>
+           <number>-5</number>
           </property>
           <property name="maximum">
-           <number>30</number>
+           <number>90</number>
           </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
