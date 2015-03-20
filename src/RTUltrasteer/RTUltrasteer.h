@@ -470,7 +470,7 @@ namespace Nf
     void SetMin(Vec2i min)
     {
       SBContainer *item = (SBContainer *)m_element;
-      assert(item->nsbs == 3);
+      assert(item->nsbs == 2);
       QSpinBox *x = (QSpinBox *)item->obj[0];
       QSpinBox *y = (QSpinBox *)item->obj[1];
 
@@ -481,7 +481,7 @@ namespace Nf
     void SetMax(Vec2i max)
     {
       SBContainer *item = (SBContainer *)m_element;
-      assert(item->nsbs == 3);
+      assert(item->nsbs == 2);
       QSpinBox *x = (QSpinBox *)item->obj[0];
       QSpinBox *y = (QSpinBox *)item->obj[1];
 
@@ -492,7 +492,7 @@ namespace Nf
     void SetStep(Vec2i step)
     {
       SBContainer *item = (SBContainer *)m_element;
-      assert(item->nsbs == 3);
+      assert(item->nsbs == 2);
       QSpinBox *x = (QSpinBox *)item->obj[0];
       QSpinBox *y = (QSpinBox *)item->obj[1];
 
