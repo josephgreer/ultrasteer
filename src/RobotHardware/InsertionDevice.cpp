@@ -4,15 +4,15 @@
 #include  <math.h>
 
 /********************** Hardware Specific Parameters ******************************/
-#define INSERTION_DEVICE_ID		1		//Network ID of the insertion MCDC	
-#define CORRIDOR				20		//Default corridor value
-#define FAULHABER_ONE_ROTATION	2000	//# of encoder ticks in one full rotation (without factoring in the gear ratio) 
-#define SPUR_GEAR_RATIO			5.9/1.0 //Gear ratio for the maxon motor
-#define SLIDE_PITCH				2.54	//MM travelled for one rotation of the linear slide
-#define MIN_ENCODER_LIMIT		-30000	//Minimum encoder limit that the motor will not be able to travel past
-#define MAX_ENCODER_LIMIT		30000	//Maximum encoder limit that the motor will not be able to travel past
-#define CURRENT_LIMIT			3000	//Faulhaber motor peak current limit of 3000mA 	
-#define MAX_VELOCITY			40		//Roll device velocity when it is not moving in no increments mode
+#define INSERTION_DEVICE_ID		1			//Network ID of the insertion MCDC	
+#define CORRIDOR				20			//Default corridor value
+#define FAULHABER_ONE_ROTATION	2000		//# of encoder ticks in one full rotation (without factoring in the gear ratio) 
+#define SPUR_GEAR_RATIO			(5.9/1.0)	//Gear ratio for the maxon motor
+#define SLIDE_PITCH				2.54		//MM travelled for one rotation of the linear slide
+#define MIN_ENCODER_LIMIT		-30000		//Minimum encoder limit that the motor will not be able to travel past
+#define MAX_ENCODER_LIMIT		30000		//Maximum encoder limit that the motor will not be able to travel past
+#define CURRENT_LIMIT			3000		//Faulhaber motor peak current limit of 3000mA 	
+#define MAX_VELOCITY			1000		//Insertion device velocity when it is not moving in no increments mode
 /**********************************************************************************/
 
 bool InsertionDevice::m_created = false;
@@ -79,7 +79,7 @@ void InsertionDevice::SetDefaultVelocity(void)
 /// \post		The postion (in encoder ticks) is returned 
 int InsertionDevice::ConvertMMToPosition(float MM)
 {
-	float pos = MM * (float)FAULHABER_ONE_ROTATION / SLIDE_PITCH;
+	float pos = MM * (float)FAULHABER_ONE_ROTATION / SLIDE_PITCH * SPUR_GEAR_RATIO;
 	return (int)(pos+0.5);	//Return rounded-up int value of position
 }
 
@@ -88,7 +88,7 @@ int InsertionDevice::ConvertMMToPosition(float MM)
 /// \post		The linear slide position (in mm) is returned 
 float InsertionDevice::ConvertPositionToMM(long position)
 {
-	float MM = ( (float)position / FAULHABER_ONE_ROTATION ) * SLIDE_PITCH;
+	float MM = ( (float)position / FAULHABER_ONE_ROTATION ) * SLIDE_PITCH / SPUR_GEAR_RATIO;
 	return MM;
 }
 
