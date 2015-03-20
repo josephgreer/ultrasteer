@@ -20,7 +20,7 @@ if itr == 1
     for ii = 1:NfineUnkInd;
         i = fineUnkInd(ii);
         
-        % Display an update every 25 percent of the way
+        % Display an update every 5 percent of the way
         if ismember(ii,round(linspace(1,NfineUnkInd,n)))
             fprintf( '    %.2f%% done at %.2f seconds...\n',...
                 ii/NfineUnkInd*100,toc);
@@ -50,7 +50,7 @@ if itr == 1
     for ii = 1:NcoarseUnkInd;
         i = crseUnkInd(ii);
         
-        % Display an update every 25 percent of the way
+        % Display an update every 5 percent of the way
         if ismember(ii,round(linspace(1,NcoarseUnkInd,n)))
             fprintf( '    %.2f%% done at %.2f seconds...\n',...
                 ii/NcoarseUnkInd*100,toc);
@@ -80,7 +80,7 @@ if itr == 2
     for ii = 1:length(fineUnkInd);
         i = fineUnkInd(ii);
         
-        % Display an update every 25 percent of the way
+        % Display an update every 5 percent of the way
         if ismember(ii,round(linspace(1,NfineUnkInd,n)))
             fprintf( '    %.2f%% done at %.2f seconds...\n',...
                 ii/NfineUnkInd*100,toc);
@@ -159,35 +159,17 @@ end
 
 %% Check which voxels the arc is within
 
-% Rearrange the list of arc points
+% % Rearrange the list of arc points
 NarcPts = size(pts,2);
-arcPts = permute(pts,[1,3,2]);
-arcPts = repmat(arcPts,[1,data.coarseVol.Npts,1]);
-
-% Find the difference vectors between each arc point and the boundaries
-vecs = arcPts-data.coarseVol.coords.mXYZ(:,:,1:NarcPts);
-
-% Check the magnitude of the differences is less than voxel size
-mDel = repmat(data.coarseVol.del/2,[1,data.coarseVol.Npts,NarcPts]);
-coarseInd = find(   any(    all( abs(vecs)<mDel,1)     , 3 )  );
-
-% Next check within these coarse voxels for collisons
-arcPts = permute(pts,[1,3,2]);
-arcPts = repmat(arcPts,[1,sum([data.boundaries.N(coarseInd)]),1]);
-bdyPts = [data.boundaries.coords(coarseInd).mXYZ];
-vecs = arcPts-bdyPts(:,:,1:NarcPts);
-dist = sum(vecs.^2,1);
-
 stlFlag = false;
-if( any(dist(:) < ((min(data.darcpts)/2)^2)) )
-    Perform final check to make sure this point is unreachable
-    Check if arc leaves the liver stl
+    
+    % Check if the arc passes thru liver mesh
     if (   any( ~inpolyhedron(data.mesh.lv,pts') ) )
         stlFlag = true;
     end
     
     if(~stlFlag)
-        % Check if arc passes thru obstacles
+        % Check if arc passes thru vessels
         inobs = zeros(NarcPts,length(data.mesh.obs));
         for k = 1:length(data.mesh.obs)
             inobs(:,k) = inpolyhedron(data.mesh.obs(k),pts');
@@ -202,7 +184,6 @@ if( any(dist(:) < ((min(data.darcpts)/2)^2)) )
         reachable = false;
         return;
     end
-end
 
 % Otherwise record the path end node...
 dist = dot(data.entry.v, b - data.entry.p);
