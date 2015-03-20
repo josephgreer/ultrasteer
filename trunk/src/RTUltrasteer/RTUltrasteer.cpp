@@ -45,12 +45,14 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   ADD_BOOL_PARAMETER(m_rpFileWidgetVisible, "Show Incremental Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
   ADD_BOOL_PARAMETER(m_rpStreamingWidgetVisible, "Show Streaming Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_robotHWWidgetVisible, "Show Robot HW Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
+  ADD_BOOL_PARAMETER(m_teleoperation2DWidgetVisible, "Show 2D Teleoperation Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
 
   CreateUSVisualizer();
   CreateMenuDock();
   CreateRPFileDock();
   CreateRPStreamingDock();
   CreateRobotHWDock();
+  CreateTeleoperation2DDock();
 
   QTreeWidgetItem * rt = new QTreeWidgetItem(m_params);
   rt->setText(0, this->GetName());
@@ -72,6 +74,10 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   rpRHW->setText(0, "RobotHW");
   CreateUIElements(rpRHW, *m_robotHWWidget, m_robotHWWidget->GetChildWidgets());
 
+  QTreeWidgetItem * rpTLW = new QTreeWidgetItem(m_params);
+  rpTLW->setText(0, "Teleoperation2D");
+  CreateUIElements(rpTLW, *m_teleoperation2DWidget, m_teleoperation2DWidget->GetChildWidgets());
+
   //Add to our map of root dock windows
   m_roots[std::string("USDock")].dock = m_usDock;
   m_roots[std::string("USDock")].param = m_usDockVisible.get();
@@ -85,6 +91,9 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   m_roots[std::string("RobotHWDock")].dock = m_robotHWDock;
   m_roots[std::string("RobotHWDock")].param = m_robotHWWidgetVisible.get();
   m_roots[std::string("RobotHWDock")].root = rpRHW;
+  m_roots[std::string("2DTeleoperationDock")].dock = m_teleoperation2DDock;
+  m_roots[std::string("2DTeleoperationDock")].param = m_teleoperation2DWidgetVisible.get();
+  m_roots[std::string("2DTeleoperationDock")].root = rpTLW;
 
   QDockWidget *last = NULL;
   for(std::map < std::string, DockWidgetInfo >::iterator i=m_roots.begin(); i!=m_roots.end(); i++) {
@@ -517,6 +526,16 @@ void RTUltrasteer::CreateRobotHWDock()
   m_robotHWDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
 
+void RTUltrasteer::CreateTeleoperation2DDock()
+{
+  m_teleoperation2DDock = new QDockWidget(tr("2DTeleoperationDock"), this);
+  m_teleoperation2DDock->setAllowedAreas(Qt::AllDockWidgetAreas);
+
+  m_teleoperation2DWidget = new Nf::Teleoperation2DWidget(m_teleoperation2DDock);
+  m_teleoperation2DDock->setWidget(m_teleoperation2DWidget);
+  
+  m_teleoperation2DDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
+}
 
 void RTUltrasteer::CreateMenuDock()
 {
