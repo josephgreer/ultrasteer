@@ -8,7 +8,6 @@ namespace Nf
   {
     m_layout = new QGridLayout(parent);
     this->setLayout(m_layout);
-
   }
 
   Teleoperation2DWidget::~Teleoperation2DWidget()

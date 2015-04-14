@@ -521,6 +521,7 @@ void RTUltrasteer::CreateRobotHWDock()
   m_robotHWDock->setAllowedAreas(Qt::AllDockWidgetAreas);
 
   m_robotHWWidget = new Nf::RobotHardwareWidget(m_robotHWDock);
+  m_robotHWWidget->setRobot(&m_robot);
   m_robotHWDock->setWidget(m_robotHWWidget);
   
   m_robotHWDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
