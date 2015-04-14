@@ -237,6 +237,7 @@ namespace Nf
 
     Q_ENUMS(VisRenderMethod)
     Q_ENUMS(VOLUME_ORIGIN_LOCATION)
+    Q_ENUMS(ComPorts)
 #else
   class QtEnums
   {

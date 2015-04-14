@@ -19,6 +19,7 @@
 #include "RPWidget.h"
 #include "RobotHardwareWidget.h"
 #include "Teleoperation2DWidget.h"
+#include "NeedleSteeringRobot.h"
 
 namespace Nf
 {
@@ -599,6 +600,8 @@ private:
 
     QDockWidget *m_teleoperation2DDock;
     Nf::Teleoperation2DWidget *m_teleoperation2DWidget;
+
+    NeedleSteeringRobot m_robot;
 
     void CreateUSVisualizer();
     void CreateMenuDock();
