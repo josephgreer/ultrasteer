@@ -13,6 +13,11 @@
 #include <vtkInteractorStyleImage.h>
 #include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
+#include <vtkTextActor.h>
+#include <vtkTextProperty.h>
+#include <vtkPointPicker.h>
+#include <vtkInteractorStyleImage.h>
+#include <QtDebug>
 
 namespace Nf
 {
@@ -21,8 +26,7 @@ namespace Nf
   protected:
     vtkSmartPointer < vtkImageImport > m_importer;
     vtkSmartPointer < vtkImageMapper > m_mapper;
-    vtkSmartPointer < vtkActor2D > m_imageActor;
-    vtkSmartPointer < vtkImageActor > m_imAct;
+    vtkSmartPointer < vtkImageActor > m_imageActor;
     vtkSmartPointer < vtkRenderer > m_renderer;
     vtkSmartPointer < vtkImageFlip > m_flip;
     vtkSmartPointer < vtkRenderWindowInteractor > m_interactor;
@@ -33,8 +37,23 @@ namespace Nf
     ImageViewerWidget(QWidget *parent);
     ~ImageViewerWidget();
     void SetImage(const IplImage *im);
-
   };
+
+  class ImageViewer2DTeleoperationWidget : public ImageViewerWidget
+  {
+  protected:
+    vtkSmartPointer < vtkTextActor > m_textActor;
+    vtkSmartPointer < vtkPointPicker > m_pointPicker;
+    double m_x,m_y;
+    bool m_initTeleop;
+
+  public:
+    ImageViewer2DTeleoperationWidget(QWidget *parent);
+    virtual ~ImageViewer2DTeleoperationWidget();
+    void SetImage(const IplImage *im);
+    void SetXY(double x, double y);
+  };
+
 }
 
 #endif // IMAGEVIEWERWIDGET_H
