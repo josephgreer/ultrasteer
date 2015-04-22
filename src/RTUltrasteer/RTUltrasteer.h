@@ -574,7 +574,9 @@ public:
 
     std::tr1::shared_ptr < Nf::BoolParameter > m_robotHWWidgetVisible;
     
-    std::tr1::shared_ptr < Nf::BoolParameter > m_teleoperation2DWidgetVisible;
+    std::tr1::shared_ptr < Nf::BoolParameter > m_teleoperation2DFileWidgetVisible;
+    
+    std::tr1::shared_ptr < Nf::BoolParameter > m_teleoperation2DStreamWidgetVisible;
 
     void onSetDocksVisible();
     CLASS_CALLBACK(onSetDocksVisible, RTUltrasteer);
@@ -598,8 +600,11 @@ private:
     QDockWidget *m_robotHWDock;
     Nf::RobotHardwareWidget *m_robotHWWidget;
 
-    QDockWidget *m_teleoperation2DDock;
-    Nf::Teleoperation2DWidget *m_teleoperation2DWidget;
+    QDockWidget *m_teleoperation2DFileDock;
+    Nf::Teleoperation2DFileWidget *m_teleoperation2DFileWidget;
+
+    QDockWidget *m_teleoperation2DStreamDock;
+    Nf::Teleoperation2DStreamingWidget *m_teleoperation2DStreamWidget;
 
     NeedleSteeringRobot m_robot;
 
@@ -608,7 +613,8 @@ private:
     void CreateRPFileDock();
     void CreateRPStreamingDock();
     void CreateRobotHWDock();
-    void CreateTeleoperation2DDock();
+    void CreateTeleoperation2DFileDock();
+    void CreateTeleoperation2DStreamDock();
     void resizeEvent(QResizeEvent *event);
     void Resize();
 

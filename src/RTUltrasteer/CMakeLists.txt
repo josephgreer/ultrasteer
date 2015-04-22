@@ -35,7 +35,7 @@ INCLUDE_DIRECTORIES(
 
 SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp USVisualizerWidget.cpp UICore.cpp VTKTransferFunctionWidget.cpp FileWidget.cpp Resizable.cpp ImageViewerWidget.cpp RPWidget.cpp RobotHardwareWidget.cpp RobotControlsWidget.cpp Teleoperation2DWidget.cpp)
 
-SET(ultrasteerHeaders RTUltrasteer.h USVisualizerWidget.h UICore.h VTKTransferFunctionWidget.h FileWidget.h Resizable.h ImageViewerWidget.h RPWidget.h RobotHardwareWidget.h RobotControlsWidget.h Teleoperation2DWidget.h)
+SET(ultrasteerHeaders RTUltrasteer.h USVisualizerWidget.h UICore.h VTKTransferFunctionWidget.h FileWidget.h Resizable.h ImageViewerWidget.h RPWidget.h RobotHardwareWidget.h RobotControlsWidget.h Teleoperation2DWidget.h MouseInteractorStylePP.h)
 
 SET(ultrasteerUI RTUltrasteer.ui FileWidget.ui RobotControlsWidget.ui)
 
