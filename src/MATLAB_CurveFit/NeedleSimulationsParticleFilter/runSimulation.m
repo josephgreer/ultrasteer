@@ -78,11 +78,17 @@ for t=0:params.dt:params.simulationTime
             params.particlesInit = params.doParticleFilter;
         else
             xp = propagateParticles(xp,uc,params);
-            pw = measureParticles(xp,u,measurement,params);
-            pids = sample(pw, length(xp));
-            xpu = {xp{pids}}';
-            xpe = expectedValueOfParticles(xp,params);
-            xpeu = expectedValueOfParticles(xpu, params);
+            if(params.doMeasurement)
+                pw = measureParticles(xp,u,measurement,params);
+                pids = sample(pw, length(xp));
+                xpu = {xp{pids}}';
+                xpe = expectedValueOfParticles(xp,params);
+                xpeu = expectedValueOfParticles(xpu, params);
+            else
+                xpu = xp;
+                xpeu = expectedValueOfParticles(xpu, params);
+                xpe = expectedValueOfParticles(xpu, params);
+            end
             % save off state
             results.states = vertcat(results.states, xcurr);
             %save off estimated state
@@ -112,12 +118,15 @@ for t=0:params.dt:params.simulationTime
     end
     
     if(~isempty(writerObj))
+    	% if we're writing a video, make it big.
+        if(t == 0)
+            pos = get(1, 'position');
+            set(1, 'position', [pos(1)-150 pos(2)-150 1.5*pos(3) 1.5*pos(4)]);
+        end
         frame = getframe;
         writeVideo(writerObj, frame);
+        writeVideo(writerObj, frame);
     end
-    ylim([-100 100]);
-    zlim([-10 100]);
-    xlim([-100 100]);
     pause(params.dt/5);
 end
 
