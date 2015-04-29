@@ -40,7 +40,8 @@ params.onNeedleDopplerMu = 2.33;                                            %Dop
 params.onNeedleDopplerSigma = 0.17;                                         %Doppler strength of measurement on needle distributed according to lognormal dist
 
 % particle filter parameters
-params.doParticleFilter = 1;
+params.doParticleFilter = 1;                                                %should we particle filter?
+params.doMeasurement = 1;                                                   %should we perform measurement step?
 params.n = 20;                                                              %only keep track of current state
 params.np = 100;                                                            %number of particles
 params.initOrientationSigma = diag(5*[pi/1000, pi/1000, pi/100]);           %orientation sigma for initial distribution of particles

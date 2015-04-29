@@ -65,7 +65,7 @@ for i=1:length(xp)
             t = [-dr measurement.bx measurement.by]\(xs{j}.pos-measurement.ful);
             if(0 <= t(1) && t(1) <= 1)
                 duv = t(2:3)-measurement.uv;
-                p_uvx = mvnpdf(duv, params.measurementOffsetMu, params.measurementOffsetSigma);
+                p_uvx = mvnpdf(duv, zeros(2,1), params.measurementOffsetSigma);
                 break;
             end
         end
@@ -74,10 +74,27 @@ for i=1:length(xp)
         dr = R(:,3);
         t = [-dr measurement.bx measurement.by]\(xp{i}.pos-measurement.ful);;
         duv = t(2:3)-measurement.uv;
-        p_uvx = mvnpdf(duv, params.measurementOffsetMu, params.measurementOffsetSigma);
+        p_uvx = mvnpdf(duv, zeros(2,1), params.measurementOffsetSigma);
     end
     
     pw(i) = p_dx*p_uvx;
 end
 pw = pw/sum(pw);
+end
+
+function drawMeasurementInformationForParticle(xp, u, measurement, params, i)
+figure(2);
+
+view(3);
+view(240, 30);
+drawUSFrame(measurement,params,[]);
+xs = propagateNeedleBack(xp{i},u,params);
+drawFrames(2, xs(1), 20,[]);
+axis equal;
+grid on;
+ylim([-100 100]);
+zlim([-10 100]);
+xlim([-100 100]);
+
+close(2);
 end

@@ -23,8 +23,12 @@ function measurement = generateRandomMeasurement(x, u, t, params)
 if(params.doRandomTransducerPositioning)
     axisLoc = mvnrnd(params.axialMu, params.axialSigma);
 else
-    axisLoc = params.axialMu+params.axialSigma*sin(2*pi*params.axialFrequency*t-pi/2);
+    % start frame "behind" needle tip 
+    axisLoc = params.axialMu+params.axialSigma*sin(2*pi*params.axialFrequency*(t-params.particleInitTime)-0);%pi/2);
 end
+
+% measurement noise
+measurementNoise = mvnrnd(params.measurementOffsetMu, params.measurementOffsetSigma);
 
 % US frame is ahead of needle tip
 if(axisLoc > 0)
@@ -35,6 +39,10 @@ if(axisLoc > 0)
     
     %propagate forward by axisLoc mm
     xus = propagateNeedleTip(x,uc,params);
+    
+    % if we're past the end of the needle tip, then we'll get uniformly distributed
+    % measurements about frame
+    measurementNoise = rand(2,1)*2*params.ush-params.ush;
     
     measurement.doppler = lognrnd(params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
 else
@@ -56,9 +64,6 @@ end
 
 % orientation perturbation of US frame
 orientationPertubation = mvnrnd(params.frameOrientationMu, params.frameOrientationSigma);
-
-% measurement noise
-measurementNoise = mvnrnd(params.measurementOffsetMu, params.measurementOffsetSigma);
 
 %frame orientation
 R = QuatToRotationMatrix(xus.q);
