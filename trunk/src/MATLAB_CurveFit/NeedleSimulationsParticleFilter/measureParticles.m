@@ -44,15 +44,13 @@ for i=1:length(xp)
     R = QuatToRotationMatrix(xp{i}.q);
     proj = dr'*R(:,3);
     
-    % p(doppler | x)
-    if(proj > 0)
-        % past the end of the tip
-        p_dx = lognpdf(measurement.doppler, params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
-    else
-        p_dx = lognpdf(measurement.doppler, params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
-    end
-    % compute p((u,v)|x)
+    % compute p((u,v)|x), p(d|x)
     p_uvx = 0;
+    p_dx = 0;
+    
+    % does particle intersect the frame?
+    offFrame = 1;
+    % if image frame is past the end of the particle needle tip, then yes
     if(proj <= 0)
         %before the needle tip of this particle
         % work backwards
@@ -62,24 +60,46 @@ for i=1:length(xp)
             if(det([-dr measurement.bx measurement.by]) == 0)
                 ss = 0;
             end
+            % t(2:3) = image coordinates of particle image frame intersection
+            % in mm
             t = [-dr measurement.bx measurement.by]\(xs{j}.pos-measurement.ful);
-            if(0 <= t(1) && t(1) <= 1)
-                duv = t(2:3)-measurement.uv;
-                p_uvx = mvnpdf(duv, zeros(2,1), params.measurementOffsetSigma);
+            if(sum(zeros(3,1) <= t)==3 && sum(t <= [1;params.usw;params.ush])==3)
+                % t(2:3) = intersection of shaft and particle in image coordinates (mm)
+                suv = t(2:3);
+                
+                % measurement.uv = measurement in image coordinaates in (mm)
+                % p((u,v)|d,x) ~ truncated gaussian centered at shaft particle interesection
+                % calculate limits for truncated gaussian
+                a = suv-[params.usw;params.ush]; % if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
+                b = suv; % if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0) 
+                
+                duv = suv-measurement.uv;
+                p_uvx = truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.measurementOffsetSigma),...,
+                    a,b);
+                
+                % p(d|x) in case particle intersects frame
+                p_dx = lognpdf(measurement.doppler, params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
+                offFrame = 0;
                 break;
             end
         end
-    else
-        %after the needle tip of this particle
-        dr = R(:,3);
-        t = [-dr measurement.bx measurement.by]\(xp{i}.pos-measurement.ful);;
-        duv = t(2:3)-measurement.uv;
-        p_uvx = mvnpdf(duv, zeros(2,1), params.measurementOffsetSigma);
+    end
+    
+    % particle doesn't intersect image frame
+    if(offFrame)
+        p_uvx = 1/(params.ush*params.usw);
+        p_dx = lognpdf(measurement.doppler, params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
     end
     
     pw(i) = p_dx*p_uvx;
 end
-pw = pw/sum(pw);
+
+% in case all probabilities are exceedingly low!
+if(sum(pw) > 0)
+    pw = pw/sum(pw);
+else
+    pw = ones(size(pw));
+end
 end
 
 function drawMeasurementInformationForParticle(xp, u, measurement, params, i)
