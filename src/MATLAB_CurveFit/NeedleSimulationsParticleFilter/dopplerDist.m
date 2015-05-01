@@ -1,9 +1,9 @@
 clear; clc; close all;
 
 onAxisMode = 10;
-onAxisSigma = 3;
+onAxisSigma = 1;
 offAxisMode = 1;
-offAxisSigma = 20;
+offAxisSigma = 4;
 
 syms x y;
 S = vpasolve([exp(x-y^2) == onAxisMode, (exp(y^2)-1)*exp(2*x+y^2) == onAxisSigma],[x y]);

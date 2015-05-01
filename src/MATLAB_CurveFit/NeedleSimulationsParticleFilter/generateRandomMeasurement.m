@@ -27,9 +27,6 @@ else
     axisLoc = params.axialMu+params.axialSigma*sin(2*pi*params.axialFrequency*(t-params.particleInitTime)-0);%pi/2);
 end
 
-% measurement noise
-measurementNoise = mvnrnd(params.measurementOffsetMu, params.measurementOffsetSigma);
-
 % US frame is ahead of needle tip
 if(axisLoc > 0)
     uc = u{1};
@@ -39,12 +36,6 @@ if(axisLoc > 0)
     
     %propagate forward by axisLoc mm
     xus = propagateNeedleTip(x,uc,params);
-    
-    % if we're past the end of the needle tip, then we'll get uniformly distributed
-    % measurements about frame
-    measurementNoise = rand(2,1)*2*params.ush-params.ush;
-    
-    measurement.doppler = lognrnd(params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
 else
     %US frame behind tip
     dist = 0;
@@ -69,16 +60,28 @@ orientationPertubation = mvnrnd(params.frameOrientationMu, params.frameOrientati
 R = QuatToRotationMatrix(xus.q);
 Rf = R*Rx(orientationPertubation(1))*Ry(orientationPertubation(2))*Rz(orientationPertubation(3));
 
-%position measurement
-posMeas = xus.pos+Rf(:,1)*measurementNoise(1)+Rf(:,2)*measurementNoise(2);
-
-measurement.pos = posMeas;
 measurement.ful = xus.pos-Rf(:,1)*params.ush/2-Rf(:,2)*params.usw/2;
 measurement.fbl = xus.pos+Rf(:,1)*params.ush/2-Rf(:,2)*params.usw/2;
 measurement.fbr = xus.pos+Rf(:,1)*params.ush/2+Rf(:,2)*params.usw/2;
 measurement.fur = xus.pos-Rf(:,1)*params.ush/2+Rf(:,2)*params.usw/2;
+
+if(axisLoc > 0)
+    % if we're past the end of the needle tip, then we'll get uniformly distributed
+    % measurements about frame
+%     measurementNoise = rand(2,1);
+%     measurement.pos = measurement.ful+(measurement.fur-measurement.ful)*measurementNoise(1)+...
+%         (measurement.fbl-measurement.ful)*measurementNoise(1);
+    measurementNoise = mvnrnd(params.measurementOffsetMu, params.measurementOffsetSigma);
+    measurement.pos = xus.pos+Rf(:,1)*measurementNoise(1)+Rf(:,2)*measurementNoise(2);
+    measurement.doppler = lognrnd(params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
+else
+    %position measurement
+    measurementNoise = mvnrnd(params.measurementOffsetMu, params.measurementOffsetSigma);
+    measurement.pos = xus.pos+Rf(:,1)*measurementNoise(1)+Rf(:,2)*measurementNoise(2);
+end
 measurement.bx = measurement.fur-measurement.ful;  measurement.bx = measurement.bx/norm(measurement.bx);
 measurement.by = measurement.fbl-measurement.ful;  measurement.by = measurement.by/norm(measurement.by);
-measurement.uv = [measurement.bx(1:2) measurement.by(1:2)]\(measurement.pos(1:2)-measurement.ful(1:2));
+%express measurement in image coordinates (mm)
+measurement.uv = [measurement.bx measurement.by]\(measurement.pos-measurement.ful);
 assert(sum(abs(measurement.ful+[measurement.bx measurement.by]*measurement.uv-measurement.pos)) < 1e-6);
 end
