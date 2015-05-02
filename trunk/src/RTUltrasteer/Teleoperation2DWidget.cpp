@@ -5,6 +5,8 @@ namespace Nf
   Teleoperation2DWidget::Teleoperation2DWidget(QWidget *parent)
     : Nf::ParameterCollection("Teleoperation 2D")
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
+    , m_robot(NULL)
+    , m_control(NULL)
   {
 
     m_imageViewer = std::tr1::shared_ptr<ImageViewer2DTeleoperationWidget>(new ImageViewer2DTeleoperationWidget(parent));
@@ -12,6 +14,8 @@ namespace Nf
     m_layout = new QGridLayout(parent);
     m_layout->addWidget((QWidget *)(m_imageViewer.get()), 0, 0);
     this->setLayout(m_layout);
+
+    m_imageViewer->SetTeleoperation2DWidget(this);
 
     ADD_CHILD_COLLECTION(m_imageViewer.get());
 
@@ -41,12 +45,44 @@ namespace Nf
     return res;
   }
 
+  void Teleoperation2DWidget::setRobot(NeedleSteeringRobot* robot)
+  {
+    m_robot = robot;
+  }
+
+  void Teleoperation2DWidget::setControl(ControlAlgorithms* control)
+  {
+    m_control = control;
+  }
+
+  void Teleoperation2DWidget::UpdateTargetPoint(Vec2d pt)
+  {
+    qDebug() << "Update Target Point\n";
+
+    if(m_data.gps.valid)
+    { 
+      // Convert the input image point to world coordinates using the GPS data
+      Matrix44d cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0);
+      Matrix44d tPose = Matrix44d::FromCvMat(m_data.gps.pose);
+      Matrix33d pose = tPose.GetOrientation();
+      Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, m_data.gps.pos);
+      Vec2d scale(m_data.mpp/1000.0, m_data.mpp/1000.0);
+      Vec3d pt_world = rpImageCoordToWorldCoord3(pt, posePos, cal, m_data.origin, scale);
+
+      // Update the control algorithm target point
+      m_control->SetTarget(pt_world);
+
+      // Update the overlay
+      onUpdateOverlay();
+    }
+  }
+
   Teleoperation2DFileWidget::Teleoperation2DFileWidget(QWidget *parent)
     : Teleoperation2DWidget(parent) 
     , m_rpReaders(NULL)
   {
 
-    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, Teleoperation2DFileWidget), this, "F:/NeedleScan/11_19_14_Liverscan/Scan4_CurvedFull/scan.b8", "Any File (*.*)");
+    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, Teleoperation2DFileWidget), this, "F:/TargetScans/TargetDataSet.b8", "Any File (*.*)");
     ADD_INT_PARAMETER(m_frame, "Frame Index", CALLBACK_POINTER(onUpdateFrame, Teleoperation2DFileWidget), this, 1, 1, 100, 1);
 
     onUpdateFile();
@@ -76,24 +112,50 @@ namespace Nf
     m_rpReaders->AddGPSReader((RPGPSReaderBasic *)new RPGPSReader(temp));  
 
     m_frame->SetMax(nframes);
-    
+
     onUpdateFrame();
   }
 
   void Teleoperation2DFileWidget::onUpdateFrame()
   {
     if(m_data.gps.valid)
+    {
       m_data.Release();
+    }
 
     m_data = m_rpReaders->GetRPData(m_frame->GetValue());
     m_imageViewer->SetImage(m_data.b8);
+    onUpdateOverlay();
+
+  }
+
+  void Teleoperation2DWidget::onUpdateOverlay()
+  {
+    if( m_control && m_control->isTargetDefined() )
+    {
+      // Get the image pose/position information
+      Matrix44d cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0);
+      Matrix44d tPose = Matrix44d::FromCvMat(m_data.gps.pose);
+      Matrix33d pose = tPose.GetOrientation();
+      Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, m_data.gps.pos);
+      Vec2d scale(m_data.mpp/1000.0, m_data.mpp/1000.0);
+
+      // Convert the world target coordinates to the 3D image frame using the GPS data
+      Vec3d pt_world;
+      m_control->GetTarget(pt_world);
+      Vec3d pt_img3D = rpWorldCoord3ToImageCoord(pt_world, posePos, cal, m_data.origin, scale);
+
+      // Interpet circle location and draw the overlay circle
+      int z = fabs(pt_img3D.z);
+      m_imageViewer->SetTargetOverlay(40-z, Vec2d(pt_img3D.x,pt_img3D.y));
+    }
   }
 
   Teleoperation2DFileWidget::~Teleoperation2DFileWidget()
   {
+
   }
-
-
+  
   Teleoperation2DStreamingWidget::Teleoperation2DStreamingWidget(QWidget *parent)
     : Teleoperation2DWidget(parent) 
   {
@@ -106,7 +168,7 @@ namespace Nf
 
     onInitializeToggle();
     onAddFramesToggle();
-    
+
     m_tick = std::tr1::shared_ptr<QTimer>((QTimer *)NULL);
     m_rpReaders = std::tr1::shared_ptr<RPUlteriusProcessManager>((RPUlteriusProcessManager *)NULL);
   }
@@ -156,6 +218,7 @@ namespace Nf
 
     if(m_addFrames->GetValue()) {
       m_imageViewer->SetImage(m_data.b8);
+      onUpdateOverlay();
     }
   }
 

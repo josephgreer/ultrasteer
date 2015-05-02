@@ -42,10 +42,10 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   ui.setupUi(this);
 
   ADD_BOOL_PARAMETER(m_usDockVisible, "Show Full US Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
-  ADD_BOOL_PARAMETER(m_rpFileWidgetVisible, "Show Incremental Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
+  ADD_BOOL_PARAMETER(m_rpFileWidgetVisible, "Show Incremental Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_rpStreamingWidgetVisible, "Show Streaming Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_robotHWWidgetVisible, "Show Robot HW Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
-  ADD_BOOL_PARAMETER(m_teleoperation2DFileWidgetVisible, "Show 2D Teleoperation File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
+  ADD_BOOL_PARAMETER(m_teleoperation2DFileWidgetVisible, "Show 2D Teleoperation File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
   ADD_BOOL_PARAMETER(m_teleoperation2DStreamWidgetVisible, "Show 2D Teleoperation Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
 
   CreateUSVisualizer();
@@ -532,7 +532,7 @@ void RTUltrasteer::CreateRobotHWDock()
   m_robotHWWidget = new Nf::RobotHardwareWidget(m_robotHWDock);
   m_robotHWWidget->setRobot(&m_robot);
   m_robotHWDock->setWidget(m_robotHWWidget);
-  
+
   m_robotHWDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
 
@@ -543,7 +543,10 @@ void RTUltrasteer::CreateTeleoperation2DFileDock()
 
   m_teleoperation2DFileWidget = new Nf::Teleoperation2DFileWidget(m_teleoperation2DFileDock);
   m_teleoperation2DFileDock->setWidget(m_teleoperation2DFileWidget);
-  
+
+  m_teleoperation2DFileWidget->setRobot(&m_robot);
+  m_teleoperation2DFileWidget->setControl(&m_control);
+    
   m_teleoperation2DFileDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
 
@@ -554,7 +557,10 @@ void RTUltrasteer::CreateTeleoperation2DStreamDock()
 
   m_teleoperation2DStreamWidget = new Nf::Teleoperation2DStreamingWidget(m_teleoperation2DStreamDock);
   m_teleoperation2DStreamDock->setWidget(m_teleoperation2DStreamWidget);
-  
+
+  m_teleoperation2DStreamWidget->setRobot(&m_robot);
+  m_teleoperation2DStreamWidget->setControl(&m_control);
+    
   m_teleoperation2DStreamDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
 

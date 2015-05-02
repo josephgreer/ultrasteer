@@ -19,7 +19,7 @@
 #include "RPWidget.h"
 #include "RobotHardwareWidget.h"
 #include "Teleoperation2DWidget.h"
-#include "NeedleSteeringRobot.h"
+#include "ControlAlgorithms.h"
 
 namespace Nf
 {
@@ -607,6 +607,7 @@ private:
     Nf::Teleoperation2DStreamingWidget *m_teleoperation2DStreamWidget;
 
     NeedleSteeringRobot m_robot;
+    Nf::ControlAlgorithms m_control;
 
     void CreateUSVisualizer();
     void CreateMenuDock();

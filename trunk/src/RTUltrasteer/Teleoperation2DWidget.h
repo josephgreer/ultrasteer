@@ -8,7 +8,10 @@
 #include "ImageViewerWidget.h"
 #include "RPFileReader.h"
 #include "RPProcess.h"
-
+#include "ImageViewerWidget.h"
+#include <QtDebug>
+#include "NeedleSteeringRobot.h"
+#include "ControlAlgorithms.h"
 
 namespace Nf
 {
@@ -20,14 +23,19 @@ namespace Nf
     std::tr1::shared_ptr <ImageViewer2DTeleoperationWidget> m_imageViewer;
     RPData m_data;
     QGridLayout *m_layout;
+    NeedleSteeringRobot* m_robot;
+    ControlAlgorithms* m_control;
 
   public:
     Teleoperation2DWidget(QWidget *parent);
     virtual ~Teleoperation2DWidget();
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
-
+    void UpdateTargetPoint(Vec2d pt);
+    void setRobot(NeedleSteeringRobot* robot);
+    void setControl(ControlAlgorithms* control);
     std::vector < QVTKWidget * > GetChildWidgets();
+    void onUpdateOverlay();
 
   };
 
@@ -49,8 +57,8 @@ namespace Nf
 
     //Frame index
     std::tr1::shared_ptr < Nf::IntParameter > m_frame;
-    void onUpdateFrame();
     CLASS_CALLBACK(onUpdateFrame, Teleoperation2DFileWidget);
+    void onUpdateFrame();    
 
   };
 

@@ -419,10 +419,10 @@ namespace Nf {
     char startString[800];
     sprintf(pName, "%s_%d", baseStr, type);
 #ifdef _DEBUG
-    sprintf(startString, "C:/Users/Joey/Documents/ultrasteer/build/UlteriusDataGrabber/Debug/UlteriusDataGrabber.exe -ip %s -n %s -t %d",
+    sprintf(startString, "F:/ultrasteer/build/UlteriusDataGrabber/Debug/UlteriusDataGrabber.exe -ip %s -n %s -t %d",
       m_ip, pName, type);
 #else
-    sprintf(startString, "C:/Users/Joey/Documents/ultrasteer/build/UlteriusDataGrabber/Release/UlteriusDataGrabber.exe -ip %s -n %s -t %d",
+    sprintf(startString, "F:/ultrasteer/build/UlteriusDataGrabber/Release/UlteriusDataGrabber.exe -ip %s -n %s -t %d",
       m_ip, pName, type);
 #endif
     //Now Create the process

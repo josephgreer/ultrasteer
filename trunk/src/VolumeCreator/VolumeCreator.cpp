@@ -316,6 +316,8 @@ namespace Nf {
     Vec2d origin = rp.origin;
     Vec2d mppScale(mpp.x/1000.0, mpp.y/1000.0);
 
+    Matrix44d yep = Matrix44d::I();
+
     Vec3d x_axis = rpImageCoordToWorldCoord3(Vec2d(1.0,0.0), posePos, m_cal, origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, origin, mppScale);  //tPose*calibration*Vec4d(1.0, 0.0, (1.0)*mpp.x, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, (0.0)*mpp.x, 0.0);
     Vec3d y_axis = rpImageCoordToWorldCoord3(Vec2d(0.0,1.0), posePos, m_cal, origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, origin, mppScale);//tPose*calibration*Vec4d(1.0, 1.0*mpp.y, 0.0, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, 0.0, 0.0);
     x_axis = x_axis.normalized();

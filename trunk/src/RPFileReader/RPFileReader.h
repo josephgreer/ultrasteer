@@ -104,6 +104,18 @@ namespace Nf
     return Vec3d(world.x, world.y, world.z);
   }
 
+  inline Vec3d rpWorldCoord3ToImageCoord(const Vec3d &pt3_w, const Matrix44d &posePos, const Matrix44d &calibration, Vec2d &start, const Vec2d &scale)
+  {
+    Vec4d pt4_w( pt3_w.x, pt3_w.y, pt3_w.z, 1.0 );                    // World (EM-tracker) frame point
+    Vec4d pt4_us = posePos.Inverse()*pt4_w;                           // Transducer frame point
+    Matrix33d cal_part(-0.0018, 0.9477, 0, 1.00, 0.0016, 0, 0, 0, 1); // Hard-coded values taken from Sonix calibration matrix
+    
+    // Invert a square portion of the calibration matrix, scale and shift image point to VTK origin
+    Vec3d pt3_im = cal_part.Inverse()* ( Vec3d(pt4_us.x,pt4_us.y,0) - Vec3d(14.8449,15.0061,0) );
+    pt3_im.z = pt4_us.z;
+    return Vec3d( (pt3_im.x/scale.x) + start.x, (pt3_im.y/scale.y) + start.y, pt3_im.z/scale.y);
+  }
+
   inline Vec4d rpImageCoordToWorldCoord4(const Vec2d &image, const Matrix44d &posePos, const Matrix44d &calibration, Vec2d &start, const Vec2d &scale)
   {
     return posePos*calibration*Vec4d(1, (image.y-start.y)*scale.y, (image.x-start.x)*scale.x, 1.0);

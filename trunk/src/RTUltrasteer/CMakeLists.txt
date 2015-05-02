@@ -30,6 +30,7 @@ INCLUDE_DIRECTORIES(
   ../RPFileReader
   ../UlteriusDataGrabber
   ../RobotHardware
+  ../ControlAlgorithms
   ${UlteriusDir}/inc
 ) 
 
@@ -72,5 +73,5 @@ SET_TARGET_PROPERTIES(RTUltrasteer PROPERTIES LINK_FLAGS_DEBUG /SUBSYSTEM:window
 SET_TARGET_PROPERTIES(RTUltrasteer PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:windows)
  #Must be lowercase windows
 
-TARGET_LINK_LIBRARIES(RTUltrasteer VolumeCreator RPFileReader RobotHardware ${OpenCV_LIBS} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${UlteriusDir}/lib/ulterius_old.lib)
+TARGET_LINK_LIBRARIES(RTUltrasteer VolumeCreator ControlAlgorithms RPFileReader RobotHardware ${OpenCV_LIBS} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${UlteriusDir}/lib/ulterius_old.lib)
 
