@@ -3,6 +3,7 @@
 %   x.pos % position of needle tip frame 
 %   x.q  % orientation of needle tip frame 
 %   x.rho radius of curvature
+%   x.w = particle weight
 % u = control input
 %   u{1}        = current action
 %   u{2}        = action 1 timestamp back

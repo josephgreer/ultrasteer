@@ -16,6 +16,7 @@ results.time = [];
 xcurr.pos = [0; 0; 0];
 xcurr.q = RotationMatrixToQuat(eye(3));
 xcurr.rho = 60;        % 10 cm roc
+xcurr.w = 1;           % not a particle but using the same propagation routine.
 
 uc.v = 0;               %10 mm/s
 uc.dc = 0;              %no duty cycle
@@ -74,28 +75,27 @@ for t=0:params.dt:params.simulationTime
         if(~params.particlesInit)
             fakeCurr = xcurr;
             xp = initializeParticles(fakeCurr, params);
-            xpe = expectedValueOfParticles(xp,params);
             params.particlesInit = params.doParticleFilter;
         else
             xp = propagateParticles(xp,uc,params);
             if(params.doMeasurement)
-                pw = measureParticles(xp,u,measurement,params);
-                pids = sample(pw, length(xp));
-                xpu = {xp{pids}}';
-                xpe = expectedValueOfParticles(xp,params);
-                xpeu = expectedValueOfParticles(xpu, params);
-            else
-                xpu = xp;
-                xpeu = expectedValueOfParticles(xpu, params);
-                xpe = expectedValueOfParticles(xpu, params);
+                xp = measureParticles(xp,u,measurement,params);
             end
-            % save off state
-            results.states = vertcat(results.states, xcurr);
-            %save off estimated state
-            results.estimatedStates = vertcat(results.estimatedStates, xpeu);
-            % save off time
-            results.time = vertcat(results.time, t);
         end
+        
+        neff = effectiveSampleSize(xp, params);
+        xpe = expectedValueOfParticles(xp,params);
+        % resample if effective particle size gets too low.
+        if(neff < params.neff*params.np)
+            xp = resampleParticles(xp, params);
+        end
+        
+        % save off state
+        results.states = vertcat(results.states, xcurr);
+        %save off estimated state
+        results.estimatedStates = vertcat(results.estimatedStates, xpe);
+        % save off time
+        results.time = vertcat(results.time, t);
     end
     
     % draw auxillary information if these params are enabled
@@ -107,10 +107,6 @@ for t=0:params.dt:params.simulationTime
     
     if(params.particlesInit)
         particleHandles = drawParticles(1,xp, xpe,xcurr,params, particleHandles);
-        if(exist('xpu'))
-            particleHandles = drawParticles(1,xpu, xpe,xcurr, params,particleHandles);
-            xp = xpu;
-        end
     end
     
     if(~isempty(measurement))

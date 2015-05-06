@@ -17,7 +17,7 @@
 %  measurement.ful,fbl,fbr,fur = us frame positions
 % params = simulation parameters
 % see ../NeedleSimulation.m for description of parameters
-function pw = measureParticles(xp, u, measurement, params)
+function x = measureParticles(xp, u, measurement, params)
 pw = zeros(length(xp),1);
 % compute p(z|x)
 % z = ((u,v),d)
@@ -100,6 +100,12 @@ if(sum(pw) > 0)
 else
     pw = ones(size(pw));
 end
+
+for i=1:length(xp)
+    xp{i}.w = pw(i);
+end
+x = xp;
+
 end
 
 function drawMeasurementInformationForParticle(xp, u, measurement, params, i)

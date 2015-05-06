@@ -45,6 +45,7 @@ params.doParticleFilter = 1;                                                %sho
 params.doMeasurement = 1;                                                   %should we perform measurement step?
 params.n = 20;                                                              %only keep track of current state
 params.np = 100;                                                            %number of particles
+params.neff = 0.5;                                                          %if effective sample size drops below params.neff*parrams.np then resample
 params.initOrientationSigma = diag(5*[pi/1000, pi/1000, pi/100]);           %orientation sigma for initial distribution of particles
 params.initOrientationMu = [0;0;0];                                         %orientation mu for initial distribution of particles
 params.initRhoSigma = 3;                                                    %rho sigma for initial distribution of particles

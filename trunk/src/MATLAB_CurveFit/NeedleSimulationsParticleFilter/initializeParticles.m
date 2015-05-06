@@ -3,6 +3,7 @@
 %   x.pos % position of needle tip frame n timesteps back
 %   x.q  % orientation of needle tip frame n timesteps back
 %   x.rho radius of curvature (mm)
+%   x.w = particle weight
 % params = simulation parameters
 % see ../NeedleSimulation.m for description of parameters
 function xp = initializeParticles(x, params)
@@ -23,7 +24,7 @@ for p=1:params.np
     xp{p}.pos = pos(p,:)';
     xp{p}.q = quatmult(x.q,AxisAngleToQuat(orientationNoise(p,:)'));
     xp{p}.rho = rho(p);
-    xp{p}.w = 1;
+    xp{p}.w = 1/params.np;
 end
 
 xp = xp';
