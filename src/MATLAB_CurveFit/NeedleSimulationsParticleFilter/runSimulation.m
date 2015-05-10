@@ -10,6 +10,8 @@ function results = runSimulation(params, commandFcn)
 results.states = {};
 results.estimatedStates = {};
 results.time = [];
+results.positionError = [];
+results.orientationError = [];
 
 
 % initial state of needle
@@ -27,7 +29,7 @@ u = repmat(u,params.n,1);
 
 % simulation
 figure(1);
-ylim([-80 80]);
+ylim([-10 150]);
 zlim([-10 100]);
 xlim([-50 50]);
 xlabel('x');
@@ -88,6 +90,7 @@ for t=0:params.dt:params.simulationTime
         % resample if effective particle size gets too low.
         if(neff < params.neff*params.np)
             xp = resampleParticles(xp, params);
+            display('resample');
         end
         
         % save off state
@@ -96,6 +99,10 @@ for t=0:params.dt:params.simulationTime
         results.estimatedStates = vertcat(results.estimatedStates, xpe);
         % save off time
         results.time = vertcat(results.time, t);
+        % save off orientation error
+        results.orientationError = vertcat(results.orientationError, computeAverageOrientationError(xp, xcurr, params));
+        % save off pos error
+        results.positionError = vertcat(results.positionError, computeAveragePositionError(xp, xcurr, params));
     end
     
     % draw auxillary information if these params are enabled
@@ -123,7 +130,7 @@ for t=0:params.dt:params.simulationTime
         writeVideo(writerObj, frame);
         writeVideo(writerObj, frame);
     end
-    pause(params.dt/5);
+    %pause(params.dt/5);
 end
 
 close(writerObj);

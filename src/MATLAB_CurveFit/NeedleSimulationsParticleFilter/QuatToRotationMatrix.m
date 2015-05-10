@@ -1,4 +1,5 @@
 function R = QuatToRotationMatrix(q)
+assert(sum(size(q) == [4,1]) == 2);
 v = QuatToAxisAngle(q);
 alpha = norm(v);
 if(alpha == 0)
