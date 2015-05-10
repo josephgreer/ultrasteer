@@ -9,5 +9,5 @@ function x = expectedValueOfParticles(xp, params)
 x.rho = w'*rho;
 x.pos = w'*pos;
 x.pos = x.pos';
-x.q = [0;0;0;0];
+x.q = RotationMatrixToQuat(SO3Mean(q,w,1e-4));
 end

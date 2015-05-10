@@ -49,4 +49,9 @@ plot(results.time, errors(:,i));
 xlabel('time');
 ylabel(coordLabels{i});
 end
+
+figure;
+plot(results.time, results.orientationError);
+xlabel('time');
+ylabel('orientationError');
 end

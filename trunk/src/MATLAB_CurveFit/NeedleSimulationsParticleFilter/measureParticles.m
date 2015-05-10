@@ -101,8 +101,13 @@ else
     pw = ones(size(pw));
 end
 
+
+%now incorporate weights of previous particles
+[~,~,~,w] = particleArrays(xp,params);
+w = pw.*w;
+w = w/sum(w);
 for i=1:length(xp)
-    xp{i}.w = pw(i);
+    xp{i}.w = w(i);
 end
 x = xp;
 

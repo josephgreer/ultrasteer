@@ -12,6 +12,7 @@ if(isempty(handles))
     handles.expectedTipFrame = [];
     handles.particlePos = [];
     handles.expectedParticlePos = [];
+    handles.expectedTipFrame = [];
     handles.currPos = [];
 end
 ns = params.drawParticlesNs;
@@ -44,11 +45,11 @@ if(params.drawTruePos)
 end
 
 if(params.drawParticleOrientation)
-    handles.tipFrames = drawFrames(fig, {xp{1:ns:end}}', 5, handles.tipFrames);
+    handles.tipFrames = drawFrames(fig, {xp{randi([1 ns]):ns:end}}', 5, handles.tipFrames);
 end
 
 if(params.drawExpectedOrientation)
-    handles.expectedTipFrame = drawFrames(fig, {xpe}, 5, handles.expectedTipFrames); 
+    handles.expectedTipFrame = drawFrames(fig, {xpe}, 5, handles.expectedTipFrame);
 end
 
 end

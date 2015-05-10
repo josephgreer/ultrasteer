@@ -1,4 +1,5 @@
 function v = QuatToAxisAngle(q)
+assert(sum(size(q) == [4,1]) == 2);
 if(q(1) == 1)
     v = [0;0;0];
     return;
