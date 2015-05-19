@@ -116,13 +116,13 @@ namespace Nf
     }
 
 #ifdef VNL_INCLUDE
-	operator vnl_vector < T > ()
-	{
-	0	vnl_vector < T > res(2);
-		res[0] = this->x;
-		res[1] = this->y;
-		return res;
-	}
+    operator vnl_vector < T > ()
+    {
+      vnl_vector < T > res(2);
+      res[0] = this->x;
+      res[1] = this->y;
+      return res;
+    }
 #endif
   };
 
@@ -295,14 +295,14 @@ namespace Nf
     }
 
 #ifdef VNL_INCLUDE
-	operator vnl_vector < T > ()
-	{
-		vnl_vector < T > res(3);
-		res[0] = this->x;
-		res[1] = this->y;
-		res[2] = this->z;
-		return res;
-	}
+    operator vnl_vector < T > ()
+    {
+      vnl_vector < T > res(3);
+      res[0] = this->x;
+      res[1] = this->y;
+      res[2] = this->z;
+      return res;
+    }
 #endif
   };
 
@@ -619,7 +619,7 @@ namespace Nf
 
     Vec3<T> operator*(const Vec3<T> &b) const
     {
-       return this->Col(0)*b.x + this->Col(1)*b.y + this->Col(2)*b.z;
+      return this->Col(0)*b.x + this->Col(1)*b.y + this->Col(2)*b.z;
     }
 
     Matrix33<T> Transpose() const
@@ -786,17 +786,17 @@ namespace Nf
       res[0][1] = this->m_data[0][1] + b.m_data[0][1];
       res[0][2] = this->m_data[0][2] + b.m_data[0][2];
       res[0][3] = this->m_data[0][3] + b.m_data[0][3];
-      
+
       res[1][0] = this->m_data[1][0] + b.m_data[1][0];
       res[1][1] = this->m_data[1][1] + b.m_data[1][1];
       res[1][2] = this->m_data[1][2] + b.m_data[1][2];
       res[1][3] = this->m_data[1][3] + b.m_data[1][3];
-      
+
       res[2][0] = this->m_data[2][0] + b.m_data[2][0];
       res[2][1] = this->m_data[2][1] + b.m_data[2][1];
       res[2][2] = this->m_data[2][2] + b.m_data[2][2];
       res[2][3] = this->m_data[2][3] + b.m_data[2][3];
-      
+
       res[3][0] = this->m_data[3][0] + b.m_data[3][0];
       res[3][1] = this->m_data[3][1] + b.m_data[3][1];
       res[3][2] = this->m_data[3][2] + b.m_data[3][2];
@@ -811,17 +811,17 @@ namespace Nf
       this->m_data[0][1] += b.m_data[0][1];
       this->m_data[0][2] += b.m_data[0][2];
       this->m_data[0][3] += b.m_data[0][3];
-      
+
       this->m_data[1][0] += b.m_data[1][0];
       this->m_data[1][1] += b.m_data[1][1];
       this->m_data[1][2] += b.m_data[1][2];
       this->m_data[1][3] += b.m_data[1][3];
-      
+
       this->m_data[2][0] += b.m_data[2][0];
       this->m_data[2][1] += b.m_data[2][1];
       this->m_data[2][2] += b.m_data[2][2];
       this->m_data[2][3] += b.m_data[2][3];
-      
+
       this->m_data[3][0] += b.m_data[3][0];
       this->m_data[3][1] += b.m_data[3][1];
       this->m_data[3][2] += b.m_data[3][2];
@@ -837,17 +837,17 @@ namespace Nf
       res[0][1] = this->m_data[0][1] - b.m_data[0][1];
       res[0][2] = this->m_data[0][2] - b.m_data[0][2];
       res[0][3] = this->m_data[0][3] - b.m_data[0][3];
-      
+
       res[1][0] = this->m_data[1][0] - b.m_data[1][0];
       res[1][1] = this->m_data[1][1] - b.m_data[1][1];
       res[1][2] = this->m_data[1][2] - b.m_data[1][2];
       res[1][3] = this->m_data[1][3] - b.m_data[1][3];
-      
+
       res[2][0] = this->m_data[2][0] - b.m_data[2][0];
       res[2][1] = this->m_data[2][1] - b.m_data[2][1];
       res[2][2] = this->m_data[2][2] - b.m_data[2][2];
       res[2][3] = this->m_data[2][3] - b.m_data[2][3];
-      
+
       res[3][0] = this->m_data[3][0] - b.m_data[3][0];
       res[3][1] = this->m_data[3][1] - b.m_data[3][1];
       res[3][2] = this->m_data[3][2] - b.m_data[3][2];
@@ -863,17 +863,17 @@ namespace Nf
       res[0][1] = this->m_data[0][1] * b;
       res[0][2] = this->m_data[0][2] * b;
       res[0][3] = this->m_data[0][3] * b;
-      
+
       res[1][0] = this->m_data[1][0] * b;
       res[1][1] = this->m_data[1][1] * b;
       res[1][2] = this->m_data[1][2] * b;
       res[1][3] = this->m_data[1][3] * b;
-      
+
       res[2][0] = this->m_data[2][0] * b;
       res[2][1] = this->m_data[2][1] * b;
       res[2][2] = this->m_data[2][2] * b;
       res[2][3] = this->m_data[2][3] * b;
-      
+
       res[3][0] = this->m_data[3][0] * b;
       res[3][1] = this->m_data[3][1] * b;
       res[3][2] = this->m_data[3][2] * b;
@@ -909,7 +909,7 @@ namespace Nf
 
     Vec4d operator*(const Vec4d &b) const
     {
-       return this->Col(0)*b.x + this->Col(1)*b.y + this->Col(2)*b.z + this->Col(3)*b.w;
+      return this->Col(0)*b.x + this->Col(1)*b.y + this->Col(2)*b.z + this->Col(3)*b.w;
     }
 
     Matrix44d Transpose() const
