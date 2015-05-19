@@ -12,7 +12,6 @@ SET(UlteriusDir "Default Path" CACHE FILEPATH "UlteriusBaseDir")
 
 IF(${DORealTimeUltrasteer})
 	ADD_SUBDIRECTORY(RealTimeUltrasteer)
-	ADD_SUBDIRECTORY(UnitTests)
 ELSE()
 ENDIF()
 
@@ -28,3 +27,4 @@ ADD_SUBDIRECTORY(UlteriusDataReader)
 ADD_SUBDIRECTORY(UlteriusDataRecorder)
 ADD_SUBDIRECTORY(RobotHardware)
 ADD_SUBDIRECTORY(RobotControlGUI)
+ADD_SUBDIRECTORY(UnitTests)
