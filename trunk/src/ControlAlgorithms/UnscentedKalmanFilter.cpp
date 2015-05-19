@@ -1,286 +1,315 @@
 #include "UnscentedKalmanFilter.h"
-#include <vector>
-#include <vnl/vnl_cross.h>
-#include <vnl/vnl_vector.h>
-#include <vnl/vnl_quaternion.h>
-#include <vnl/vnl_rotation_matrix.h>
-#include <vnl/algo/vnl_cholesky.h>
-#include <vnl/algo/vnl_matrix_inverse.h>
-#include <math.h>
 
-#define		N					6						// length of state vector
-#define		M					6						// length of measurement vector
+#define		N					      6					// length of state vector
 
-#define		P_POS_INIT			3.0						// prior covariance of position
-#define		P_ROT_INIT			1e-2					// prior covariance of orientation
+#define		P_POS_I   			3.0				// prior covariance of position
+#define		P_ROT_I   			1e-2			// prior covariance of orientation
 
-#define		Q_POS				0.2						// process covariance of position
-#define		Q_ROT				1e-3					// process covariance of orientation
+#define		Q_POS				    0.2				// process covariance of position
+#define		Q_ROT				    1e-3			// process covariance of orientation
 
-#define		R_POS				1.0						// measurement covariance of position
-#define		R_ROT				1.0						// measurement covariance of orientation
+#define		R_POS				    1.0				// measurement covariance of position
+#define		R_ROT				    1.0				// measurement covariance of orientation
 
-#define		ALPHA				1e-3					// Sigma parameter for UKF
-#define		KI					0.0						// Sigma parameter for UKF
-#define		BETA				2.0						// Sigma parameter for UKF
-#define		LAMBDA				((pow(ALPHA,2.0))*(N+KI)-N)		// Sigma parameter for UKF
-#define		C					(N+LAMBDA)				// Sigma parameter for UKF
 
-/// \brief		Constructor: Initializes filter	
-UnscentedKalmanFilter::UnscentedKalmanFilter(void):
-x_hat(N,0.0),P_hat(N,N,0.0),K(N,M,0.0),Q(N,N,0.0),R(M,M,0.0),Wm(1,2*N+1,0.5/C),Wc(1,2*N+1,0.5/C)
+
+
+namespace Nf
 {
-	// Set mean of initial position prior (orientation already 0)
-	x_hat[0] = 0.0; x_hat[1] = 40.0; x_hat[2] = -15.0;
-	x_hat[3] = 0.0; x_hat[4] = 0.0; x_hat[5] = 0.0;
-	// Set diagonal covariance entries for prior
-	P_hat.fill_diagonal(P_POS_INIT);
-	P_hat(3,3) = P_ROT_INIT; P_hat(4,4) = P_ROT_INIT; P_hat(5,5) = P_ROT_INIT;
-	// Set diagonal covariance entries for process noise
-	Q.fill_diagonal(Q_POS);
-	Q(3,3) = Q_ROT; Q(4,4) = Q_ROT; Q(5,5) = Q_ROT;
-	// Set diagonal covariance entries for measurement noise
-	R.fill_diagonal(R_POS);
-	R(3,3) = R_ROT; R(4,4) = R_ROT; R(5,5) = R_ROT;
-	// Set weighting for UKF sigma points
-	Wm(0,0) = (LAMBDA)/(C);	
-	Wc = Wm;
-	double temp = Wc(0,0);
-	Wc(0,0) = temp + 1-pow(ALPHA,2)+BETA;
-}
+  /// \brief		Constructor: Initializes filter	
+  UnscentedKalmanFilter::UnscentedKalmanFilter(void)
+  {
+    // initialize estimate and covariance matrices
+    x_hat = Matrix44d::FromOrientationAndTranslation(Matrix33d::I(),Vec3d(0.0,0.0,0.0));
+    P_hat = Matrix66d::Diagonal(P_POS_I,P_POS_I,P_POS_I,P_ROT_I,P_ROT_I,P_ROT_I);
+    Q = Matrix66d::Diagonal(Q_POS, Q_POS, Q_POS, Q_ROT, Q_ROT, Q_ROT);
+    R = Matrix66d::Diagonal(R_POS, R_POS, R_POS, R_ROT, R_ROT, R_ROT);
+  }
 
-/// \brief		Destructor
-UnscentedKalmanFilter::~UnscentedKalmanFilter(void)
-{
+  /// \brief		Destructor
+  UnscentedKalmanFilter::~UnscentedKalmanFilter(void)
+  {
 
-}
+  }
 
-/// \brief		Update Kalman filter
-void UnscentedKalmanFilter::updateUKF(vnl_vector<double> u, vnl_vector<double> z)
-{
-	// create Sigma points X for the current estimate distribution
-	vnl_matrix<double> X(N,2*N+1);
-	sigmas(x_hat, P_hat+Q, sqrt(C), X);
-	
-	vnl_matrix<double> Dbg;
+  /// \brief		Update Kalman filter
+  void UnscentedKalmanFilter::updateUKF(Vec3d u, Matrix44d z)
+  {
+    // create Sigma points X for the current estimate distribution
+    std::vector<Matrix44d> X;
+    sigmas(x_hat, P_hat+Q, X);
 
-	qDebug() << "X: "; 
-	for( int i = 0; i<6; i++)
-	{
-		qDebug() << X(i,0) << " " << X(i,1) << " " << X(i,2) << " " << X(i,3) << " " << X(i,4) << " " << X(i,5) << " "
-			<< X(i,6) << " " << X(i,7) << " " << X(i,8) << " " << X(i,9) << " " << X(i,10) << " " << X(i,11)
-			<< " " << X(i,12);
-	}
+    // apply unscented transformation for process model 
+    Matrix44d x_;                 // transformed mean
+    Matrix66d P_;                 // transformed covariance
+    std::vector<Vec6d> Ex_;       // transformed error vectors
+    utf(X, u, x_, P_, Ex_);
 
-	// apply unscented transformation for process model 
-	vnl_vector<double> x1(6);
-	vnl_matrix<double> X1(N,2*N+1), P1(N,N), X2(N,2*N+1);
-	utf(X, u, x1, X1, P1, X2);
+    // resample sigma points
+    std::vector<Matrix44d> X_;    
+    sigmas(x_, P_+R, X_);
 
-	// apply unscented transformation for observation model
-	vnl_vector<double> z1(M);
-	vnl_matrix<double> Z1(M,2*M+1), P2(M,M), Z2(M,2*M+1);
-	utg(X1, z1, Z1, P2, Z2);
-	// define transformated cross-covariance
-	vnl_matrix<double> WC(2*N+1,2*N+1,0.0);
-	WC.set_diagonal(Wc.get_row(0));
-	vnl_matrix<double> P12 = X2*WC*Z2.transpose();
-	// perform state update
-	K = P12*vnl_matrix_inverse<double>(P2);
-	x_hat = x1 + K*(z-z1);
-	// perform covariance update
-	P_hat = P1 - K*P12.transpose();
-}
+    // apply unscented transform for measurement model
+    Matrix44d z_;                 // transformed measurement mean
+    Matrix66d Pzz;                // transformed measurement covariance
+    std::vector<Vec6d> Ez;        // transformed measurement error vectors
+    utg(X_, z_, Pzz, Ez);
 
+    // define transformated cross-covariance
+    Matrix66d Pxz;
+    for( int i = 0; i < Ez.size(); i++ )
+      Pxz += (Matrix66d::OuterProduct(Ex_[i],Ez[i]) )*( 0.5/N );
+    Matrix66d K = Pxz*Pzz.Inverse();
 
-/// \brief		Unscented transform of process Sigma points
-void UnscentedKalmanFilter::utf(vnl_matrix<double> X, vnl_vector<double> u,
-	vnl_vector<double> &y, vnl_matrix<double> &Y, vnl_matrix<double> &P, vnl_matrix<double> &Y1)
-{
-	// determine number of sigma points
-	unsigned int L = X.cols();
-	// zero output matrices
-	y.fill(0.0); Y.fill(0.0);
+    // update state and covariance
+    x_hat = addDifferentialPose( x_hat, K*differentialPose( z, z_) );
+    P_hat = P_ - K*Pzz*K.Transpose();    
+  }
+  
+  /// \brief		Unscented transform of process Sigma points
+  void UnscentedKalmanFilter::utf(std::vector<Matrix44d> X, Vec3d u, 
+    Matrix44d &x_, Matrix66d &P_, std::vector<Vec6d> &Ex_)
+  {
+    // determine number of sigma points
+    unsigned int l = X.size();
 
-	// transform the sigma points and put them as columns in a matrix Y
-	for( int k = 0; k < L; k++ )
-	{
-		vnl_vector<double> xk = X.get_column(k);
-		vnl_vector<double> yk(N);
-		f(xk,u,yk);
-		Y.set_column(k,yk);
-		// add each transformed point to the weighted mean
-		y = y + Wm.get(0,k)*yk;
-	}
-
-	// create a matrix with each column being the weighted mean
-	vnl_matrix<double> Ymean(N,L);
-	for( int k = 0; k < L; k++ )
-		Ymean.set_column(k,y);
-	// set the matrix of difference vectors
-	Y1 = Y-Ymean;
-	// calculate the covariance matrix output
-	vnl_matrix<double> WC(L,L,0.0);
-	WC.set_diagonal(Wc.get_row(0));
-	P = Y1*WC*Y1.transpose();
-}
+    // transform the sigma points
+    std::vector<Matrix44d> X_; 
+    X_.clear();
+    for( int k = 0; k < l; k++ )
+      X_.push_back( f(X[k],u) );
+   
+    // find the mean, covariance, and error vectors for the set
+    findMeanAndCov( X_, x_, P_, Ex_ );
+  }
 
 
-/// \brief		Unscented transform of process Sigma points
-void UnscentedKalmanFilter::utg(vnl_matrix<double> X, 
-	vnl_vector<double> &y, vnl_matrix<double> &Y, vnl_matrix<double> &P, vnl_matrix<double> &Y1)
-{
-	// determine number of sigma points
-	unsigned int L = X.cols();
-	// zero output matrices
-	y.fill(0.0); Y.fill(0.0);
-	// transform the sigma points and put them as columns in a matrix Y
-	for( int k = 0; k < L; k++ )
-	{
-		vnl_vector<double> xk = X.get_column(k);
-		vnl_vector<double> yk(M);
-		g(xk,yk);
-		Y.set_column(k,yk);
-		// add each transformed point to the weighted mean
-		y = y + Wm.get(0,k)*yk;
-	}
-	// create a matrix with each column being the weighted mean
-	vnl_matrix<double> Ymean(N,L);
-	for( int k = 0; k < L; k++ )
-		Ymean.set_column(k,y);
-	// set the matrix of difference vectors
-	Y1 = Y-Ymean;
-	// calculate the covariance matrix output
-	vnl_matrix<double> WC(L,L,0.0);
-	WC.set_diagonal(Wc.get_row(0));
-	P = Y1*WC*Y1.transpose() + R;
-}
+  /// \brief		Unscented transform of observation Sigma points
+  void UnscentedKalmanFilter::utg(std::vector<Matrix44d> X, 
+    Matrix44d &z, Matrix66d &Pzz, std::vector<Vec6d> &Ezz)
+  {
+    // determine number of sigma points
+    unsigned int l = X.size();
+
+    // transform the sigma points
+    std::vector<Matrix44d> Z;
+    Z.clear();
+    for( int k = 0; k < l; k++ )
+      Z.push_back( g(X[k]) );
+    // find the mean, covariance, and error vectors for the set
+    findMeanAndCov( Z, z, Pzz, Ezz );
+  }
+
+  /// \brief		Nonlinear process model for needle steering
+  Matrix44d UnscentedKalmanFilter::f(Matrix44d x1, Vec3d u)
+  {
+    // isolate the position and orientation components of the input vector
+    Vec3d p1 = x1.GetPosition();
+    Matrix33d R1 = x1.GetOrientation();
+
+    // isolate specific input variables
+    double d_th = u.x;
+    double rho = u.y;
+    double l = u.z;
+
+    // update tip position
+    Vec3d d_p(0.0, rho*(1.0-cos(1.0/rho)), rho*(sin(l/rho)));
+    Vec3d p2 = p1 + R1*Rz(d_th)*d_p;
+
+    // update tip orientation
+    Matrix33d R2 = R1*Rz(d_th)*Rx(-l/rho);
+
+    // set the output to 
+    Matrix44d x2 = Matrix44d::FromOrientationAndTranslation(R2,p2);
+    return x2;
+  }
+
+  /// \brief		Observation model for needle steering
+  Matrix44d UnscentedKalmanFilter::g(Matrix44d x)
+  {
+    Matrix44d z = x;
+    return z;
+  }
+
+  /// \brief    Find mean, covariance, and deviation vectors (from mean) for vector of 4x4 pose matrices
+  void UnscentedKalmanFilter::findMeanAndCov( std::vector<Matrix44d> X, Matrix44d &x, Matrix66d &P, std::vector<Vec6d> &E)
+  {
+    // find number of matrices
+    unsigned int l = X.size();
+
+    // find mean position
+    Vec3d mu_p;
+    for( int i = 0; i<l; i++ )
+      mu_p += X[i].GetPosition();
+    mu_p = mu_p/l;
+
+    // find position deviations
+    std::vector<Vec3d> E_p;
+    for( int i = 0; i<l; i++ )
+      E_p.push_back(X[i].GetPosition() - mu_p);
+    
+    // iteratively find average orientation and deviations
+    Matrix33d mu_R = X[0].GetOrientation();
+    Matrix33d mu_R_old;
+    
+    std::vector<Vec3d> E_R;
+    E_R.reserve(l);
+        
+    while(mat2vec(mu_R*mu_R_old.Inverse()).magnitude() > 1.0e-5) // loop to convergence
+    {
+      Vec3d E_Rsum;
+      for( int i = 0; i<l; i++ )
+      {
+        E_R[i] = mat2vec(X[i].GetOrientation()*mu_R.Inverse());
+        E_Rsum += E_R[i];
+      }
+      mu_R_old = mu_R;
+      mu_R = vec2mat(E_Rsum/l)*mu_R;     
+    }
+
+    // calculate covariance and compose deviations
+    Matrix66d P;
+    for( int i = 0; i<l; i++ )
+    {
+      E[i] = Vec6d::From2x3s(E_p[i],E_R[i]);
+      P += Matrix66d::OuterProduct(E[i],E[i])/l;
+    }
+  }
+
+  /// \brief		Create Sigma point to represent a normal distribution
+  void UnscentedKalmanFilter::sigmas(Matrix44d x, Matrix66d P, std::vector<Matrix44d> &X)
+  {
+    // Clear input matrix X
+    X.clear();
+
+    // Compute the Cholesky decomposition of P
+    Matrix66d S = P.cholesky();
+    Matrix66d Spos = S*sqrt(2.0*N);
+    Matrix66d Sneg = S*(-1.0*sqrt(2.0*N));
+
+    // Get the mean position and orientation
+    Vec3d mu_p = x.GetPosition();
+    Matrix33d mu_R = x.GetOrientation();
+
+    // Add each difference to the mean and save
+    for( int i = 0; i<2.0*N; i++ )
+    {
+      Vec3d d_p, d_r;
+      if( i<N )
+      {
+        d_p = Vec3d(Spos.Col(i).x,Spos.Col(i).y,Spos.Col(i).z);
+        d_r = Vec3d(Spos.Col(i).a,Spos.Col(i).b,Spos.Col(i).c);
+      }else
+      {
+        d_p = Vec3d(Sneg.Col(i).x,Sneg.Col(i).y,Sneg.Col(i).z);
+        d_r = Vec3d(Sneg.Col(i).a,Sneg.Col(i).b,Sneg.Col(i).c);
+      }
+      Vec3d p = mu_p + d_p;
+      Matrix33d R = mu_R*vec2mat(d_r);
+      X.push_back(Matrix44d::FromOrientationAndTranslation(R,p));
+    }
+  }
+
+    /// \brief    Create a 3x3 rotation z-axis rotation matrix parameterized by th
+  Matrix33d UnscentedKalmanFilter::Rz( double th)
+  {
+    Matrix33d res(cos(th), -sin(th), 0.0, 
+                  sin(th),  cos(th), 0.0, 
+                  0.0,      0.0,     1.0);
+    return res;
+  }
+
+  /// \brief    Create a 3x3 rotation x-axis rotation matrix parameterized by al
+  Matrix33d UnscentedKalmanFilter::Rx( double al)
+  {
+    Matrix33d res(  1.0,   0.0,      0.0,
+                    0.0,   cos(al),  -sin(al), 
+                    0.0,   sin(al),  cos(al) );
+    return res;
+  }
+  
+  /// \brief    Create a 3x3 rotation matrix equivalent to rotation vector input
+  Matrix33d UnscentedKalmanFilter::vec2mat(Vec3d r)
+  {
+    f64 c,s,v,x,y,z;
+    c = cos(r.magnitude());
+    s = sin(r.magnitude());
+    v = 1 - c;
+    x = r.x;
+    y = r.y;
+    z = r.z;
+
+    Vec3d i( (x*x*v)+c, (x*y*v)-(z*s), (x*z*v)+(y*s) );
+    Vec3d j( (x*y*v)+(z*s), (y*y*v)+c, (y*z*v)-(x*s) );
+    Vec3d k( (x*z*v)+(y*s), (y*z*v)+(x*s), (z*z*v)+c );
+
+    return Matrix33d::FromCols(i,j,k);
+  }
+  
+  /// \brief    Create a rotation vector equivalent to 3x3 rotation matrix input
+  Vec3d UnscentedKalmanFilter::mat2vec(Matrix33d R)
+  {
+    f64 th = acos( (R.Trace()-1.0)/2.0 );
+    
+    return Vec3d( R.m_data[3][2]-R.m_data[2][3],
+                  R.m_data[1][3]-R.m_data[3][1],
+                  R.m_data[2][1]-R.m_data[1][2] )/(2*sin(th));
+  }
+
+  /// \brief    Find the 6x1 vector difference between two poses (a-b)
+  Vec6d UnscentedKalmanFilter::differentialPose( Matrix44d a, Matrix44d b )
+  {
+    Vec3d d_p = a.GetPosition() - b.GetPosition();
+    Matrix33d d_R = a.GetOrientation()*b.GetOrientation().Inverse();
+    Vec3d d_r = mat2vec(d_R);
+
+    return Vec6d::From2x3s(d_p,d_r);
+  }
+
+  /// \brief    Add the 6x1 vector difference to a pose
+  Matrix44d UnscentedKalmanFilter::addDifferentialPose( Matrix44d a, Vec6d d )
+  {
+    Vec3d d_p(d.x, d.y, d.z);
+    Vec3d d_r(d.a, d.b, d.c);
+    
+    Vec3d p = a.GetPosition() + d_p;
+    Matrix33d R = a.GetOrientation()*vec2mat(d_r);
+
+    return Matrix44d::FromOrientationAndTranslation(R, p);
+  }
+  
+  /// \brief		Get the current needle state estimate
+/*  void UnscentedKalmanFilter::getCurrentStateEstimate(vnl_vector<double> &x_out)
+  {
+    x_out = x_hat;
+  }
+
+  /// \brief		Reset the Kalman filter estimate
+  void UnscentedKalmanFilter::resetEstimate()
+  {
+    // Set mean of initial position prior (orientation already 0)
+    x_hat[0] = 0.0; x_hat[1] = 40.0; x_hat[2] = -15.0;
+    x_hat[3] = 0.0; x_hat[4] = 0.0; x_hat[5] = 0.0;
+    // Set diagonal covariance entries for prior
+    P_hat.fill(0.0);
+    P_hat.fill_diagonal(P_POS_INIT);
+    P_hat(3,3) = P_ROT_INIT; P_hat(4,4) = P_ROT_INIT; P_hat(5,5) = P_ROT_INIT;
+  }
+
+  /// \brief Zero the orientation portion of the state estimate.
+  /// Avoids the orientation estimate gettings messed up by poor initial measurements
+  void UnscentedKalmanFilter::zeroRotationEstimate()
+  {
+    x_hat[3] = 0.0; x_hat[4] = 0.0; x_hat[5] = 0.0;
+    for (int i = 3; i<6; i++)
+    {
+      for (int j = 3; j<6; j++)
+      {
+        P_hat(i,j) = 0.0;
+      }
+    }
+    P_hat(3,3) = P_ROT_INIT; P_hat(4,4) = P_ROT_INIT; P_hat(5,5) = P_ROT_INIT;
+  }*/
 
 
-/// \brief		Create Sigma point to represent a normal distribution
-void UnscentedKalmanFilter::sigmas(vnl_vector<double> x, vnl_matrix<double> P, double c, vnl_matrix<double> &X)
-{
-	// Copy matrix P to A
-	vnl_matrix<double> A = P;
-
-	// Compute the Cholesky decomposition of P
-	vnl_cholesky chol(A,vnl_cholesky::verbose);
-	A = chol.upper_triangle();
-	// Apply the weight c
-	A = c*A.transpose();
-
-	// Create matrix Y with copies of reference point x
-	vnl_matrix<double> Y(N,N);
-	for( int i = 0; i<N; i++ )
-		Y.set_column(i,x);
-	// Add and subtract A from Y
-	vnl_matrix<double> YpA = Y + A;
-	vnl_matrix<double> YmA = Y - A;
-	// Set columns of X with Sigma points
-	X.set_column(0,x);
-	for( int i = 0; i<N; i++ )
-	{
-		X.set_column(i+1,YpA.get_column(i));
-		X.set_column(i+1+N,YmA.get_column(i));
-	}
-}
-
-
-/// \brief		Nonlinear process model for needle steering
-void UnscentedKalmanFilter::f(vnl_vector<double> x1, vnl_vector<double> u, 
-	vnl_vector<double> &x2)
-{
-	// initialize the output to 0
-	x2.fill(0.0);
-	// isolate the position and orientation components of the input vector
-	vnl_vector<double> p = x1.extract(3,0);
-	vnl_vector<double> r = x1.extract(3,3);
-	// change rotation vector representation to quaternion
-	vnl_vector<double> r_norm = r;
-	r_norm.normalize();
-	vnl_quaternion<double> q(r_norm,r.magnitude());
-	
-	// isolate specific input variables
-	double d_th = u[0];
-	double ro = u[1];
-	double l = u[2];
-
-	// define x,z axes as vectors
-	vnl_matrix<double> I(3,3); I.set_identity();
-	vnl_vector<double> x_axis = I.get_column(0);
-	vnl_vector<double> z_axis = I.get_column(2);
-
-	// Update position
-	
-	// define rotation matrix for d_th about z_axis
-	vnl_matrix<double> Rz_dth = vnl_rotation_matrix( (d_th*z_axis) );
-	
-	// define circular trajectory in y-z plane
-	vnl_vector<double> circ(3,0.0);
-	circ[1] = ro*(1-cos(l/ro));
-	circ[2] = ro*sin(l/ro);
-
-	// define delta position vector in current frame
-	vnl_vector<double> d_p = Rz_dth*circ;
-
-	// Transform delta vector into world frame using quaternion rotation
-	vnl_vector<double> d_p_world = q.rotate(d_p);
-
-	// add rotated vector to original position
-	vnl_vector<double> p2 = d_p_world + p;
-
-	// Update orientation
-
-	// form quaternions for x-axis and z-axis rotations
-	vnl_quaternion<double> q_b(z_axis,d_th);
-	vnl_quaternion<double> q_a(x_axis,-l/ro);
-	// multiply original orientation quaternion
-	vnl_quaternion<double> q2 = q*q_b*q_a;
-	vnl_vector<double> r2 = q2.axis()*q2.angle();
-
-	// Compose final output
-	for( int i = 0; i < 3; i++)
-	{
-		x2[i] = p2[i];
-		x2[i+3] = r2[i];
-	}
-}
-
-/// \brief		Nonlinear observation model for needle steering
-void UnscentedKalmanFilter::g(vnl_vector<double> x, vnl_vector<double> &z)
-{
-	z = x;
-}
-
-/// \brief		Get the current needle state estimate
-void UnscentedKalmanFilter::getCurrentStateEstimate(vnl_vector<double> &x_out)
-{
-	x_out = x_hat;
-}
-
-/// \brief		Reset the Kalman filter estimate
-void UnscentedKalmanFilter::resetEstimate()
-{
-	// Set mean of initial position prior (orientation already 0)
-	x_hat[0] = 0.0; x_hat[1] = 40.0; x_hat[2] = -15.0;
-	x_hat[3] = 0.0; x_hat[4] = 0.0; x_hat[5] = 0.0;
-	// Set diagonal covariance entries for prior
-	P_hat.fill(0.0);
-	P_hat.fill_diagonal(P_POS_INIT);
-	P_hat(3,3) = P_ROT_INIT; P_hat(4,4) = P_ROT_INIT; P_hat(5,5) = P_ROT_INIT;
-}
-
-/// \brief Zero the orientation portion of the state estimate.
-/// Avoids the orientation estimate gettings messed up by poor initial measurements
-void UnscentedKalmanFilter::zeroRotationEstimate()
-{
-	x_hat[3] = 0.0; x_hat[4] = 0.0; x_hat[5] = 0.0;
-	for (int i = 3; i<6; i++)
-	{
-		for (int j = 3; j<6; j++)
-		{
-			P_hat(i,j) = 0.0;
-		}
-	}
-	P_hat(3,3) = P_ROT_INIT; P_hat(4,4) = P_ROT_INIT; P_hat(5,5) = P_ROT_INIT;
 }

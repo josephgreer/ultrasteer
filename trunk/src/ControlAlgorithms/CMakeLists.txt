@@ -6,6 +6,11 @@ IF(COMMAND CMAKE_POLICY)
 	   CMAKE_POLICY(SET CMP0003 NEW)
 ENDIF(COMMAND CMAKE_POLICY)
 
+FIND_PACKAGE(ITK)
+IF(ITK_FOUND)
+	INCLUDE(${ITK_USE_FILE})
+ENDIF(ITK_FOUND)
+
 FIND_PACKAGE (VTK)
 IF (VTK_FOUND)
    INCLUDE(${VTK_USE_FILE})
@@ -21,6 +26,8 @@ INCLUDE_DIRECTORIES(
 
 ADD_LIBRARY(ControlAlgorithms STATIC
 	ControlAlgorithms.h
+	UnscentedKalmanFilter.h
 	ControlAlgorithms.cpp
+	UnscentedKalmanFilter.cpp
 	)
 
