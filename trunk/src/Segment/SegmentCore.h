@@ -14,6 +14,10 @@
 #include <vtkMatrix4x4.h>
 #include "windows.h"
 
+#include <vnl/vnl_rotation_matrix.h>
+#include <vnl/algo/vnl_cholesky.h>
+#include <vnl/algo/vnl_matrix_inverse.h>
+
 typedef unsigned char u8;
 typedef char s8;
 typedef unsigned short u16;
@@ -262,6 +266,12 @@ namespace Nf
       return Vec3<T>(this->x*b, this->y*b, this->z*b);
     }
 
+    Vec3<T> operator/(const T &b)
+    {
+      return Vec3<T>(this->x/b, this->y/b, this->z/b);
+    }
+
+
     Vec3<T> cross(const Vec3<T> &b) const
     {
       T va[3] = {this->x, this->y, this->z};
@@ -306,15 +316,127 @@ namespace Nf
 #endif
   };
 
+    template <class T>
+  class Vec6
+  {
+  public:
+    T x,y,z,a,b,c;
+    Vec6(T x, T y, T z, T a, T b, T c)
+      : x(x)
+      , y(y)
+      , z(z)
+      , a(a)
+      , b(b)
+      , c(c)
+    {}
+
+    Vec6<T>()
+      : x(0)
+      , y(0)
+      , z(0)
+      , a(0)
+      , b(0)
+      , c(0)
+    {}
+
+    Vec6<T> operator=(const Vec6<T> &rhs)
+    {
+      this->x = rhs.x;
+      this->y = rhs.y;
+      this->z = rhs.z;
+      this->a = rhs.a;
+      this->b = rhs.b;
+      this->c = rhs.c;
+      return *this;  // Return a reference to myself.
+    }
+
+    Vec6<T> operator+(const Vec6<T> &b) const
+    {
+      return Vec6<T>(this->x+b.x, this->y+b.y, this->z+b.z, this->a+b.a, this->b+b.b, this->c+b.c);
+    }
+
+    Vec6<T> operator-(const Vec6<T> &b) const
+    {
+      return Vec4<T>(this->x-b.x, this->y-b.y,this->z-b.z, this->a-b.a, this->b-b.b, this->c-b.c);
+    }
+
+    Vec6<T> operator*(const T &b)
+    {
+      return Vec6<T>(this->x*b, this->y*b, this->z*b, this->a*b, this->b*b, this->c*b);
+    }
+
+    Vec6<T> operator+=(const Vec6<T> &b)
+    {
+      this->x += b.x;
+      this->y += b.y;
+      this->z += b.z;
+      this->a += b.a;
+      this->b += b.b;
+      this->c += b.c;
+      return *this;
+    }
+
+    T dot(Vec6<T> b) const
+    {
+      return this->x*b.x+this->y*b.y+this->z*b.z+this->a*b.a+this->b*b.b+this->c*b.c;
+    }
+
+    static Vec6<T> From2x3s(Vec3<T> a, Vec3<T> b)
+    {
+      Vec6<T> res(a.x, a.y, a.z, b.x, b.y, b.z);
+      return res;
+    }
+
+    T magnitudeSquared() const
+    {
+      return this->dot(*this);
+    }
+
+    T magnitude() const
+    {
+      return sqrt(magnitudeSquared());
+    }
+
+    Vec6<T> normalized()
+    {
+      T mag = this->magnitude();
+
+      return Vec6<T>(this->x/mag, this->y/mag, this->z/mag, this->a/mag, this->b/mag, this->c/mag);
+    }
+
+    T at(int i)
+    {
+      switch(i)
+      {
+      case 0:
+        return this->x;
+      case 1:
+        return this->y;
+      case 2:
+        return this->z;
+      case 3:
+        return this->a;
+      case 4:
+        return this->b;
+      case 5:
+        return this->c;
+      default:
+        return 0;
+      }
+    }
+  };
   typedef Vec2<f32> Vec2f;
   typedef Vec3<f32> Vec3f;
   typedef Vec4<f32> Vec4f;
+  typedef Vec6<f32> Vec6f;
   typedef Vec2<s32> Vec2i;
   typedef Vec3<s32> Vec3i;
   typedef Vec4<s32> Vec4i;
+  typedef Vec6<s32> Vec6i;
   typedef Vec2<f64> Vec2d;
   typedef Vec3<f64> Vec3d;
   typedef Vec4<f64> Vec4d;
+  typedef Vec6<f64> Vec6d;
 
 
   //Structure representing a connected square of pixels that are of the color being tracked.
@@ -471,7 +593,7 @@ namespace Nf
       return Matrix33<T>(data);
     }
 
-    static Matrix33<T> Diaganol(T a, T b, T c)
+    static Matrix33<T> Diagonal(T a, T b, T c)
     {
       T data[3][3];
       vtkMath::Identity3x3(data);
@@ -481,7 +603,7 @@ namespace Nf
       return Matrix33<T>(data);
     }
 
-    static Matrix33<T> Diaganol(Vec3 < T > values)
+    static Matrix33<T> Diagonal(Vec3 < T > values)
     {
       T data[3][3];
       vtkMath::Identity3x3(data);
@@ -489,6 +611,12 @@ namespace Nf
       data[1][1] = values.y;
       data[2][2] = values.z;
       return Matrix33<T>(data);
+    }
+
+    T Trace() const
+    {
+      T res = this->m_data[0][0] + this->m_data[1][1] + this->m_data[2][2]; 
+      return res;
     }
 
     static Matrix33<T> FromCols(Vec3d a, Vec3d b, Vec3d c)
@@ -698,7 +826,7 @@ namespace Nf
       return Matrix44d(data);
     }
 
-    static Matrix44d Diaganol(f64 a, f64 b, f64 c, f64 d)
+    static Matrix44d Diagonal(f64 a, f64 b, f64 c, f64 d)
     {
       f64 data[4][4] = {0};
       vtkMatrix4x4::Identity(&data[0][0]);
@@ -709,7 +837,7 @@ namespace Nf
       return Matrix44d(data);
     }
 
-    static Matrix44d Diaganol(Vec4d values)
+    static Matrix44d Diagonal(Vec4d values)
     {
       f64 data[4][4];
       vtkMatrix4x4::Identity(&data[0][0]);
@@ -740,6 +868,12 @@ namespace Nf
       memcpy(&res.m_data[0][0], &this->m_data[0][0], sizeof(f64)*3);
       memcpy(&res.m_data[1][0], &this->m_data[1][0], sizeof(f64)*3);
       memcpy(&res.m_data[2][0], &this->m_data[2][0], sizeof(f64)*3);
+      return res;
+    }
+    
+    Vec3d GetPosition()
+    {
+      Vec3d res(this->m_data[0][3],this->m_data[1][3],this->m_data[2][3]);
       return res;
     }
 
@@ -941,6 +1075,268 @@ namespace Nf
       }
       return res;
     }
+  };
+
+  class Matrix66d 
+  {
+  public:
+    f64 m_data[6][6];
+
+    Matrix66d()
+    {
+      memset(m_data, 0, sizeof(f64)*36);
+    }
+
+    Matrix66d(const f64 mat[6][6])
+    {
+      memcpy(m_data, mat, sizeof(f64)*36);
+    }
+
+    Matrix66d(const vnl_matrix<f64> A)
+    {
+      for( int i = 0; i < 6; i++ )
+      {
+        for( int j = 0 ; j < 6;  j++ )
+        {
+          this->m_data[i][j] = A(i,j);
+        }
+      }
+    }
+
+    /*Matrix44d(f64 a11, f64 a12, f64 a13, f64 a14, f64 a21, f64 a22, f64 a23, f64 a24, f64 a31, f64 a32, f64 a33, f64 a34, f64 a41, f64 a42, f64 a43, f64 a44)
+    {
+      m_data[0][0] = a11; m_data[0][1] = a12; m_data[0][2] = a13; m_data[0][3] = a14;
+      m_data[1][0] = a21; m_data[1][1] = a22; m_data[1][2] = a23; m_data[1][3] = a24;
+      m_data[2][0] = a31; m_data[2][1] = a32; m_data[2][2] = a33; m_data[2][3] = a34;
+      m_data[3][0] = a41; m_data[3][1] = a42; m_data[3][2] = a43; m_data[3][3] = a44;
+    }*/
+
+    static Matrix66d I()
+    {
+      f64 data[6][6] = {0};
+      for(int i = 0; i < 6; i++)
+      { 
+        data[i][i] = 1.0; 
+      }
+      return Matrix66d(data);
+    }
+
+    static Matrix66d OuterProduct(Vec6d a, Vec6d b)
+    {
+      f64 data[6][6] = {0};
+        
+      for(int i = 0; i<6; i++)
+      {
+        for( int j = 0; j<6; j++)
+        {
+          data[i][j] = a.at(i)*a.at(j);
+        }
+      }
+      return Matrix66d(data);
+    }
+
+    static Matrix66d Diagonal(f64 a, f64 b, f64 c, f64 d, f64 e, f64 f)
+    {
+      f64 data[6][6] = {0};
+      data[0][0] = a;
+      data[1][1] = b;
+      data[2][2] = c;
+      data[3][3] = d;
+      data[4][4] = e;
+      data[5][5] = f;
+      return Matrix66d(data);
+    }
+
+    static Matrix66d Diagonal(Vec6d values)
+    {
+      f64 data[6][6] = {0};
+      data[0][0] = values.x;
+      data[1][1] = values.y;
+      data[2][2] = values.z;
+      data[3][3] = values.a;
+      data[4][4] = values.b;
+      data[5][5] = values.c;
+      return Matrix66d(data);
+    }
+
+    Matrix66d operator=(const Matrix66d &rhs)
+    {
+      memcpy(&this->m_data[0][0], &rhs.m_data[0][0], sizeof(f64)*36);
+      return *this;  // Return a reference to myself.
+    }
+
+    Matrix66d operator+(const Matrix66d &b) const
+    {
+      f64 res[6][6];
+      for( int i = 0; i < 6; i++)
+      {
+        for( int j = 0; j < 6; j++)
+        {
+          res[i][j] = this->m_data[i][j] + b.m_data[i][j];
+        }
+      }
+      return Matrix66d(res);
+    }
+
+    Matrix66d operator+=(const Matrix66d &b)
+    {
+
+      for( int i = 0; i < 6; i++)
+      {
+        for( int j = 0; j < 6; j++)
+        {
+          this->m_data[i][j] += b.m_data[i][j];
+        }
+      }
+      return *this;
+    }
+
+    Matrix66d operator-(const Matrix66d &b) const
+    {
+      f64 res[6][6];
+      for( int i = 0; i < 6; i++)
+      {
+        for( int j = 0; j < 6; j++)
+        {
+          res[i][j] = this->m_data[i][j] - b.m_data[i][j];
+        }
+      }
+      return Matrix66d(res);
+    }
+
+    Matrix66d operator*(const f64 &b) const
+    {
+      f64 res[6][6];
+      for( int i = 0; i < 6; i++)
+      {
+        for( int j = 0; j < 6; j++)
+        {
+          res[i][j] = this->m_data[i][j] * b;
+        }
+      }
+      return Matrix66d(res);
+    }
+
+    Matrix66d operator/(const f64 &b) const
+    {
+      f64 res[6][6];
+      for( int i = 0; i < 6; i++)
+      {
+        for( int j = 0; j < 6; j++)
+        {
+          res[i][j] = this->m_data[i][j] / b;
+        }
+      }
+      return Matrix66d(res);
+    }
+
+    Matrix66d operator*(const Matrix66d &b) const
+    {
+      f64 res[6][6] = {0};
+
+      for( int i = 0; i < 6; i++ )
+      {
+        for( int j = 0 ; j < 6;  j++ )
+        {
+          for( int k = 0; k<6; k++ )
+          {
+            res[i][j]=res[i][j]+this->m_data[i][k]*b.m_data[k][j];
+          }
+        }
+      }
+      return Matrix66d(res);
+    }
+
+    void Print() const
+    {
+      NTrace("[%f %f %f %f %f %f; %f %f %f %f %f %f; %f %f %f %f %f %f; %f %f %f %f %f %f; %f %f %f %f %f %f; %f %f %f %f %f %f; ]\n", 
+        m_data[0][0], m_data[0][1], m_data[0][2], m_data[0][3], m_data[0][4], m_data[0][5], 
+        m_data[1][0], m_data[1][1], m_data[1][2], m_data[1][3], m_data[1][4], m_data[1][5],
+        m_data[2][0], m_data[2][1], m_data[2][2], m_data[2][3], m_data[2][4], m_data[2][5],
+        m_data[3][0], m_data[3][1], m_data[3][2], m_data[3][3], m_data[3][4], m_data[3][5],
+        m_data[4][0], m_data[4][1], m_data[4][2], m_data[4][3], m_data[4][4], m_data[4][5],
+        m_data[5][0], m_data[5][1], m_data[5][2], m_data[5][3], m_data[5][4], m_data[5][5]);
+    }
+
+    Vec6d Col(s32 col) const
+    {
+      return Vec6d(m_data[0][col], m_data[1][col], m_data[2][col], m_data[3][col], m_data[4][col], m_data[5][col]);
+    }
+
+    Vec6d Row(s32 row) const
+    {
+      return Vec6d(m_data[row][0], m_data[row][1], m_data[row][2], m_data[row][3], m_data[row][4], m_data[row][5]);
+    }
+
+    Vec6d operator*(const Vec6d &b) const
+    {
+       return this->Col(0)*b.x + this->Col(1)*b.y + this->Col(2)*b.z + this->Col(3)*b.a + this->Col(4)*b.b + this->Col(5)*b.c;
+    }
+
+    Matrix66d Transpose() const
+    {
+      f64 res[6][6] = {0};
+      for( int i = 0; i < 6; i++ )
+      {
+        for( int j = 0 ; j < 6;  j++ )
+        {
+          res[i][j] = this->m_data[j][i];
+        }
+      }
+      return Matrix66d(res);
+    }
+
+    Matrix66d Inverse() const
+    {
+      f64 res[6][6] = {0};
+      Matrix66d temp(this->m_data);
+      Matrix66d *p_temp = &temp;
+
+      f64 *startRows[6] = { p_temp->m_data[0], p_temp->m_data[1], p_temp->m_data[2], p_temp->m_data[3], p_temp->m_data[4], p_temp->m_data[5] };
+      f64 *inverseRows[6] = { res[0], res[1], res[2], res[3], res[4], res[5]  };
+
+      vtkMath::InvertMatrix( startRows, inverseRows, 6);
+      return Matrix66d(res);
+    }
+
+    vnl_matrix<f64> getVnl() const
+    {
+      vnl_matrix<f64> A(6,6);
+      for( int i = 0; i < 6; i++ )
+      {
+        for( int j = 0 ; j < 6;  j++ )
+        {
+          A(i,j) = this->m_data[i][j];
+        }
+      }
+      return A;
+    }
+
+    Matrix66d cholesky() const
+    {
+      vnl_matrix<f64> A = this->getVnl();
+
+      vnl_cholesky chol(A,vnl_cholesky::verbose);
+      A = A.transpose();
+
+      return Matrix66d(A);
+    }
+
+    /*f64 Determinant() const
+    {
+      return vtkMatrix4x4::Determinant(&this->m_data[0][0]);
+    }*/
+
+    /*vtkSmartPointer<vtkMatrix4x4> GetVTKMatrix() const
+    {
+      vtkSmartPointer<vtkMatrix4x4> res = vtkSmartPointer<vtkMatrix4x4>::New();
+      for(s32 i=0; i<4; i++) {
+        for(s32 j=0; j<4; j++) {
+          res->SetElement(i,j,this->m_data[i][j]);
+        }
+      }
+      return res;
+    }*/
   };
 
   template < class T >
