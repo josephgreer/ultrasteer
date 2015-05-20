@@ -62,7 +62,7 @@ namespace Nf {
     m_sliceStride = m_dims.x*m_dims.y;
 
     //Matrix stores axes of volume in physical coordinates
-    Matrix33d axes = orientation*Matrix33d::Diaganol(extent.x*0.5, extent.y*0.5, extent.z);
+    Matrix33d axes = orientation*Matrix33d::Diagonal(extent.x*0.5, extent.y*0.5, extent.z);
     f64 mag1 = axes.Col(0).magnitude();
     f64 mag2 = axes.Col(1).magnitude();
     f64 mag3 = axes.Col(2).magnitude();
@@ -101,7 +101,7 @@ namespace Nf {
     m_origin = frameOrigin-modAxes.Col(0)-modAxes.Col(1)-modAxes.Col(2);
     m_orientation = orientation;
     
-    m_volumeToWorld = Matrix44d::FromOrientationAndTranslation(m_orientation*Matrix33d::Diaganol(spacing),m_origin);
+    m_volumeToWorld = Matrix44d::FromOrientationAndTranslation(m_orientation*Matrix33d::Diagonal(spacing),m_origin);
     m_worldToVolume = m_volumeToWorld.Inverse();
 
     NTrace("Frame Origin:  \n");
@@ -241,14 +241,14 @@ namespace Nf {
     Vec3d spacing = GetSpacing();
     Vec3d extent(m_dims.x*spacing.x, m_dims.y*spacing.y, m_dims.z*spacing.z);
     Vec3d ul = m_origin;
-    return Cubed(ul, m_orientation*Matrix33d::Diaganol(extent));
+    return Cubed(ul, m_orientation*Matrix33d::Diagonal(extent));
   }
 
   Cubed Volume::GetPhysicalExtent() const
   {
     Vec3d spacing = GetSpacing();
     Vec3d extent(m_dims.x*spacing.x, m_dims.y*spacing.y, m_dims.z*spacing.z);
-    return Cubed(Vec3d(0,0,0), Matrix33d::Diaganol(extent));
+    return Cubed(Vec3d(0,0,0), Matrix33d::Diagonal(extent));
   }
 
   Vec3i Volume::GetDims() const
