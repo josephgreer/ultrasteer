@@ -1,6 +1,7 @@
 #include "UnscentedKalmanFilter.h"
 
-#define		N					      6					// length of state vector
+#define		N					      6.0				// length of state vector
+#define   SQN             2.4495    // sqrt(N)
 
 #define		P_POS_I   			3.0				// prior covariance of position
 #define		P_ROT_I   			1e-2			// prior covariance of orientation
@@ -58,11 +59,11 @@ namespace Nf
     // define transformated cross-covariance
     Matrix66d Pxz;
     for( int i = 0; i < Ez.size(); i++ )
-      Pxz += (Matrix66d::OuterProduct(Ex_[i],Ez[i]) )*( 0.5/N );
+      Pxz += ( (Matrix66d::OuterProduct(Ex_[i],Ez[i]) )*( 0.5/N ) );
     Matrix66d K = Pxz*Pzz.Inverse();
 
     // update state and covariance
-    x_hat = addDifferentialPose( x_hat, K*differentialPose( z, z_) );
+    x_hat = addDifferentialPose( x_, K*differentialPose( z, z_) );
     P_hat = P_ - K*Pzz*K.Transpose();    
   }
   
@@ -113,7 +114,7 @@ namespace Nf
     double l = u.z;
 
     // update tip position
-    Vec3d d_p(0.0, rho*(1.0-cos(1.0/rho)), rho*(sin(l/rho)));
+    Vec3d d_p(0.0, rho*(1.0-cos(l/rho)), rho*(sin(l/rho)));
     Vec3d p2 = p1 + R1*Rz(d_th)*d_p;
 
     // update tip orientation
@@ -150,16 +151,21 @@ namespace Nf
     
     // iteratively find average orientation and deviations
     Matrix33d mu_R = X[0].GetOrientation();
-    Matrix33d mu_R_old;
+    Matrix33d mu_R_old = Matrix33d::I();
     
     std::vector<Vec3d> E_R;
-    E_R.reserve(l);
+    E.resize(l);
+    E_R.resize(l);
         
     while(mat2vec(mu_R*mu_R_old.Inverse()).magnitude() > 1.0e-5) // loop to convergence
     {
       Vec3d E_Rsum;
       for( int i = 0; i<l; i++ )
       {
+        // Debug
+        Matrix33d Inv = mu_R.Inverse();
+        Matrix33d Ri = X[i].GetOrientation();
+        Vec3d d_v = mat2vec(Ri*Inv);
         E_R[i] = mat2vec(X[i].GetOrientation()*mu_R.Inverse());
         E_Rsum += E_R[i];
       }
@@ -168,12 +174,26 @@ namespace Nf
     }
 
     // calculate covariance and compose deviations
-    Matrix66d P;
     for( int i = 0; i<l; i++ )
     {
       E[i] = Vec6d::From2x3s(E_p[i],E_R[i]);
-      P += Matrix66d::OuterProduct(E[i],E[i])/l;
+      P += (Matrix66d::OuterProduct(E[i],E[i])/l);
     }
+
+    // compose mean
+    x = Matrix44d::FromOrientationAndTranslation(mu_R, mu_p);
+  }
+
+  /// \brief		Get the mean of the current estimate
+  Matrix44d UnscentedKalmanFilter::getCurrentEstimate(void)
+  {
+    return x_hat;
+  }
+
+  /// \brief		Get the covariance of the current estimate
+  Matrix66d UnscentedKalmanFilter::getCurrentCovariance(void)
+  {
+    return P_hat;
   }
 
   /// \brief		Create Sigma point to represent a normal distribution
@@ -184,15 +204,15 @@ namespace Nf
 
     // Compute the Cholesky decomposition of P
     Matrix66d S = P.cholesky();
-    Matrix66d Spos = S*sqrt(2.0*N);
-    Matrix66d Sneg = S*(-1.0*sqrt(2.0*N));
+    Matrix66d Spos = S*SQN;
+    Matrix66d Sneg = S*-SQN;
 
     // Get the mean position and orientation
     Vec3d mu_p = x.GetPosition();
     Matrix33d mu_R = x.GetOrientation();
 
     // Add each difference to the mean and save
-    for( int i = 0; i<2.0*N; i++ )
+    for( int i = 0; i<2*N; i++ )
     {
       Vec3d d_p, d_r;
       if( i<N )
@@ -201,8 +221,8 @@ namespace Nf
         d_r = Vec3d(Spos.Col(i).a,Spos.Col(i).b,Spos.Col(i).c);
       }else
       {
-        d_p = Vec3d(Sneg.Col(i).x,Sneg.Col(i).y,Sneg.Col(i).z);
-        d_r = Vec3d(Sneg.Col(i).a,Sneg.Col(i).b,Sneg.Col(i).c);
+        d_p = Vec3d(Sneg.Col(i-N).x,Sneg.Col(i-N).y,Sneg.Col(i-N).z);
+        d_r = Vec3d(Sneg.Col(i-N).a,Sneg.Col(i-N).b,Sneg.Col(i-N).c);
       }
       Vec3d p = mu_p + d_p;
       Matrix33d R = mu_R*vec2mat(d_r);
@@ -231,29 +251,39 @@ namespace Nf
   /// \brief    Create a 3x3 rotation matrix equivalent to rotation vector input
   Matrix33d UnscentedKalmanFilter::vec2mat(Vec3d r)
   {
+    // If the rotation vector is all zeros, return the identity matrix
+    if (r.magnitude() < 1e-6)
+      return Matrix33d::I();
+
     f64 c,s,v,x,y,z;
     c = cos(r.magnitude());
     s = sin(r.magnitude());
     v = 1 - c;
-    x = r.x;
-    y = r.y;
-    z = r.z;
+    Vec3d rn = r.normalized();
+    x = rn.x;
+    y = rn.y;
+    z = rn.z;
 
     Vec3d i( (x*x*v)+c, (x*y*v)-(z*s), (x*z*v)+(y*s) );
     Vec3d j( (x*y*v)+(z*s), (y*y*v)+c, (y*z*v)-(x*s) );
-    Vec3d k( (x*z*v)+(y*s), (y*z*v)+(x*s), (z*z*v)+c );
+    Vec3d k( (x*z*v)-(y*s), (y*z*v)+(x*s), (z*z*v)+c );
 
-    return Matrix33d::FromCols(i,j,k);
+    return Matrix33d::FromRows(i,j,k);
   }
   
   /// \brief    Create a rotation vector equivalent to 3x3 rotation matrix input
   Vec3d UnscentedKalmanFilter::mat2vec(Matrix33d R)
   {
     f64 th = acos( (R.Trace()-1.0)/2.0 );
+
+    if( th < 1e-6 )
+      return Vec3d(0.0,0.0,0.0);
+
+    Vec3d skw(    R.m_data[2][1]-R.m_data[1][2],
+                  R.m_data[0][2]-R.m_data[2][0],
+                  R.m_data[1][0]-R.m_data[0][1] );
     
-    return Vec3d( R.m_data[3][2]-R.m_data[2][3],
-                  R.m_data[1][3]-R.m_data[3][1],
-                  R.m_data[2][1]-R.m_data[1][2] )/(2*sin(th));
+    return skw/(2.0*sin(th))*th;
   }
 
   /// \brief    Find the 6x1 vector difference between two poses (a-b)

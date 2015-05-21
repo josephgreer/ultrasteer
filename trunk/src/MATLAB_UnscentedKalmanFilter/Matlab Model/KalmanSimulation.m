@@ -14,7 +14,7 @@ function [e,pf] = KalmanSimulation(x0,p,act,kal,grd)
 
 %% Define constants for the simulation ------------------------------------
 % Steering parameters
-l_max = 3;                           % insertion increments (mm)
+l_max = 5;                           % insertion increments (mm)
 r_min = 50;                           % minimum radius of curvature (mm)
 r_max = 400;                          % minimum radius of curvature (mm)
 % Size of the state and measurement vectors
@@ -49,10 +49,6 @@ epsilon = 0.5;
 
 %% Run simulation loop ----------------------------------------------------
 for t = 1:N
-    % Simulate process and measurement noise
-    w = diag(W(1:6,randi(length(W),6,1)));
-    v = diag(V(1:6,randi(length(V),6,1)));
-     
     % Define control inputs for the current time based on the estimate
     [u(:,:,t)] = steeringPlanner(x_hat(:,:,t),p);
     % Limit the insertion increment
@@ -62,6 +58,10 @@ for t = 1:N
     else
         u(3,1,t) = min(u(3,1,t),l_max);
     end
+    
+    % Simulate process and measurement noise
+    w = diag(W(1:6,randi(length(W),6,1)));
+    v = diag(V(1:6,randi(length(V),6,1)));
     
     % Limit the radius to a known minimum and maximum
     u(2,1,t) = max(r_min,u(2,1,t));

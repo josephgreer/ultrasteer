@@ -8,17 +8,15 @@ function [mu,P,E] = meancov(X)
 %       E:  displacement vec (6 x 1)
 
 % Initialize
-mu = zeros(4,4);
+mu = eye(4,4);
 k = size(X,3);
 
 % Find position mean
 mu(1:3,4) = mean(X(1:3,4,:),3);
 
-% Find position covariance
-p = squeeze(permute(X(1:3,4,:),[1 3 2]));
-Pp = cov(p',1);
+% Find position deviations
 for i = 1:k
-    Ep(:,1,i) = p(:,i) - mu(1:3,4);
+    Ep(:,1,i) = X(1:3,4,i) - mu(1:3,4);
 end
 
 % Find orientation mean
@@ -32,17 +30,16 @@ while(flag)
     Rm_old = Rm_;
     Rm_ = vec2mat((1/k).*sum(Er,3))*Rm_;
     % Break on convergence
-    flag = norm(mat2vec(Rm_*inv(Rm_old))) > 1e-5;
+    flag = norm(mat2vec(Rm_*inv(Rm_old))) > 1e-12;
 end
 mu(1:3,1:3) = Rm_;
-
-% Find orientation covariance
 for i = 1:k
-    EE(:,:,i) = Er(:,:,i)*Er(:,:,i)';
+    Er(:,1,i) = mat2vec(X(1:3,1:3,i)*inv(Rm_));
 end
-Pr = (1/(k)).*sum(EE,3);
 
-% Combine position and orientation covariances and errors
-P = blkdiag(Pp,Pr);
-E = cat(1,Ep,Er);
+% Find combined covariance
+P = zeros(6,6);
+for i = 1:k
+    E(:,:,i) = cat(1,Ep(:,1,i),Er(:,1,i));
+    P = P + (1/k)*(E(:,:,i)*E(:,:,i)');
 end

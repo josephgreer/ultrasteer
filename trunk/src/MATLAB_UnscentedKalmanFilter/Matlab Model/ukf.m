@@ -82,26 +82,3 @@ end
 [y,P,E] = meancov(Y);
 end
 
-
-function [X]=sigmas(x,P,n)
-%Sigma points around reference point
-%Inputs:
-%       x: reference point      (4 x 4)
-%       P: covariance           (6 x 6)
-%       n: dimension      
-%Outputs:
-%       X: Sigma points         (4 x 4 x 2n+1)
-
-P = validateCovMatrix(P);
-[A,p] = chol(P);
-if( p )
-    display('Error, P is not positive definite')
-end
-A = sqrt(n)*[A' -A'];
-for i = 1:2*n
-    px = x(1:3,4) + A(1:3,i);
-    Rx = x(1:3,1:3)*vec2mat(A(4:6,i));
-    X(:,:,i) = homoT(Rx,px);    
-end
-end
-

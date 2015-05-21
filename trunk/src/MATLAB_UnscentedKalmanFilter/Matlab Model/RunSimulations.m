@@ -8,6 +8,7 @@
 % -------------------------------------------------------------------------
 %% Initialize
  clc;
+ addpath('Utility Functions');
 
 %% Define constants
 Nsim = 1;
@@ -25,7 +26,7 @@ pf_UKF = zeros(3,Nsim);
 i = 1;
 %% Run the simulations with Kalman filtering
 % Generate a target
-t = [randi([-50,-45]) randi([35 65]) randi([0 5])]';
+t = [randi([-30 -25]) randi([35 65]) randi([35 45])]';
 ts(:,i) = t;
 
 % Randomly adjust the initial orientation
