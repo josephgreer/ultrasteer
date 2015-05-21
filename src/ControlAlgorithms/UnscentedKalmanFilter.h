@@ -23,7 +23,7 @@ namespace Nf
     void resetEstimate();    
     void zeroRotationEstimate();
 
-  private:	//Methods
+  public:	//Methods
     void utf(std::vector<Matrix44d> X, Vec3d u, Matrix44d &x_, Matrix66d &P_, std::vector<Vec6d> &Ex_);
     
     void utg(std::vector<Matrix44d> X, Matrix44d &z, Matrix66d &Pzz, std::vector<Vec6d> &Ezz);
@@ -45,6 +45,9 @@ namespace Nf
 
     Matrix33d vec2mat(Vec3d r);
     Vec3d mat2vec(Matrix33d R);
+
+    Matrix66d getCurrentCovariance();
+    Matrix44d getCurrentEstimate();
     
 
   private:	//Attributes

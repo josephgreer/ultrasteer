@@ -634,6 +634,7 @@ namespace Nf
       data[0][0] = a.x;  data[0][1] = a.y;  data[0][2] = a.z;
       data[1][0] = b.x;  data[1][1] = b.y;  data[1][2] = b.z;
       data[2][0] = c.x;  data[2][1] = c.y;  data[2][2] = c.z;
+      return Matrix33<T>(data);
     }
 
     Matrix33<T> operator=(const Matrix33<T> &rhs)
@@ -1103,14 +1104,6 @@ namespace Nf
       }
     }
 
-    /*Matrix44d(f64 a11, f64 a12, f64 a13, f64 a14, f64 a21, f64 a22, f64 a23, f64 a24, f64 a31, f64 a32, f64 a33, f64 a34, f64 a41, f64 a42, f64 a43, f64 a44)
-    {
-      m_data[0][0] = a11; m_data[0][1] = a12; m_data[0][2] = a13; m_data[0][3] = a14;
-      m_data[1][0] = a21; m_data[1][1] = a22; m_data[1][2] = a23; m_data[1][3] = a24;
-      m_data[2][0] = a31; m_data[2][1] = a32; m_data[2][2] = a33; m_data[2][3] = a34;
-      m_data[3][0] = a41; m_data[3][1] = a42; m_data[3][2] = a43; m_data[3][3] = a44;
-    }*/
-
     static Matrix66d I()
     {
       f64 data[6][6] = {0};
@@ -1129,7 +1122,7 @@ namespace Nf
       {
         for( int j = 0; j<6; j++)
         {
-          data[i][j] = a.at(i)*a.at(j);
+          data[i][j] = a.at(i)*b.at(j);
         }
       }
       return Matrix66d(data);
@@ -1185,7 +1178,7 @@ namespace Nf
       {
         for( int j = 0; j < 6; j++)
         {
-          this->m_data[i][j] += b.m_data[i][j];
+            this->m_data[i][j] += b.m_data[i][j];
         }
       }
       return *this;
@@ -1314,12 +1307,12 @@ namespace Nf
 
     Matrix66d cholesky() const
     {
-      vnl_matrix<f64> A = this->getVnl();
+      vnl_matrix<f64> M = this->getVnl();
 
-      vnl_cholesky chol(A,vnl_cholesky::verbose);
-      A = A.transpose();
+      vnl_cholesky chol(M,vnl_cholesky::verbose);
+      vnl_matrix<f64> S = chol.upper_triangle();
 
-      return Matrix66d(A);
+      return Matrix66d(S);
     }
 
     /*f64 Determinant() const
