@@ -43,17 +43,20 @@ params.onNeedleDopplerSigma = 0.098;                                        %Dop
 % particle filter parameters
 params.doParticleFilter = 1;                                                %should we particle filter?
 params.doMeasurement = 1;                                                   %should we perform measurement step?
+params.particleFilterMethod = 2;                                            %particle filter method. see initialize particles for description of each.
 params.n = 20;                                                              %only keep track of current state
 params.np = 100;                                                            %number of particles
 params.neff = 0.5;                                                          %if effective sample size drops below params.neff*parrams.np then resample
-params.initOrientationSigma = diag(1/2*[pi/1000, pi/1000, pi/1000]);           %orientation sigma for initial distribution of particles
-params.initOrientationMu = [0;0;0];                                         %orientation mu for initial distribution of particles
-params.initRhoSigma = 3;                                                    %rho sigma for initial distribution of particles
-params.initRhoMu = 0;                                                       %rho mu for initial distribution of particles
-params.initPosSigma = diag([5 5 5]);                                        %pos sigma for initial distribution of particles
-params.initPosMu = [0; 0; 0];                                               %pos mu for initial distribution of particles
 params.particlesInit = 0;                                                   %are particles initialized?
 params.particleInitTime = 2;                                                %how long until the particle filter gets initialized?
+
+% particle filter method specific parameters
+params.p1.initOrientationSigma = diag(1/2*[pi/1000, pi/1000, pi/1000]);        %orientation sigma for initial distribution of particles
+params.p1.initOrientationMu = [0;0;0];                                         %orientation mu for initial distribution of particles
+params.p1.initRhoSigma = 3;                                                    %rho sigma for initial distribution of particles
+params.p1.initRhoMu = 0;                                                       %rho mu for initial distribution of particles
+params.p1.initPosSigma = diag([5 5 5]);                                        %pos sigma for initial distribution of particles
+params.p1.initPosMu = [0; 0; 0];                                               %pos mu for initial distribution of particles
 
 % drawing parameters
 params.drawMeasurement = 1; 
