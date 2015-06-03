@@ -14,6 +14,7 @@ if(isempty(handles))
     handles.expectedParticlePos = [];
     handles.expectedTipFrame = [];
     handles.currPos = [];
+    handles.pastPos = [];
 end
 ns = params.drawParticlesNs;
 if(params.drawParticlePos)
@@ -25,6 +26,22 @@ if(params.drawParticlePos)
         handles.particlePos = scatter3(pos(:,1),pos(:,2),pos(:,3),'filled','MarkerFaceColor',[0 0.4 0]);
     else
         set(handles.particlePos, 'XData', pos(:,1), 'YData', pos(:,2), 'ZData', pos(:,3));
+    end
+end
+
+% special drawing for particle filter method 2
+% where past point clouds are maintained
+if(params.particleFilterMethod == 2 && params.p2.drawPastPos)
+    pos = zeros(round(length(xp)/ns)*params.n,3);
+    for p=1:round(length(xp)/ns)
+        for jj=2:length(xp{p*ns}.pos)
+            pos(p,:) = xp{p*ns}.pos{j}';
+        end
+    end
+    if(isempty(handles.pastPos))
+        handles.pastPos = scatter3(pos(:,1),pos(:,2),pos(:,3),'filled','MarkerFaceColor',[0 0.4 0]);
+    else
+        set(handles.pastPos, 'XData', pos(:,1), 'YData', pos(:,2), 'ZData', pos(:,3));
     end
 end
 
