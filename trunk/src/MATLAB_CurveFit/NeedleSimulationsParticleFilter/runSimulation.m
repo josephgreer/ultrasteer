@@ -67,8 +67,6 @@ for t=0:params.dt:params.simulationTime
     u(2:params.n) = u(1:params.n-1);
     % place our current command in u{1}
     u{1} = uc;
-    % get previous frames based on current state and u
-    xs = propagateNeedleBack(xcurr,u,params);
     
     % if we're far enough along, start generating random US measurements
     measurement = [];
@@ -107,9 +105,11 @@ for t=0:params.dt:params.simulationTime
     
     % draw auxillary information if these params are enabled
     if(params.drawTipFrame && params.drawPastTipFrames)
+        % get previous frames based on current state and u
+        xs = propagateNeedleBack(xcurr,u,params);
         tipFrameHandles = drawFrames(1, xs(1:4:end), 20, tipFrameHandles);
     elseif(params.drawTipFrame)
-        tipFrameHandles = drawFrames(1, xs(1), 20, tipFrameHandles);
+        tipFrameHandles = drawFrames(1, xcurr, 20, tipFrameHandles);
     end
     
     if(params.particlesInit)

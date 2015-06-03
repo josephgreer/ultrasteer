@@ -12,7 +12,7 @@ if(t == 0)
     flipped = false;
 end
 
-uc.v = 10;          %10mm/s
+uc.v = 2;          %10mm/s
 uc.dc = 0;          %no-duty cycle
 
 %flip it for an s-curve optionally
