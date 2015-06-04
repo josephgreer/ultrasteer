@@ -8,7 +8,9 @@
 % params = simulation parameters
 % see ../NeedleSimulation.m for description of parameters
 function error = computeAverageOrientationError(x, xcurr, params)
-[~,~,q,pw] = particleArrays(x);
+q = particleOrientations(x, params);
+pw = particleWeights(x, params);
+pw = [pw.w]';
 
 error = 0;
 Rc = QuatToRotationMatrix(xcurr.q);

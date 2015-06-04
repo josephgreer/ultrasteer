@@ -51,12 +51,21 @@ params.particlesInit = 0;                                                   %are
 params.particleInitTime = 2;                                                %how long until the particle filter gets initialized?
 
 % particle filter method specific parameters
-params.p1.initOrientationSigma = diag(1/2*[pi/1000, pi/1000, pi/1000]);        %orientation sigma for initial distribution of particles
-params.p1.initOrientationMu = [0;0;0];                                         %orientation mu for initial distribution of particles
-params.p1.initRhoSigma = 3;                                                    %rho sigma for initial distribution of particles
-params.p1.initRhoMu = 0;                                                       %rho mu for initial distribution of particles
-params.p1.initPosSigma = diag([5 5 5]);                                        %pos sigma for initial distribution of particles
-params.p1.initPosMu = [0; 0; 0];                                               %pos mu for initial distribution of particles
+
+% method 1
+params.p1.initOrientationSigma = diag(1/2*[pi/1000, pi/1000, pi/1000]);     %orientation sigma for initial distribution of particles
+params.p1.initOrientationMu = [0;0;0];                                      %orientation mu for initial distribution of particles
+params.p1.initRhoSigma = 3;                                                 %rho sigma for initial distribution of particles
+params.p1.initRhoMu = 0;                                                    %rho mu for initial distribution of particles
+params.p1.initPosSigma = diag([5 5 5]);                                     %pos sigma for initial distribution of particles
+params.p1.initPosMu = [0; 0; 0];                                            %pos mu for initial distribution of particles
+
+% method 2
+params.p2.drawPastPos = 1;                                                  %draw past particle points as well.
+params.p2.initPosSigma = diag([5 5 5]);                                     %pos sigma for initial distribution of particles
+params.p2.initPosMu = [0; 0; 0];                                            %pos mu for initial distribution of particles
+params.p2.pastParticleSpacing = 10;                                         %axial spacing of past positions in (mm)
+
 
 % drawing parameters
 params.drawMeasurement = 1; 

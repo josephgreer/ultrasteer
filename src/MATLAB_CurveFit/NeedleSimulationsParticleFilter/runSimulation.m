@@ -20,6 +20,9 @@ xcurr.q = RotationMatrixToQuat(eye(3));
 xcurr.rho = 60;        % 10 cm roc
 xcurr.w = 1;           % not a particle but using the same propagation routine.
 
+% historic states
+xhist = {};
+
 uc.v = 0;               %10 mm/s
 uc.dc = 0;              %no duty cycle
 uc.dtheta = 0;
@@ -53,15 +56,20 @@ for t=0:params.dt:params.simulationTime
     %current command
     uc = commandFcn(t,params);
     
-    % save off the previous state to draw the needle segment
-    xlast = xcurr;
     %propagate through system dynamics
     xcurr = f(xcurr,uc,params);
     
+    xhist = vertcat({xcurr},xhist);
+    if(length(xhist) > params.n)
+        xhist(params.n+1:end) = [];
+    end
+    
     % draw the needle segment from x_{t-1}->x_t
-    xd = [xlast.pos xcurr.pos]';
-    plot3(xd(:,1), xd(:,2), xd(:,3), 'k', 'LineWidth', 2);
-    hold on;
+    if(length(xhist) > 1)
+        xd = [xhist{2}.pos xcurr.pos]';
+        plot3(xd(:,1), xd(:,2), xd(:,3), 'k', 'LineWidth', 2);
+        hold on;
+    end
     
     % shift our command history down
     u(2:params.n) = u(1:params.n-1);
@@ -73,8 +81,8 @@ for t=0:params.dt:params.simulationTime
     if(t > params.particleInitTime)
         measurement = generateRandomMeasurement(xcurr, u, t, params);
         if(~params.particlesInit)
-            fakeCurr = xcurr;
-            xp = initializeParticles(fakeCurr, params);
+            fakeCurr = xhist;
+            xp = initializeParticles(fakeCurr, u, params);
             params.particlesInit = params.doParticleFilter;
         else
             xp = propagateParticles(xp,uc,params);
@@ -109,7 +117,7 @@ for t=0:params.dt:params.simulationTime
         xs = propagateNeedleBack(xcurr,u,params);
         tipFrameHandles = drawFrames(1, xs(1:4:end), 20, tipFrameHandles);
     elseif(params.drawTipFrame)
-        tipFrameHandles = drawFrames(1, xcurr, 20, tipFrameHandles);
+        tipFrameHandles = drawFrames(1, {xcurr}, 20, tipFrameHandles);
     end
     
     if(params.particlesInit)
