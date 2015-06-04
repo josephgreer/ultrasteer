@@ -8,7 +8,8 @@
 % params = simulation parameters
 % see ../NeedleSimulation.m for description of parameters
 function error = computeAverageOrientationError(x, xcurr, params)
-[pos,~,~,pw] = particleArrays(x);
+pos = particlePositions(x, params);
+pw = particleWeights(x, params);
 
 error = 0;
 pc = xcurr.pos;

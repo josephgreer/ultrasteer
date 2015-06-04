@@ -7,6 +7,6 @@
 % params = simulation parameters
 % see ../NeedleSimulation.m for description of parameters
 function neff = effectiveSampleSize(x, params)
-[~, ~, ~, w] = particleArrays(x, params);
+pw = particleWeights(x, params);
 neff = 1/(w'*w);
 end

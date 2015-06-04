@@ -18,27 +18,18 @@
 %   u{i}.dc        = duty cycle ratio
 % params = simulation parameters
 % see ../NeedleSimulation.m for description of parameters
-function xp = initializeParticles2(x, params)
+function xp = initializeParticles2(x, u, params)
 xp = {};
 
-% for each particle
-posNoise = mvnrnd(QuatToRotationMatrix(x.q)*params.p1.initPosMu,params.p1.initPosSigma,params.np);
-pos = repmat(x.pos',params.np,1);
+pos = cell2mat(x);
+pos = [pos.pos]';
+pos = repmat(pos, params.np, 1);
+posNoise = mvnrnd(params.p2.initPosMu, params.p2.initPosSigma,...
+    params.np*params.n);
 pos = pos+posNoise;
 
-rhoNoise = mvnrnd(params.initRhoMu, params.initRhoSigma, params.np);
-rho = repmat(x.rho, params.np, 1);
-rho = rho+rhoNoise;
-
-orientationNoise = mvnrnd(params.initOrientationMu, params.initOrientationSigma, params.np);
-
 for p=1:params.np
-    xcurr.pos = pos(p,:)';
-    xcurr.q = quatmult(x.q,AxisAngleToQuat(orientationNoise(p,:)'));
-    xcurr.rho = rho(p);
-    xcurr.w = 1/params.np;
-    
-    xp{p}.pos = propagateNeedleBack(xcurr, u, params);
+    xp{p}.pos = mat2cell(pos((p-1)*params.n+1:p*params.n,:)', 3, ones(params.n,1));
     xp{p}.w = 1/params.np;
 end
 

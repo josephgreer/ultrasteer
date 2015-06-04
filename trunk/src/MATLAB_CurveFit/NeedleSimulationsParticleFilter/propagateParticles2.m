@@ -33,7 +33,7 @@ for i=1:length(xp)
     xcurr = f(xcurr,u,params);
     x{i}.pos = vertcat(xcurr.pos,xp{i}.pos);;
     % remove excess points if there are too many.
-    x{i}.pos(params.p2.nppoints+1:end) = [];
+    x{i}.pos(params.n+1:end) = [];
     
     x{1}.w = xp{i}.w;
 end

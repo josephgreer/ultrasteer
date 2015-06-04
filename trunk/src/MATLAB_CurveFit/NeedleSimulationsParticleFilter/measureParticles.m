@@ -103,7 +103,7 @@ end
 
 
 %now incorporate weights of previous particles
-[~,~,~,w] = particleArrays(xp,params);
+w = particleWeights(xp, params);
 w = pw.*w;
 w = w/sum(w);
 for i=1:length(xp)
