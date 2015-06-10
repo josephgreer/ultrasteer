@@ -2,6 +2,7 @@
 %   x.x0 % position of needle tip frame n timesteps back
 %   x.q  % orientation of needle tip frame n timesteps back
 %   x.rho radius of curvature (mm)
+%   x.w = particle weight
 
 % u{1} = control input that lead to xs(1)
 % u{2} = control input that lead to xs(2)
@@ -37,6 +38,7 @@ for i=2:length(u)
     xs{i} = xc;
     
     xs{i}.q = quatmult(xs{i}.q, AxisAngleToQuat(pi*[0; 1; 0]));
+    xs{i}.w = x.w;
     uc = u{i-1};
 end
 end

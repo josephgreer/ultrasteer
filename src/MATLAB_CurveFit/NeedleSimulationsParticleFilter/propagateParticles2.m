@@ -27,7 +27,7 @@ for i=1:length(xp)
     
     xcurr = xp{i}.pos;
     xcurr.q = RotationMatrixToQuat([normal binormal tangent]);
-    xcurr.rho = circ.rho;
+    xcurr.rho = circ.r;
     xcurr.w = xp{i}.w;
     
     xcurr = f(xcurr,u,params);

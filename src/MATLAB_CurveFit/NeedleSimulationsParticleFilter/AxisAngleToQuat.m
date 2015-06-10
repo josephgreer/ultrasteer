@@ -7,4 +7,7 @@ end
 e = v/alpha;
 
 q = [cos(alpha/2); e*sin(alpha/2)];
+if(q(1) < 0)
+    q = -q;
+end
 end
