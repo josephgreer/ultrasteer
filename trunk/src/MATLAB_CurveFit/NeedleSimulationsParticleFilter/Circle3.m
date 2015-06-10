@@ -42,7 +42,7 @@ classdef Circle3
             theta = [0:2*pi/100:2*pi];
             
             pts = map*[cos(theta); sin(theta); ones(size(theta))];
-            plot3(pts(1,:), pts(2,:), pts(3,:));
+            plot3(pts(1,:), pts(2,:), pts(3,:),'k');
         end
     end
 end

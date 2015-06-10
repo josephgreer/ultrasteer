@@ -12,6 +12,10 @@ else
 end
 
 theta = norm(x);
+if(abs(theta) < 1e-4)
+    R = eye(3);
+    return;
+end
 K = SO3Hat(x/theta);
 R = eye(3)+sin(theta)*K+(1-cos(theta))*K*K;
 end

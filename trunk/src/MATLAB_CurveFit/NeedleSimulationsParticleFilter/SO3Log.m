@@ -3,10 +3,5 @@
 % assumes R is a matrix
 % returns a skew symmetric matrix x
 function X = SO3Log(R)
-theta = acos((trace(R)-1)/2);
-if(theta < 1e-6)
-    X = zeros(3,3);
-    return;
-end
-X = theta/(2*sin(theta))*(R-R');
+X = SO3Hat(QuatToAxisAngle(RotationMatrixToQuat(R)));
 end

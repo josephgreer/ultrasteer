@@ -39,6 +39,6 @@ params.p1.initRhoSigma = 0;
 %params.sigmaVelocity = 50;
 %params.sigmaRho = 0;
 %params.doMeasurement = 0;
-results = runSimulation(params, @(t,params)(commandFcn(t, params)));
+[results, ~, ~] = runSimulation(params, @(t,params)(commandFcn(t, params)));
 
 plotParticleFilterResults(results,2);

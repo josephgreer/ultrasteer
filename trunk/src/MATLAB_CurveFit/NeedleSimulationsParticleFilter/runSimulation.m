@@ -5,7 +5,7 @@
 %%%     u = commandFcn(t,params) returns commands based on the timestep
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function results = runSimulation(params, commandFcn)
+function [results, xhist, u] = runSimulation(params, commandFcn)
 % results structure
 results.states = {};
 results.estimatedStates = {};
