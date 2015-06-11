@@ -14,7 +14,17 @@ ELSE(VTK_FOUND)
 	MESSAGE(FATAL_ERROR "Cannot build InsightApplications without ITK.  Please set ITK_DIR.")
 ENDIF(VTK_FOUND)
 
-INCLUDE_DIRECTORIES(${OPENCV_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../Segment ${CMAKE_CURRENT_SOURCE_DIR}/../ControlAlgorithms ${CMAKE_CURRENT_SOURCE_DIR}/../RPFileReader ${CMAKE_CURRENT_SOURCE_DIR}/../../external/alglib/src)
+# Find QT 
+FIND_PACKAGE(Qt4 REQUIRED)
+INCLUDE( ${QT_USE_FILE} )
+
+INCLUDE_DIRECTORIES(${OPENCV_INCLUDE_DIRS} 
+${CMAKE_CURRENT_SOURCE_DIR}/../Segment 
+${CMAKE_CURRENT_SOURCE_DIR}/../ControlAlgorithms 
+${CMAKE_CURRENT_SOURCE_DIR}/../RPFileReader 
+${CMAKE_CURRENT_SOURCE_DIR}/../../external/alglib/src
+${UlteriusDir}/inc
+)
 
 FILE(GLOB cppUnitFiles
     "${CMAKE_CURRENT_SOURCE_DIR}/CppUnitLite/*.cpp"
@@ -39,5 +49,5 @@ SET_TARGET_PROPERTIES(UnitTests PROPERTIES LINK_FLAGS_DEBUG /SUBSYSTEM:console)
 SET_TARGET_PROPERTIES(UnitTests PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:console)
  #Must be lowercase windows
 
-TARGET_LINK_LIBRARIES(UnitTests alglib Segment RPFileReader ControlAlgorithms ${OpenCV_LIBS} ${ITK_LIBRARIES} ${VTK_LIBRARIES})
+TARGET_LINK_LIBRARIES(UnitTests alglib Segment RPFileReader ControlAlgorithms ${OpenCV_LIBS} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${UlteriusDir}/lib/ulterius_old.lib)
 #${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} 
