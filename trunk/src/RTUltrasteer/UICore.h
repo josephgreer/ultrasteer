@@ -248,6 +248,7 @@ namespace Nf
     Texture_2D = 0,
     Texture_3D,
     RayCastingMIP,
+    GPURayCasting,
   };
 
   //used for specifying origin location when setting a volume from a base frame

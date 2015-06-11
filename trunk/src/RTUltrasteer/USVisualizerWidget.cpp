@@ -8,6 +8,7 @@
 #include <vtkInformation.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
 #include <vtkVolumeRayCastMapper.h>
+#include <vtkGPUVolumeRayCastMapper.h>
 #include <vtkVolumeRayCastCompositeFunction.h>
 #include <vtkVolumeRayCastMIPFunction.h>
 #include <vtkVolumeTextureMapper2D.h>
@@ -112,7 +113,24 @@ void USVisualizerWidget::onSetRenderMode()
     volumeMapper->SetBlendModeToMaximumIntensity();
     m_volume->Modified();
     m_volume->SetMapper(volumeMapper);
+  } else if(m_renderMode->GetValue() == QtEnums::VisRenderMethod::GPURayCasting) {
+    //Volume Mapper
+    vtkSmartPointer<vtkVolumeRayCastMIPFunction> rayCastFunction =
+      vtkSmartPointer<vtkVolumeRayCastMIPFunction>::New();
+
+    vtkSmartPointer<vtkGPUVolumeRayCastMapper> volumeMapper =
+      vtkSmartPointer<vtkGPUVolumeRayCastMapper>::New();
+    volumeMapper->SetInputConnection(m_rpvc->GetImporter()->GetOutputPort(0));
+    //volumeMapper->SetSetVolumeRayCastFunction(rayCastFunction); 
+    volumeMapper->SetBlendModeToMaximumIntensity();
+    m_volume->Modified();
+    m_volume->SetMapper(volumeMapper);
   } else if(m_renderMode->GetValue() == QtEnums::VisRenderMethod::Texture_2D) {
+    vtkSmartPointer<vtkVolumeTextureMapper2D> volumeMapper = vtkSmartPointer<vtkVolumeTextureMapper2D>::New();
+    volumeMapper->SetInputConnection(m_rpvc->GetImporter()->GetOutputPort(0));
+    m_volume->Modified();
+    m_volume->SetMapper(volumeMapper);
+  } else if(m_renderMode->GetValue() == QtEnums::VisRenderMethod::Texture_3D){
     vtkSmartPointer<vtkVolumeTextureMapper3D> volumeMapper = vtkSmartPointer<vtkVolumeTextureMapper3D>::New();
     volumeMapper->SetInputConnection(m_rpvc->GetImporter()->GetOutputPort(0));
     m_volume->Modified();
