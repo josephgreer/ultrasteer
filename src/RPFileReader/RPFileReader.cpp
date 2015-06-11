@@ -190,6 +190,7 @@ namespace Nf
   RPFileReader::RPFileReader(const char *path)
     : m_idx(0)
   {
+    memset(&m_header, 0, sizeof(RPFileHeader));
     m_file = fopen(path, "rb");
     if(!m_file)
       return;
