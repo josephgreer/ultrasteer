@@ -5,27 +5,14 @@ namespace Nf {
 
   static RPUlteriusReaderCollection *gThis = NULL;
 
-  static void releaseRPData(RPData *data)
-  {
-    if(data->b8)
-      cvReleaseImage(&data->b8);
-    if(data->color)
-      cvReleaseImage(&data->color);
-    if(data->sig)
-      cvReleaseImage(&data->sig);
-    if(data->var)
-      cvReleaseImage(&data->var);
-  }
-
   static bool onNewData(void* data, int type, int sz, bool cine, int frmnum)
   {
-    u8 rv;
+    u8 rv = true;
     if(gThis) {
-      Nf::NTrace("new frame type %d, frame %d\n", type, frmnum);
-      //rv = gThis->AddData(data, type, sz, cine, frmnum);
-    }
-    else
+      rv = gThis->AddData(data, type, sz, cine, frmnum);
+    } else {
       rv = false;
+    }
     return (bool)rv;
   }
 
@@ -42,7 +29,10 @@ namespace Nf {
     return res;
   }
 
-  RPUlteriusReaderCollection::RPUlteriusReaderCollection(const char *ip)
+  RPUlteriusReaderCollection::RPUlteriusReaderCollection(const char *ip, f64 mpp, Vec2d origin)
+    : m_mask(0)
+    , m_mpp(mpp)
+    , m_origin(origin)
   {
     m_imageInfoUpdated = true;
     m_ulterius = new ulterius();
@@ -72,28 +62,33 @@ namespace Nf {
     if(!m_lock.tryLock(30))
       return RPData();
 
+    if(m_mask&RPF_GPS && !m_gps.gps.valid) {
+      m_lock.unlock();
+      return RPData();
+    }
+
     RPData res;
     bool fullSet = false;
-    if(m_frameQueue.size() > 0 ) {
-      FrameCollectionQueue::iterator i = m_frameQueue.begin();
+    u32 mask = m_mask&(~RPF_GPS);
+    if(m_frameQueue.size() > 0) {
+      FrameCollectionQueue::reverse_iterator i = m_frameQueue.rbegin();
       do {
-#ifdef MANDATE_B8
-        fullSet = i->second.color && i->second.b8 && i->second.gps.valid > 0;
-#else
-        fullSet = i->second.color  && i->second.gps.valid > 0;
-#endif
+        fullSet = i->second.FullSet(mask);
         if(!fullSet)
           i++;
-      } while(i!= m_frameQueue.end() && !fullSet);
+      } while(i!= m_frameQueue.rend() && !fullSet);
 
-      if(i != m_frameQueue.end()) {
+      if(i != m_frameQueue.rend()) {
         std::pair < u32, RPData > temp = *i;
         res = temp.second;
-        m_frameQueue.erase(i);
+        m_frameQueue.erase(std::next(i).base());
       }
     }
 
     m_lock.unlock();
+    res.origin = m_origin;
+    res.mpp = (f32)m_mpp;
+    res.gps = m_gps.gps;
     return res;
   }
 
@@ -105,6 +100,7 @@ namespace Nf {
     u32 mask = m_ulterius->getDataToAcquire();
     bool rv = m_ulterius->setDataToAcquire(mask|type);
     ASSERT(rv);
+    m_mask = mask;
   }
 
   void RPUlteriusReaderCollection::EnableMask(u32 mask)
@@ -121,6 +117,7 @@ namespace Nf {
 
     bool rv = m_ulterius->setDataToAcquire(mask);
     ASSERT(rv);
+    m_mask = mask;
   }
 
   uDataDesc RPUlteriusReaderCollection::GetImageDesc(RP_TYPE type)
@@ -135,6 +132,27 @@ namespace Nf {
     }
     //To be safe, get B8 data desc because we use that elsewhere
     m_ulterius->getDataDescriptor((uData)RPF_BPOST8, m_descs[RPF_BPOST8]);
+  }
+
+  void RPUlteriusReaderCollection::DeleteFramesBefore(s32 frame)
+  {
+    s32 num = m_frameQueue.begin()->first;
+    while(num < frame) {
+      std::pair < u32, RPData > el = *m_frameQueue.begin();
+      el.second.Release();
+      m_frameQueue.erase(m_frameQueue.begin());
+      num = m_frameQueue.begin()->first;
+    }
+  }
+
+  void RPUlteriusReaderCollection::PurgeExcessFrames()
+  {
+    while(m_frameQueue.size() > MAX_FRAMES) {
+      std::pair < u32, RPData > el = *m_frameQueue.begin();
+      el.second.Release();
+      m_frameQueue.erase(m_frameQueue.begin());
+      //printf("Dropping Frame\n");
+    }
   }
 
   u8 RPUlteriusReaderCollection::AddData(void* data, int type, int sz, bool cine, int frmnum)
@@ -207,8 +225,8 @@ namespace Nf {
           break;
     }
 
-    if(!m_lock.tryLock(45)) {
-      releaseRPData(&rp);
+    if(!m_lock.tryLock(20)) {
+      rp.Release();
       return 0;
     }
     if(m_imageInfoUpdated) {
@@ -216,11 +234,14 @@ namespace Nf {
       m_imageInfoUpdated = false;
     }
     if((RP_TYPE)type == RPF_GPS) {
-      //if it's gps just replace the last sample with gps
-      if(m_frameQueue.size())
-        frmnum = m_frameQueue.rbegin()->first;
-      else
-        frmnum = 0;
+      ////if it's gps just replace the last sample with gps
+      //if(m_frameQueue.size())
+      //  frmnum = m_frameQueue.rbegin()->first;
+      //else
+      //  frmnum = 0;
+      m_gps = rp;
+      m_lock.unlock();
+      return 1;
     }
     RPData rpp = m_frameQueue[frmnum];
     switch(tp) {
@@ -247,13 +268,8 @@ namespace Nf {
 
     m_frameQueue[frmnum] = rpp;
 
-    //s32 sz = m_frameQueue.size();
-    while(m_frameQueue.size() > MAX_FRAMES) {
-      std::pair < u32, RPData > el = *m_frameQueue.begin();
-      releaseRPData(&el.second);
-      m_frameQueue.erase(m_frameQueue.begin());
-      //printf("Dropping Frame\n");
-    }
+    //DeleteFramesBefore(frmnum);
+    PurgeExcessFrames();
 
     m_lock.unlock();
     return 1;
