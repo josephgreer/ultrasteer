@@ -81,6 +81,11 @@ namespace Nf
 
     m_frame->SetMax(nframes);
 
+    if(nframes <= 0) {
+      delete m_rpReaders;
+      m_rpReaders = NULL;
+    }
+
     m_usVis->Reinitialize();
     
     onUpdateFrame();
@@ -91,7 +96,8 @@ namespace Nf
     if(m_data.gps.valid)
       m_data.Release();
 
-    m_data = m_rpReaders->GetRPData(m_frame->GetValue());
+    if(m_rpReaders)
+      m_data = m_rpReaders->GetRPData(m_frame->GetValue());
     m_imageViewer->SetImage(m_data.b8);
     m_usVis->AddRPData(m_data);
   }

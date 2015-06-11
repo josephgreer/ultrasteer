@@ -245,6 +245,8 @@ void USVisualizerWidget::Initialize(RPData rp, vtkSmartPointer<vtkColorTransferF
 
 void USVisualizerWidget::AddRPData(RPData rp)
 {
+  if(!rp.gps.valid) 
+    return;
   m_rpvc->AddRPData(rp);
   m_last.Release();
   m_last = rp.Clone();
