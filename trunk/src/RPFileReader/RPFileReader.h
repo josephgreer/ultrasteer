@@ -68,7 +68,7 @@ namespace Nf
     u32 tick;
 
     GPS_Data(const GPS_Data &rhs)
-    : pos(rhs.pos)
+      : pos(rhs.pos)
     , posaer(rhs.posaer)
     , quality(rhs.quality)
     , valid(rhs.valid)
@@ -109,7 +109,7 @@ namespace Nf
     Vec4d pt4_w( pt3_w.x, pt3_w.y, pt3_w.z, 1.0 );                    // World (EM-tracker) frame point
     Vec4d pt4_us = posePos.Inverse()*pt4_w;                           // Transducer frame point
     Matrix33d cal_part(-0.0018, 0.9477, 0, 1.00, 0.0016, 0, 0, 0, 1); // Hard-coded values taken from Sonix calibration matrix
-    
+
     // Invert a square portion of the calibration matrix, scale and shift image point to VTK origin
     Vec3d pt3_im = cal_part.Inverse()* ( Vec3d(pt4_us.x,pt4_us.y,0) - Vec3d(14.8449,15.0061,0) );
     pt3_im.z = pt4_us.z;
@@ -201,6 +201,21 @@ namespace Nf
       rv.origin = this->origin;
 
       return rv;
+    }
+
+    bool FullSet(u32 mask)
+    {
+      if(mask&RPF_BPOST8 && !this->b8)
+        return false;
+      if(((mask&RPF_COLOR)||(mask&RPF_BPOST32)) && !this->color)
+          return false;
+      if(mask&RPF_COLOR_CVV && !this->sig)
+        return false;
+      if(mask&RPF_COLOR_CVV_VAR && !this->var)
+        return false;
+      if(mask&RPF_GPS && !this->gps.valid)
+        return false;
+      return true;
     }
 
     void Release()

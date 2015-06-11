@@ -1,5 +1,6 @@
 #include "CppUnitLite/TestHarness.h"
 #include <stdio.h>
+#include <string.h>
 
 static void printUsage()
 {
@@ -10,15 +11,19 @@ static void printUsage()
 
 int main(int argc, char *argv[])
 {
-    TestResult tr;
+  TestResult tr;
 
-	if(argc == 1) {
-		TestRegistry::runAllTests(tr);
-	} else if(argc == 2) {
-		TestRegistry::runSpecificTest(tr, SimpleString(argv[1]));
-	} else {
-		printUsage();
-	}
+  if(argc == 1) {
+    TestRegistry::runAllTests(tr);
+  } else if(argc > 1) {
+    SimpleString test(argv[1]);
+    if(argc == 3) {
+      test = SimpleString(strcat(argv[2], argv[1]));
+    }
+    TestRegistry::runSpecificTest(tr, test);
+  } else {
+    printUsage();
+  }
 
   return 0;
 }
