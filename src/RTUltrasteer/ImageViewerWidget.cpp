@@ -46,18 +46,22 @@ namespace Nf
     if(m_im != NULL)
       cvReleaseImage(&m_im);
 
-    m_im = cvCloneImage(im);
+    if(im) {
+      m_im = cvCloneImage(im);
 
-    // Set up importer
-    m_importer->SetDataOrigin(0,0,0);
-    m_importer->SetDataSpacing(1,1,1);
-    m_importer->SetWholeExtent(0, m_im->width-1, 0, m_im->height-1, 0, 0);
-    m_importer->SetDataExtentToWholeExtent();
-    m_importer->SetDataScalarTypeToUnsignedChar();
-    m_importer->SetNumberOfScalarComponents(m_im->nChannels);
-    m_importer->SetImportVoidPointer(m_im->imageData);
-    m_importer->Update();
-    m_importer->Modified();
+      // Set up importer
+      m_importer->SetDataOrigin(0,0,0);
+      m_importer->SetDataSpacing(1,1,1);
+      m_importer->SetWholeExtent(0, m_im->width-1, 0, m_im->height-1, 0, 0);
+      m_importer->SetDataExtentToWholeExtent();
+      m_importer->SetDataScalarTypeToUnsignedChar();
+      m_importer->SetNumberOfScalarComponents(m_im->nChannels);
+      m_importer->SetImportVoidPointer(m_im->imageData);
+      m_importer->Modified();
+      m_importer->Update();
+
+      m_flip->Update();
+    }
 
     // Initialize
     if(!m_init) {
@@ -82,7 +86,8 @@ namespace Nf
       vtkCamera *cam = m_renderer->GetActiveCamera();
       m_renderer->SetActiveCamera(cam);
     } 
-    m_init = true;
+    if(im)
+      m_init = true;
   }
 
   ImageViewer2DTeleoperationWidget::ImageViewer2DTeleoperationWidget(QWidget *parent)

@@ -111,6 +111,12 @@ namespace Nf
     sprintf(temp,"%s.gps1",fname.c_str());
     m_rpReaders->AddGPSReader((RPGPSReaderBasic *)new RPGPSReader(temp));  
 
+    if(nframes <= 0) {
+      delete m_rpReaders;
+      m_rpReaders = NULL;
+      return;
+    }
+
     m_frame->SetMax(nframes);
 
     onUpdateFrame();

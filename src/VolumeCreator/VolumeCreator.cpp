@@ -308,25 +308,29 @@ namespace Nf {
   s32 RPVolumeCreator::Initialize(RPData rp, Reinitializer *reinit)
   {
     m_reinit = reinit;
-    Matrix44d tPose = Matrix44d::FromCvMat(rp.gps.pose);
-    Matrix33d pose = tPose.GetOrientation();
 
-    Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, rp.gps.pos);
-    Vec2d mpp(rp.mpp,rp.mpp);
-    Vec2d origin = rp.origin;
-    Vec2d mppScale(mpp.x/1000.0, mpp.y/1000.0);
+    s32 rv = 1;
+    if(rp.gps.valid) {
+      Matrix44d tPose = Matrix44d::FromCvMat(rp.gps.pose);
+      Matrix33d pose = tPose.GetOrientation();
 
-    Matrix44d yep = Matrix44d::I();
+      Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, rp.gps.pos);
+      Vec2d mpp(rp.mpp,rp.mpp);
+      Vec2d origin = rp.origin;
+      Vec2d mppScale(mpp.x/1000.0, mpp.y/1000.0);
 
-    Vec3d x_axis = rpImageCoordToWorldCoord3(Vec2d(1.0,0.0), posePos, m_cal, origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, origin, mppScale);  //tPose*calibration*Vec4d(1.0, 0.0, (1.0)*mpp.x, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, (0.0)*mpp.x, 0.0);
-    Vec3d y_axis = rpImageCoordToWorldCoord3(Vec2d(0.0,1.0), posePos, m_cal, origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, origin, mppScale);//tPose*calibration*Vec4d(1.0, 1.0*mpp.y, 0.0, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, 0.0, 0.0);
-    x_axis = x_axis.normalized();
-    y_axis = y_axis.normalized();
-    Vec3d z_axis = x_axis.cross(y_axis);
+      Matrix44d yep = Matrix44d::I();
 
-    s32 rv = m_volume.InitializeVolume(this, Matrix33d::FromCols(x_axis,y_axis,z_axis), 
-      rpImageCoordToWorldCoord3(Vec2d(rp.b8->width/2.0, rp.b8->height/2.0), posePos, m_cal, origin, mppScale),
-      (QtEnums::VOLUME_ORIGIN_LOCATION)m_originLoc->GetValue());
+      Vec3d x_axis = rpImageCoordToWorldCoord3(Vec2d(1.0,0.0), posePos, m_cal, origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, origin, mppScale);  //tPose*calibration*Vec4d(1.0, 0.0, (1.0)*mpp.x, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, (0.0)*mpp.x, 0.0);
+      Vec3d y_axis = rpImageCoordToWorldCoord3(Vec2d(0.0,1.0), posePos, m_cal, origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, origin, mppScale);//tPose*calibration*Vec4d(1.0, 1.0*mpp.y, 0.0, 0.0)-tPose*calibration*Vec4d(1.0, 0.0, 0.0, 0.0);
+      x_axis = x_axis.normalized();
+      y_axis = y_axis.normalized();
+      Vec3d z_axis = x_axis.cross(y_axis);
+
+      rv = m_volume.InitializeVolume(this, Matrix33d::FromCols(x_axis,y_axis,z_axis), 
+        rpImageCoordToWorldCoord3(Vec2d(rp.b8->width/2.0, rp.b8->height/2.0), posePos, m_cal, origin, mppScale),
+        (QtEnums::VOLUME_ORIGIN_LOCATION)m_originLoc->GetValue());
+    }
 
     //vtkImageData importer
     Vec3d spacing = m_volume.GetSpacing();
