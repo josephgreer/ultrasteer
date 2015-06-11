@@ -53,6 +53,16 @@ namespace Nf
     OutputDebugString(str);
   }
 
+#define BEGIN_TIMING(x,y) \
+  u32 g_beginTick##x = GetTickCount(); static u32 g_n##x = 0; static u32 g_tot##x = 0;
+#define END_TIMING(x,y) \
+  u32 g_endTick##x = GetTickCount(); g_tot##x += g_endTick##x-g_beginTick##x; \
+  if(g_n##x++ >= y) { \
+    NTrace("Timing: %s time %f ms\n", #x, (f32)g_tot##x/g_n##x); \
+    g_tot##x = 0; \
+    g_n##x = 0; \
+  }
+
   template <class T>
   class Vec2
   {

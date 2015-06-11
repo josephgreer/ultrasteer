@@ -20,8 +20,10 @@ namespace Nf {
   static bool onNewData(void* data, int type, int sz, bool cine, int frmnum)
   {
     u8 rv;
-    if(gThis)
-      rv = gThis->AddData(data, type, sz, cine, frmnum);
+    if(gThis) {
+      Nf::NTrace("new frame type %d, frame %d\n", type, frmnum);
+      //rv = gThis->AddData(data, type, sz, cine, frmnum);
+    }
     else
       rv = false;
     return (bool)rv;
@@ -157,40 +159,7 @@ namespace Nf {
               memcpy(pdst+r*im->widthStep, psrc+r*desc.w*(desc.ss>>3), im->width);
           }
           break;
-#if 0
         case RPF_BPOST32:
-          {
-            IplImage *im = cvCreateImage(size/*cvSize(desc.roi.brx-desc.roi.ulx, desc.roi.bry-desc.roi.uly)*/,
-              IPL_DEPTH_8U, 4);
-            rp.color = im;
-
-            u8 *psrc = (u8 *)data;//+(desc.w/**desc.roi.uly+desc.roi.ulx*/)*(desc.ss>>3);
-            u8 *pdst = (u8 *)im->imageData;
-            for(s32 r=0; r<im->height; r++) 
-              memcpy(pdst+r*im->widthStep, psrc+r*desc.w*(desc.ss>>3), im->width*(desc.ss>>3));
-
-            for(s32 r=0; r<im->height; r++) {
-              u8 *p = (u8 *)(im->imageData+r*im->widthStep);
-              u8 _r,_g,_b,_a;
-              int yep;
-              for(s32 c=0; c<im->width; c++) {
-                _r = p[4*c+0];
-                _g = p[4*c+1];
-                _b = p[4*c+2];
-                _a = p[4*c+3];
-                if(_a > 0)
-                  yep = 0;
-              }
-            }
-
-            rp.b8 = cvCreateImage(size/*cvSize(desc.roi.brx-desc.roi.ulx, desc.roi.bry-desc.roi.uly)*/,
-              IPL_DEPTH_8U, 1);
-            cvSplit(im, NULL, NULL, NULL, rp.b8);
-          }
-          break;
-#else
-        case RPF_BPOST32:
-#endif
         case RPF_COLOR:
           {
             IplImage *im = cvCreateImage(size/*cvSize(desc.roi.brx-desc.roi.ulx, desc.roi.bry-desc.roi.uly)*/,
@@ -260,16 +229,7 @@ namespace Nf {
             rpp.b8 = rp.b8;
           }
           break;
-#if 0
         case RPF_BPOST32:
-          {
-            rpp.color = rp.color;
-            rpp.b8 = rp.b8;
-          }
-          break;
-#else
-        case RPF_BPOST32:
-#endif
         case RPF_COLOR:
           {
             rpp.color = rp.color;
