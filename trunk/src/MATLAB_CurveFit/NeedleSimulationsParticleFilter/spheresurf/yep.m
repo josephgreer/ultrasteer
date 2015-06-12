@@ -8,8 +8,8 @@
 
 clear; clc; close all;
 
-sigma = 0.2*diag([1 10 1]);%Rx(pi/8)*diag(1e-0*[0.2 0.01 0.2])*(Rx(pi/8)');
+sigma = 0.2*diag([1 1 1]);%Rx(pi/8)*diag(1e-0*[0.2 0.01 0.2])*(Rx(pi/8)');
 
-N = SO3Gaussian(Ry(0), sigma);
+N = SO3Gaussian(Ry(-pi/2), sigma);
 N.drawit(1,100);
 view([-90 0]);

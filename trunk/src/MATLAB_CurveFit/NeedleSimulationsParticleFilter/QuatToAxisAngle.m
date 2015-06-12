@@ -15,5 +15,8 @@ else
     z = q(4) / s;
 end
 
+if(angle > pi || angle < 0)
+    assert(0);
+end
 v = [x;y;z]*angle;
 end
