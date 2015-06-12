@@ -23,8 +23,8 @@ end
 
 % test SO(3) mean
 
-N = 10000;
-orientationNoise = mvnrnd(zeros(3,1), diag(1/2*[pi/2, pi/2, pi/2]), N);
+N = 5000;
+orientationNoise = mvnrnd(zeros(3,1), diag(2*[pi/2, pi/2, pi/2]), N);
 baseOrientation = AxisAngleToQuat(rand(3,1)*50);
 qs = zeros(N, 4);
 for i=1:size(orientationNoise,1)

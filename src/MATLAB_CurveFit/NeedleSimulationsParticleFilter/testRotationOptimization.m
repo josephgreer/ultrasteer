@@ -12,8 +12,9 @@ params.doMeasurement = 0;
 params.simulationTime = 12;
 params.particleInitTime = 100;
 
-params.sigmaOrientation = diag(1/15*[1*pi/1000, 1*pi/1000, pi/1000]);            
+params.sigmaOrientation = diag(1/5*[1*pi/1000, 1*pi/1000, pi/1000]);            
 %params.sigmaPos = zeros(3,3);
+%params.sigmaRho = 0;
 %params.sigmaRho = 1;
 %params.sigmaVelocity = 0;
 
@@ -45,8 +46,8 @@ Y = Y-repmat(Y(1,:), size(Y,1), 1);
 %[~, ~, R] = procrustes(Y,X,'scaling',false, 'reflection', false);
 % R.c(1,:)
 % R = R.T;
-%R = procrustesRotation(Y,X);
-[R, ~] = icp(X', Y');
+R = procrustesRotation(Y,X);
+%[R, ~] = icp(X', Y');
 qfix = RotationMatrixToQuat(R);
 
 
