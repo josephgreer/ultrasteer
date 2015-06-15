@@ -12,6 +12,7 @@ results.estimatedStates = {};
 results.time = [];
 results.positionError = [];
 results.orientationError = [];
+results.particles = [];
 
 
 % initial state of needle
@@ -52,6 +53,11 @@ end
 particleHandles = [];
 tipFrameHandles = [];
 usFrameHandles = [];
+
+% list of measurements
+measurements = {};
+
+
 for t=0:params.dt:params.simulationTime
     %current command
     uc = commandFcn(t,params);
@@ -79,7 +85,8 @@ for t=0:params.dt:params.simulationTime
     % if we're far enough along, start generating random US measurements
     measurement = [];
     if(t > params.particleInitTime)
-        measurement = generateRandomMeasurement(xcurr, u, t, params);
+        measurement = generateRandomMeasurement(xhist, u, t, params);
+        measurements = vertcat({measurement}, measurements);
         if(~params.particlesInit)
             fakeCurr = xhist;
             xp = initializeParticles(fakeCurr, u, params);
@@ -87,7 +94,7 @@ for t=0:params.dt:params.simulationTime
         else
             xp = propagateParticles(xp,uc,params);
             if(params.doMeasurement)
-                xp = measureParticles(xp,u,measurement,params);
+                xp = measureParticles(xp,u,xhist,measurements,params);
             end
         end
         
@@ -103,6 +110,8 @@ for t=0:params.dt:params.simulationTime
         results.states = vertcat(results.states, xcurr);
         %save off estimated state
         results.estimatedStates = vertcat(results.estimatedStates, xpe);
+        %save off particles
+        results.particles = vertcat(results.states, {xp});
         % save off time
         results.time = vertcat(results.time, t);
         % save off orientation error

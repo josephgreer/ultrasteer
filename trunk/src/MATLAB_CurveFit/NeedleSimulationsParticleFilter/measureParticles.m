@@ -7,17 +7,25 @@
 %   u{i}.v         = insertion velocity
 %   u{i}.dtheta    = rotation about needle's axis
 %   u{i}.dc        = duty cycle ratio
-% measurement
-%  measurement.pos = [x;y;z] is location of measurement
-%  measurement.doppler = doppler response
-%  measurement.ful,fbl,fbr,fur = us frame positions
+% xhist = true state. 
+% xhist{1} = current state
+% ...
+% xhist{n} = state n steps back
+%   This parameter is only passed in for rotation kalman filter
+% measurements
+%  measurement{1}.pos = [x;y;z] is current location of measurement
+%  measurement{1}.doppler = doppler response
+%  measurement{1}.ful,fbl,fbr,fur = us frame positions
 % params = simulation parameters
 % see ../NeedleSimulation.m for description of parameters
-function x = measureParticles(xp, u, measurement, params)
+function x = measureParticles(xp, u, xtrue, measurements, params)
 if(params.particleFilterMethod == 1)
-    pw = measureParticles1(xp, u, measurement, params);
+    pw = measureParticles1(xp, u, measurements, params);
+elseif(params.particleFilterMethod == 2)
+    pw = measureParticles2(xp, u, measurements, params);
 else
-    pw = measureParticles2(xp, u, measurement, params);
+    xp = measureParticles100(xp, u, xtrue, measurements, params);
+    pw = 1;
 end
 
 %now incorporate weights of previous particles
@@ -34,7 +42,8 @@ end
 %   x.pos % position of needle tip frame 
 %   x.q  % orientation of needle tip frame 
 %   x.rho radius of curvature
-function pw = measureParticles1(xp, u, measurement, params)
+function pw = measureParticles1(xp, u, measurements, params)
+measurement = measurements{1};
 pw = zeros(length(xp),1);
 % compute p(z|x)
 % z = ((u,v),d)
@@ -125,7 +134,8 @@ end
 %   x.pos % position of needle tip frame 
 %   x.q  % orientation of needle tip frame 
 %   x.rho radius of curvature
-function pw = measureParticles2(xp, u, measurement, params)
+function pw = measureParticles2(xp, u, measurements, params)
+measurement = measurements{1};
 pw = zeros(length(xp),1);
 % compute p(z|x)
 % z = ((u,v),d)
@@ -209,6 +219,47 @@ else
     pw = ones(size(pw));
 end
 
+end
+
+
+
+% x = needle tip kalman filter
+% x.dist = distribution of kalman filter
+% x.rho = current curvature
+% x.w = weight (which is only used for particle filter)
+function x = measureParticles100(xp, u, xtrue, measurements, params)
+xcurr.q = RotationMatrixToQuat(xp{1}.dist.mu);
+xcurr.pos = xtrue{1}.pos;
+xcurr.rho = xp{1}.rho;
+xcurr.w = 1;
+
+xhist = propagateNeedleBack(xcurr, u, params);
+
+Rprior = QuatToRotationMatrix(xcurr.q);
+
+
+% if we don't have enough measurements yet, then just use true quaternion
+deltaR = zeros(3,3);
+if(length(measurements) >= params.p100.minimumMeasurements)
+    deltaR = optimalRotationForHistory(xhist, measurements);
+else
+    deltaR = QuatToRotationMatrix(xtrue{1}.q)*Rprior';
+end
+
+
+Rmeas = deltaR*Rprior;
+
+% zero measurement noise? just use measurement then
+if(det(params.p100.measurementSigma) < 1e-3)
+    x{1}.dist = SO3Gaussian(Rmeas, zeros(3,3));
+else
+    sigmaC = inv(xp{1}.dist.sigma+params.p100.measurementSigma);
+    v = SO3Log(Rmeas*Rprior');
+    Rc = SO3Exp(sigmaC*params.p100.measurementSigma'*v)*Rprior;
+    x{1}.dist = SO3Gaussian(Rc, sigmaC);
+end
+x{1}.rho = xp{1}.rho;
+x{1}.w = 1;
 end
 
 function drawMeasurementInformationForParticle(xp, u, measurement, params, i)

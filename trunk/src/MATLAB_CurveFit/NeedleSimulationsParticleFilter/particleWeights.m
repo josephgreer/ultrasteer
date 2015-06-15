@@ -10,8 +10,10 @@
 function w = particleWeights(xp, params)
 if(params.particleFilterMethod == 1)
     w = particleWeights1(xp, params);
-else
+elseif(params.particleFilterMethod == 2)
     w = particleWeights2(xp, params);
+else
+    w = particleWeights100(xp, params);
 end
 end
 
@@ -21,6 +23,11 @@ w = [w.w]';
 end
 
 function w = particleWeights2(xp, params)
+w = cell2mat(xp);
+w = [w.w]';
+end
+
+function w = particleWeights100(xp, params)
 w = cell2mat(xp);
 w = [w.w]';
 end

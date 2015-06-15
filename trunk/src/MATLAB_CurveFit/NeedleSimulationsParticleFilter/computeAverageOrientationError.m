@@ -10,11 +10,10 @@
 function error = computeAverageOrientationError(x, xcurr, params)
 q = particleOrientations(x, params);
 pw = particleWeights(x, params);
-pw = [pw.w]';
 
 error = 0;
 Rc = QuatToRotationMatrix(xcurr.q);
-for i=1:length(q)
+for i=1:size(q,1)
 R = QuatToRotationMatrix(q(i,:)');
 error = error + SO3Metric(Rc,R)*pw(i);
 end

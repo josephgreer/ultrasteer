@@ -1,8 +1,13 @@
+
 %% state update dynamics
-% x = current needle tip state
-%   x.pos % current position of needle tip frame 
-%   x.q  % current orientation of needle tip 
-%   x.rho current radius of curvature
+% xhist{1} = current needle tip state
+%   xhist{1}.pos % current position of needle tip frame 
+%   xhist{1}.q  % current orientation of needle tip 
+%   xhist{1}.rho current radius of curvature
+%   xhist{2}.pos % previous position of needle tip frame 
+%   xhist{2}.q  % previous orientation of needle tip 
+%   xhist{2}.rho previous radius of curvature
+%   ...
 % u = control input
 %   u{1}        = current action
 %   u{2}        = action 1 timestamp back
@@ -19,7 +24,7 @@
 %  measurement.ful,fbl,fbr,fur = us frame positions
 %  measurement.bx = measurement.fbl-measurement.fur
 % see ../NeedleSimulation.m for description of parameters
-function measurement = generateRandomMeasurement(x, u, t, params)
+function measurement = generateRandomMeasurement(xhist, u, t, params)
 if(params.doRandomTransducerPositioning)
     axisLoc = mvnrnd(params.axialMu, params.axialSigma);
 else
@@ -35,20 +40,18 @@ if(axisLoc > 0)
     uc.v = axisLoc/params.dt;
     
     %propagate forward by axisLoc mm
-    xus = propagateNeedleTip(x,uc,params);
+    xus = propagateNeedleTip(xhist{1},uc,params);
 else
     %US frame behind tip
     dist = 0;
-    xus = x;
+    xus = xhist{1};
     endid = 1;
     while(dist < abs(axisLoc) && endid < length(u))
         dist = dist+params.dt*u{endid}.v;
         endid=endid+1;
     end
     
-    us = u(1:endid);
-    xus = propagateNeedleBack(x,us,params);
-    xus = xus{endid};
+    xus = xhist{endid};
     
     measurement.doppler = lognrnd(params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
 end
@@ -76,7 +79,11 @@ if(axisLoc > 0)
     measurement.doppler = lognrnd(params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
 else
     %position measurement
-    measurementNoise = mvnrnd(params.measurementOffsetMu, params.measurementOffsetSigma);
+    if(det(params.measurementOffsetSigma) < 1e-4)
+        measurementNoise = zeros(1,2);
+    else
+        measurementNoise = mvnrnd(params.measurementOffsetMu, params.measurementOffsetSigma);
+    end
     measurement.pos = xus.pos+Rf(:,1)*measurementNoise(1)+Rf(:,2)*measurementNoise(2);
 end
 measurement.bx = measurement.fur-measurement.ful;  measurement.bx = measurement.bx/norm(measurement.bx);

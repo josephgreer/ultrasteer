@@ -10,8 +10,10 @@
 function pos = particlePositions(xp, params)
 if(params.particleFilterMethod == 1)
     pos = particlePositions1(xp, params);
-else
+elseif(params.particleFilterMethod == 2)
     pos = particlePositions2(xp, params);
+else
+    pos = particlePositions100(xp, params);
 end
 end
 
@@ -24,4 +26,8 @@ function pos = particlePositions2(xp, params)
 pos = cell2mat(xp);
 pos = [pos.pos];
 pos = [pos{1:params.n:end}]';
+end
+
+function pos = particlePositions100(xp, params)
+pos = zeros(1,3);
 end
