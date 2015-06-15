@@ -7,7 +7,7 @@
 % params = simulation parameters
 % see ../NeedleSimulation.m for description of parameters
 function xp = resampleParticles(x, params)
-pw = particleWeights(x);
+pw = particleWeights(x, params);
 pids = sample(pw, length(x));
 xp = {x{pids}}';
 xp = resetWeights(xp, params);

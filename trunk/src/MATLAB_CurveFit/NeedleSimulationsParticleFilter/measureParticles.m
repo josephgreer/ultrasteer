@@ -60,7 +60,17 @@ pw = zeros(length(xp),1);
 % to compute p((u,v)|x), calculate distance in image plane of intersection
 % of curve segment and transducer image plane and measurement position.
 % then look up the probability of this distance
+
+xsc = propagateNeedleBack(xp{1}, u, params);
+xsc = cell2mat(xsc);
+xsc = [xsc.pos];
+
+R1 = QuatToRotationMatrix(xp{1}.q);
+
 for i=1:length(xp)
+    Ri = QuatToRotationMatrix(xp{i}.q);
+    Rdelta = Ri*R1';
+    
     %vector pointing from particle to measurement loc
     dr = measurement.pos-xp{i}.pos;
     
@@ -80,15 +90,22 @@ for i=1:length(xp)
     if(proj <= 0)
         %before the needle tip of this particle
         % work backwards
-        xs = propagateNeedleBack(xp{i},u,params);
+        xs = xsc-repmat(xsc(:,1),1,size(xsc,2));
+        xs = Rdelta*xs;
+        xs = xs+repmat(xp{i}.pos, 1, size(xsc,2));
+        
+%         xx = propagateNeedleBack(xp{i}, u, params);
+%         xx = cell2mat(xx); xx = [xx.pos];
+%         
+%         assert(norm(abs(xx-xs)) < 1e-5);
         for j=1:length(xs)-1
-            dr = xs{j+1}.pos-xs{j}.pos;
+            dr = xs(:,j+1)-xs(:,j);
             if(det([-dr measurement.bx measurement.by]) == 0)
                 ss = 0;
             end
             % t(2:3) = image coordinates of particle image frame intersection
             % in mm
-            t = [-dr measurement.bx measurement.by]\(xs{j}.pos-measurement.ful);
+            t = [-dr measurement.bx measurement.by]\(xs(:,j)-measurement.ful);
             if(sum(zeros(3,1) <= t)==3 && sum(t <= [1;params.usw;params.ush])==3)
                 % t(2:3) = intersection of shaft and particle in image coordinates (mm)
                 suv = t(2:3);
@@ -262,14 +279,19 @@ x{1}.rho = xp{1}.rho;
 x{1}.w = 1;
 end
 
-function drawMeasurementInformationForParticle(xp, u, measurement, params, i)
+function drawMeasurementInformationForParticle(xp, xs, u, measurement, params, i)
 figure(2);
+hold on;
 
 view(3);
 view(240, 30);
 drawUSFrame(measurement,params,[]);
-xs = propagateNeedleBack(xp{i},u,params);
-drawFrames(2, xs(1), 20,[]);
+xss = propagateNeedleBack(xp{i},u,params);
+xsc = cell2mat(xss); xsc = [xsc.pos]';
+scatter3(xsc(:,1), xsc(:,2), xsc(:,3), 'r');
+xs = xs';
+scatter3(xs(:,1), xs(:,2), xs(:,3), 'b');
+drawFrames(2, xss(1), 20,[]);
 axis equal;
 grid on;
 ylim([-100 100]);
