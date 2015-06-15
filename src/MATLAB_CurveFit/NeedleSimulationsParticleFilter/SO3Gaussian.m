@@ -18,6 +18,13 @@ classdef SO3Gaussian
             p = evaluateDensityMuSigma(R, obj.mu, obj.sigma);
         end
         
+        % Compose SO(3) Gaussians
+        % apply b then obj
+        % b*obj
+        function objc = composeGaussians(obj, b)
+            objc = SO3Gaussian(b.mu*obj.mu, b.sigma+b.mu*a.sigma*b.mu');
+        end
+        
         function drawit(obj, f, npoints)
             figure(f);
             

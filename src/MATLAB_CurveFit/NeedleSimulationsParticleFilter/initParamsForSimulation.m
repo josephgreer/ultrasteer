@@ -5,6 +5,9 @@
 
 function params = initParamsForSimulation()
 
+addpath('icp');
+addpath('spheresurf');
+
 % setup params
 
 %simulation parameters
@@ -65,6 +68,11 @@ params.p2.drawPastPos = 1;                                                  %dra
 params.p2.initPosSigma = diag([5 5 5]);                                     %pos sigma for initial distribution of particles
 params.p2.initPosMu = [0; 0; 0];                                            %pos mu for initial distribution of particles
 params.p2.pastParticleSpacing = 10;                                         %axial spacing of past positions in (mm)
+
+% method 100
+params.p100.initOrientationSigma = diag(1/10*[pi/1000, pi/1000, pi/1000]);  %orientation sigma for initial sigma of kalman filter
+params.p100.measurementSigma = diag(1/5*[pi/1000, pi/1000, pi/1000]);       %measurement sigma for orientation
+params.p100.minimumMeasurements = 15;                                       %minimum number of measurements before we can generate rotations from measurements
 
 
 % drawing parameters

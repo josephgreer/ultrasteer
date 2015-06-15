@@ -20,10 +20,6 @@ kp = quatmult(x.q,AxisAngleToQuat(u.dtheta*[0; 0; 1]));
 % location of tip expressed in Rk' coordinates
 kp_x = [0; x.rho*(1-cos(dl/x.rho)); x.rho*sin(dl/x.rho)];
 
-% convert needle tip location into global coordinates
-x1.pos = quatrot(kp,kp_x)+x.pos;
-% pass through rho
-x1.rho = x.rho;
 
 % new coordinate frame expressed in global coordinates.
 % new coordinate frame is old coordinate frame rhoated by u.dtheta around
@@ -31,4 +27,9 @@ x1.rho = x.rho;
 % following the curved arc.  Note taht rotation order is flipped due to
 % intrinsic axis rotations used rather than extrinsic.
 x1.q = quatmult(kp,AxisAngleToQuat(-dl/x.rho*[1; 0; 0]));
+
+% convert needle tip location into global coordinates
+x1.pos = quatrot(kp,kp_x)+x.pos;
+% pass through rho
+x1.rho = x.rho;
 end

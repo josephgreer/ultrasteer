@@ -10,8 +10,10 @@
 function rho = particleRhos(xp, params)
 if(params.particleFilterMethod == 1)
     rho = particleOrientations1(xp, params);
-else
+elseif(params.particleFilterMethod == 2)
     rho = particleOrientations2(xp, params);
+else
+    rho = particleOrientations100(xp, params);
 end
 end
 
@@ -27,4 +29,8 @@ for i=1:length(xp)
     circ = Circle3([xp{i}.pos{1} xp{i}.pos{2} xp{i}.pos{3}]);
     rho(i) = circ.r;
 end
+end
+
+function rho = particleOrientations100(xp, params)
+rho = xp{1}.rho;
 end
