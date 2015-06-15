@@ -36,8 +36,8 @@ params.frameOrientationSigma = diag([pi/1000, pi/1000, pi/1000]);           %fra
 
 % measurement noise parameters
 params.measurementOffsetMu = [0; 0];                                        %zero measurement noise offset
-params.measurementOffsetSigma = diag([83*20*1e-3 83*20*1e-3]);              %5 pixels of measurement noise
 params.mpp = 83;                                                            %microns per pixel
+params.measurementOffsetSigma = diag([params.mpp*5*1e-3 params.mpp*5*1e-3]);  %5 pixels of measurement noise
 params.offNeedleDopplerMu = 0.56;                                           %Doppler strength of measurement off needle distributed according to lognormal dist
 params.offNeedleDopplerSigma = 0.75;                                        %Doppler strength of measurement off needle distributed according to lognormal dist
 params.onNeedleDopplerMu = 2.33;                                            %Doppler strength of measurement on needle distributed according to lognormal dist
@@ -46,7 +46,7 @@ params.onNeedleDopplerSigma = 0.098;                                        %Dop
 % particle filter parameters
 params.doParticleFilter = 1;                                                %should we particle filter?
 params.doMeasurement = 1;                                                   %should we perform measurement step?
-params.particleFilterMethod = 2;                                            %particle filter method. see initialize particles for description of each.
+params.particleFilterMethod = 1;                                            %particle filter method. see initialize particles for description of each.
 params.n = 20;                                                              %only keep track of current state
 params.np = 100;                                                            %number of particles
 params.neff = 0.5;                                                          %if effective sample size drops below params.neff*parrams.np then resample

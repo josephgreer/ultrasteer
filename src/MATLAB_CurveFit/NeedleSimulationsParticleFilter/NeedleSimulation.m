@@ -8,11 +8,11 @@ params = initParamsForSimulation();
 % custom parameters
 params.doParticleFilter = 1;
 params.doMeasurement = 1;
-params.np = 500;
+params.np = 1000;
 params.n = 20;
 params.simulationTime = 12;
 params.particleInitTime = 2;
-params.drawParticlePos = 0;
+params.drawParticlePos = 1;
 params.drawParticleOrientation = 0;
 params.drawExpectedOrientation = 1;
 params.drawParticlesNs = 20;
@@ -30,9 +30,10 @@ params.neff = 0.5;
 
 
 %params.sigmaOrientation = diag(0*[pi/1000, pi/1000, pi/1000]);            %orientation process noise std
-params.p1.initOrientationSigma = diag(1/2*[pi/1000, pi/1000, pi/1000]);
+params.p1.initOrientationSigma = diag(1/2000*[pi, pi, pi]);
 params.sigmaRho = 0;
 params.p1.initRhoSigma = 0;
+params.sigmaOrientation = diag(1/5000*[pi, pi, pi]);
 %params.sigmaPos = diag([0; 0; 0]);
 %params.p1.initPosSigma = diag(0*[20 20 20]);
 %params.p1.initPosMu = [0; 0; 0];                                    %pos mu for initial distribution of particles

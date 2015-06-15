@@ -9,7 +9,7 @@ params = initParamsForSimulation();
 params.doParticleFilter = 1;
 params.doMeasurement = 1;
 params.np = 1;
-params.n = 20;
+params.n = 100;
 params.simulationTime = 12;
 params.particleInitTime = 2;
 params.drawParticlesNs = 20;
@@ -21,7 +21,8 @@ params.doRandomTransducerPositioning = 0;
 params.neff = 0;
 params.particleFilterMethod = 100;
 params.p100.measurementSigma = zeros(3,3);
-params.measurementOffsetSigma = zeros(2,2);
+%params.measurementOffsetSigma = zeros(2,2);
+params.measurementOffsetSigma = diag([params.mpp*5*1e-3 params.mpp*5*1e-3]);
 
 
 [results, ~, ~] = runSimulation(params, @(t,params)(commandFcn(t, params)));
