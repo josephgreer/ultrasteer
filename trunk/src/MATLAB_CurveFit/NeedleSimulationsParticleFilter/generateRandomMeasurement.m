@@ -29,7 +29,7 @@ if(params.doRandomTransducerPositioning)
     axisLoc = mvnrnd(params.axialMu, params.axialSigma);
 else
     % start frame "behind" needle tip 
-    axisLoc = params.axialMu+params.axialSigma*sin(2*pi*params.axialFrequency*(t-params.particleInitTime)-0);%pi/2);
+    axisLoc = params.axialMu+params.axialSigma*sawtooth(2*pi*params.axialFrequency*(t-params.particleInitTime)+pi/2, 0.5);%pi/2);
 end
 
 % US frame is ahead of needle tip
