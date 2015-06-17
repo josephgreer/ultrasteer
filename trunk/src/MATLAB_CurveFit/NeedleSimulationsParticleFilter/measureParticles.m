@@ -250,6 +250,9 @@ xcurr.pos = xtrue{1}.pos;
 xcurr.rho = xp{1}.rho;
 xcurr.w = 1;
 
+%%%%%% REMOVE
+xcurr.q = xtrue{1}.q;
+%%%%%%
 xhist = propagateNeedleBack(xcurr, u, params);
 
 Rprior = QuatToRotationMatrix(xcurr.q);
@@ -258,9 +261,13 @@ Rprior = QuatToRotationMatrix(xcurr.q);
 % if we don't have enough measurements yet, then just use true quaternion
 deltaR = zeros(3,3);
 if(length(measurements) >= params.p100.minimumMeasurements)
-    deltaR = optimalRotationForHistory(xhist, measurements);
+    deltaR = optimalRotationForHistory(xhist, measurements, params);
 else
     deltaR = QuatToRotationMatrix(xtrue{1}.q)*Rprior';
+end
+
+if(norm(SO3HatInverse(SO3Log(deltaR))) > 0.5)
+    yep = 0;
 end
 
 

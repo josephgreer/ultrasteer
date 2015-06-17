@@ -111,7 +111,7 @@ for t=0:params.dt:params.simulationTime
         %save off estimated state
         results.estimatedStates = vertcat(results.estimatedStates, xpe);
         %save off particles
-        results.particles = vertcat(results.states, {xp});
+        results.particles = vertcat(results.particles, {xp});
         % save off time
         results.time = vertcat(results.time, t);
         % save off orientation error

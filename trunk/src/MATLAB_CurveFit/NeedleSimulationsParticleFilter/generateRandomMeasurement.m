@@ -41,6 +41,7 @@ if(axisLoc > 0)
     
     %propagate forward by axisLoc mm
     xus = propagateNeedleTip(xhist{1},uc,params);
+    measurement.doppler = lognrnd(params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
 else
     %US frame behind tip
     dist = 0;
@@ -71,12 +72,11 @@ measurement.fur = xus.pos-Rf(:,1)*params.ush/2+Rf(:,2)*params.usw/2;
 if(axisLoc > 0)
     % if we're past the end of the needle tip, then we'll get uniformly distributed
     % measurements about frame
-%     measurementNoise = rand(2,1);
-%     measurement.pos = measurement.ful+(measurement.fur-measurement.ful)*measurementNoise(1)+...
-%         (measurement.fbl-measurement.ful)*measurementNoise(1);
-    measurementNoise = mvnrnd(params.measurementOffsetMu, params.measurementOffsetSigma);
-    measurement.pos = xus.pos+Rf(:,1)*measurementNoise(1)+Rf(:,2)*measurementNoise(2);
-    measurement.doppler = lognrnd(params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
+    measurementNoise = rand(2,1);
+    measurement.pos = measurement.ful+(measurement.fur-measurement.ful)*measurementNoise(1)+...
+        (measurement.fbl-measurement.ful)*measurementNoise(2);
+%     measurementNoise = mvnrnd(params.measurementOffsetMu, params.measurementOffsetSigma);
+%     measurement.pos = xus.pos+Rf(:,1)*measurementNoise(1)+Rf(:,2)*measurementNoise(2);
 else
     %position measurement
     if(det(params.measurementOffsetSigma) < 1e-4)
