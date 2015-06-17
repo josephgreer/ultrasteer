@@ -12,14 +12,14 @@ uc.v = 10;          %10mm/s
 uc.dc = 0;          %no-duty cycle
 
 %flip it for an s-curve optionally
-if(t == 6)
+if(t == 4)
     uc.dtheta = pi/4;
 % elseif(t == 6)
 %     uc.dtheta = pi/6;    
 % elseif(t == 8)
 %     uc.dtheta = pi/3;
-elseif(t == 10)
-    uc.dtheta = pi;
+% elseif(t == 10)
+%     uc.dtheta = pi;
 % elseif(t == 12)
 %     uc.dtheta = pi;
 else 

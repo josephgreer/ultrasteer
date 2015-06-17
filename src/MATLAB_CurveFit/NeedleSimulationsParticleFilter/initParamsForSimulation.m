@@ -73,6 +73,8 @@ params.p2.pastParticleSpacing = 10;                                         %axi
 params.p100.initOrientationSigma = diag(1/10*[pi/1000, pi/1000, pi/1000]);  %orientation sigma for initial sigma of kalman filter
 params.p100.measurementSigma = diag(1/5*[pi/1000, pi/1000, pi/1000]);       %measurement sigma for orientation
 params.p100.minimumMeasurements = 15;                                       %minimum number of measurements before we can generate rotations from measurements
+params.p100.distanceThresh = 5^2;                                           %minimum distance squared between measurements and template for optimal rotation calculation
+params.p100.subsetSize = 100;                                               %subset size for rotation measurement
 
 
 % drawing parameters
