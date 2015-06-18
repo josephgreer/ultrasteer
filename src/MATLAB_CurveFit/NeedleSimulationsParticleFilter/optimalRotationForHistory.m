@@ -14,26 +14,35 @@ measurements = [measurements.pos]';
 measurements = measurements-repmat(offset, size(measurements,1), 1);
 
 
-D = distanceMatrix(measurements,template);
 
+R = eye(3);
+ctemplate = template;
+minTemplate = [];
+for i=1:params.p100.procrustesit
+D = distanceMatrix(measurements,ctemplate);
 [minD minTemplate] = min(D,[], 2);
 goodDs = find(minD < params.p100.distanceThresh);
 goodDs = datasample(goodDs, min(params.p100.subsetSize, length(goodDs)), 'Replace', false);
 %display(length(goodDs));
 minTemplate = minTemplate(goodDs);
 
-X = template(minTemplate,:);
+X = ctemplate(minTemplate,:);
 % X = QuatToRotationMatrix(AxisAngleToQuat(2000*rand(3,1)))*X';
 % X = X';
 Y = measurements(goodDs,:);
-R = procrustesRotation(X,Y);
+dR = procrustesRotation(X,Y);
+R = dR*R;
+ctemplate = dR*ctemplate';
+ctemplate = ctemplate';
+end
 
+X = template(minTemplate,:);
 
 %[~, ~, R] = procrustes(Y,X,'scaling',false, 'reflection', false);
 % R.c(1,:)
-% R = R.T;
+%R = R.T;
 %R = procrustesRotation(Y,X);
-%[R, ~] = icp(template', measurements');
+%[R, ~] = icp(X', Y');
 end
 
 function drawPointHistories(X,Y,R,offset)

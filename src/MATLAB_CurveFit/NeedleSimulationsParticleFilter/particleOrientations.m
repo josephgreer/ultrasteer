@@ -40,4 +40,7 @@ end
 
 function q = particleOrientations100(xp, params)
 q = RotationMatrixToQuat(xp{1}.dist.mu)';
+if((abs(norm(q) - 1) > 1e-2))
+    x = 0;
+end
 end

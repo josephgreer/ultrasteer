@@ -12,7 +12,7 @@ else
 end
 
 theta = norm(x);
-if(abs(theta) < 1e-4)
+if(abs(theta) < 1e-3)
     R = eye(3);
     return;
 end

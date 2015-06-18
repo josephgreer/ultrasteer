@@ -29,5 +29,5 @@ pos = [pos{1:params.n:end}]';
 end
 
 function pos = particlePositions100(xp, params)
-pos = zeros(1,3);
+pos = xp{1}.pos';
 end

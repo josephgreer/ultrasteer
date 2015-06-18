@@ -112,7 +112,11 @@ sigma1 = params.sigmaOrientation;
 % prior uncertainty
 sigma0 = xp{1}.dist.sigma;
 
+if(abs(det(R10)-1) > params.errorEpsilon)
+    x = 0;
+end
 x{1}.dist = SO3Gaussian(R10, sigma1+R1*sigma0*R1');
 x{1}.rho = xp{1}.rho;
 x{1}.w = 1;
+x{1}.pos = xp{1}.pos;
 end
