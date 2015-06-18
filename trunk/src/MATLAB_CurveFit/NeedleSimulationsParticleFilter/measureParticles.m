@@ -250,9 +250,6 @@ xcurr.pos = xtrue{1}.pos;
 xcurr.rho = xp{1}.rho;
 xcurr.w = 1;
 
-%%%%%% REMOVE
-xcurr.q = xtrue{1}.q;
-%%%%%%
 xhist = propagateNeedleBack(xcurr, u, params);
 
 Rprior = QuatToRotationMatrix(xcurr.q);
@@ -264,6 +261,11 @@ if(length(measurements) >= params.p100.minimumMeasurements)
     deltaR = optimalRotationForHistory(xhist, measurements, params);
 else
     deltaR = QuatToRotationMatrix(xtrue{1}.q)*Rprior';
+    x{1}.rho = xp{1}.rho;
+    x{1}.w = 1;
+    x{1}.pos = xcurr.pos;
+    x{1}.dist = SO3Gaussian(QuatToRotationMatrix(xtrue{1}.q), params.p100.initOrientationSigma);
+    return;
 end
 
 if(norm(SO3HatInverse(SO3Log(deltaR))) > 0.5)
@@ -274,16 +276,23 @@ end
 Rmeas = deltaR*Rprior;
 
 % zero measurement noise? just use measurement then
-if(det(params.p100.measurementSigma) < 1e-3)
+if(det(params.p100.measurementSigma) < 1e-10)
     x{1}.dist = SO3Gaussian(Rmeas, zeros(3,3));
 else
-    sigmaC = inv(xp{1}.dist.sigma+params.p100.measurementSigma);
-    v = SO3Log(Rmeas*Rprior');
-    Rc = SO3Exp(sigmaC*params.p100.measurementSigma'*v)*Rprior;
+    errorVec = diag(params.p100.measurementSigma);
+    measSigma = diag(errorVec);
+    K = xp{1}.dist.sigma*inv(xp{1}.dist.sigma+measSigma);
+    sigmaC = (eye(3)-K)*xp{1}.dist.sigma;
+    v = SO3HatInverse(SO3Log(Rprior'*Rmeas));
+    Rc = Rprior*SO3Exp(K*v);
     x{1}.dist = SO3Gaussian(Rc, sigmaC);
+    if(abs(det(Rc)-1) > params.errorEpsilon)
+        x = 0;
+    end
 end
 x{1}.rho = xp{1}.rho;
 x{1}.w = 1;
+x{1}.pos = xcurr.pos;
 end
 
 function drawMeasurementInformationForParticle(xp, xs, u, measurement, params, i)

@@ -29,4 +29,7 @@ end
 if(q(1) < 0)
     q = -q;
 end
+if(abs(norm(q) - 1) > 1e-1)
+    x = 0;
+end
 end

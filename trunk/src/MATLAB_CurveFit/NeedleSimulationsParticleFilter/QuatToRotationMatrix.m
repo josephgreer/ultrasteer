@@ -4,7 +4,10 @@ sqx = q(2)*q(2);
 sqy = q(3)*q(3);
 sqz = q(4)*q(4);
 
-assert(abs(norm(q)-1) < 1e-5)
+if(abs(norm(q)-1) > 1e-1)
+    x = 0;
+end
+assert(abs(norm(q)-1) < 1e-1)
 
 R = zeros(3,3);
 

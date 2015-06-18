@@ -24,6 +24,8 @@ params.muVelocity = 0;
 params.sigmaVelocity = 5;                                                   %velocity sigma
 params.simulationTime = 15;                                                 %simulate 10 seconds of insertion
 
+params.errorEpsilon = 1e-1;                                                 %error epsilon for checks that matrices are det(1) etc.
+
 % ultrasound dimensions/parameters
 params.usw = 83*630*1e-3;                                                   %physical width of ultrasound frame (mm)
 params.ush = 83*480*1e-3;                                                   %phyiscal height of ultrasound frame (mm)
@@ -75,6 +77,7 @@ params.p100.measurementSigma = diag(1/5*[pi/1000, pi/1000, pi/1000]);       %mea
 params.p100.minimumMeasurements = 15;                                       %minimum number of measurements before we can generate rotations from measurements
 params.p100.distanceThresh = 5^2;                                           %minimum distance squared between measurements and template for optimal rotation calculation
 params.p100.subsetSize = 100;                                               %subset size for rotation measurement
+params.p100.procrustesit = 2;                                               %number of iterations to run procrustes
 
 
 % drawing parameters

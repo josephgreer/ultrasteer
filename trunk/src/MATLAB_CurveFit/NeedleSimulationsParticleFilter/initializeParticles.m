@@ -120,4 +120,5 @@ function xp =initializeParticles100(x, u, params)
 xp{1}.dist = SO3Gaussian(QuatToRotationMatrix(x{1}.q), params.p100.initOrientationSigma);
 xp{1}.rho = x{1}.rho;
 xp{1}.w = 1;
+xp{1}.pos = zeros(3,1);
 end
