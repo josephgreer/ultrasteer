@@ -9,7 +9,7 @@ params = initParamsForSimulation();
 params.doParticleFilter = 1;
 params.doMeasurement = 1;
 params.np = 500;
-params.n = 20;
+params.n = 15;
 params.simulationTime = 20;
 params.particleInitTime = 2;
 params.drawParticlePos = 1;
@@ -31,8 +31,8 @@ params.neff = 0.5;
 
 %params.sigmaOrientation = diag(0*[pi/1000, pi/1000, pi/1000]);            %orientation process noise std
 params.p1.initOrientationSigma = diag(1/2000*[pi, pi, pi]);
-params.sigmaRho = 3;
-params.p1.initRhoSigma = 3;
+params.sigmaRho = 0;
+params.p1.initRhoSigma = 0;
 params.sigmaOrientation = diag(1/2000*[pi, pi, pi]);
 params.measurementOffsetSigma = diag([params.mpp*5*1e-3 params.mpp*5*1e-3])
 %params.sigmaPos = diag([0; 0; 0]);
@@ -41,6 +41,15 @@ params.measurementOffsetSigma = diag([params.mpp*5*1e-3 params.mpp*5*1e-3])
 %params.sigmaVelocity = 50;
 %params.sigmaRho = 0;
 %params.doMeasurement = 0;
-[results, ~, ~] = runSimulation(params, @(t,params)(commandFcn(t, params)));
+nTrials = 5;
 
-plotParticleFilterResults(results,2);
+posErrors = [];
+orErrors = [];
+for i=1:nTrials
+    close all;
+    [results, ~, ~] = runSimulation(params, @(t,params)(commandFcn(t, params)));
+    [pE, oE] = plotParticleFilterResults(results,2,params);
+    posErrors = vertcat(posErrors, pE);
+    orErrors = vertcat(orErrors, oE);
+end
+
