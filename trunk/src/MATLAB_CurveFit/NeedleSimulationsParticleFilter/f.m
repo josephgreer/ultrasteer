@@ -13,11 +13,11 @@
 %   u{i}.dc        = duty cycle ratio
 % params = simulation parameters
 % see ../NeedleSimulation.m for description of parameters
-function xk1 = f(x,u,params)
+function xk1 = f(x,u, noiseParams, params)
 %orienation noise angles
-noiseTheta = mvnrnd(params.muOrientation, params.sigmaOrientation)';
-noisePos = mvnrnd(params.muPos, params.sigmaPos)';
-noiseVel = mvnrnd(params.muVelocity, params.sigmaVelocity);
+noiseTheta = mvnrnd(noiseParams.muOrientation, noiseParams.sigmaOrientation)';
+noisePos = mvnrnd(noiseParams.muPos, noiseParams.sigmaPos)';
+noiseVel = mvnrnd(noiseParams.muVelocity, noiseParams.sigmaVelocity);
 
 x.q = quatmult(x.q,AxisAngleToQuat(noiseTheta));
 
@@ -26,6 +26,6 @@ xk1 = propagateNeedleTip(x, u, params);
 
 % add noise to x0, R, and rho
 xk1.pos = xk1.pos+noisePos;
-xk1.rho = max(xk1.rho+mvnrnd(params.muRho, params.sigmaRho),10);
+xk1.rho = max(xk1.rho+mvnrnd(noiseParams.muRho, noiseParams.sigmaRho),10);
 xk1.w = x.w;
 end

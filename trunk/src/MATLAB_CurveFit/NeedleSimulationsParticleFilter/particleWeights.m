@@ -12,6 +12,10 @@ if(params.particleFilterMethod == 1)
     w = particleWeights1(xp, params);
 elseif(params.particleFilterMethod == 2)
     w = particleWeights2(xp, params);
+elseif(params.particleFilterMethod == 3)
+    w = particleWeights3(xp, params);
+elseif(params.particleFilterMethod == 4)
+    w = particleWeights4(xp, params);
 else
     w = particleWeights100(xp, params);
 end
@@ -23,6 +27,16 @@ w = [w.w]';
 end
 
 function w = particleWeights2(xp, params)
+w = cell2mat(xp);
+w = [w.w]';
+end
+
+function w = particleWeights3(xp, params)
+w = cell2mat(xp);
+w = [w.w]';
+end
+
+function w = particleWeights4(xp, params)
 w = cell2mat(xp);
 w = [w.w]';
 end

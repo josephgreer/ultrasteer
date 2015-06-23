@@ -7,6 +7,10 @@ if(params.particleFilterMethod == 1)
     x = propagateParticles1(xp,u,params);
 elseif(params.particleFilterMethod == 2)
     x = propagateParticles2(xp,u,params);
+elseif(params.particleFilterMethod == 3)
+    x = propagateParticles3(xp,u,params);
+elseif(params.particleFilterMethod == 4)
+    x = propagateParticles4(xp,u,params);
 else
     x = propagateParticles100(xp, u, params);
 end
@@ -29,9 +33,20 @@ end
 % params = simulation parameters
 % see ../NeedleSimulation.m for description of parameters
 function x = propagateParticles1(xp, u, params)
+
+%orienation noise angles
+noiseParams.muOrientation = params.muOrientation;
+noiseParams.sigmaOrientation = params.sigmaOrientation;
+noiseParams.muPos = params.muPos;
+noiseParams.sigmaPos = params.p1.particleSigmaPos;
+noiseParams.muVelocity = params.muVelocity;
+noiseParams.sigmaVelocity = params.sigmaVelocity;
+noiseParams.muRho = params.muRho;
+noiseParams.sigmaRho = params.sigmaRho;
+
 x = {};
 for i=1:length(xp)
-    x{i} = f(xp{i},u,params);
+    x{i} = f(xp{i},u,noiseParams,params);
 end
 x = x';
 end
@@ -68,12 +83,149 @@ for i=1:length(xp)
     xcurr.rho = circ.r;
     xcurr.w = xp{i}.w;
     
-    xcurr = f(xcurr,u,params);
+    xcurr = f(xcurr,u,params, params);
     x{i}.pos = vertcat(xcurr.pos,xp{i}.pos);;
     % remove excess points if there are too many.
     x{i}.pos(params.n+1:end) = [];
     
     x{1}.w = xp{i}.w;
+end
+x = x';
+end
+
+%% state update dynamics
+% x = needle tip state
+%   x.pos % position of needle tip frame 
+%   x.q  % orientation of needle tip frame 
+%   x.rho radius of curvature
+%   x.w = particle weight
+% u = control input
+%   u{1}        = current action
+%   u{2}        = action 1 timestamp back
+%   ...
+%   u{n}        = action n timestamps back
+%   u{i}.v         = insertion velocity
+%   u{i}.dtheta    = rotation about needle's axis
+%   u{i}.dc        = duty cycle ratio
+% params = simulation parameters
+% see ../NeedleSimulation.m for description of parameters
+function x = propagateParticles3(xp, u, params)
+x = {};
+
+%orienation noise angles
+noiseParams.muOrientation = zeros(3,1);
+noiseParams.sigmaOrientation = zeros(3,3);
+noiseParams.muPos = params.muPos;
+noiseParams.sigmaPos = params.p3.particleSigmaPos;
+noiseParams.muVelocity = params.muVelocity;
+noiseParams.sigmaVelocity = params.sigmaVelocity;
+noiseParams.muRho = params.muRho;
+noiseParams.sigmaRho = params.sigmaRho;
+
+
+Rz = SO3Exp(u.dtheta*[0; 0; 1]);
+
+%temporarily set orientation noise to 0 for state propagation.
+for i=1:length(xp)
+    xcurr.pos = xp{i}.pos;
+    xcurr.rho = xp{i}.rho;
+    xcurr.q = RotationMatrixToQuat(xp{i}.qdist.mu);
+    xcurr.w = xp{i}.w;
+    
+    noiseParams.sigmaOrientation = xp{i}.qdist.sigma;
+    
+    xcurr = f(xcurr,u,noiseParams,params);
+    
+    R10 = QuatToRotationMatrix(xcurr.q);
+    
+    % prior orientation
+    R0 = xp{i}.qdist.mu;
+    
+    %delta orientation
+    R1 = R10*R0';
+    
+    % process noise
+    sigma1 = params.sigmaOrientation;
+    % prior uncertainty
+    sigma0 = xp{1}.qdist.sigma;
+    
+    if(abs(det(R10)-1) > params.errorEpsilon)
+        x = 0;
+    end
+    x{i}.qdist = SO3Gaussian(R10, sigma1+R1*sigma0*R1');
+    x{i}.rho = xcurr.rho;
+    x{i}.w = xp{i}.w;
+    x{i}.pos = xcurr.pos;
+end
+x = x';
+end
+
+%% state update dynamics
+% x = needle tip state
+%   x.pos % position of needle tip frame 
+%   x.q  % orientation of needle tip frame 
+%   x.rho radius of curvature
+%   x.w = particle weight
+% u = control input
+%   u{1}        = current action
+%   u{2}        = action 1 timestamp back
+%   ...
+%   u{n}        = action n timestamps back
+%   u{i}.v         = insertion velocity
+%   u{i}.dtheta    = rotation about needle's axis
+%   u{i}.dc        = duty cycle ratio
+% params = simulation parameters
+% see ../NeedleSimulation.m for description of parameters
+function x = propagateParticles4(xp, u, params)
+x = {};
+
+qdist = xp{1}.qdist;
+
+%orienation noise angles
+noiseParams.muOrientation = zeros(3,1);
+noiseParams.sigmaOrientation = qdist.sigma;
+noiseParams.muPos = params.muPos;
+noiseParams.sigmaPos = params.p4.particleSigmaPos;
+noiseParams.muVelocity = params.muVelocity;
+noiseParams.sigmaVelocity = params.sigmaVelocity;
+noiseParams.muRho = params.muRho;
+noiseParams.sigmaRho = params.sigmaRho;
+
+
+Rz = SO3Exp(u.dtheta*[0; 0; 1]);
+
+%temporarily set orientation noise to 0 for state propagation.
+for i=1:length(xp)
+    xcurr.pos = xp{i}.pos;
+    xcurr.rho = xp{i}.rho;
+    xcurr.q = RotationMatrixToQuat(qdist.mu);
+    xcurr.w = xp{i}.w;
+    
+    noiseParams.sigmaOrientation = qdist.sigma;
+    
+    xcurr = f(xcurr,u,noiseParams,params);
+    
+    R10 = QuatToRotationMatrix(xcurr.q);
+    
+    % prior orientation
+    R0 = qdist.mu;
+    
+    %delta orientation
+    R1 = R10*R0';
+    
+    % process noise
+    sigma1 = params.sigmaOrientation;
+    % prior uncertainty
+    sigma0 = qdist.sigma;
+    
+    if(abs(det(R10)-1) > params.errorEpsilon)
+        x = 0;
+    end
+    
+    x{i}.qdist = SO3Gaussian(R10, sigma1+R1*sigma0*R1');
+    x{i}.rho = xcurr.rho;
+    x{i}.w = xp{i}.w;
+    x{i}.pos = xcurr.pos;
 end
 x = x';
 end

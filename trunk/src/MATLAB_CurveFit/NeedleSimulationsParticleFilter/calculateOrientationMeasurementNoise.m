@@ -6,7 +6,7 @@ clear; clc; close all;
 params = initParamsForSimulation();
 
 
-nTrials = 1;
+nTrials = 10;
 
 totalErrors = [];
 for trial = 1:nTrials
@@ -29,14 +29,15 @@ for trial = 1:nTrials
     params.neff = 0;
     params.particleFilterMethod = 100;
     %params.p100.measurementSigma = zeros(3,3);
-    params.p100.measurementSigma = diag([5e-3 5e-3 0.5]);%0.13]);
+    params.p100.measurementSigma = diag([5e-3 5e-3 0.5]);
     %params.measurementOffsetSigma = zeros(2,2);
     params.measurementOffsetSigma = diag([params.mpp*5*1e-3 params.mpp*5*1e-3]);
     params.simulationTime = 15;
-    params.p100.subsetSize = 25;
+    params.p100.subsetSize = 15;
+    params.p100.procrustesIt = 3;
     params.drawExpectedOrientation = 1;
 
-    [results, ~, ~] = runSimulation(params, @(t,params)(twistyCommandFcn(t, params)));
+    [results, ~, ~] = runSimulation(params, @(t,params)(commandFcn(t, params)));
 
     Rerrors = zeros(length(results.states), 3);
     for i=1:length(results.states)

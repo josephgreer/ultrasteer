@@ -12,5 +12,5 @@ w = particleWeights(xp, params);
 x.rho = w'*rho;
 x.pos = w'*pos;
 x.pos = x.pos';
-x.q = RotationMatrixToQuat(SO3Mean(q,w,1e-4));
+x.q = RotationMatrixToQuat(SO3Mean(q,w,1e-2));
 end
