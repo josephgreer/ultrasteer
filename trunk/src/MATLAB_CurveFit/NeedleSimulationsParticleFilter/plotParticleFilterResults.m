@@ -34,7 +34,8 @@ errors = [];
 for i=1:size(tipFrameQs,2)
   errors = vertcat(errors,(inv(QuatToRotationMatrix(tipFrameQs(:,i)))*((estimatedPos(i,:)-truePos(i,:))'))');
 end
-posErrors = mean(errors);
+e2 = errors.^2;
+posErrors = mean(e2,1);
 
 % now plot errors
 figure(figureNumber+1);
