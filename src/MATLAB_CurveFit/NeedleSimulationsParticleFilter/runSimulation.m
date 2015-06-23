@@ -34,7 +34,7 @@ u = repmat(u,params.n,1);
 % simulation
 figure(1);
 ylim([-10 150]);
-zlim([-10 100]);
+zlim([-40 100]);
 xlim([-50 50]);
 xlabel('x');
 ylabel('y');
@@ -63,7 +63,7 @@ for t=0:params.dt:params.simulationTime
     uc = commandFcn(t,params);
     
     %propagate through system dynamics
-    xcurr = f(xcurr,uc,params);
+    xcurr = f(xcurr,uc,params,params);
     
     xhist = vertcat({xcurr},xhist);
     if(length(xhist) > params.n)
@@ -90,7 +90,7 @@ for t=0:params.dt:params.simulationTime
         if(~params.particlesInit)
             fakeCurr = xhist;
             xp = initializeParticles(fakeCurr, u, params);
-            params.particlesInit = params.doParticleFilter;
+            params.particlesInit = params.doParticleFilter&length(measurements)>=getMinimumMeasurements(params);
         else
             xp = propagateParticles(xp,uc,params);
             if(params.doMeasurement)

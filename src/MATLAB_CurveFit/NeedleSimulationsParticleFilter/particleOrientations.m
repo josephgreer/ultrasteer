@@ -12,6 +12,10 @@ if(params.particleFilterMethod == 1)
     q = particleOrientations1(xp, params);
 elseif(params.particleFilterMethod == 2)
     q = particleOrientations2(xp, params);
+elseif(params.particleFilterMethod == 3)
+    q = particleOrientations3(xp, params);
+elseif(params.particleFilterMethod == 4)
+    q = particleOrientations4(xp, params);
 else
     q = particleOrientations100(xp, params);
 end
@@ -35,6 +39,20 @@ for i=1:length(xp)
     tangent = tangent/norm(tangent);
     
     q(i,:) = RotationMatrixToQuat([normal binormal tangent])';
+end
+end
+
+function q = particleOrientations3(xp, params)
+q = zeros(length(xp), 4);
+for i=1:params.np
+    q(i,:) = RotationMatrixToQuat(xp{i}.qdist.mu)';
+end
+end
+
+function q = particleOrientations4(xp, params)
+q = RotationMatrixToQuat(xp{1}.qdist.mu)';
+if((abs(norm(q) - 1) > 1e-2))
+    x = 0;
 end
 end
 

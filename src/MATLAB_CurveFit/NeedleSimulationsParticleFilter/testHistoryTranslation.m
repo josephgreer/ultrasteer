@@ -34,8 +34,11 @@ for i=1:20
     xp = propagateNeedleBack(xcurr, u, params);
     xpPos = cell2mat(xp);
     xpPos = [xpPos.pos];
-    xpPosShifted = xpPos-repmat(dp,1,size(xpPos,2));
-    drawPointHistory(xp(1:nskip:end), 1, [0 0 1]);
+    xpPosShifted = xrefPos+repmat(dp,1,size(xpPos,2));
+    max(max(abs(xpPosShifted-xpPos)))
+    %drawPointHistory(xp(1:nskip:end), 1, [0 0 1]);
 end
+
+
 
 %drawFrames(1, {xp{1}}, 5, []); 

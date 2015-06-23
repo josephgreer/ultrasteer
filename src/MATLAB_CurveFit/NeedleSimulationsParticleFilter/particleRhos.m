@@ -12,6 +12,10 @@ if(params.particleFilterMethod == 1)
     rho = particleOrientations1(xp, params);
 elseif(params.particleFilterMethod == 2)
     rho = particleOrientations2(xp, params);
+elseif(params.particleFilterMethod == 3)
+    rho = particleOrientations3(xp, params);
+elseif(params.particleFilterMethod == 4)
+    rho = particleOrientations4(xp, params);
 else
     rho = particleOrientations100(xp, params);
 end
@@ -29,6 +33,16 @@ for i=1:length(xp)
     circ = Circle3([xp{i}.pos{1} xp{i}.pos{2} xp{i}.pos{3}]);
     rho(i) = circ.r;
 end
+end
+
+function rho = particleOrientations3(xp, params)
+arrays = cell2mat(xp);
+rho = [arrays.rho]';
+end
+
+function rho = particleOrientations4(xp, params)
+arrays = cell2mat(xp);
+rho = [arrays.rho]';
 end
 
 function rho = particleOrientations100(xp, params)

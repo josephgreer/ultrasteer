@@ -64,20 +64,50 @@ params.p1.initRhoSigma = 3;                                                 %rho
 params.p1.initRhoMu = 0;                                                    %rho mu for initial distribution of particles
 params.p1.initPosSigma = diag([5 5 5]);                                     %pos sigma for initial distribution of particles
 params.p1.initPosMu = [0; 0; 0];                                            %pos mu for initial distribution of particles
+params.p1.minimumMeasurements = 1;                                          %minimum number of measurements before we can run measurement equation
+params.p1.particleSigmaPos = diag(1/3*[1 1 1]);                               %sigma pos for particle propagation
 
 % method 2
 params.p2.drawPastPos = 1;                                                  %draw past particle points as well.
 params.p2.initPosSigma = diag([5 5 5]);                                     %pos sigma for initial distribution of particles
 params.p2.initPosMu = [0; 0; 0];                                            %pos mu for initial distribution of particles
 params.p2.pastParticleSpacing = 10;                                         %axial spacing of past positions in (mm)
+params.p2.minimumMeasurements = 1;                                          %minimum number of measurements before we can run measurement equation
+
+% method 3
+params.p3.initPosSigma = diag([5 5 5]);                                     %pos sigma for initial distribution of particles
+params.p3.initPosMu = [0; 0; 0];                                            %pos mu for initial distribution of particles
+params.p3.initOrientationSigma = diag(1/10*[pi/1000, pi/1000, pi/1000]);    %orientation sigma for initial sigma of kalman filter
+params.p3.initRhoSigma = 3;                                                 %rho sigma for initial distribution of particles
+params.p3.initRhoMu = 0;                                                    %rho mu for initial distribution of particles
+params.p3.measurementSigma = diag([5e-3 5e-3 0.5]);                         %measurement sigma for orientation
+params.p3.minimumMeasurements = 15;                                         %minimum number of measurements before we can generate rotations from measurements
+params.p3.distanceThresh = 5^2;                                             %minimum distance squared between measurements and template for optimal rotation calculation
+params.p3.subsetSize = 15;                                                  %subset size for rotation measurement
+params.p3.procrustesit = 3;                                                 %number of iterations to run procrustes
+params.p3.particleSigmaPos = diag(1/3*[1 1 1]);                               %sigma pos for particle propagation
+
+% method 4
+params.p4.initPosSigma = diag([5 5 5]);                                     %pos sigma for initial distribution of particles
+params.p4.initPosMu = [0; 0; 0];                                            %pos mu for initial distribution of particles
+params.p4.initOrientationSigma = diag(1/10*[pi/1000, pi/1000, pi/1000]);    %orientation sigma for initial sigma of kalman filter
+params.p4.initRhoSigma = 3;                                                 %rho sigma for initial distribution of particles
+params.p4.initRhoMu = 0;                                                    %rho mu for initial distribution of particles
+params.p4.measurementSigma = diag([5e-3 5e-3 0.5]);                         %measurement sigma for orientation
+params.p4.minimumMeasurements = 15;                                         %minimum number of measurements before we can generate rotations from measurements
+params.p4.distanceThresh = 5^2;                                             %minimum distance squared between measurements and template for optimal rotation calculation
+params.p4.subsetSize = 15;                                                  %subset size for rotation measurement
+params.p4.procrustesit = 3;                                                 %number of iterations to run procrustes
+params.p4.particleSigmaPos = diag(1/3*[1 1 1]);                               %sigma pos for particle propagation
+
 
 % method 100
 params.p100.initOrientationSigma = diag(1/10*[pi/1000, pi/1000, pi/1000]);  %orientation sigma for initial sigma of kalman filter
-params.p100.measurementSigma = diag(1/5*[pi/1000, pi/1000, pi/1000]);       %measurement sigma for orientation
+params.p100.measurementSigma = diag([5e-3 5e-3 0.5]);                       %measurement sigma for orientation
 params.p100.minimumMeasurements = 15;                                       %minimum number of measurements before we can generate rotations from measurements
 params.p100.distanceThresh = 5^2;                                           %minimum distance squared between measurements and template for optimal rotation calculation
-params.p100.subsetSize = 100;                                               %subset size for rotation measurement
-params.p100.procrustesit = 2;                                               %number of iterations to run procrustes
+params.p100.subsetSize = 15;                                                %subset size for rotation measurement
+params.p100.procrustesit = 3;                                               %number of iterations to run procrustes
 
 
 % drawing parameters

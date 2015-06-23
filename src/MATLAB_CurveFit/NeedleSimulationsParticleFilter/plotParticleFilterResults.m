@@ -4,7 +4,7 @@
 %%%     results: defined in runSimulation.m
 %%%     figureNumber: figure number
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function plotParticleFilterResults(results, figureNumber)
+function [posErrors, orErrors] = plotParticleFilterResults(results, figureNumber, params)
 states = cell2mat(results.states);
 estimatedStates = cell2mat(results.estimatedStates);
 truePos = [states.pos]';
@@ -34,6 +34,7 @@ errors = [];
 for i=1:size(tipFrameQs,2)
   errors = vertcat(errors,(inv(QuatToRotationMatrix(tipFrameQs(:,i)))*((estimatedPos(i,:)-truePos(i,:))'))');
 end
+posErrors = mean(errors);
 
 % now plot errors
 figure(figureNumber+1);
@@ -54,4 +55,21 @@ figure;
 plot(results.time, results.orientationError);
 xlabel('time');
 ylabel('orientationError');
+orErrors = mean(results.orientationError);
+
+figure;
+N = length(results.particles);
+rhosTrue = zeros(N,1);
+rhosEst = zeros(N,1);
+for i=1:N
+    rhosTrue(i) = results.states{i}.rho;
+    xpe = expectedValueOfParticles(results.particles{i}, params);
+    rhosEst(i) = xpe.rho;
+end
+plot(results.time, rhosTrue,'b');
+hold on;
+plot(results.time, rhosEst, 'r');
+xlabel('time');
+ylabel('roc');
+
 end

@@ -7,6 +7,10 @@ if(params.particleFilterMethod == 1)
     xp = initializeParticles1(x,u,params);
 elseif(params.particleFilterMethod == 2)
     xp = initializeParticles2(x,u,params);
+elseif(params.particleFilterMethod == 3)
+    xp = initializeParticles3(x,u,params);
+elseif(params.particleFilterMethod == 4)
+    xp = initializeParticles4(x,u,params);
 else
     xp = initializeParticles100(x,u,params);
 end
@@ -90,6 +94,106 @@ pos = pos+posNoise;
 
 for p=1:params.np
     xp{p}.pos = mat2cell(pos((p-1)*params.n+1:p*params.n,:)', 3, ones(params.n,1));
+    xp{p}.w = 1/params.np;
+end
+
+xp = xp';
+
+end
+
+% intialize particles based on true state of needle 
+% x = needle tip state
+% x{1} = current needle tip state
+% x{2} = needle tip state 1 time step ago
+% ...
+%   x{i}.pos % position of needle tip frame i timesteps back
+%   x{i}.q  % orientation of needle tip frame i timesteps back
+%   x{i}.rho radius of curvature (mm) i timesteps back
+%   x{i}.w = particle weight i timesteps back
+% u = control input
+%   u{1}        = current action
+%   u{2}        = action 1 timestamp back
+%   ...
+%   u{n}        = action n timestamps back
+%   u{i}.v         = insertion velocity
+%   u{i}.dtheta    = rotation about needle's axis
+%   u{i}.dc        = duty cycle ratio
+% xp = particle array
+%   xp{i} = ith particle
+%     xp{i}.pos         % position of ith particle
+%     xp{i}.rho         % curvature of ith particle
+%     xp{i}.qdist       % normal distribution representing
+%     xp{i}.w           % weight of ith particle
+% params = simulation parameters
+% see ../NeedleSimulation.m for description of parameters
+function xp = initializeParticles3(x, u, params)
+xp = {};
+
+x = x{1};
+
+% for each particle
+posNoise = mvnrnd(QuatToRotationMatrix(x.q)*params.p3.initPosMu,params.p3.initPosSigma,params.np);
+pos = repmat(x.pos',params.np,1);
+pos = pos+posNoise;
+
+rhoNoise = mvnrnd(params.p3.initRhoMu, params.p3.initRhoSigma, params.np);
+rho = repmat(x.rho, params.np, 1);
+rho = rho+rhoNoise;
+
+for p=1:params.np
+    xp{p}.pos = pos(p,:)';
+    xp{p}.qdist = SO3Gaussian(QuatToRotationMatrix(x.q), params.p3.initOrientationSigma);
+    xp{p}.rho = rho(p);
+    xp{p}.w = 1/params.np;
+end
+
+xp = xp';
+
+end
+
+% intialize particles based on true state of needle 
+% x = needle tip state
+% x{1} = current needle tip state
+% x{2} = needle tip state 1 time step ago
+% ...
+%   x{i}.pos % position of needle tip frame i timesteps back
+%   x{i}.q  % orientation of needle tip frame i timesteps back
+%   x{i}.rho radius of curvature (mm) i timesteps back
+%   x{i}.w = particle weight i timesteps back
+% u = control input
+%   u{1}        = current action
+%   u{2}        = action 1 timestamp back
+%   ...
+%   u{n}        = action n timestamps back
+%   u{i}.v         = insertion velocity
+%   u{i}.dtheta    = rotation about needle's axis
+%   u{i}.dc        = duty cycle ratio
+% xp = particle array
+%   xp{i} = ith particle
+%     xp{i}.pos         % position of ith particle
+%     xp{i}.rho         % curvature of ith particle
+%     xp{i}.qdist       % normal distribution representing
+%     xp{i}.w           % weight of ith particle
+% params = simulation parameters
+% see ../NeedleSimulation.m for description of parameters
+function xp = initializeParticles4(x, u, params)
+xp = {};
+
+x = x{1};
+
+% for each particle
+posNoise = mvnrnd(QuatToRotationMatrix(x.q)*params.p4.initPosMu,params.p4.initPosSigma,params.np);
+pos = repmat(x.pos',params.np,1);
+pos = pos+posNoise;
+
+rhoNoise = mvnrnd(params.p4.initRhoMu, params.p4.initRhoSigma, params.np);
+rho = repmat(x.rho, params.np, 1);
+rho = rho+rhoNoise;
+
+for p=1:params.np
+    xp{p}.pos = pos(p,:)';
+    xp{p}.qdist = SO3Gaussian(QuatToRotationMatrix(x.q), params.p4.initOrientationSigma);
+    xp{p}.rho = rho(p);
     xp{p}.w = 1/params.np;
 end
 

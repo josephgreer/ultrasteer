@@ -3,13 +3,6 @@
 
 % D = D_ij = |(x_i-y_j)|^2
 function D = distanceMatrix(X,Y)
-D = zeros(size(X,1), size(Y,1));
-
-dp = zeros(1,3);
-for i=1:size(D,1)
-    for j=1:size(D,2)
-        dp = X(i,:)-Y(j,:);
-        D(i,j) = dp*dp';
-    end
-end
+M = size(X,1); N = size(Y,1);
+D = repmat(diag(X*X'),1,N)-2*X*Y'+repmat(diag((Y*Y'))', M, 1);
 end

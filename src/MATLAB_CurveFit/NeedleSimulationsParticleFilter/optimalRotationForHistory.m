@@ -5,8 +5,6 @@
 % measurement{1} = latest measurement
 % measurement{2} = measurement 1 timestep back etc
 function R = optimalRotationForHistory(template,measurements, params)
-template = cell2mat(template);
-template = [template.pos]';
 offset = template(1,:);
 template = template-repmat(offset, size(template,1), 1);
 measurements = cell2mat(measurements);
@@ -19,21 +17,21 @@ R = eye(3);
 ctemplate = template;
 minTemplate = [];
 for i=1:params.p100.procrustesit
-D = distanceMatrix(measurements,ctemplate);
-[minD minTemplate] = min(D,[], 2);
-goodDs = find(minD < params.p100.distanceThresh);
-goodDs = datasample(goodDs, min(params.p100.subsetSize, length(goodDs)), 'Replace', false);
-%display(length(goodDs));
-minTemplate = minTemplate(goodDs);
-
-X = ctemplate(minTemplate,:);
-% X = QuatToRotationMatrix(AxisAngleToQuat(2000*rand(3,1)))*X';
-% X = X';
-Y = measurements(goodDs,:);
-dR = procrustesRotation(X,Y);
-R = dR*R;
-ctemplate = dR*ctemplate';
-ctemplate = ctemplate';
+    D = distanceMatrix(measurements,ctemplate);
+    [minD minTemplate] = min(D,[], 2);
+    goodDs = find(minD < params.p3.distanceThresh);
+    goodDs = datasample(goodDs, min(params.p100.subsetSize, length(goodDs)), 'Replace', false);
+    %display(length(goodDs));
+    minTemplate = minTemplate(goodDs);
+    
+    X = ctemplate(minTemplate,:);
+    % X = QuatToRotationMatrix(AxisAngleToQuat(2000*rand(3,1)))*X';
+    % X = X';
+    Y = measurements(goodDs,:);
+    dR = procrustesRotation(X,Y);
+    R = dR*R;
+    ctemplate = dR*ctemplate';
+    ctemplate = ctemplate';
 end
 
 X = template(minTemplate,:);
