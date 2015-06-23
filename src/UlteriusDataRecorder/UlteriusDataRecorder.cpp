@@ -69,21 +69,21 @@ int main( int argc, const char* argv[] )
 
   f32 framerate = atof(argv[16]);
 
-  //RPUlteriusReaderCollection rpReaders(ip);
-  RPUlteriusProcessManager rpReaders(ip,mpp,Vec2d(ox,oy),framerate);
-  if(mask&RPF_BPOST32) {
-    printf("Enabling bpost32\n");
-    rpReaders.EnableType(RPF_BPOST32, 1);
-  }
-  if(mask&RPF_BPOST8) {
-    printf("Enabling bpost8\n");
-    rpReaders.EnableType(RPF_BPOST8, 1);
-  }
-  if(mask&RPF_GPS) {
-    printf("Enabling gps\n");
-    rpReaders.EnableType(RPF_GPS, 1);
-  }
-  //rpReaders.EnableMask(mask);
+  RPUlteriusReaderCollection rpReaders(ip,mpp, Vec2d(ox,oy));
+  //RPUlteriusProcessManager rpReaders(ip,mpp,Vec2d(ox,oy),framerate);
+  //if(mask&RPF_BPOST32) {
+  //  printf("Enabling bpost32\n");
+  //  rpReaders.EnableType(RPF_BPOST32, 1);
+  //}
+  //if(mask&RPF_BPOST8) {
+  //  printf("Enabling bpost8\n");
+  //  rpReaders.EnableType(RPF_BPOST8, 1);
+  //}
+  //if(mask&RPF_GPS) {
+  //  printf("Enabling gps\n");
+  //  rpReaders.EnableType(RPF_GPS, 1);
+  //}
+  rpReaders.EnableMask(mask);
 
   RPFileWriterCollection *writers = NULL;
 
@@ -115,7 +115,7 @@ int main( int argc, const char* argv[] )
 
     RPData rp = rpReaders.GetNextRPData();
     if(((mask&RPF_BPOST32) && !rp.color) || ((mask&RPF_BPOST8)&&!rp.b8) || ((mask&RPF_GPS) && !rp.gps.valid)) {
-      Sleep(50);
+      Sleep(20);
       releaseRPData(&rp);
       continue;
     }
