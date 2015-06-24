@@ -35,13 +35,15 @@ params.measurementOffsetSigma = diag([params.mpp*5*1e-3 params.mpp*5*1e-3]);
 %params.videoFile = 'C:/needle_particleFilter2.avi';
 %params.writeVideo = 0;
 
-params.sigmaOrientation = diag(1/2000*[pi, pi, pi]);
+params.sigmaOrientation = diag(1/5000*[pi, pi, pi]);
+
 
 
 nTrials = 5;
 posErrors = [];
 orErrors = [];
 for i=1:nTrials
+    close all;
     [results, ~, ~] = runSimulation(params, @(t,params)(commandFcn(t, params)));
     
     [cPosErrors, cOrErrors] = plotParticleFilterResults(results,2,params);
