@@ -42,7 +42,6 @@ typedef double f64;
 
 namespace Nf
 {
-
   static void NTrace(const char *fmt, ...)
   {
     char str[1024] = {0};
