@@ -121,8 +121,11 @@ for i=1:length(xp)
                 b = suv; % if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0) 
                 
                 duv = suv-measurement.uv;
-                p_uvx = truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.measurementOffsetSigma),...,
-                    a,b);
+                
+                pin = sigmf(measurement.doppler, [params.sigA, params.sigC]);
+                p_uvx = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.measurementOffsetSigma),...,
+                    a,b) + ...
+                    (1-pin)*(1/(params.ush*params.usw));
                 
                 % p(d|x) in case particle intersects frame
                 p_dx = lognpdf(measurement.doppler, params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
@@ -213,8 +216,11 @@ for i=1:length(xp)
                 b = suv; % if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0) 
                 
                 duv = suv-measurement.uv;
-                p_uvx = truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.measurementOffsetSigma),...,
-                    a,b);
+                
+                pin = sigmf(measurement.doppler, [params.sigA, params.sigC]);
+                p_uvx = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.measurementOffsetSigma),...,
+                    a,b) + ...
+                    (1-pin)*(1/(params.ush*params.usw));
                 
                 % p(d|x) in case particle intersects frame
                 p_dx = lognpdf(measurement.doppler, params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
@@ -357,8 +363,11 @@ for i=1:params.np
                 b = suv; % if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0)
                 
                 duv = suv-measurement.uv;
-                p_uvx = truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.measurementOffsetSigma),...,
-                    a,b);
+                
+                pin = sigmf(measurement.doppler, [params.sigA, params.sigC]);
+                p_uvx = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.measurementOffsetSigma),...,
+                    a,b) + ...
+                    (1-pin)*(1/(params.ush*params.usw));
                 
                 % p(d|x) in case particle intersects frame
                 p_dx = lognpdf(measurement.doppler, params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
@@ -451,9 +460,10 @@ for i=1:params.np
                 a = suv-[params.usw;params.ush]; % if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
                 b = suv; % if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0)
                 
-                duv = suv-measurement.uv;
-                p_uvx = truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.measurementOffsetSigma),...,
-                    a,b);
+                pin = sigmf(measurement.doppler, [params.sigA, params.sigC]);
+                p_uvx = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.measurementOffsetSigma),...,
+                    a,b) + ...
+                    (1-pin)*(1/(params.ush*params.usw));
                 
                 % p(d|x) in case particle intersects frame
                 p_dx = lognpdf(measurement.doppler, params.onNeedleDopplerMu, params.onNeedleDopplerSigma);

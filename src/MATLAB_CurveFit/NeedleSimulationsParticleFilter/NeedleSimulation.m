@@ -30,10 +30,10 @@ params.neff = 0.5;
 
 
 %params.sigmaOrientation = diag(0*[pi/1000, pi/1000, pi/1000]);            %orientation process noise std
-params.p1.initOrientationSigma = diag(1/2000*[pi, pi, pi]);
+params.p1.initOrientationSigma = diag(1/10000*[pi, pi, pi]);
 params.sigmaRho = 0;
 params.p1.initRhoSigma = 0;
-params.sigmaOrientation = diag(1/2000*[pi, pi, pi]);
+params.sigmaOrientation = diag(1/5000*[pi, pi, pi]);
 params.measurementOffsetSigma = diag([params.mpp*5*1e-3 params.mpp*5*1e-3])
 %params.sigmaPos = diag([0; 0; 0]);
 %params.p1.initPosSigma = diag(0*[20 20 20]);
