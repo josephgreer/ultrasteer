@@ -5,6 +5,22 @@
 
 namespace Nf
 {
+
+  ///////////////////////////////////////////////////////////////
+  // Begin SO(3) Math
+  ///////////////////////////////////////////////////////////////
+  arma::mat33 SO3Hat(const arma::vec3 &x);
+  arma::vec3 SO3HatInverse(const arma::mat33 &x);
+  arma::mat33 SO3Exp(const arma::mat33 &x);
+  arma::mat33 SO3Exp(const arma::vec3 &x);
+  arma::vec3 SO3Log(const arma::mat33 &x);
+
+  ///////////////////////////////////////////////////////////////
+  // End SO(3) Math
+  ///////////////////////////////////////////////////////////////
+
+
+  //implements multivariate gaussians sampling
   template < class V, class M >
   class Gaussian
   {

@@ -20,24 +20,30 @@ namespace Nf
     arma::vec doppler;        // represents corresponding doppler response values \in R^3 [d1; d2; ... dn] \in R^n
   };
 
-  struct TipState
-  {
-    arma::vec4 q;              // represents orientation
-    arma::vec3 pos;         // represents position
-    f64 rho;                   // represents curvature
-
-    TipState()
-    {
-      q.zeros();
-      pos.zeros();
-      rho = 0;
-    }
-  };
-
   class ParticleFilterParameters
   {
   public:
 
+  };
+
+  struct TipState
+  {
+    arma::mat33 R;             // R = [x y z] x,y,z \in R^3, unit vectors representing tip frame
+    arma::vec3 pos;            // represents position
+    f64 rho;                   // represents curvature
+
+    TipState()
+    {
+      R.eye();
+      pos.zeros();
+      rho = 0;
+    }
+
+    //Propagate by a timestep according to unicycle model
+    TipState Propagate(const NSCommand &u, f64 dt, const ParticleFilterParameters *p);
+
+    //Propagate needle by path dl according to unicycle model
+    TipState PropagateLength(const NSCommand &u, f64 dl, const ParticleFilterParameters *p);
   };
 
   class ParticleFilter : public ParameterCollection
@@ -70,8 +76,8 @@ namespace Nf
 
     // Get all the particle positions
     //    returns:
-    //      [q1^T ; ... ; qn^T] \in R^(nx4) each row represents an orientation in quaternions
-    virtual arma::mat GetParticleOrientations(const ParticleFilterParameters *p) = 0;
+    //      vector of tip frame orientations
+    virtual std::vector < arma::mat33 > GetParticleOrientations(const ParticleFilterParameters *p) = 0;
 
 
     // Returns curvatures of each particle
@@ -113,8 +119,8 @@ namespace Nf
 
     // Get all the particle positions
     //    returns:
-    //      [q1^T ; ... ; qn^T] \in R^(nx4) each row represents an orientation in quaternions
-    virtual arma::mat GetParticleOrientations(const ParticleFilterParameters *p);
+    //      vector of tip frame orientations
+    virtual std::vector < arma::mat33 > GetParticleOrientations(const ParticleFilterParameters *p) = 0;
 
 
     // Returns curvatures of each particle
@@ -156,8 +162,8 @@ namespace Nf
 
     // Get all the particle positions
     //    returns:
-    //      [q1^T ; ... ; qn^T] \in R^(nx4) each row represents an orientation in quaternions
-    virtual arma::mat GetParticleOrientations(const ParticleFilterParameters *p);
+    //      vector of tip frame orientations
+    virtual std::vector < arma::mat33 > GetParticleOrientations(const ParticleFilterParameters *p) = 0;
 
 
     // Returns curvatures of each particle

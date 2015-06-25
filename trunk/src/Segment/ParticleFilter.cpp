@@ -7,6 +7,47 @@ namespace Nf
 {
   using ::s32;
 
+  
+  TipState TipState::PropagateLength(const NSCommand &u, f64 dl, const ParticleFilterParameters *p)
+  {
+    TipState res;
+
+#if 0
+ //k' coordinate system expressed in global coordinates.
+// note rotation order is flipped because using intrinsic rotations with
+// extrinisc rotation matrices
+   vec3 zhat;
+   zhat << 0 << endr << 0 << endr << 1 << endr;
+   mat33 kp = this->R*SO3Exp(u.dtheta*zhat);
+
+% location of tip expressed in Rk' coordinates
+kp_x = [0; x.rho*(1-cos(dl/x.rho)); x.rho*sin(dl/x.rho)];
+
+
+% new coordinate frame expressed in global coordinates.
+% new coordinate frame is old coordinate frame rhoated by u.dtheta around
+% needle tip's z-axis then rotated about the needle tip's x axis due to
+% following the curved arc.  Note taht rotation order is flipped due to
+% intrinsic axis rotations used rather than extrinsic.
+x1.q = quatmult(kp,AxisAngleToQuat(-dl/x.rho*[1; 0; 0]));
+
+% convert needle tip location into global coordinates
+x1.pos = quatrot(kp,kp_x)+x.pos;
+% pass through rho
+x1.rho = x.rho;
+#endif
+
+    return res;
+  }
+
+  TipState TipState::Propagate(const NSCommand &u, f64 dt, const ParticleFilterParameters *p)
+  {
+    TipState res;
+
+
+
+    return res;
+  }
 
   //////////////////////////////////////////////////////////////////////////////////////////
   /// Begin Basic Particle Filter
@@ -53,9 +94,9 @@ namespace Nf
     return zeros<mat>(m_nParticles, 3);
   }
 
-  mat ParticleFilterFullState::GetParticleOrientations(const ParticleFilterParameters *p)
+  std::vector < mat33 > ParticleFilterFullState::GetParticleOrientations(const ParticleFilterParameters *p)
   {
-    return zeros<mat>(m_nParticles, 4);
+    return std::vector < mat33 >();
   }
 
   vec ParticleFilterFullState::GetParticleRhos(const ParticleFilterParameters *p)
@@ -100,9 +141,9 @@ namespace Nf
     return zeros<mat>(m_nParticles, 3);
   }
 
-  mat ParticleFilterMarginalized::GetParticleOrientations(const ParticleFilterParameters *p)
+  std::vector < mat33 > ParticleFilterMarginalized::GetParticleOrientations(const ParticleFilterParameters *p)
   {
-    return zeros<mat>(m_nParticles, 4);
+    return std::vector < mat33 >();
   }
 
   vec ParticleFilterMarginalized::GetParticleRhos(const ParticleFilterParameters *p)
