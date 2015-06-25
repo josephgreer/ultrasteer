@@ -232,7 +232,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
     std::tr1::shared_ptr < Nf::IntSlotForwarder > uiElem (new Nf::IntSlotForwarder(ints[i]->GetCallback(), ints[i]->GetContext(), (QObject *)sb, repainters, NULL));
     m_params->setItemWidget(child, 1, sb); 
     ints[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< s32 > >(uiElem));
-    QObject::connect((QObject *)sb, SIGNAL(valueChanged(int)), (QObject *)&(*uiElem), SLOT(changeForward()));
+    assert(QObject::connect((QObject *)sb, SIGNAL(valueChanged(int)), (QObject *)&(*uiElem), SLOT(changeForward())));
   }
 
   //Float Parameters
@@ -252,7 +252,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
     std::tr1::shared_ptr < Nf::FloatSlotForwarder > uiElem (new Nf::FloatSlotForwarder(floats[i]->GetCallback(), floats[i]->GetContext(), (QObject *)sb, repainters, NULL));
     m_params->setItemWidget(child, 1, sb); 
     floats[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< f32 > >(uiElem));
-    QObject::connect((QObject *)sb, SIGNAL(valueChanged(double)), (QObject *)&(*uiElem), SLOT(changeForward()));
+    assert(QObject::connect((QObject *)sb, SIGNAL(valueChanged(double)), (QObject *)&(*uiElem), SLOT(changeForward())));
   }
 
   //Vec3d Parameters
@@ -283,7 +283,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
 
       m_params->setItemWidget(grandChild, 1, sb); 
 
-      QObject::connect((QObject *)sb, SIGNAL(valueChanged(double)), (QObject *)&(*uiElem), SLOT(changeForward()));
+      assert(QObject::connect((QObject *)sb, SIGNAL(valueChanged(double)), (QObject *)&(*uiElem), SLOT(changeForward())));
     }
     vec3ds[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< Nf::Vec3d > >(uiElem));
   }
@@ -316,7 +316,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
 
       m_params->setItemWidget(grandChild, 1, sb); 
 
-      QObject::connect((QObject *)sb, SIGNAL(valueChanged(double)), (QObject *)&(*uiElem), SLOT(changeForward()));
+      assert(QObject::connect((QObject *)sb, SIGNAL(valueChanged(double)), (QObject *)&(*uiElem), SLOT(changeForward())));
     }
     vec3fs[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< Nf::Vec3f > >(uiElem));
   }
@@ -349,7 +349,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
 
       m_params->setItemWidget(grandChild, 1, sb); 
 
-      QObject::connect((QObject *)sb, SIGNAL(valueChanged(double)), (QObject *)&(*uiElem), SLOT(changeForward()));
+      assert(QObject::connect((QObject *)sb, SIGNAL(valueChanged(double)), (QObject *)&(*uiElem), SLOT(changeForward())));
     }
     vec3is[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< Nf::Vec3i > >(uiElem));
   }
@@ -382,7 +382,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
 
       m_params->setItemWidget(grandChild, 1, sb); 
 
-      QObject::connect((QObject *)sb, SIGNAL(valueChanged(double)), (QObject *)&(*uiElem), SLOT(changeForward()));
+      assert(QObject::connect((QObject *)sb, SIGNAL(valueChanged(double)), (QObject *)&(*uiElem), SLOT(changeForward())));
     }
     vec2ds[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< Nf::Vec2d > >(uiElem));
   }
@@ -415,7 +415,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
 
       m_params->setItemWidget(grandChild, 1, sb); 
 
-      QObject::connect((QObject *)sb, SIGNAL(valueChanged(double)), (QObject *)&(*uiElem), SLOT(changeForward()));
+      assert(QObject::connect((QObject *)sb, SIGNAL(valueChanged(double)), (QObject *)&(*uiElem), SLOT(changeForward())));
     }
     vec2fs[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< Nf::Vec2f > >(uiElem));
   }
@@ -448,7 +448,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
 
       m_params->setItemWidget(grandChild, 1, sb); 
 
-      QObject::connect((QObject *)sb, SIGNAL(valueChanged(double)), (QObject *)&(*uiElem), SLOT(changeForward()));
+      assert(QObject::connect((QObject *)sb, SIGNAL(valueChanged(int)), (QObject *)&(*uiElem), SLOT(changeForward())));
     }
     vec2is[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< Nf::Vec2i > >(uiElem));
   }
