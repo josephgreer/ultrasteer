@@ -37,6 +37,14 @@ using ::f64;
 
 namespace Nf
 {
+  using ::s8;
+  using ::u16;
+  using ::s16;
+  using ::u32;
+  using ::s32;
+  using ::f32;
+  using ::f64;
+
   void NTrace(const char *fmt, ...);
 
 #define BEGIN_TIMING(x,y) \

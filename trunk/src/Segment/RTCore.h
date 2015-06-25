@@ -7,5 +7,5 @@
 
 #include "RTUtil.h"
 #include "RTMatrixMath.h"
-#include "RTMath.h"
 #include <armadillo>
+#include "RTMath.h"

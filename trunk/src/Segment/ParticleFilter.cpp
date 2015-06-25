@@ -58,9 +58,9 @@ namespace Nf
     return zeros<mat>(m_nParticles, 4);
   }
 
-  colvec ParticleFilterFullState::GetParticleRhos(const ParticleFilterParameters *p)
+  vec ParticleFilterFullState::GetParticleRhos(const ParticleFilterParameters *p)
   {
-    return zeros<colvec>(m_nParticles);
+    return zeros<vec>(m_nParticles);
   }
 
   TipState ParticleFilterFullState::GetExpectedValue(const ParticleFilterParameters *p)
@@ -105,9 +105,9 @@ namespace Nf
     return zeros<mat>(m_nParticles, 4);
   }
 
-  colvec ParticleFilterMarginalized::GetParticleRhos(const ParticleFilterParameters *p)
+  vec ParticleFilterMarginalized::GetParticleRhos(const ParticleFilterParameters *p)
   {
-    return zeros<colvec>(m_nParticles);
+    return zeros<vec>(m_nParticles);
   }
 
   TipState ParticleFilterMarginalized::GetExpectedValue(const ParticleFilterParameters *p)
