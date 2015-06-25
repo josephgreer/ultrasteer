@@ -28,6 +28,7 @@ INCLUDE_DIRECTORIES(
   ../RPFileReader
   ../RPFileWriter
   ${UlteriusDir}/inc
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/armadillo/include
 ) 
 
 ADD_EXECUTABLE(UlteriusDataGrabber
@@ -42,5 +43,6 @@ ADD_EXECUTABLE(UlteriusDataGrabber
 #SET_TARGET_PROPERTIES(UlteriusDataGrabber PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:windows)
  #Must be lowercase windows
 
-TARGET_LINK_LIBRARIES(UlteriusDataGrabber RPFileReader ${OpenCV_LIBS} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${UlteriusDir}/lib/ulterius_old.lib)
+TARGET_LINK_LIBRARIES(UlteriusDataGrabber RPFileReader ${OpenCV_LIBS} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${UlteriusDir}/lib/ulterius_old.lib
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/liblapack.lib ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/libblas.lib)
 

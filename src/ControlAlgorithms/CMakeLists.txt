@@ -22,6 +22,7 @@ INCLUDE_DIRECTORIES(
   ${OPENCV_INCLUDE_DIRS} 
   ${CMAKE_CURRENT_SOURCE_DIR}/../../external/alglib/src  
   ${CMAKE_CURRENT_SOURCE_DIR}/../Segment/
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/armadillo/include
 ) 
 
 ADD_LIBRARY(ControlAlgorithms STATIC
