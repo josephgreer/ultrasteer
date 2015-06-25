@@ -26,11 +26,6 @@ namespace Nf
     return eye(3,3)+sin(theta)*K+(1-cos(theta))*K*K;
   }
 
-  mat33 SO3Exp(const mat33 &x)
-  {
-    return SO3Exp(SO3HatInverse(x));
-  }
-
   //taken from http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
   vec3 SO3Log(const mat33 &m)
   {

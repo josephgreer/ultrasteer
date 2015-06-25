@@ -7,46 +7,45 @@ namespace Nf
 {
   using ::s32;
 
-  
+
   TipState TipState::PropagateLength(const NSCommand &u, f64 dl, const ParticleFilterParameters *p)
   {
     TipState res;
 
-#if 0
- //k' coordinate system expressed in global coordinates.
-// note rotation order is flipped because using intrinsic rotations with
-// extrinisc rotation matrices
-   vec3 zhat;
-   zhat << 0 << endr << 0 << endr << 1 << endr;
-   mat33 kp = this->R*SO3Exp(u.dtheta*zhat);
+    //k' coordinate system expressed in global coordinates.
+    // note rotation order is flipped because using intrinsic rotations with
+    // extrinisc rotation matrices
+    vec3 zhat;
+    zhat << 0 << endr << 0 << endr << 1 << endr;
+    vec3 xhat;
+    xhat << 1 << endr << 0 << endr << 0 << endr;
 
-% location of tip expressed in Rk' coordinates
-kp_x = [0; x.rho*(1-cos(dl/x.rho)); x.rho*sin(dl/x.rho)];
+    mat33 kp = this->R*SO3Exp((vec3 &)(u.dtheta*zhat));
+
+    // location of tip expressed in Rk' coordinates
+    f64 phi = dl/this->rho;
+    vec3 kp_x; 
+    kp_x << 0 << endr << this->rho*(1-cos(phi)) << endr << this->rho*sin(phi) << endr;
 
 
-% new coordinate frame expressed in global coordinates.
-% new coordinate frame is old coordinate frame rhoated by u.dtheta around
-% needle tip's z-axis then rotated about the needle tip's x axis due to
-% following the curved arc.  Note taht rotation order is flipped due to
-% intrinsic axis rotations used rather than extrinsic.
-x1.q = quatmult(kp,AxisAngleToQuat(-dl/x.rho*[1; 0; 0]));
+    // new coordinate frame expressed in global coordinates.
+    // new coordinate frame is old coordinate frame rhoated by u.dtheta around
+    // needle tip's z-axis then rotated about the needle tip's x axis due to
+    // following the curved arc.  Note taht rotation order is flipped due to
+    //  intrinsic axis rotations used rather than extrinsic.
+    res.R = (mat33 &)(kp*SO3Exp((vec3 &)(-phi*xhat)));
 
-% convert needle tip location into global coordinates
-x1.pos = quatrot(kp,kp_x)+x.pos;
-% pass through rho
-x1.rho = x.rho;
-#endif
+    // convert needle tip location into global coordinates
+    res.pos = kp*kp_x+this->pos;
+    // pass through rho
+    res.rho = this->rho;
 
     return res;
   }
 
   TipState TipState::Propagate(const NSCommand &u, f64 dt, const ParticleFilterParameters *p)
   {
-    TipState res;
-
-
-
-    return res;
+    return PropagateLength(u, u.v*dt, p);
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -64,7 +63,7 @@ x1.rho = x.rho;
   //////////////////////////////////////////////////////////////////////////////////////////
   /// End Basic Particle Filter
   //////////////////////////////////////////////////////////////////////////////////////////
-  
+
   //////////////////////////////////////////////////////////////////////////////////////////
   /// Begin Particle Filter Full State
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -111,7 +110,7 @@ x1.rho = x.rho;
   //////////////////////////////////////////////////////////////////////////////////////////
   /// End Particle Filter Full State
   //////////////////////////////////////////////////////////////////////////////////////////
-  
+
   //////////////////////////////////////////////////////////////////////////////////////////
   /// Begin Particle Filter With Kalman Filter for Orientation
   //////////////////////////////////////////////////////////////////////////////////////////
