@@ -152,3 +152,31 @@ TEST(Scratch, Armadillo)
   cout << "xyz:" << endl;
   cout << xyz << endl;
 }
+
+TEST(Math, Gaussian)
+{
+  using ::s32;
+  vec3 mu;
+  mu << -1 <<endr
+     << 2 << endr
+     << 3 << endr;
+
+  mat33 sigma;
+  sigma << 18.3983  << -25.2563 << 25.2667  << endr
+        << -25.2563 <<  44.3550 << -41.0474 << endr
+        << 25.2667  << -41.0474 << 42.2467  << endr;
+
+  s32 N = 1000;
+  Gaussian<vec3,mat33> gauss(mu, sigma);
+
+  mat samples = gauss.Sample(N);
+  samples = samples.t();
+
+  samples.save("C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/bulksamples.dat", raw_ascii);
+
+  mat samplesInd;
+  for(s32 i=0; i<N; i++) {
+    samplesInd = join_vert(samplesInd,gauss.Sample().t());
+  }
+  samplesInd.save("C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/individualsamples.dat", raw_ascii);
+}

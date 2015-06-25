@@ -17,13 +17,13 @@ namespace Nf
   struct Measurement
   {
     arma::mat points;         // represents positions of points x1,x2,...,xn \in R^3. [x1^T; x2^T;... xn^T] \in R^(nx3)
-    arma::colvec doppler;     // represents corresponding doppler response values \in R^3 [d1; d2; ... dn] \in R^n
+    arma::vec doppler;        // represents corresponding doppler response values \in R^3 [d1; d2; ... dn] \in R^n
   };
 
   struct TipState
   {
-    arma::colvec4 q;           // represents orientation
-    arma::colvec3 pos;         // represents position
+    arma::vec4 q;              // represents orientation
+    arma::vec3 pos;         // represents position
     f64 rho;                   // represents curvature
 
     TipState()
@@ -77,7 +77,7 @@ namespace Nf
     // Returns curvatures of each particle
     //   returns:
     //   [rho1; ...; rhon] \in R^n, each row represents a curvature value
-    virtual arma::colvec GetParticleRhos(const ParticleFilterParameters *p) = 0;
+    virtual arma::vec GetParticleRhos(const ParticleFilterParameters *p) = 0;
 
     // Returns expected value of particle filter posterior distribution
     // in other words, the estimate of the filer.
@@ -120,7 +120,7 @@ namespace Nf
     // Returns curvatures of each particle
     //   returns:
     //   [rho1; ...; rhon] \in R^n, each row represents a curvature value
-    virtual arma::colvec GetParticleRhos(const ParticleFilterParameters *p);
+    virtual arma::vec GetParticleRhos(const ParticleFilterParameters *p);
 
     // Returns expected value of particle filter posterior distribution
     // in other words, the estimate of the filer.
@@ -163,7 +163,7 @@ namespace Nf
     // Returns curvatures of each particle
     //   returns:
     //   [rho1; ...; rhon] \in R^n, each row represents a curvature value
-    virtual arma::colvec GetParticleRhos(const ParticleFilterParameters *p);
+    virtual arma::vec GetParticleRhos(const ParticleFilterParameters *p);
 
     // Returns expected value of particle filter posterior distribution
     // in other words, the estimate of the filer.
