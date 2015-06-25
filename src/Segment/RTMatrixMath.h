@@ -18,60 +18,10 @@
 #include <vnl/algo/vnl_cholesky.h>
 #include <vnl/algo/vnl_matrix_inverse.h>
 
-#include <armadillo>
-
-typedef unsigned char u8;
-typedef char s8;
-typedef unsigned short u16;
-typedef short s16;
-typedef unsigned int u32;
-typedef int s32;
-typedef float f32;
-typedef double f64;
-
-using ::s8;
-using ::u16;
-using ::s16;
-using ::u32;
-using ::s32;
-using ::f32;
-using ::f64;
-
-#define ASSERT(x) if(!(x)) { int a = 0;  int b = 1/a; } 
-#define MIN(x,y) ((x)<(y) ? (x) : (y))
-#define MAX(x,y) ((x)>(y) ? (x) : (y))
-#define ABS(x) ((x)>0?(x):(-(x)))
-
-#define PI 3.14159265359f
-
-#ifdef _DEBUG
-#define DEBUG_ASSERT(x) if(!(x)) { int a = 0;  int b = 1/a; } 
-#else
-#define DEBUG_ASSERT(x)
-#endif
+#include "RTUtil.h"
 
 namespace Nf
 {
-  static void NTrace(const char *fmt, ...)
-  {
-    char str[1024] = {0};
-    va_list Argp;
-    va_start (Argp, fmt);
-    vsprintf(str, fmt, Argp);
-    va_end(Argp);
-    OutputDebugString(str);
-  }
-
-#define BEGIN_TIMING(x,y) \
-  u32 g_beginTick##x = GetTickCount(); static u32 g_n##x = 0; static u32 g_tot##x = 0;
-#define END_TIMING(x,y) \
-  u32 g_endTick##x = GetTickCount(); g_tot##x += g_endTick##x-g_beginTick##x; \
-  if(g_n##x++ >= y) { \
-    NTrace("Timing: %s time %f ms\n", #x, (f32)g_tot##x/g_n##x); \
-    g_tot##x = 0; \
-    g_n##x = 0; \
-  }
-
   template <class T>
   class Vec2
   {
@@ -335,7 +285,7 @@ namespace Nf
 #endif
   };
 
-    template <class T>
+  template <class T>
   class Vec6
   {
   public:
@@ -890,7 +840,7 @@ namespace Nf
       memcpy(&res.m_data[2][0], &this->m_data[2][0], sizeof(f64)*3);
       return res;
     }
-    
+
     Vec3d GetPosition()
     {
       Vec3d res(this->m_data[0][3],this->m_data[1][3],this->m_data[2][3]);
@@ -1136,7 +1086,7 @@ namespace Nf
     static Matrix66d OuterProduct(Vec6d a, Vec6d b)
     {
       f64 data[6][6] = {0};
-        
+
       for(int i = 0; i<6; i++)
       {
         for( int j = 0; j<6; j++)
@@ -1197,7 +1147,7 @@ namespace Nf
       {
         for( int j = 0; j < 6; j++)
         {
-            this->m_data[i][j] += b.m_data[i][j];
+          this->m_data[i][j] += b.m_data[i][j];
         }
       }
       return *this;
@@ -1282,7 +1232,7 @@ namespace Nf
 
     Vec6d operator*(const Vec6d &b) const
     {
-       return this->Col(0)*b.x + this->Col(1)*b.y + this->Col(2)*b.z + this->Col(3)*b.a + this->Col(4)*b.b + this->Col(5)*b.c;
+      return this->Col(0)*b.x + this->Col(1)*b.y + this->Col(2)*b.z + this->Col(3)*b.a + this->Col(4)*b.b + this->Col(5)*b.c;
     }
 
     Matrix66d Transpose() const
@@ -1336,18 +1286,18 @@ namespace Nf
 
     /*f64 Determinant() const
     {
-      return vtkMatrix4x4::Determinant(&this->m_data[0][0]);
+    return vtkMatrix4x4::Determinant(&this->m_data[0][0]);
     }*/
 
     /*vtkSmartPointer<vtkMatrix4x4> GetVTKMatrix() const
     {
-      vtkSmartPointer<vtkMatrix4x4> res = vtkSmartPointer<vtkMatrix4x4>::New();
-      for(s32 i=0; i<4; i++) {
-        for(s32 j=0; j<4; j++) {
-          res->SetElement(i,j,this->m_data[i][j]);
-        }
-      }
-      return res;
+    vtkSmartPointer<vtkMatrix4x4> res = vtkSmartPointer<vtkMatrix4x4>::New();
+    for(s32 i=0; i<4; i++) {
+    for(s32 j=0; j<4; j++) {
+    res->SetElement(i,j,this->m_data[i][j]);
+    }
+    }
+    return res;
     }*/
   };
 

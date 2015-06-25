@@ -3,7 +3,7 @@
 #include <cxcore.h>
 #include <highgui.h>
 
-#include "SegmentCore.h"
+#include "RTCore.h"
 #include "RPFileReader.h"
 #include "UICore.h"
 #include <vtkImageImport.h>

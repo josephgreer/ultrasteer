@@ -7,7 +7,7 @@
 #pragma once
 
 #include <time.h>
-#include "SegmentCore.h"
+#include "RTCore.h"
 
 namespace Nf {
 

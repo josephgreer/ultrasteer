@@ -7,7 +7,7 @@
 #include <vtkSmartPointer.h>
 #include <vtkPolyDataMapper.h>
 
-#include "SegmentCore.h"
+#include "RTCore.h"
 
 namespace Nf {
 

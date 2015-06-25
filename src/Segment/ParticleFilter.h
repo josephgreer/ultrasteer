@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <deque>
-#include "SegmentCore.h"
+#include "RTCore.h"
 #include "UICore.h"
 
 namespace Nf

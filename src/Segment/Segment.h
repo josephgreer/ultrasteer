@@ -11,7 +11,7 @@
 #include <cxcore.h>
 #include <highgui.h>
 
-#include "SegmentCore.h"
+#include "RTCore.h"
 
 #define INITIAL_MODEL_POINTS 30
 
