@@ -24,6 +24,7 @@ INCLUDE_DIRECTORIES(
   ../RPFileReader
   ${UlteriusDir}/inc
   ${CMAKE_CURRENT_SOURCE_DIR}/../../external/
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/armadillo/include
 ) 
 
 SET(RPFileWriterSrcs RPFileWriter.cpp)

@@ -20,6 +20,7 @@ INCLUDE_DIRECTORIES(
 	${CMAKE_CURRENT_SOURCE_DIR}/../UlteriusDataGrabber
 	${UlteriusDir}/inc
 	${CMAKE_CURRENT_SOURCE_DIR}/../../external/
+	${CMAKE_CURRENT_SOURCE_DIR}/../../external/armadillo/include
 )
 
 ADD_LIBRARY(RPFileReader STATIC
