@@ -157,9 +157,9 @@ TEST(Math, Gaussian)
 {
   using ::s32;
   vec3 mu;
-  mu << -1 <<endr
-     << 2 << endr
-     << 3 << endr;
+  mu << -1 << endr
+     << 2  << endr
+     << 3  << endr;
 
   mat33 sigma;
   sigma << 18.3983  << -25.2563 << 25.2667  << endr
@@ -179,4 +179,68 @@ TEST(Math, Gaussian)
     samplesInd = join_vert(samplesInd,gauss.Sample().t());
   }
   samplesInd.save("C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/individualsamples.dat", raw_ascii);
+}
+
+TEST(Math, SO3)
+{
+  using ::s32; 
+
+  char dir[100] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data";
+  char path[150] = "";
+
+  //Generate matlab data to test
+  s32 nTests = 5;
+
+  f64 eps = 1e-4;
+
+  //SO3Exp 
+  printf("SO3Exp\n");
+  for(s32 i=0; i<nTests; i++) {
+    printf("i=%d\n", i);
+    sprintf(path, "%s/SO3ExpIn%d.dat", dir, i+1);
+    vec3 v;
+    assert(v.load(path, auto_detect));
+    v.print("v: ");
+    
+    sprintf(path, "%s/SO3ExpOut%d.dat", dir, i+1);
+    mat33 mm;
+    assert(mm.load(path));
+    mm.print("mm: ");
+
+    mat33 tmm = SO3Exp(v);
+    tmm.print("tmm: ");
+    f64 sm = sum(sum(abs(tmm-mm)));
+    assert(sm < eps);
+  }
+
+  //SO3Log
+  printf("SO3Log\n");
+  for(s32 i=0; i<nTests; i++) {
+    printf("i = %d\n", i);
+    sprintf(path, "%s/SO3ExpIn%d.dat", dir, i+1);
+    vec3 v;
+    assert(v.load(path, auto_detect));
+    v.print("v: ");
+
+    mat33 mm = SO3Exp(v);
+
+    vec3 vv = SO3Log(mm);
+    
+    vec3 vn = v/norm(v);
+    vec3 vvn = vv/norm(vv);
+    vn.print("vn: ");
+    vvn.print("vvn: ");
+
+    f64 diff = sum(abs(vn-vvn));
+    f64 negDiff = sum(abs(-vn-vvn));
+    assert(min(diff, negDiff) < eps);
+
+    f64 a1 = fmodf(norm(v),2*PI);
+    f64 a2 = fmodf(norm(vv), 2*PI);
+    if(diff < negDiff)
+      assert(abs(a1-a2) < eps);
+    else
+      assert(abs(a1+a2-2*PI) < eps);
+  }
+
 }

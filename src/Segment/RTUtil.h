@@ -56,4 +56,10 @@ namespace Nf
     g_tot##x = 0; \
     g_n##x = 0; \
   }
+
+#ifdef _DEBUG
+#define DEBUG_ASSERT(x) assert(x)
+#else
+#define DEBUG_ASSERT(x)
+#endif
 }

@@ -25,8 +25,8 @@ scatter3(samps(:,1),samps(:,2), samps(:,3));
 axis equal;
 hold on;
 
-load('bulksamples.dat');
-load('individualsamples.dat');
+load('./data/bulksamples.dat');
+load('./data/individualsamples.dat');
 scatter3(bulksamples(:,1),bulksamples(:,2), bulksamples(:,3),'r');
 scatter3(individualsamples(:,1),individualsamples(:,2), individualsamples(:,3),'g');
 
