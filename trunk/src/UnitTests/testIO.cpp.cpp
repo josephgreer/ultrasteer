@@ -1,5 +1,5 @@
 #include "CppUnitLite/Test.h"
-#include "SegmentCore.h"
+#include "RTCore.h"
 #include "RPFileReader.h"
 #include "RPUlterius.h"
 

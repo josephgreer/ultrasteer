@@ -1,5 +1,5 @@
 #pragma once
-#include "SegmentCore.h"
+#include "RTCore.h"
 #include "RPFileReader.h"
 #include "ulterius.h"
 #include <QMutex>

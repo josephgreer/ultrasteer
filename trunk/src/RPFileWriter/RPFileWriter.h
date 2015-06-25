@@ -1,14 +1,14 @@
 #define _CRT_SECURE_NO_DEPRECATE
 #pragma once
 #include <Windows.h>
-#include "SegmentCore.h"
+#include "RTCore.h"
 #include "RPFileReader.h"
 
 #include <cv.h>
 #include <cxcore.h>
 #include <highgui.h>
 
-#include "SegmentCore.h"
+#include "RTCore.h"
 
 namespace Nf
 {

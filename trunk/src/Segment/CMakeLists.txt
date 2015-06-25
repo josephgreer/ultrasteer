@@ -23,10 +23,15 @@ INCLUDE_DIRECTORIES(
 )
 
 ADD_LIBRARY(Segment STATIC
-	SegmentCore.h
 	Segment.h
 	Segment.cpp
 	ParticleFilter.h
 	ParticleFilter.cpp
+	RTCore.h
+	RTMath.h
+	RTMath.cpp
+	RTMatrixMath.h
+	RTUtil.h
+	RTUtil.cpp
 	)
 

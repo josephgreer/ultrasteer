@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "SegmentCore.h"
+#include "RTCore.h"
 
 #ifdef QT_GUI_LIB
 #include <QObject>
