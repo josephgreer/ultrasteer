@@ -276,3 +276,47 @@ TEST(ParticleFilter, PropagateNeedleTip)
   assert(sum(abs(o.pos-pcomp5)) < eps);
   assert(abs(rhoout5-o.rho) < eps);
 }
+
+TEST(ParticleFilter, PropagateNeedleBack)
+{
+  using ::s32;
+
+  f64 eps = 1e-4;
+
+  char path[150] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data";
+
+  //load exported data from matlab
+  mat vs, dthetas, pos, rhos, Rs;
+  vs.load(std::string(path)+std::string("/propagateNeedleTipBackV.dat"));
+  dthetas.load(std::string(path)+std::string("/propagateNeedleTipBackdThetas.dat"));
+  pos.load(std::string(path)+std::string("/propagateNeedleTipBackPos.dat"));
+  rhos.load(std::string(path)+std::string("/propagateNeedleTipBackRhos.dat"));
+  Rs.load(std::string(path)+std::string("/propagateNeedleTipBackRs.dat"));
+
+  std::vector < NSCommand > us;
+  for(s32 i=0; i<vs.n_rows;i++) {
+    NSCommand uc;
+    uc.v = vs(i);
+    uc.dtheta = dthetas(i);
+    uc.dutyCycle = 0;
+
+    us.push_back(uc);
+  }
+
+  TipState t;
+  t.pos = vec3(pos.colptr(0));
+  t.R = mat33(Rs.colptr(0));
+  t.rho = rhos(0);
+
+  vec dts = ones(pos.n_cols)*1.0/10.0;
+  std::vector < TipState > xs = t.PropagateBack(us, dts, NULL);
+  for(s32 i=0; i<vs.n_rows; i++) {
+    char txt[50]; sprintf(txt, "R%d:  ", i);
+    xs[i].R.print(txt);
+    sprintf(txt, "pos%d:  ", i);
+    xs[i].pos.print(txt);
+    assert(sum(sum(abs(xs[i].R-mat33(Rs.colptr(i))))) < eps);
+    assert(sum(abs(xs[i].pos-vec3(pos.colptr(i)))) < eps);
+    assert(abs(xs[i].rho-rhos(i)) < eps);
+  }
+}

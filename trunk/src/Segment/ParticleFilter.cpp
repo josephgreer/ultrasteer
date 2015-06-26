@@ -83,6 +83,38 @@ namespace Nf
     return PropagateLength(u, u.v*dt, p);
   }
 
+  std::vector < TipState > TipState::PropagateBack(const std::vector < NSCommand > &u, const vec &dts, const PFParams *p)
+  {
+    std::vector < TipState > res;
+    //push back current state
+    //res[0] = current state
+    res.push_back(*this);
+
+    //u[0] = current control input
+    NSCommand uc = u[0];
+    uc.dtheta = 0;
+
+    f64 dt = dts(0);
+
+    vec3 yaxis; 
+    yaxis << 0 << 1 << 0 << endr;
+
+    TipState xc;
+    for(s32 i=1; i<u.size(); i++) {
+      xc = res[i-1]; 
+      // reverse for propagating backward in time
+      xc.R = (mat33)(xc.R*SO3Exp(PI*yaxis));
+
+      xc = xc.Propagate(uc,dt,p);
+
+      xc.R = (mat33)(xc.R*SO3Exp(PI*yaxis));
+      res.push_back(xc);
+      uc = u[i-1];
+    }
+
+    return res;
+  }
+
   //////////////////////////////////////////////////////////////////////////////////////////
   /// Begin Basic Particle Filter
   //////////////////////////////////////////////////////////////////////////////////////////
