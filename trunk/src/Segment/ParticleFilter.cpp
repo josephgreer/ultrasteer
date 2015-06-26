@@ -7,8 +7,43 @@ namespace Nf
 {
   using ::s32;
 
+  PFParams::PFParams()
+  {
+    vec dd;
 
-  TipState TipState::PropagateLength(const NSCommand &u, f64 dl, const ParticleFilterParameters *p)
+    dd << PI << PI << PI << endr;
+    initOrientationSigma = (mat33 &)diagmat(1e-4*dd);
+    initOrientationMu = zeros<vec>(3);
+
+    dd.clear(); dd << 5 << 5 << 5 << endr;
+    initPosSigma = (mat33 &)diagmat(dd);
+    initPosMu = zeros<vec>(3);
+
+    initRhoSigma = 0;
+    initRhoMu = 0;
+
+    dd.clear(); dd << 1 << 1 << 1 << endr;
+    particleSigmaPos = (mat33 &)diagmat(dd/3.0);
+
+    minimumMeasurements = 1;
+  }
+
+  PFFullStateParams::PFFullStateParams()
+    : PFParams()
+  {
+  }
+
+  PFMarginalizedParams::PFMarginalizedParams()
+  {
+    vec3 dd; dd << 5e-3 << 5e-3 << 0.5 << endr;
+    measurementSigma = (mat33 &)diagmat(dd);
+
+    distanceThreshSq = 5*5;
+    subsetSize = 15;
+    procrustesIt = 3;
+  }
+
+  TipState TipState::PropagateLength(const NSCommand &u, f64 dl, const PFParams *p)
   {
     TipState res;
 
@@ -43,7 +78,7 @@ namespace Nf
     return res;
   }
 
-  TipState TipState::Propagate(const NSCommand &u, f64 dt, const ParticleFilterParameters *p)
+  TipState TipState::Propagate(const NSCommand &u, f64 dt, const PFParams *p)
   {
     return PropagateLength(u, u.v*dt, p);
   }
@@ -51,7 +86,7 @@ namespace Nf
   //////////////////////////////////////////////////////////////////////////////////////////
   /// Begin Basic Particle Filter
   //////////////////////////////////////////////////////////////////////////////////////////
-  ParticleFilter::ParticleFilter(s32 nParticles, const char *name, const ParticleFilterParameters *p)
+  ParticleFilter::ParticleFilter(s32 nParticles, const char *name, const PFParams *p)
     : m_nParticles(nParticles)
     , ParameterCollection(name)
   {
@@ -67,7 +102,7 @@ namespace Nf
   //////////////////////////////////////////////////////////////////////////////////////////
   /// Begin Particle Filter Full State
   //////////////////////////////////////////////////////////////////////////////////////////
-  ParticleFilterFullState::ParticleFilterFullState(s32 nParticles, const ParticleFilterParameters *p)
+  ParticleFilterFullState::ParticleFilterFullState(s32 nParticles, const PFParams *p)
     : ParticleFilter(nParticles, "ParticleFilterFullState", p)
   {
   }
@@ -76,34 +111,36 @@ namespace Nf
   {
   }
 
-  void ParticleFilterFullState::InitializeParticleFilter(const std::vector < TipState > &hist, const ParticleFilterParameters *p)
+  void ParticleFilterFullState::InitializeParticleFilter(const std::vector < TipState > &hist, const PFParams *p)
+  {
+    const PFFullStateParams *pp = (const PFFullStateParams *)p;
+    //Gaussian<vec3,mat33> posNoise(
+  }
+
+  void ParticleFilterFullState::Propagate(const NSCommand *u, f64 dt, const PFParams *p)
   {
   }
 
-  void ParticleFilterFullState::Propagate(const NSCommand *u, f64 dt, const ParticleFilterParameters *p)
+  void ParticleFilterFullState::ApplyMeasurement(const Measurement *m, const PFParams *p)
   {
   }
 
-  void ParticleFilterFullState::ApplyMeasurement(const Measurement *m, const ParticleFilterParameters *p)
-  {
-  }
-
-  mat ParticleFilterFullState::GetParticlePositions(const ParticleFilterParameters *p)
+  mat ParticleFilterFullState::GetParticlePositions(const PFParams *p)
   {
     return zeros<mat>(m_nParticles, 3);
   }
 
-  std::vector < mat33 > ParticleFilterFullState::GetParticleOrientations(const ParticleFilterParameters *p)
+  std::vector < mat33 > ParticleFilterFullState::GetParticleOrientations(const PFParams *p)
   {
     return std::vector < mat33 >();
   }
 
-  vec ParticleFilterFullState::GetParticleRhos(const ParticleFilterParameters *p)
+  vec ParticleFilterFullState::GetParticleRhos(const PFParams *p)
   {
     return zeros<vec>(m_nParticles);
   }
 
-  TipState ParticleFilterFullState::GetExpectedValue(const ParticleFilterParameters *p)
+  TipState ParticleFilterFullState::GetExpectedValue(const PFParams *p)
   {
     return TipState();
   }
@@ -114,7 +151,7 @@ namespace Nf
   //////////////////////////////////////////////////////////////////////////////////////////
   /// Begin Particle Filter With Kalman Filter for Orientation
   //////////////////////////////////////////////////////////////////////////////////////////
-  ParticleFilterMarginalized::ParticleFilterMarginalized(s32 nParticles, const ParticleFilterParameters *p)
+  ParticleFilterMarginalized::ParticleFilterMarginalized(s32 nParticles, const PFParams *p)
     : ParticleFilter(nParticles, "MarginalizedParticleFilter", p)
   {
   }
@@ -123,34 +160,34 @@ namespace Nf
   {
   }
 
-  void ParticleFilterMarginalized::InitializeParticleFilter(const std::vector < TipState > &hist, const ParticleFilterParameters *p)
+  void ParticleFilterMarginalized::InitializeParticleFilter(const std::vector < TipState > &hist, const PFParams *p)
   {
   }
 
-  void ParticleFilterMarginalized::Propagate(const NSCommand *u, f64 dt, const ParticleFilterParameters *p)
+  void ParticleFilterMarginalized::Propagate(const NSCommand *u, f64 dt, const PFParams *p)
   {
   }
 
-  void ParticleFilterMarginalized::ApplyMeasurement(const Measurement *m, const ParticleFilterParameters *p)
+  void ParticleFilterMarginalized::ApplyMeasurement(const Measurement *m, const PFParams *p)
   {
   }
 
-  mat ParticleFilterMarginalized::GetParticlePositions(const ParticleFilterParameters *p)
+  mat ParticleFilterMarginalized::GetParticlePositions(const PFParams *p)
   {
     return zeros<mat>(m_nParticles, 3);
   }
 
-  std::vector < mat33 > ParticleFilterMarginalized::GetParticleOrientations(const ParticleFilterParameters *p)
+  std::vector < mat33 > ParticleFilterMarginalized::GetParticleOrientations(const PFParams *p)
   {
     return std::vector < mat33 >();
   }
 
-  vec ParticleFilterMarginalized::GetParticleRhos(const ParticleFilterParameters *p)
+  vec ParticleFilterMarginalized::GetParticleRhos(const PFParams *p)
   {
     return zeros<vec>(m_nParticles);
   }
 
-  TipState ParticleFilterMarginalized::GetExpectedValue(const ParticleFilterParameters *p)
+  TipState ParticleFilterMarginalized::GetExpectedValue(const PFParams *p)
   {
     return TipState();
   }
