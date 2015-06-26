@@ -22,6 +22,8 @@ namespace Nf
   mat33 SO3Exp(const vec3 &x)
   {
     f64 theta = norm(x);
+    if(theta < 1e-5)
+      return eye(3,3);
     mat33 K = SO3Hat(x/theta);
     return eye(3,3)+sin(theta)*K+(1-cos(theta))*K*K;
   }

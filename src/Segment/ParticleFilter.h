@@ -66,11 +66,34 @@ namespace Nf
       rho = 0;
     }
 
+    TipState & operator=(TipState o)
+    {
+      this->R = o.R;
+      this->pos = o.pos;
+      this->rho = o.rho;
+      return *this;
+    }
+
     //Propagate by a timestep according to unicycle model
     TipState Propagate(const NSCommand &u, f64 dt, const PFParams *p);
 
     //Propagate needle by path dl according to unicycle model
     TipState PropagateLength(const NSCommand &u, f64 dl, const PFParams *p);
+
+    //Propagate needle tip back based on command history
+    // u[0] = command from timestep t-1 to t
+    // u[1] = command from timestep t-2 to t-1
+    // u[n] = command from timestep n-1 to n
+    // dts(0) = time elapsed from timestep t-1 to t
+    // dts(1) = time elapsed from timestep t-2 to t-1
+    // ...
+    // dts(n) = time elapsed from timestep t-n-1 to t-n
+    //return
+    //   return[0] = current needle tip state
+    //   return[1] = needle tip state 1 timestep back
+    //     ...
+    //   return[n] = needle tip state n timesteps back
+    std::vector < TipState > PropagateBack(const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p);
   };
 
   class ParticleFilter
