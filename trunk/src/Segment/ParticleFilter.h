@@ -73,7 +73,7 @@ namespace Nf
     TipState PropagateLength(const NSCommand &u, f64 dl, const PFParams *p);
   };
 
-  class ParticleFilter : public ParameterCollection
+  class ParticleFilter
   {
   protected:
     s32 m_nParticles;

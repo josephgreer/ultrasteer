@@ -12,18 +12,18 @@ namespace Nf
     vec dd;
 
     dd << PI << PI << PI << endr;
-    initOrientationSigma = (mat33 &)diagmat(1e-4*dd);
+    initOrientationSigma = (mat33)diagmat(1e-4*dd);
     initOrientationMu = zeros<vec>(3);
 
     dd.clear(); dd << 5 << 5 << 5 << endr;
-    initPosSigma = (mat33 &)diagmat(dd);
+    initPosSigma = (mat33)diagmat(dd);
     initPosMu = zeros<vec>(3);
 
     initRhoSigma = 0;
     initRhoMu = 0;
 
     dd.clear(); dd << 1 << 1 << 1 << endr;
-    particleSigmaPos = (mat33 &)diagmat(dd/3.0);
+    particleSigmaPos = (mat33)diagmat(dd/3.0);
 
     minimumMeasurements = 1;
   }
@@ -36,7 +36,7 @@ namespace Nf
   PFMarginalizedParams::PFMarginalizedParams()
   {
     vec3 dd; dd << 5e-3 << 5e-3 << 0.5 << endr;
-    measurementSigma = (mat33 &)diagmat(dd);
+    measurementSigma = (mat33)diagmat(dd);
 
     distanceThreshSq = 5*5;
     subsetSize = 15;
@@ -55,7 +55,7 @@ namespace Nf
     vec3 xhat;
     xhat << 1 << endr << 0 << endr << 0 << endr;
 
-    mat33 kp = this->R*SO3Exp((vec3 &)(u.dtheta*zhat));
+    mat33 kp = this->R*SO3Exp((vec3)(u.dtheta*zhat));
 
     // location of tip expressed in Rk' coordinates
     f64 phi = dl/this->rho;
@@ -68,7 +68,7 @@ namespace Nf
     // needle tip's z-axis then rotated about the needle tip's x axis due to
     // following the curved arc.  Note taht rotation order is flipped due to
     //  intrinsic axis rotations used rather than extrinsic.
-    res.R = (mat33 &)(kp*SO3Exp((vec3 &)(-phi*xhat)));
+    res.R = (mat33)(kp*SO3Exp((vec3)(-phi*xhat)));
 
     // convert needle tip location into global coordinates
     res.pos = kp*kp_x+this->pos;
@@ -88,7 +88,6 @@ namespace Nf
   //////////////////////////////////////////////////////////////////////////////////////////
   ParticleFilter::ParticleFilter(s32 nParticles, const char *name, const PFParams *p)
     : m_nParticles(nParticles)
-    , ParameterCollection(name)
   {
   }
 
