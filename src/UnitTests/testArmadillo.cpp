@@ -179,6 +179,28 @@ TEST(Math, Gaussian)
     samplesInd = join_vert(samplesInd,gauss.Sample().t());
   }
   samplesInd.save("C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/individualsamples.dat", raw_ascii);
+
+  std::vector < vec3 > xs;
+  vec3 xc;
+  
+  xc << 1 << 2 << 3 << endr;
+  xs.push_back(xc);
+  xc << 1.5 << -1 << 4 << endr;
+  xs.push_back(xc);
+  xc << 4 << 2 << 1 << endr;
+  xs.push_back(xc);
+
+  std::vector < f64 > answers;
+  answers.push_back(0.00138068842225824);
+  answers.push_back(0.0010908275975957);
+  answers.push_back(6.88609511352968e-06);
+  f64 eps = 1e-5;
+  for(s32 i=0; i<xs.size(); i++) {
+    xs[i].print("x:  ");
+    f64 e = gauss.Eval(xs[i]);
+    printf("gauss(x):  %.8f\n", gauss.Eval(xs[i]));
+    assert(abs(e-answers[i]) < eps);
+  }
 }
 
 TEST(Math, SO3)

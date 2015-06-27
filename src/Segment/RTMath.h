@@ -27,11 +27,14 @@ namespace Nf
     V m_mu;           //mean
     M m_E;            //covariance matrix
     M m_L;            //factor covariance matrix using cholesky E = LL^T to generate random samples
+    M m_Ei;           //inverse of covariance matrix (used for evaluating pdf)
+    f64 m_norm;       //normalizing constant for evaluating pdf
 
   public:
     Gaussian(const V &mu, const M &E)
       : m_mu(mu)
       , m_E(E)
+      , m_norm(-1)
     {
       assert(arma::chol(m_L, m_E, "lower"));
     }
@@ -56,6 +59,20 @@ namespace Nf
       res = m_L*res+m_mu;
 
       return res;
+    }
+
+    f64 Eval(V v)
+    {
+      //we haven't calculated sigma inverse or normalizing constant yet
+      if(m_norm < 0) {
+        M li = inv(m_L);
+        m_Ei = (M)(li.t()*li);
+        m_norm = 1/sqrt(pow((f64)(2*PI),(f64)v.n_rows)*det(m_E));
+      }
+
+      V delta = (v-m_mu);
+      arma::mat inner = -0.5*delta.t()*m_Ei*delta;
+      return (f64)(m_norm*exp(inner(0,0)));
     }
     
   };
