@@ -124,8 +124,7 @@ noiseParams.sigmaRho = params.sigmaRho;
 
 
 Rz = SO3Exp(u.dtheta*[0; 0; 1]);
-
-%temporarily set orientation noise to 0 for state propagation.
+dl = u.v*params.dt;
 for i=1:length(xp)
     xcurr.pos = xp{i}.pos;
     xcurr.rho = xp{i}.rho;
@@ -136,13 +135,11 @@ for i=1:length(xp)
     
     xcurr = f(xcurr,u,noiseParams,params);
     
-    R10 = QuatToRotationMatrix(xcurr.q);
+    R1 = Rz*Rx(-dl/xp{i}.rho);
+    R10 = xp{i}.qdist.mu*R1;
     
     % prior orientation
     R0 = xp{i}.qdist.mu;
-    
-    %delta orientation
-    R1 = R10*R0';
     
     % process noise
     sigma1 = params.sigmaOrientation;

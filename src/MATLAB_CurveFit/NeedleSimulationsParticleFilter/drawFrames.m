@@ -1,4 +1,4 @@
-function handles = drawFrames(fig,x,scale,handles)
+function handles = drawFrames(fig,x,scale,params,handles)
 if(isempty(handles))
     handles = [];
     thandles = [];
@@ -7,7 +7,14 @@ figure(fig);
 
 for i=1:length(x)
     hold on;
-    R = QuatToRotationMatrix(x{i}.q)*scale;
+    R = eye(3);
+    if(params.particleFilterMethod == 1)
+        R = QuatToRotationMatrix(x{i}.q)*scale;
+    elseif(params.particleFilterMethod == 3)
+        R = x{i}.qdist.mu*scale; 
+    else
+        assert(0);
+    end
     xx = x{i}.pos+R(:,1);
     xy = x{i}.pos+R(:,2);
     xz = x{i}.pos+R(:,3);

@@ -13,7 +13,7 @@
 
 using namespace std;
 using namespace arma;
-
+using ::s32;
 using namespace Nf;
 
 TEST(ParticleFilter, PropagateNeedleTip)
@@ -321,6 +321,17 @@ TEST(ParticleFilter, PropagateNeedleBack)
   }
 }
 
+static void saveOrientations(const std::vector < mat33 > &ors, const char *path)
+{
+  using ::s32;
+  mat res;    //res = [R1 R2 ... Rn] \in R^9xn, Ri = unrolled R \in R^9
+  for(s32 i=0; i<ors.size(); i++) {
+    mat curr = (mat)ors[i];
+    res.insert_cols(i, reshape(curr, 9, 1));
+  }
+  res.save(path, raw_ascii);
+}
+
 TEST(ParticleFilter, PropagateParticles)
 {
   using ::s32;
@@ -328,18 +339,91 @@ TEST(ParticleFilter, PropagateParticles)
   f64 eps = 1e-4;
 
   char path[150] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data";
-  
-  mat pos, rhos, Rs;
+  char fpath[150];
 
-  pos.load(std::string(path)+std::string("/propagateNeedleTipBackPos.dat"));
-  rhos.load(std::string(path)+std::string("/propagateNeedleTipBackRhos.dat"));
-  Rs.load(std::string(path)+std::string("/propagateNeedleTipBackRs.dat"));
-
+  f64 dt = 1/10.0;
   NSCommand u;
-  u.dtheta = 2.17122208289517;
-  u.v = 9.48383737115335;
+  u.dtheta = PI/3;
+  u.v = 500;
 
+  TipState t;
+  t.pos << -98.8337136840801 << -176.622054591443 << -203.830702615601 << endr;
+  t.rho = 53.7252042275534;
+  t.R <<         -0.396414206629243   <<      0.808365786570174   <<      0.435201714019249 << endr
+      <<          0.808503950509501   <<      0.531967664602427   <<     -0.251658033505728 << endr
+      <<         -0.434944983639354   <<      0.25210148535902    <<     -0.864446471614488 << endr;
 
+  
+
+  std::vector < TipState > hist; 
+  hist.push_back(t);
+
+  s32 nParticles = 200;
+
+  // First use full state particle filter
+  PFFullStateParams pfs;
+  ParticleFilterFullState pffs(nParticles, &pfs);
+  pffs.InitializeParticleFilter(hist, &pfs);
+
+  std::vector < mat33 > Rs = pffs.GetParticleOrientations(&pfs);
+  mat rhos = pffs.GetParticleRhos(&pfs);
+  mat pos = pffs.GetParticlePositions(&pfs);
+
+  sprintf(fpath, "%s/propagateParticlesInit1Pos.dat", path);
+  pos.save(fpath, raw_ascii);
+  sprintf(fpath, "%s/propagateParticlesInit1Rhos.dat", path);
+  rhos.save(fpath, raw_ascii);
+  sprintf(fpath, "%s/propagateParticlesInit1Rs.dat", path);
+  saveOrientations(Rs, fpath);
+
+  pffs.Propagate(&u, dt, &pfs);
+
+  Rs = pffs.GetParticleOrientations(&pfs);
+  rhos = pffs.GetParticleRhos(&pfs);
+  pos = pffs.GetParticlePositions(&pfs);
+
+  sprintf(fpath, "%s/propagateParticlesProp1Pos.dat", path);
+  pos.save(fpath, raw_ascii);
+  sprintf(fpath, "%s/propagateParticlesProp1Rhos.dat", path);
+  rhos.save(fpath, raw_ascii);
+  sprintf(fpath, "%s/propagateParticlesProp1Rs.dat", path);
+  saveOrientations(Rs, fpath);
+  
+
+  //Now use marginalized particle filter
+  PFMarginalizedParams ppfm;
+  ParticleFilterMarginalized pfm(nParticles, &ppfm);
+  pfm.InitializeParticleFilter(hist, &ppfm);
+
+  Rs = pfm.GetParticleOrientations(&ppfm);
+  rhos = pfm.GetParticleRhos(&ppfm);
+  pos = pfm.GetParticlePositions(&ppfm);
+
+  sprintf(fpath, "%s/propagateParticlesInit3Pos.dat", path);
+  pos.save(fpath, raw_ascii);
+  sprintf(fpath, "%s/propagateParticlesInit3Rhos.dat", path);
+  rhos.save(fpath, raw_ascii);
+  sprintf(fpath, "%s/propagateParticlesInit3Rs.dat", path);
+  saveOrientations(Rs, fpath);
+  std::vector < mat33 > sigmas = pfm.GetParticleOrientationSigmas(&ppfm);
+  sprintf(fpath, "%s/propagateParticlesInit3Sigmas.dat", path);
+  saveOrientations(sigmas, fpath);
+
+  pfm.Propagate(&u, dt, &ppfm);
+
+  Rs = pfm.GetParticleOrientations(&ppfm);
+  rhos = pfm.GetParticleRhos(&ppfm);
+  pos = pfm.GetParticlePositions(&ppfm);
+  sigmas = pfm.GetParticleOrientationSigmas(&ppfm);
+
+  sprintf(fpath, "%s/propagateParticlesProp3Pos.dat", path);
+  pos.save(fpath, raw_ascii);
+  sprintf(fpath, "%s/propagateParticlesProp3Rhos.dat", path);
+  rhos.save(fpath, raw_ascii);
+  sprintf(fpath, "%s/propagateParticlesProp3Rs.dat", path);
+  saveOrientations(Rs, fpath);
+  sprintf(fpath, "%s/propagateParticlesProp3Sigmas.dat", path);
+  saveOrientations(sigmas, fpath);
 
 }
 

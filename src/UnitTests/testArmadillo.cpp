@@ -182,13 +182,13 @@ TEST(Math, Gaussian)
   mat samples = gauss.Sample(N);
   samples = samples.t();
 
-  samples.save("C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/bulksamples.dat", raw_ascii);
+  samples.save("C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/bulksamples.dat", raw_ascii);
 
   mat samplesInd;
   for(s32 i=0; i<N; i++) {
     samplesInd = join_vert(samplesInd,gauss.Sample().t());
   }
-  samplesInd.save("C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/individualsamples.dat", raw_ascii);
+  samplesInd.save("C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/individualsamples.dat", raw_ascii);
 
   std::vector < vec3 > xs;
   vec3 xc;

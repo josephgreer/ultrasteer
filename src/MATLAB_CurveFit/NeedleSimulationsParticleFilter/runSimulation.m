@@ -124,9 +124,9 @@ for t=0:params.dt:params.simulationTime
     if(params.drawTipFrame && params.drawPastTipFrames)
         % get previous frames based on current state and u
         xs = propagateNeedleBack(xcurr,u,params);
-        tipFrameHandles = drawFrames(1, xs(1:4:end), 20, tipFrameHandles);
+        tipFrameHandles = drawFrames(1, xs(1:4:end), 20, params, tipFrameHandles);
     elseif(params.drawTipFrame)
-        tipFrameHandles = drawFrames(1, {xcurr}, 20, tipFrameHandles);
+        tipFrameHandles = drawFrames(1, {xcurr}, 20, params, tipFrameHandles);
     end
     
     if(params.particlesInit)

@@ -15,7 +15,7 @@ params.dt = 1/10;                                                           %sim
 
 % process noise parameters
 params.muOrientation = [0; 0; 0];                                           %orientation process noise mean
-params.sigmaOrientation = diag(1/2*[pi/1000, pi/1000, pi/1000]);            %orientation process noise std
+params.sigmaOrientation = diag(1/5*[pi/1000, pi/1000, pi/1000]);            %orientation process noise std
 params.muPos = [0; 0; 0];                                                   %position process noise mean
 params.sigmaPos = diag(0*[1 1 1]);                                          %position process noise std
 params.muRho = 0;                                                           %needle radius of curvature process noise mean
@@ -50,7 +50,7 @@ params.doParticleFilter = 1;                                                %sho
 params.doMeasurement = 1;                                                   %should we perform measurement step?
 params.particleFilterMethod = 1;                                            %particle filter method. see initialize particles for description of each.
 params.n = 20;                                                              %only keep track of current state
-params.np = 100;                                                            %number of particles
+params.np = 200;                                                            %number of particles
 params.neff = 0.5;                                                          %if effective sample size drops below params.neff*parrams.np then resample
 params.particlesInit = 0;                                                   %are particles initialized?
 params.particleInitTime = 2;                                                %how long until the particle filter gets initialized?
@@ -60,7 +60,7 @@ params.sigC = 6;                                                            %for
 % particle filter method specific parameters
 
 % method 1
-params.p1.initOrientationSigma = diag(1/2*[pi/1000, pi/1000, pi/1000]);     %orientation sigma for initial distribution of particles
+params.p1.initOrientationSigma = diag(1/10*[pi/1000, pi/1000, pi/1000]);    %orientation sigma for initial distribution of particles
 params.p1.initOrientationMu = [0;0;0];                                      %orientation mu for initial distribution of particles
 params.p1.initRhoSigma = 3;                                                 %rho sigma for initial distribution of particles
 params.p1.initRhoMu = 0;                                                    %rho mu for initial distribution of particles
