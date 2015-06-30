@@ -25,6 +25,19 @@ namespace Nf
     dd.clear(); dd << 1 << 1 << 1 << endr;
     particleSigmaPos = (mat33)diagmat(dd/3.0);
 
+    particleMuPos = zeros<vec>(3);
+    particleSigmaPos = (mat33)zeros<mat>(3,3);
+
+    particleMuOr = zeros<vec>(3);
+    dd.clear(); dd << PI << PI << PI << endr;
+    particleSigmaOr = (mat33)diagmat(1.0/5000.0*dd);
+
+    particleSigmaVel = 5;
+    particleMuVel = 0;
+
+    particleSigmaRho = 3;
+    particleMuRho = 0;
+
     minimumMeasurements = 1;
   }
 
@@ -50,12 +63,7 @@ namespace Nf
     //k' coordinate system expressed in global coordinates.
     // note rotation order is flipped because using intrinsic rotations with
     // extrinisc rotation matrices
-    vec3 zhat;
-    zhat << 0 << endr << 0 << endr << 1 << endr;
-    vec3 xhat;
-    xhat << 1 << endr << 0 << endr << 0 << endr;
-
-    mat33 kp = this->R*SO3Exp((vec3)(u.dtheta*zhat));
+    mat33 kp = this->R*Rz(u.dtheta);
 
     // location of tip expressed in Rk' coordinates
     f64 phi = dl/this->rho;
@@ -68,7 +76,7 @@ namespace Nf
     // needle tip's z-axis then rotated about the needle tip's x axis due to
     // following the curved arc.  Note taht rotation order is flipped due to
     //  intrinsic axis rotations used rather than extrinsic.
-    res.R = (mat33)(kp*SO3Exp((vec3)(-phi*xhat)));
+    res.R = (mat33)(kp*Rx(-phi));
 
     // convert needle tip location into global coordinates
     res.pos = kp*kp_x+this->pos;
@@ -96,18 +104,15 @@ namespace Nf
 
     f64 dt = dts(0);
 
-    vec3 yaxis; 
-    yaxis << 0 << 1 << 0 << endr;
-
     TipState xc;
     for(s32 i=1; i<u.size(); i++) {
       xc = res[i-1]; 
       // reverse for propagating backward in time
-      xc.R = (mat33)(xc.R*SO3Exp(PI*yaxis));
+      xc.R = (mat33)(xc.R*Ry(PI));
 
       xc = xc.Propagate(uc,dt,p);
 
-      xc.R = (mat33)(xc.R*SO3Exp(PI*yaxis));
+      xc.R = (mat33)(xc.R*Ry(PI));
       res.push_back(xc);
       uc = u[i-1];
     }
@@ -126,6 +131,13 @@ namespace Nf
   ParticleFilter::~ParticleFilter()
   {
   }
+
+  void ParticleFilter::SetNumberOfParticles(s32 nParticles)
+  {
+    Resample(nParticles);
+    m_nParticles = nParticles;
+  }
+
   //////////////////////////////////////////////////////////////////////////////////////////
   /// End Basic Particle Filter
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -145,15 +157,67 @@ namespace Nf
   void ParticleFilterFullState::InitializeParticleFilter(const std::vector < TipState > &hist, const PFParams *p)
   {
     const PFFullStateParams *pp = (const PFFullStateParams *)p;
-    //Gaussian<vec3,mat33> posNoise(
+
+    TipState xc = hist[0];
+    Gaussian<vec3,mat33> posNoise((vec3)(xc.R*p->initPosMu), p->initPosSigma);
+    Gaussian<vec,mat> rhoNoise(vec(&p->initRhoMu,1), mat(&p->initRhoSigma,1,1));
+    Gaussian<vec3,mat33> orNoise(p->initOrientationMu, p->initOrientationSigma);
+
+    m_rho = xc.rho*ones(m_nParticles)+rhoNoise.Sample(m_nParticles);
+    m_rho = max(PF_MIN_RHO*ones(m_nParticles), m_rho);
+
+    m_pos = repmat(xc.pos, 1, m_nParticles)+posNoise.Sample(m_nParticles);
+
+    for(s32 i=0; i<m_nParticles; i++) {
+      m_R[i] = (mat33)(xc.R*SO3Exp(orNoise.Sample()));
+    }
+
   }
 
   void ParticleFilterFullState::Propagate(const NSCommand *u, f64 dt, const PFParams *p)
   {
+    //TODO: This can be optimized to not propagate each particle separately
+    //Especially if we get rid of velocity randomness term.
+    //All orientations changes can be combined into one matrix multiply for all particles, etc.
+
+    PFFullStateParams *pp = (PFFullStateParams *)p;
+    Gaussian<vec3, mat33> noisePos(p->particleMuPos, p->particleSigmaPos);
+    Gaussian<vec3, mat33> noiseOrientation(p->particleMuOr, p->particleSigmaOr);
+    Gaussian<vec, mat> noiseRho(vec(&p->particleMuRho,1), mat(&p->particleSigmaRho,1,1));
+    Gaussian<vec, mat> noiseVel(vec(&p->particleMuVel,1), mat(&p->particleSigmaVel,1,1));
+
+    mat noiseP = noisePos.Sample(m_nParticles);
+    mat noiseO = noiseOrientation.Sample(m_nParticles);
+    mat noiseR = noiseRho.Sample(m_nParticles);
+    mat noiseV = noiseVel.Sample(m_nParticles);
+
+    TipState t;
+    NSCommand uc; memcpy(&uc, u, sizeof(NSCommand));
+    mat velocities = u->v*ones(m_nParticles)+noiseV;
+    //For each particle...
+    for(s32 i=0; i<m_nParticles; i++) {
+      //perturb orientation
+      uc.v = velocities(i,0);
+      t.pos = m_pos.col(i);
+      t.R = (mat33)(m_R[i]*SO3Exp((vec3)noiseO.col(i)));
+      t.rho = m_rho(i);
+
+      //Propagate
+      t = t.Propagate(uc, dt, p);
+
+      m_pos.col(i) = t.pos;
+      m_rho(i) = t.rho;
+      m_R[i] = t.R;
+    }
+
+    //now add noise
+    m_pos = m_pos+noiseP;
+    m_rho = max(m_rho+noiseR, PF_MIN_RHO*ones(m_nParticles));
   }
 
   void ParticleFilterFullState::ApplyMeasurement(const Measurement *m, const PFParams *p)
   {
+
   }
 
   mat ParticleFilterFullState::GetParticlePositions(const PFParams *p)
@@ -193,14 +257,77 @@ namespace Nf
 
   void ParticleFilterMarginalized::InitializeParticleFilter(const std::vector < TipState > &hist, const PFParams *p)
   {
+    const PFFullStateParams *pp = (const PFFullStateParams *)p;
+
+    TipState xc = hist[0];
+    Gaussian<vec3,mat33> posNoise((vec3)(xc.R*p->initPosMu), p->initPosSigma);
+    Gaussian<vec,mat> rhoNoise(vec(&p->initRhoMu,1), mat(&p->initRhoSigma,1,1));
+
+    m_rho = xc.rho*ones(m_nParticles)+rhoNoise.Sample(m_nParticles);
+    m_rho = max(PF_MIN_RHO*ones(m_nParticles), m_rho);
+
+    m_pos = repmat(xc.pos, 1, m_nParticles)+posNoise.Sample(m_nParticles);
+
+    for(s32 i=0; i<m_nParticles; i++) {
+      m_R[i] = OrientationKF(xc.R, p->initOrientationSigma);
+    }
   }
 
   void ParticleFilterMarginalized::Propagate(const NSCommand *u, f64 dt, const PFParams *p)
   {
+    //TODO: This can be optimized to not propagate each particle separately
+    //Especially if we get rid of velocity randomness term.
+    //All orientations changes can be combined into one matrix multiply for all particles, etc.
+
+    const PFMarginalizedParams *pp = (const PFMarginalizedParams *)p;
+    Gaussian<vec3, mat33> noisePos(p->particleMuPos, p->particleSigmaPos);
+    Gaussian<vec, mat> noiseRho(vec(&p->particleMuRho,1), mat(&p->particleSigmaRho,1,1));
+    Gaussian<vec, mat> noiseVel(vec(&p->particleMuVel,1), mat(&p->particleSigmaVel,1,1));
+
+    mat noiseP = noisePos.Sample(m_nParticles);
+    mat noiseR = noiseRho.Sample(m_nParticles);
+    mat noiseV = noiseVel.Sample(m_nParticles);
+
+    TipState t;
+    NSCommand uc; memcpy(&uc, u, sizeof(NSCommand));
+    mat velocities = u->v*ones(m_nParticles)+noiseV;
+
+    mat33 sigma1 = p->particleSigmaOr;
+    mat33 sigma0;
+
+    f64 phi;
+    mat33 R10, R1, R0;
+    //For each particle...
+    for(s32 i=0; i<m_nParticles; i++) {
+      Gaussian<vec3,mat33> noiseOr((vec3)zeros<vec>(3,1), m_R[i].sigma);
+      //perturb orientation
+      uc.v = velocities(i,0);
+      t.pos = m_pos.col(i);
+      t.R = (mat33)(m_R[i].mu*SO3Exp(noiseOr.Sample()));
+      t.rho = m_rho(i);
+
+      //Propagate
+      t = t.Propagate(uc, dt, p);
+
+      m_pos.col(i) = t.pos;
+      m_rho(i) = t.rho;
+
+      phi = uc.v*dt/m_rho(i);
+      R0 = m_R[i].mu;
+      R1 = (mat33)(Rz(uc.dtheta)*Rx(-phi));
+      R10 = (mat33)(R0*R1);
+
+      m_R[i] = OrientationKF(R10, sigma1+R1*m_R[i].sigma*R1.t());
+    }
+
+    //now add noise
+    m_pos = m_pos+noiseP;
+    m_rho = max(m_rho+noiseR,ones(m_nParticles)*PF_MIN_RHO);
   }
 
   void ParticleFilterMarginalized::ApplyMeasurement(const Measurement *m, const PFParams *p)
   {
+
   }
 
   mat ParticleFilterMarginalized::GetParticlePositions(const PFParams *p)

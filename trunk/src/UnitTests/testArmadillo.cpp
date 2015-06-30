@@ -153,6 +153,16 @@ TEST(Scratch, Armadillo)
   cout << xyz << endl;
 }
 
+TEST(Armadillo, RandSeed)
+{
+  using ::s32;
+  srand(1);
+
+ 
+  vec samples = randn(500);
+  samples.save("C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/randn.dat", raw_ascii);
+}
+
 TEST(Math, Gaussian)
 {
   using ::s32;

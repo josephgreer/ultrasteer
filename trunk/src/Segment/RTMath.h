@@ -13,6 +13,9 @@ namespace Nf
   arma::vec3 SO3HatInverse(const arma::mat33 &x);
   arma::mat33 SO3Exp(const arma::vec3 &x);
   arma::vec3 SO3Log(const arma::mat33 &x);
+  arma::mat33 Rx(f64 theta);
+  arma::mat33 Ry(f64 theta);
+  arma::mat33 Rz(f64 theta);
 
   ///////////////////////////////////////////////////////////////
   // End SO(3) Math
