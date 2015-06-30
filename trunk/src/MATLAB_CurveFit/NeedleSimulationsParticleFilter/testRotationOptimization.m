@@ -34,7 +34,7 @@ xcurr.q = quatmult(qperturb, xcurr.q);
 
 xp = propagateNeedleBack(xcurr, u, params);
 
-%drawFrames(1, {xp{1}}, 5, []); 
+%drawFrames(1, {xp{1}}, 5, params, []); 
 drawPointHistory(xp(1:nskip:end), 1, [0 0 1]);
 
 X = cell2mat(xhist);
@@ -62,7 +62,7 @@ drawPointHistory(xprot(1:nskip:end), 1, [1 0 0]);
 
 xfix = xp{1};
 xfix.q = quatmult(qfix, xfix.q);
-drawFrames(1, {xfix}, 40, []);
+drawFrames(1, {xfix}, 40, params, []);
 
 SO3Metric(QuatToRotationMatrix(xfix.q), QuatToRotationMatrix(xhist{1}.q))
 SO3Metric(QuatToRotationMatrix(xp{1}.q), QuatToRotationMatrix(xhist{1}.q))
@@ -71,7 +71,7 @@ figure(2);
 handles = [];
 currx = xfix;
 currx.pos = [0; 0; 0];
-handles = drawFrames(2, {currx}, 1, handles);
+handles = drawFrames(2, {currx}, 1, params, handles);
 view(3);
 grid on;
 xlim([-2 2]);
@@ -81,7 +81,7 @@ daspect([1 1 1]);
 pause;
 currx = xhist{1};
 currx.pos = [0; 0; 0];
-handles = drawFrames(2, {currx}, 1, handles);
+handles = drawFrames(2, {currx}, 1, params, handles);
 % xlim([-5 5]);
 % ylim([-5 5]);
 % zlim([-5 5]);
@@ -89,4 +89,4 @@ handles = drawFrames(2, {currx}, 1, handles);
 % pause;
 % currx = xfix;
 % currx.pos = [0; 0; 0];
-% handles = drawFrames(2, {currx}, 1, handles);
+% handles = drawFrames(2, {currx}, 1, parmas, handles);

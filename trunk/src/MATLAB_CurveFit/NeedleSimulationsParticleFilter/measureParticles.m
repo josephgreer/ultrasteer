@@ -610,7 +610,7 @@ xsc = cell2mat(xss); xsc = [xsc.pos]';
 scatter3(xsc(:,1), xsc(:,2), xsc(:,3), 'r');
 xs = xs';
 scatter3(xs(:,1), xs(:,2), xs(:,3), 'b');
-drawFrames(2, xss(1), 20,[]);
+drawFrames(2, xss(1), 20,params,[]);
 axis equal;
 grid on;
 ylim([-100 100]);

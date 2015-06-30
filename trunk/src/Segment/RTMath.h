@@ -27,6 +27,7 @@ namespace Nf
   class Gaussian
   {
   protected:
+    bool m_sampleInit;
     V m_mu;           //mean
     M m_E;            //covariance matrix
     M m_L;            //factor covariance matrix using cholesky E = LL^T to generate random samples
@@ -38,24 +39,40 @@ namespace Nf
       : m_mu(mu)
       , m_E(E)
       , m_norm(-1)
+      , m_sampleInit(false)
     {
-      assert(arma::chol(m_L, m_E, "lower"));
+    }
+
+    void InitForSampling()
+    {
+      arma::vec m_lambda;
+      arma::mat m_w;
+      bool rv = arma::eig_sym(m_lambda, m_w, m_E);
+      assert(rv);
+      m_L = (M)(m_w*arma::diagmat(arma::sqrt(m_lambda)));
+      m_sampleInit = true;
     }
 
     arma::mat Sample(s32 n)
     {
+      if(!m_sampleInit)
+        InitForSampling();
+
       //res \in R^(dxn) where d is dimensionality of data and n is number of samples
       //res = [s1 s2 ... sn] s_i \in R^d
       arma::mat res(m_mu.n_rows, n);
       res.randn();
-
-      res = m_L*res+arma::repmat(m_mu,1,n);
+      res = m_L*res;
+      res = res+arma::repmat(m_mu,1,n);
 
       return res;
     }
 
     V Sample()
     {
+      if(!m_sampleInit)
+        InitForSampling();
+
       //res \in R^d where d is dimensionality of m_mu
       V res = arma::randn(m_mu.n_rows,1);
 

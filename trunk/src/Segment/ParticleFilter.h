@@ -25,7 +25,6 @@ namespace Nf
   class PFParams
   {
   public:
-    s32 np;                                   //  number of particles
     s32 minimumMeasurements;                  //  minimum number of measurements needed to measure particles
     arma::vec3 initPosMu;                     //  pos mu for initial distribution of particles
     arma::mat33 initPosSigma;                 //  pos sigma for initial distribution of particles
@@ -147,7 +146,7 @@ namespace Nf
     // Returns curvatures of each particle
     //   returns:
     //   [rho1; ...; rhon] \in R^n, each row represents a curvature value
-    virtual arma::vec GetParticleRhos(const PFParams *p) = 0;
+    virtual arma::mat GetParticleRhos(const PFParams *p) = 0;
 
     // Returns expected value of particle filter posterior distribution
     // in other words, the estimate of the filer.
@@ -161,7 +160,7 @@ namespace Nf
   protected:
     arma::mat m_pos;                        //position matrix for particles [x1 x2 ... xn] x_i \in R^3 m_pos \in R^(3xn)
     std::vector < arma::mat33 > m_R;        //vector of rotation matrices for particles
-    arma::vec m_rho;                        //rhos [rho1 ... rhon] rhoi \in R, m_rhos \in R^n
+    arma::mat m_rho;                        //rhos [rho1 ... rhon] rhoi \in R, m_rhos \in R^n
 
   public:
     ParticleFilterFullState(s32 nParticles, const PFParams *p);
@@ -189,13 +188,16 @@ namespace Nf
     // Get all the particle positions
     //    returns:
     //      vector of tip frame orientations
-    virtual std::vector < arma::mat33 > GetParticleOrientations(const PFParams *p) = 0;
+    virtual std::vector < arma::mat33 > GetParticleOrientations(const PFParams *p);
+
+    // Resample particles according to particle weight distribution;
+    virtual void Resample(s32 nParticles);
 
 
     // Returns curvatures of each particle
     //   returns:
     //   [rho1; ...; rhon] \in R^n, each row represents a curvature value
-    virtual arma::vec GetParticleRhos(const PFParams *p);
+    virtual arma::mat GetParticleRhos(const PFParams *p);
 
     // Returns expected value of particle filter posterior distribution
     // in other words, the estimate of the filer.
@@ -222,7 +224,7 @@ namespace Nf
   protected:
     arma::mat m_pos;                          //position matrix for particles [x1 x2 ... xn] x_i \in R^3 m_pos \in R^(3xn)
     std::vector < OrientationKF > m_R;        //vector of orientation Kalman Filters p(R_t|p_t,Y_{1:t})
-    arma::vec m_rho;                          //rhos [rho1 ... rhon] rhoi \in R, m_rhos \in R^n
+    arma::mat m_rho;                          //rhos [rho1 ... rhon] rhoi \in R, m_rhos \in R^n
 
 
   public:
@@ -248,16 +250,24 @@ namespace Nf
     //  [x_1^T; ... ; x_n^T] return \in R^(nx3)
     virtual arma::mat GetParticlePositions(const PFParams *p);
 
-    // Get all the particle positions
+    // Get all the particle orientations
     //    returns:
     //      vector of tip frame orientations
-    virtual std::vector < arma::mat33 > GetParticleOrientations(const PFParams *p) = 0;
+    virtual std::vector < arma::mat33 > GetParticleOrientations(const PFParams *p);
+    
+    // Get all the particle kalman filter orientations
+    //    returns:
+    //      vector of tip frame sigmas
+    virtual std::vector < arma::mat33 > GetParticleOrientationSigmas(const PFParams *p);
+
+    // Resample particles according to particle weight distribution;
+    virtual void Resample(s32 nParticles);
 
 
     // Returns curvatures of each particle
     //   returns:
     //   [rho1; ...; rhon] \in R^n, each row represents a curvature value
-    virtual arma::vec GetParticleRhos(const PFParams *p);
+    virtual arma::mat GetParticleRhos(const PFParams *p);
 
     // Returns expected value of particle filter posterior distribution
     // in other words, the estimate of the filer.

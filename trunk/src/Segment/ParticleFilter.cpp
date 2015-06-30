@@ -21,12 +21,10 @@ namespace Nf
 
     initRhoSigma = 0;
     initRhoMu = 0;
-
+    
+    particleMuPos = zeros<vec>(3);
     dd.clear(); dd << 1 << 1 << 1 << endr;
     particleSigmaPos = (mat33)diagmat(dd/3.0);
-
-    particleMuPos = zeros<vec>(3);
-    particleSigmaPos = (mat33)zeros<mat>(3,3);
 
     particleMuOr = zeros<vec>(3);
     dd.clear(); dd << PI << PI << PI << endr;
@@ -48,6 +46,7 @@ namespace Nf
 
   PFMarginalizedParams::PFMarginalizedParams()
   {
+    minimumMeasurements = 15;
     vec3 dd; dd << 5e-3 << 5e-3 << 0.5 << endr;
     measurementSigma = (mat33)diagmat(dd);
 
@@ -163,13 +162,14 @@ namespace Nf
     Gaussian<vec,mat> rhoNoise(vec(&p->initRhoMu,1), mat(&p->initRhoSigma,1,1));
     Gaussian<vec3,mat33> orNoise(p->initOrientationMu, p->initOrientationSigma);
 
-    m_rho = xc.rho*ones(m_nParticles)+rhoNoise.Sample(m_nParticles);
-    m_rho = max(PF_MIN_RHO*ones(m_nParticles), m_rho);
+    m_rho = xc.rho*ones(1,m_nParticles);
+    m_rho = m_rho+rhoNoise.Sample(m_nParticles);
+    m_rho = max(PF_MIN_RHO*ones(1,m_nParticles), m_rho);
 
     m_pos = repmat(xc.pos, 1, m_nParticles)+posNoise.Sample(m_nParticles);
 
     for(s32 i=0; i<m_nParticles; i++) {
-      m_R[i] = (mat33)(xc.R*SO3Exp(orNoise.Sample()));
+      m_R.push_back((mat33)(xc.R*SO3Exp(orNoise.Sample())));
     }
 
   }
@@ -193,11 +193,11 @@ namespace Nf
 
     TipState t;
     NSCommand uc; memcpy(&uc, u, sizeof(NSCommand));
-    mat velocities = u->v*ones(m_nParticles)+noiseV;
+    mat velocities = u->v*ones(1,m_nParticles)+noiseV;
     //For each particle...
     for(s32 i=0; i<m_nParticles; i++) {
       //perturb orientation
-      uc.v = velocities(i,0);
+      uc.v = velocities(0,i);
       t.pos = m_pos.col(i);
       t.R = (mat33)(m_R[i]*SO3Exp((vec3)noiseO.col(i)));
       t.rho = m_rho(i);
@@ -212,7 +212,7 @@ namespace Nf
 
     //now add noise
     m_pos = m_pos+noiseP;
-    m_rho = max(m_rho+noiseR, PF_MIN_RHO*ones(m_nParticles));
+    m_rho = max(m_rho+noiseR, PF_MIN_RHO*ones(1,m_nParticles));
   }
 
   void ParticleFilterFullState::ApplyMeasurement(const Measurement *m, const PFParams *p)
@@ -222,22 +222,26 @@ namespace Nf
 
   mat ParticleFilterFullState::GetParticlePositions(const PFParams *p)
   {
-    return zeros<mat>(m_nParticles, 3);
+    return m_pos;
   }
 
   std::vector < mat33 > ParticleFilterFullState::GetParticleOrientations(const PFParams *p)
   {
-    return std::vector < mat33 >();
+    return m_R;
   }
 
-  vec ParticleFilterFullState::GetParticleRhos(const PFParams *p)
+  mat ParticleFilterFullState::GetParticleRhos(const PFParams *p)
   {
-    return zeros<vec>(m_nParticles);
+    return m_rho;
   }
 
   TipState ParticleFilterFullState::GetExpectedValue(const PFParams *p)
   {
     return TipState();
+  }
+
+  void ParticleFilterFullState::Resample(s32 nParticles)
+  {
   }
   //////////////////////////////////////////////////////////////////////////////////////////
   /// End Particle Filter Full State
@@ -263,13 +267,13 @@ namespace Nf
     Gaussian<vec3,mat33> posNoise((vec3)(xc.R*p->initPosMu), p->initPosSigma);
     Gaussian<vec,mat> rhoNoise(vec(&p->initRhoMu,1), mat(&p->initRhoSigma,1,1));
 
-    m_rho = xc.rho*ones(m_nParticles)+rhoNoise.Sample(m_nParticles);
-    m_rho = max(PF_MIN_RHO*ones(m_nParticles), m_rho);
+    m_rho = xc.rho*ones(1,m_nParticles)+rhoNoise.Sample(m_nParticles);
+    m_rho = max(PF_MIN_RHO*ones(1,m_nParticles), m_rho);
 
     m_pos = repmat(xc.pos, 1, m_nParticles)+posNoise.Sample(m_nParticles);
 
     for(s32 i=0; i<m_nParticles; i++) {
-      m_R[i] = OrientationKF(xc.R, p->initOrientationSigma);
+      m_R.push_back(OrientationKF(xc.R, p->initOrientationSigma));
     }
   }
 
@@ -290,7 +294,7 @@ namespace Nf
 
     TipState t;
     NSCommand uc; memcpy(&uc, u, sizeof(NSCommand));
-    mat velocities = u->v*ones(m_nParticles)+noiseV;
+    mat velocities = u->v*ones(1,m_nParticles)+noiseV;
 
     mat33 sigma1 = p->particleSigmaOr;
     mat33 sigma0;
@@ -301,7 +305,7 @@ namespace Nf
     for(s32 i=0; i<m_nParticles; i++) {
       Gaussian<vec3,mat33> noiseOr((vec3)zeros<vec>(3,1), m_R[i].sigma);
       //perturb orientation
-      uc.v = velocities(i,0);
+      uc.v = velocities(0,i);
       t.pos = m_pos.col(i);
       t.R = (mat33)(m_R[i].mu*SO3Exp(noiseOr.Sample()));
       t.rho = m_rho(i);
@@ -322,7 +326,7 @@ namespace Nf
 
     //now add noise
     m_pos = m_pos+noiseP;
-    m_rho = max(m_rho+noiseR,ones(m_nParticles)*PF_MIN_RHO);
+    m_rho = max(m_rho+noiseR,ones(1,m_nParticles)*PF_MIN_RHO);
   }
 
   void ParticleFilterMarginalized::ApplyMeasurement(const Measurement *m, const PFParams *p)
@@ -332,22 +336,39 @@ namespace Nf
 
   mat ParticleFilterMarginalized::GetParticlePositions(const PFParams *p)
   {
-    return zeros<mat>(m_nParticles, 3);
+    return m_pos;
   }
 
   std::vector < mat33 > ParticleFilterMarginalized::GetParticleOrientations(const PFParams *p)
   {
-    return std::vector < mat33 >();
+    std::vector < mat33 > res;
+    for(s32 i=0; i<m_nParticles; i++) {
+      res.push_back(m_R[i].mu);
+    }
+    return res;
   }
 
-  vec ParticleFilterMarginalized::GetParticleRhos(const PFParams *p)
+  std::vector < mat33 > ParticleFilterMarginalized::GetParticleOrientationSigmas(const PFParams *p)
   {
-    return zeros<vec>(m_nParticles);
+    std::vector < mat33 > res;
+    for(s32 i=0; i<m_nParticles; i++) {
+      res.push_back(m_R[i].sigma);
+    }
+    return res;
+  }
+
+  mat ParticleFilterMarginalized::GetParticleRhos(const PFParams *p)
+  {
+    return m_rho;
   }
 
   TipState ParticleFilterMarginalized::GetExpectedValue(const PFParams *p)
   {
     return TipState();
+  }
+
+  void ParticleFilterMarginalized::Resample(s32 nParticles)
+  {
   }
   //////////////////////////////////////////////////////////////////////////////////////////
   /// End Particle Filter With Kalman Filter for Orientation

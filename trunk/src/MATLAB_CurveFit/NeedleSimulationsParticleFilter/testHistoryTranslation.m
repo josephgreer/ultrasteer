@@ -41,4 +41,4 @@ end
 
 
 
-%drawFrames(1, {xp{1}}, 5, []); 
+%drawFrames(1, {xp{1}}, 5, params, []); 
