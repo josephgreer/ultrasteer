@@ -28,6 +28,42 @@ namespace Nf
     return eye(3,3)+sin(theta)*K+(1-cos(theta))*K*K;
   }
 
+  mat33 Rx(f64 theta)
+  {
+    f64 ct = cos(theta);
+    f64 st = sin(theta);
+
+    mat33 res;
+    res <<  1   <<  0   <<  0   << endr
+        <<  0   <<  ct  <<  -st << endr
+        <<  0   <<  st  <<   ct << endr;
+    return res;
+  }
+
+  mat33 Ry(f64 theta)
+  {
+    f64 ct = cos(theta);
+    f64 st = sin(theta);
+
+    mat33 res;
+    res <<  ct  <<  0   <<  -st << endr
+        <<  0   <<  1   <<  0   << endr
+        <<  st  <<  0   <<  ct  << endr;
+    return res;
+  }
+
+  mat33 Rz(f64 theta)
+  {
+    f64 ct = cos(theta);
+    f64 st = sin(theta);
+
+    mat33 res;
+    res <<  ct  <<  -st <<  0   << endr
+        <<  st  <<  ct  <<  0   << endr
+        <<  0   <<  0   <<  1   << endr;
+    return res;
+  }
+
   //taken from http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
   vec3 SO3Log(const mat33 &m)
   {

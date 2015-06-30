@@ -320,3 +320,26 @@ TEST(ParticleFilter, PropagateNeedleBack)
     assert(abs(xs[i].rho-rhos(i)) < eps);
   }
 }
+
+TEST(ParticleFilter, PropagateParticles)
+{
+  using ::s32;
+
+  f64 eps = 1e-4;
+
+  char path[150] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data";
+  
+  mat pos, rhos, Rs;
+
+  pos.load(std::string(path)+std::string("/propagateNeedleTipBackPos.dat"));
+  rhos.load(std::string(path)+std::string("/propagateNeedleTipBackRhos.dat"));
+  Rs.load(std::string(path)+std::string("/propagateNeedleTipBackRs.dat"));
+
+  NSCommand u;
+  u.dtheta = 2.17122208289517;
+  u.v = 9.48383737115335;
+
+
+
+}
+

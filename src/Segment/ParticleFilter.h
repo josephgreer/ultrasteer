@@ -5,6 +5,8 @@
 #include "RTCore.h"
 #include "UICore.h"
 
+#define PF_MIN_RHO 10
+
 namespace Nf
 {
   struct NSCommand
@@ -32,7 +34,14 @@ namespace Nf
     arma::vec3 initOrientationMu;             //  orientation mu for initial distribution of particles
     arma::mat33 initOrientationSigma;         //  orientation sigma for initial distribution of particles
     arma::mat33 particleSigmaPos;             //  sigma pos for particle propagation (as opposed to pos sigma for simulation)
-
+    arma::vec3 particleMuPos;                 //  mu pos for particle propagation (as opposed to pos mu for simulation)
+    arma::mat33 particleSigmaOr;              //  sigma orientation for particle propagation
+    arma::vec3 particleMuOr;                  //  mu orientation for particle propagation (as opposed to orientation mu for simulation)
+    f64 particleSigmaVel;                     //  sigma velocity for particle propagation
+    f64 particleMuVel;                        //  mu velocity for particle propagation (as opposed to vel mu for simulation)
+    f64 particleSigmaRho;                     //  sigma rho for particle propagation
+    f64 particleMuRho;                        //  mu rho for particle propagation
+ 
     PFParams();
   };
 
@@ -128,7 +137,12 @@ namespace Nf
     //    returns:
     //      vector of tip frame orientations
     virtual std::vector < arma::mat33 > GetParticleOrientations(const PFParams *p) = 0;
+    
+    //Set the number of particles. Causes a resample
+    virtual void SetNumberOfParticles(s32 nParticles);
 
+    // Resample particles according to particle weight distribution;
+    virtual void Resample(s32 nParticles) = 0;
 
     // Returns curvatures of each particle
     //   returns:
@@ -144,7 +158,12 @@ namespace Nf
   // Estimate joint distribution p(P_{t:1},R_{t:1}|Z_{t:1})
   class ParticleFilterFullState : public ParticleFilter 
   {
+  protected:
+    arma::mat m_pos;                        //position matrix for particles [x1 x2 ... xn] x_i \in R^3 m_pos \in R^(3xn)
+    std::vector < arma::mat33 > m_R;        //vector of rotation matrices for particles
+    arma::vec m_rho;                        //rhos [rho1 ... rhon] rhoi \in R, m_rhos \in R^n
 
+  public:
     ParticleFilterFullState(s32 nParticles, const PFParams *p);
 
     virtual ~ParticleFilterFullState();
@@ -183,11 +202,30 @@ namespace Nf
     virtual TipState GetExpectedValue(const PFParams *p);
   };
 
+  struct OrientationKF
+  {
+    public:
+    arma::mat33 mu;                 //represents mean of gaussian distribution
+    arma::mat33 sigma;              //covariance of gaussian distribution
+
+   OrientationKF(arma::mat33 mu, arma::mat33 sigma)
+   {
+     this->mu = mu;
+     this->sigma = sigma;
+   }
+  };
+
   // Implements full state particle filter.
   // Estimate joint distribution p(P_{t:1},R_{t:1}|Z_{t:1})
   class ParticleFilterMarginalized : public ParticleFilter 
-  {
+  {    
+  protected:
+    arma::mat m_pos;                          //position matrix for particles [x1 x2 ... xn] x_i \in R^3 m_pos \in R^(3xn)
+    std::vector < OrientationKF > m_R;        //vector of orientation Kalman Filters p(R_t|p_t,Y_{1:t})
+    arma::vec m_rho;                          //rhos [rho1 ... rhon] rhoi \in R, m_rhos \in R^n
 
+
+  public:
     ParticleFilterMarginalized(s32 nParticles, const PFParams *p);
 
     virtual ~ParticleFilterMarginalized();
