@@ -8,9 +8,9 @@ figure(fig);
 for i=1:length(x)
     hold on;
     R = eye(3);
-    if(params.particleFilterMethod == 1)
+    if(isfield(x{i},'q'))
         R = QuatToRotationMatrix(x{i}.q)*scale;
-    elseif(params.particleFilterMethod == 3)
+    elseif(isfield(x{i},'qdist'))
         R = x{i}.qdist.mu*scale; 
     else
         assert(0);

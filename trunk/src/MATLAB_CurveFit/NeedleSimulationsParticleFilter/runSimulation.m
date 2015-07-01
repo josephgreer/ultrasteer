@@ -13,6 +13,7 @@ results.time = [];
 results.positionError = [];
 results.orientationError = [];
 results.particles = [];
+results.measurements = [];
 
 
 % initial state of needle
@@ -103,7 +104,7 @@ for t=0:params.dt:params.simulationTime
         % resample if effective particle size gets too low.
         if(neff < params.neff*params.np)
             xp = resampleParticles(xp, params);
-            display('resample');
+            %display('resample');
         end
         
         % save off state
@@ -118,6 +119,8 @@ for t=0:params.dt:params.simulationTime
         results.orientationError = vertcat(results.orientationError, computeAverageOrientationError(xp, xcurr, params));
         % save off pos error
         results.positionError = vertcat(results.positionError, computeAveragePositionError(xp, xcurr, params));
+        % save off measurements
+        results.measurements = vertcat(results.measurements, {measurement});
     end
     
     % draw auxillary information if these params are enabled
