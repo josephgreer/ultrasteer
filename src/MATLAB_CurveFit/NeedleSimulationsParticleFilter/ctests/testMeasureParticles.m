@@ -18,9 +18,18 @@ for method=[1,3]
     params.simulationTime = 5;
     params.particleFilterMethod = method;
     [results, xhist, u] = runSimulation(params, @(t,params)commandFcn(t,params));
-    %measureParticles(results.particles{end}, u, results.stats{end}, results.measurements, params)
+    
+    pathBase = sprintf('./data/testMeasure%d1', method);
+    saveCommands(u, pathBase, params);
+    saveMeasurements(results.measurements, pathBase, params);
+    saveParticles(results.particles{end}, pathBase, params);
     
     close all;
-    params.simulationTime = 6.5;
+    params.simulationTime = 6;
     [results, xhist, u] = runSimulation(params, @(t,params)commandFcn(t,params));
+    
+    pathBase = sprintf('./data/testMeasure%d2', method);
+    saveCommands(u, pathBase, params);
+    saveMeasurements(results.measurements, pathBase, params);
+    saveParticles(results.particles{end}, pathBase, params);
 end

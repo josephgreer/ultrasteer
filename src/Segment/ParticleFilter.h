@@ -18,8 +18,15 @@ namespace Nf
 
   struct Measurement
   {
-    arma::mat points;         // represents positions of points x1,x2,...,xn \in R^3. [x1^T; x2^T;... xn^T] \in R^(nx3)
-    arma::vec doppler;        // represents corresponding doppler response values \in R^3 [d1; d2; ... dn] \in R^n
+    arma::mat pos;             // represents positions of points x1,x2,...,xn \in R^3. [x1 x2 ... xn] \in R^(3xn)
+    arma::mat uv;              // represents pixel coordinates of measurement x1,x2,..,xn \in R^2. [x1 x2 ... xn] \in R^(2xn)
+    arma::mat doppler;         // represents corresponding doppler response values \in R [d1 d2 ... dn] \in R^n
+    arma::vec ful;             // represents upper left point of frame ful \in R^3
+    arma::vec fbl;             // represents bottom left point of frame fbl \in R^3
+    arma::vec fbr;             // represents bottom right point of frame fbr \in R^3
+    arma::vec fur;             // represents upper right point of frame fur \in R^3
+    arma::vec fbx;             // represents x-basis vector of frame \in R^3
+    arma::vec fby;             // represents y-basis vector of frame\in R^3
   };
 
   class PFParams
@@ -127,7 +134,7 @@ namespace Nf
     virtual void Propagate(const NSCommand *u, f64 dt, const PFParams *p) = 0;
 
     //Apply measurement to particle filter from ultrasound
-    virtual void ApplyMeasurement(const Measurement *m, const PFParams *p) = 0;
+    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const PFParams *p) = 0;
 
     // Get all the particle positions
     virtual arma::mat GetParticlePositions(const PFParams *p) = 0;
@@ -178,11 +185,11 @@ namespace Nf
     virtual void Propagate(const NSCommand *u, f64 dt, const PFParams *p);
 
     //Apply measurement to particle filter from ultrasound
-    virtual void ApplyMeasurement(const Measurement *m, const PFParams *p);
+    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const PFParams *p);
 
     // Get all the particle positions
     // return
-    //  [x_1^T; ... ; x_n^T] return \in R^(nx3)
+    //  [x_1 ... x_n] return \in R^(nx3)
     virtual arma::mat GetParticlePositions(const PFParams *p);
 
     // Get all the particle positions
@@ -202,6 +209,15 @@ namespace Nf
     // Returns expected value of particle filter posterior distribution
     // in other words, the estimate of the filer.
     virtual TipState GetExpectedValue(const PFParams *p);
+
+    //Used for testing only
+    virtual void SetOrientations(const std::vector < arma::mat33 > &ors);
+    
+    //Used for testing only
+    virtual void SetPositions(const arma::mat &pos);
+    
+    //Used for testing only
+    virtual void SetRhos(const arma::mat &rhos);
   };
 
   struct OrientationKF
@@ -243,11 +259,11 @@ namespace Nf
     virtual void Propagate(const NSCommand *u, f64 dt, const PFParams *p);
 
     //Apply measurement to particle filter from ultrasound
-    virtual void ApplyMeasurement(const Measurement *m, const PFParams *p);
+    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const PFParams *p);
 
     // Get all the particle positions
     // return
-    //  [x_1^T; ... ; x_n^T] return \in R^(nx3)
+    //  [x_1 ... x_n] return \in R^(3xn)
     virtual arma::mat GetParticlePositions(const PFParams *p);
 
     // Get all the particle orientations
@@ -272,5 +288,14 @@ namespace Nf
     // Returns expected value of particle filter posterior distribution
     // in other words, the estimate of the filer.
     virtual TipState GetExpectedValue(const PFParams *p);
+
+    //Used for testing only
+    virtual void SetOrientationKFs(const std::vector < OrientationKF > &ors);
+    
+    //Used for testing only
+    virtual void SetPositions(const arma::mat &pos);
+    
+    //Used for testing only
+    virtual void SetRhos(const arma::mat &rhos);
   };
 }

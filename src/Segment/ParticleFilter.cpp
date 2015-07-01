@@ -215,7 +215,7 @@ namespace Nf
     m_rho = max(m_rho+noiseR, PF_MIN_RHO*ones(1,m_nParticles));
   }
 
-  void ParticleFilterFullState::ApplyMeasurement(const Measurement *m, const PFParams *p)
+  void ParticleFilterFullState::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const PFParams *p)
   {
 
   }
@@ -243,6 +243,22 @@ namespace Nf
   void ParticleFilterFullState::Resample(s32 nParticles)
   {
   }
+  
+  void ParticleFilterFullState::SetOrientations(const std::vector < arma::mat33 > &ors)
+  {
+    m_R = ors;
+  }
+
+  void ParticleFilterFullState::SetPositions(const arma::mat &pos)
+  {
+    m_pos = pos;
+  }
+
+  void ParticleFilterFullState::SetRhos(const arma::mat &rhos)
+  {
+    m_rho = rhos;
+  }
+
   //////////////////////////////////////////////////////////////////////////////////////////
   /// End Particle Filter Full State
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -329,7 +345,7 @@ namespace Nf
     m_rho = max(m_rho+noiseR,ones(1,m_nParticles)*PF_MIN_RHO);
   }
 
-  void ParticleFilterMarginalized::ApplyMeasurement(const Measurement *m, const PFParams *p)
+  void ParticleFilterMarginalized::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const PFParams *p)
   {
 
   }
@@ -369,6 +385,21 @@ namespace Nf
 
   void ParticleFilterMarginalized::Resample(s32 nParticles)
   {
+  }
+
+  void ParticleFilterMarginalized::SetOrientationKFs(const std::vector < OrientationKF > &ors)
+  {
+    m_R = ors;
+  }
+
+  void ParticleFilterMarginalized::SetPositions(const arma::mat &pos)
+  {
+    m_pos = pos;
+  }
+
+  void ParticleFilterMarginalized::SetRhos(const arma::mat &rhos)
+  {
+    m_rho = rhos;
   }
   //////////////////////////////////////////////////////////////////////////////////////////
   /// End Particle Filter With Kalman Filter for Orientation
