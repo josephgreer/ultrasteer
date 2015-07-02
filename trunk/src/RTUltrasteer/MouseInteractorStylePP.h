@@ -23,6 +23,7 @@
 #include <QtDebug>
 #include <vtkInteractorStyleTrackballCamera.h>
 #include "Teleoperation2DWidget.h"
+#include <QSound>
 
 namespace Nf
 {  
@@ -48,7 +49,10 @@ namespace Nf
     {	
       qDebug() << "Pressed left mouse button." << "\n";
       
-      // find coordinates in viewer pixels
+	  // play a sound effect
+      QSound::play("C:/Windows/Media/Windows Default.wav");
+	  
+	  // find coordinates in viewer pixels
       Vec2d vw;
       vw.x = this->Interactor->GetEventPosition()[0];
       vw.y = this->Interactor->GetEventPosition()[1];
