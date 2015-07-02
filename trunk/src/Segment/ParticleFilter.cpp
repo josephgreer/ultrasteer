@@ -37,6 +37,12 @@ namespace Nf
     particleMuRho = 0;
 
     minimumMeasurements = 1;
+
+    usw = 83*630*1e-3;
+    ush = 83*480*1e-3;
+
+    sigA = 1;
+    sigC = 6;
   }
 
   PFFullStateParams::PFFullStateParams()
@@ -118,6 +124,34 @@ namespace Nf
 
     return res;
   }
+  
+  //////////////////////////////////////////////////////////////////////////////////////////
+  /// Begin Helper Functions
+  //////////////////////////////////////////////////////////////////////////////////////////
+  
+  // convert a vector of tip histories to a matrix of points
+  // return : 
+  // [x1 ... xn] \in R^(3xn) x_i \in R^3
+  static mat tipHistoryToPointMatrix(const std::vector < TipState > &hist)
+  {
+    using ::s32;
+
+    mat res = zeros(3,hist.size());
+    for(s32 i=0; i<hist.size(); i++) {
+      res.col(i) = hist[i].pos;
+    }
+
+    return res;
+  }
+
+  static f64 sigmoid(f64 x, f64 a, f64 c)
+  {
+    return 1/(1+exp(-a*(x-c)));
+  }
+
+  //////////////////////////////////////////////////////////////////////////////////////////
+  /// End Helper Functions
+  //////////////////////////////////////////////////////////////////////////////////////////
 
   //////////////////////////////////////////////////////////////////////////////////////////
   /// Begin Basic Particle Filter
@@ -215,9 +249,92 @@ namespace Nf
     m_rho = max(m_rho+noiseR, PF_MIN_RHO*ones(1,m_nParticles));
   }
 
-  void ParticleFilterFullState::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const PFParams *p)
+  void ParticleFilterFullState::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const std::vector < f64 > &dts, const PFParams *p)
   {
+    const PFFullStateParams *params = (const PFFullStateParams *)p;
 
+    // project first particle state backward in time as template 
+    // each particle will rotate and offset this history based on its orientation
+    TipState t;
+    t.pos = m_pos.col(0);
+    t.R = m_R[0];
+    t.rho = m_rho(0, 0);
+    std::vector < TipState > ts = t.PropagateBack(u, dts, p);
+    
+    // backward projected points from particle 0.
+    // this will be adjusted for each particle
+    mat modelHist = tipHistoryToPointMatrix(ts);
+    mat cModelHist = zeros(modelHist.n_rows, modelHist.n_cols);
+    
+    mat33 Rdelta;
+    mat33 frameMat;
+    vec3 tt;
+    vec2 suv, duv, a, b;
+    vec3 dr;
+    f64 proj, p_uvx, p_dx, pin;
+
+    vec usFrameParams;
+    usFrameParams << 1 << endr << params->usw << endr << params->ush << endr;
+
+    bool offFrame;
+    // For each particle...
+    for(s32 i=0; i<m_nParticles; i++) {
+      //delta rotation from particle 0 to particle i
+      Rdelta = (mat33)(m_R[i]*m_R[0].t());
+
+      //points from measurement to particle loc
+      dr = m[0].pos.col(0)-m_pos.col(i);
+
+      // look at projection of dr onto particle tip frame.  if it's positive
+      // then we believe it's in front of this particle (in other words, the
+      // ultrasound frame is off the needle in this hypothetical position)
+      proj = ((mat)(dr.t()*m_R[i].col(2)))(0,0);
+
+      p_uvx = p_dx = 0;
+
+      //does the fish tail off the back of the particle intersect the frame?
+      offFrame = true;
+
+      if(proj <= 0) {
+        // ultrasound frame behind the needle tip
+        //subtract off first point so we rotate about it
+        cModelHist = modelHist-repmat(modelHist.col(0),1,modelHist.n_cols);
+        // rotate history by Rdelta
+        cModelHist = Rdelta*cModelHist;
+        // offset so that first point is now particle i point
+        cModelHist = cModelHist+repmat(m_pos.col(i),1,cModelHist.n_cols);
+
+        // for each history point...
+        for(s32 j=0; j<cModelHist.n_cols-1; j++) {
+          dr = cModelHist.col(j+1)-cModelHist.col(j);
+
+          // find the point of intersection between ultrasound frame and "flagella"
+          frameMat = (mat33)(join_horiz(join_horiz(-dr, m[0].fbx), m[0].fby));
+
+          tt = solve(frameMat,cModelHist.col(j)-m[0].ful);
+          if(sum(zeros(3,1) <= tt)==3 && sum(tt <= usFrameParams)==3) {
+            // it intersects so look up location in truncated 
+            // gaussian centered at measurement intersections
+            suv = tt.submat(span(1,2), span(0,0));
+
+            // measurement.uv = measurement in image coordinaates in (mm)
+            // p((u,v)|d,x) ~ truncated gaussian centered at shaft particle interesection
+            // calculate limits for truncated gaussian
+            a = suv-usFrameParams.submat(span(1,2),span(0,0));  // if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
+            b = suv;                                            // if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0) 
+
+            duv = suv-m[0].uv.col(0);
+
+            // calculate p(frame interesects with flagella|doppler)
+            pin = sigmoid(m[0].doppler(0,0), params->sigA, params->sigC);
+		  	HERE I AM
+
+
+          }
+        }
+      }
+    }
+    
   }
 
   mat ParticleFilterFullState::GetParticlePositions(const PFParams *p)
@@ -345,9 +462,9 @@ namespace Nf
     m_rho = max(m_rho+noiseR,ones(1,m_nParticles)*PF_MIN_RHO);
   }
 
-  void ParticleFilterMarginalized::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const PFParams *p)
+  void ParticleFilterMarginalized::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const std::vector < f64 > &dts, const PFParams *p)
   {
-
+    TipState t;
   }
 
   mat ParticleFilterMarginalized::GetParticlePositions(const PFParams *p)

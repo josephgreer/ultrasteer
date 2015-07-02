@@ -47,6 +47,10 @@ namespace Nf
     f64 particleMuVel;                        //  mu velocity for particle propagation (as opposed to vel mu for simulation)
     f64 particleSigmaRho;                     //  sigma rho for particle propagation
     f64 particleMuRho;                        //  mu rho for particle propagation
+    f64 usw;                                  //  width of ultrasound frame in mm
+    f64 ush;                                  //  height of ultraosund frame in mm
+    f64 sigA;                                 //  for outlier smooth step sigmoid 1/(1+exp(-A*(t-c))
+    f64 sigC;                                 //  for outlier smooth step sigmoid 1/(1+exp(-A*(t-c))
  
     PFParams();
   };
@@ -134,7 +138,17 @@ namespace Nf
     virtual void Propagate(const NSCommand *u, f64 dt, const PFParams *p) = 0;
 
     //Apply measurement to particle filter from ultrasound
-    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const PFParams *p) = 0;
+    // m[0] = current measurement
+    // m[1] = measurement 1 timestep back
+    // ...
+    // m[n] = measurement n timesteps back
+    // u[0] = command from t-1 to t
+    // ...
+    // u[n] = command from t-n-1 to t-n
+    // dts[0] = time elapsed from timestep t-1 to t
+    // ...
+    // dts[n] = time elapsed from t-n-1 to t-n
+    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const std::vector < f64 > &dts, const PFParams *p) = 0;
 
     // Get all the particle positions
     virtual arma::mat GetParticlePositions(const PFParams *p) = 0;
@@ -184,8 +198,19 @@ namespace Nf
     //Propagate particle with time update
     virtual void Propagate(const NSCommand *u, f64 dt, const PFParams *p);
 
+
     //Apply measurement to particle filter from ultrasound
-    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const PFParams *p);
+    // m[0] = current measurement
+    // m[1] = measurement 1 timestep back
+    // ...
+    // m[n] = measurement n timesteps back
+    // u[0] = command from t-1 to t
+    // ...
+    // u[n] = command from t-n-1 to t-n
+    // dts[0] = time elapsed from timestep t-1 to t
+    // ...
+    // dts[n] = time elapsed from t-n-1 to t-n
+    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const std::vector < f64 > &dts, const PFParams *p);
 
     // Get all the particle positions
     // return
@@ -259,7 +284,17 @@ namespace Nf
     virtual void Propagate(const NSCommand *u, f64 dt, const PFParams *p);
 
     //Apply measurement to particle filter from ultrasound
-    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const PFParams *p);
+    // m[0] = current measurement
+    // m[1] = measurement 1 timestep back
+    // ...
+    // m[n] = measurement n timesteps back
+    // u[0] = command from t-1 to t
+    // ...
+    // u[n] = command from t-n-1 to t-n
+    // dts[0] = time elapsed from timestep t-1 to t
+    // ...
+    // dts[n] = time elapsed from t-n-1 to t-n
+    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const std::vector < f64 > &dts, const PFParams *p);
 
     // Get all the particle positions
     // return

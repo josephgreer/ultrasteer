@@ -1,4 +1,5 @@
 #include "RTCore.h"
+#include <math.h>
 
 using namespace arma;
 namespace Nf
@@ -141,5 +142,52 @@ namespace Nf
     vec3 res;
     res << x << endr << y << endr << z << endr;
     return angle*res;
+  }
+
+  static f64 g_normpdfconst = 1/sqrt(2*PI);
+  static f64 g_erfconst = 1/sqrt(2.0);
+
+  //taken from http://stackoverflow.com/questions/6281020/error-function-erfx-not-found-in-math-h-for-visual-studio-2005
+  static double erf(double x)
+  {
+    // constants
+    double a1 =  0.254829592;
+    double a2 = -0.284496736;
+    double a3 =  1.421413741;
+    double a4 = -1.453152027;
+    double a5 =  1.061405429;
+    double p  =  0.3275911;
+
+    // Save the sign of x
+    int sign = 1;
+    if (x < 0)
+      sign = -1;
+    x = fabs(x);
+
+    // A&S formula 7.1.26
+    double t = 1.0/(1.0 + p*x);
+    double y = 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t*exp(-x*x);
+
+    return sign*y;
+  }
+
+  f64 normpdf(vec2 x, vec2 mu, vec2 sigma)
+  {
+    vec2 d12 = square(x-mu);
+    vec2 isigma = pow(sigma,-1);
+    return g_normpdfconst*g_normpdfconst*prod(isigma(1))*exp(-0.5*dot(d12,isigma));
+  }
+
+  f64 normcdf(vec2 x, vec2 mu, vec2 sigma)
+  {
+    vec2 arg = g_erfconst*(x-mu)/sigma;
+    return 0.5*0.5*(1+erf(arg(0)))*(1+erf(arg(1)));
+  }
+
+  f64 TruncatedIndependentGaussianPDF2(vec2 x, vec2 mu, vec2 sigma, vec2 a, vec2 b)
+  {
+    f64 num = normpdf(x,mu,sigma);
+    f64 den = normcdf(b,mu,sigma)-normcdf(a,mu,sigma);
+    return num/den;
   }
 }
