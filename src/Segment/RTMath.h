@@ -96,4 +96,15 @@ namespace Nf
     }
     
   };
+
+  //  ////////////////////////////////////////////////////
+  //    This function returns the pdf of a truncated gaussian
+  //    x = nx1 vector to look up
+  //    mu = nx1 vector representing the mean of the truncated gaussian
+  //    sigma = nx1 standard deviation vector. (all cross-correlations zero)
+  //    a = nx1 to truncate distribution to (lower limit)
+  //    b = nx1 to truncate distribution to (upper limit)
+  //    return values
+  //    density value 
+  f64 TruncatedIndependentGaussianPDF2(arma::vec2 x, arma::vec2 mu, arma::vec2 sigma, arma::vec2 a, arma::vec2 b);
 }
