@@ -148,7 +148,7 @@ namespace Nf
   static f64 g_erfconst = 1/sqrt(2.0);
 
   //taken from http://stackoverflow.com/questions/6281020/error-function-erfx-not-found-in-math-h-for-visual-studio-2005
-  static double erf(double x)
+  f64 erf(f64 x)
   {
     // constants
     double a1 =  0.254829592;
@@ -171,23 +171,36 @@ namespace Nf
     return sign*y;
   }
 
-  f64 normpdf(vec2 x, vec2 mu, vec2 sigma)
+  f64 normpdf(f64 x, f64 mu, f64 sigma)
+  {
+    f64 dx = x-mu;
+    return g_normpdfconst*exp(-dx*dx/(2*sigma*sigma));
+  }
+
+  f64 normpdf2(vec2 x, vec2 mu, vec2 sigma)
   {
     vec2 d12 = square(x-mu);
     vec2 isigma = pow(sigma,-1);
-    return g_normpdfconst*g_normpdfconst*prod(isigma(1))*exp(-0.5*dot(d12,isigma));
+    return g_normpdfconst*g_normpdfconst*prod(isigma)*exp(-0.5*dot(d12,square(isigma)));
   }
 
-  f64 normcdf(vec2 x, vec2 mu, vec2 sigma)
+  vec2 normcdf2(vec2 x, vec2 mu, vec2 sigma)
   {
     vec2 arg = g_erfconst*(x-mu)/sigma;
-    return 0.5*0.5*(1+erf(arg(0)))*(1+erf(arg(1)));
+    vec2 eerf; eerf << 1+erf(arg(0)) << 1+erf(arg(1)) << endr;
+    return 0.5*eerf;
   }
 
   f64 TruncatedIndependentGaussianPDF2(vec2 x, vec2 mu, vec2 sigma, vec2 a, vec2 b)
   {
-    f64 num = normpdf(x,mu,sigma);
-    f64 den = normcdf(b,mu,sigma)-normcdf(a,mu,sigma);
+    f64 num = normpdf2(x,mu,sigma);
+    f64 den = prod(normcdf2(b,mu,sigma)-normcdf2(a,mu,sigma));
     return num/den;
+  }
+
+  f64 lognpdf(f64 x, f64 mu, f64 sigma)
+  {
+    f64 dx = log(x)-mu;
+    return 1/(x*sigma)*g_normpdfconst*exp(-dx*dx/(2*sigma*sigma));
   }
 }
