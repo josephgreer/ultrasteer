@@ -97,6 +97,9 @@ namespace Nf
     
   };
 
+  //
+  arma::vec2 normcdf2(arma::vec2 x, arma::vec2 mu, arma::vec2 sigma);
+
   //  ////////////////////////////////////////////////////
   //    This function returns the pdf of a truncated gaussian
   //    x = nx1 vector to look up
@@ -107,4 +110,10 @@ namespace Nf
   //    return values
   //    density value 
   f64 TruncatedIndependentGaussianPDF2(arma::vec2 x, arma::vec2 mu, arma::vec2 sigma, arma::vec2 a, arma::vec2 b);
+  
+  //log-normal pdf with associated normal distrubtion with mu and sigma
+  f64 lognpdf(f64 x, f64 mu, f64 sigma);
+
+  f64 erf(f64 x);
+
 }
