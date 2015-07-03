@@ -583,12 +583,53 @@ TEST(ParticleFilter, ApplyMeasurement)
   char basePath[] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testMeasure";
   char path[150] = {0};
 
+  f64 eps = 1e-3;
 
+  f64 dt = 1/10.0;
   //Method 1, iteration 1
   sprintf(path, "%s11", basePath);
   std::vector < NSCommand > us = loadCommands(path);
   std::vector < Measurement > meas = loadMeasurements(path);
   PartMethod1 ps = loadParticlesMethod1(path);
+  sprintf(path, "%sAfter11", basePath);
+  PartMethod1 psa = loadParticlesMethod1(path);
+
+  PFFullStateParams pfp;
+  ParticleFilterFullState pffs(ps.pos.n_cols, &pfp);
+  pffs.SetOrientations(ps.Rs);
+  pffs.SetPositions(ps.pos);
+  pffs.SetRhos(ps.rhos);
+  pffs.SetWeights(ps.ws);
+  pffs.ApplyMeasurement(meas, us, ones(pfp.n)*dt, &pfp);
+  
+  printf("Method 1 iteration 1:\n");
+  mat tw = pffs.GetWeights();
+  for(s32 i=0; i<tw.n_cols; i++) {
+    printf("Calculated weight %.8f matlab weight %.8f\n", tw(0,i), psa.ws(0,i));
+    assert(abs(tw(0,i)-psa.ws(0,i))/abs(psa.ws(0,i)) < eps);
+  }
+
+  //Method 1, iteration 2
+  sprintf(path, "%s12", basePath);
+  us = loadCommands(path);
+  meas = loadMeasurements(path);
+  ps = loadParticlesMethod1(path);
+  sprintf(path, "%sAfter12", basePath);
+  psa = loadParticlesMethod1(path);
+
+  pffs = ParticleFilterFullState(ps.pos.n_cols, &pfp);
+  pffs.SetOrientations(ps.Rs);
+  pffs.SetPositions(ps.pos);
+  pffs.SetRhos(ps.rhos);
+  pffs.SetWeights(ps.ws);
+  pffs.ApplyMeasurement(meas, us, ones(pfp.n)*dt, &pfp);
+
+  printf("Method 1 iteration 2:\n");
+  tw = pffs.GetWeights();
+  for(s32 i=0; i<tw.n_cols; i++) {
+    printf("Calculated weight %.8f matlab weight %.8f\n", tw(0,i), psa.ws(0,i));
+    assert(abs(tw(0,i)-psa.ws(0,i))/abs(psa.ws(0,i)) < eps);
+  }
 
 }
 
