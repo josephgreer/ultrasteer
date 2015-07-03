@@ -6,11 +6,10 @@ rng('default');
 rng(1);
 
 params.dt = 1/10;
-params.sigmaRho = 0;
 params.p1.initRhoSigma = 0;
 params.p3.initRhoSigma = 0;
 params.doParticleFilter = 1;
-params.doMeasurement = 1;
+params.doMeasurement = 0;
 params.n = 50;
 
 for method=[1,3]
@@ -23,6 +22,9 @@ for method=[1,3]
     saveCommands(u, pathBase, params);
     saveMeasurements(results.measurements, pathBase, params);
     saveParticles(results.particles{end}, pathBase, params);
+
+    xp = measureParticles(results.particles{end}, u, xhist, results.measurements, params);
+    saveParticles(xp, sprintf('./data/testMeasureAfter%d1', method), params);
     
     close all;
     params.simulationTime = 6;
@@ -32,4 +34,6 @@ for method=[1,3]
     saveCommands(u, pathBase, params);
     saveMeasurements(results.measurements, pathBase, params);
     saveParticles(results.particles{end}, pathBase, params);
+    xp = measureParticles(results.particles{end}, u, xhist, results.measurements, params);
+    saveParticles(xp, sprintf('./data/testMeasureAfter%d2', method), params);
 end

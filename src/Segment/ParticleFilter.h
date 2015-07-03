@@ -43,6 +43,12 @@ namespace Nf
     arma::vec3 particleMuPos;                 //  mu pos for particle propagation (as opposed to pos mu for simulation)
     arma::mat33 particleSigmaOr;              //  sigma orientation for particle propagation
     arma::vec3 particleMuOr;                  //  mu orientation for particle propagation (as opposed to orientation mu for simulation)
+    f64 mpp;                                  //  microns per pixel
+    arma::vec2 measurementOffsetSigma;        //  measurement noise of needle section within US frame (in mm)
+    f64 offNeedleDopplerMu;                   //  Doppler strength of measurement off needle distributed according to lognormal dist
+    f64 offNeedleDopplerSigma;                //  Doppler strength of measurement off needle distributed according to lognormal dist
+    f64 onNeedleDopplerMu;                    //  Doppler strength of measurement on needle distributed according to lognormal dist
+    f64 onNeedleDopplerSigma;                 //  Doppler strength of measurement on needle distributed according to lognormal dist
     f64 particleSigmaVel;                     //  sigma velocity for particle propagation
     f64 particleMuVel;                        //  mu velocity for particle propagation (as opposed to vel mu for simulation)
     f64 particleSigmaRho;                     //  sigma rho for particle propagation
@@ -51,6 +57,7 @@ namespace Nf
     f64 ush;                                  //  height of ultraosund frame in mm
     f64 sigA;                                 //  for outlier smooth step sigmoid 1/(1+exp(-A*(t-c))
     f64 sigC;                                 //  for outlier smooth step sigmoid 1/(1+exp(-A*(t-c))
+    s32 n;                                    //  how many points do we use for creating needle "flagella"
  
     PFParams();
   };
@@ -119,6 +126,7 @@ namespace Nf
   {
   protected:
     s32 m_nParticles;
+    arma::mat m_w;                          //weights [w1 ... wn] wi \in R, m_w \in R^(1xn)
 
   public:
     //Constructor
@@ -136,6 +144,11 @@ namespace Nf
 
     //Propagate particle with time update
     virtual void Propagate(const NSCommand *u, f64 dt, const PFParams *p) = 0;
+    
+    //Used for testing only
+    virtual void SetWeights(const arma::mat &w);
+
+    virtual arma::mat GetWeights();
 
     //Apply measurement to particle filter from ultrasound
     // m[0] = current measurement
@@ -148,7 +161,7 @@ namespace Nf
     // dts[0] = time elapsed from timestep t-1 to t
     // ...
     // dts[n] = time elapsed from t-n-1 to t-n
-    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const std::vector < f64 > &dts, const PFParams *p) = 0;
+    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p) = 0;
 
     // Get all the particle positions
     virtual arma::mat GetParticlePositions(const PFParams *p) = 0;
@@ -172,6 +185,8 @@ namespace Nf
     // Returns expected value of particle filter posterior distribution
     // in other words, the estimate of the filer.
     virtual TipState GetExpectedValue(const PFParams *p) = 0;
+
+    virtual void ApplyWeights(const arma::mat &pw);
   };
 
   // Implements full state particle filter.
@@ -181,7 +196,7 @@ namespace Nf
   protected:
     arma::mat m_pos;                        //position matrix for particles [x1 x2 ... xn] x_i \in R^3 m_pos \in R^(3xn)
     std::vector < arma::mat33 > m_R;        //vector of rotation matrices for particles
-    arma::mat m_rho;                        //rhos [rho1 ... rhon] rhoi \in R, m_rhos \in R^n
+    arma::mat m_rho;                        //rhos [rho1 ... rhon] rhoi \in R, m_rhos \in R^(1xn)
 
   public:
     ParticleFilterFullState(s32 nParticles, const PFParams *p);
@@ -207,10 +222,10 @@ namespace Nf
     // u[0] = command from t-1 to t
     // ...
     // u[n] = command from t-n-1 to t-n
-    // dts[0] = time elapsed from timestep t-1 to t
+    // dts(0) = time elapsed from timestep t-1 to t
     // ...
-    // dts[n] = time elapsed from t-n-1 to t-n
-    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const std::vector < f64 > &dts, const PFParams *p);
+    // dts(n) = time elapsed from t-n-1 to t-n
+    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p);
 
     // Get all the particle positions
     // return
@@ -266,6 +281,7 @@ namespace Nf
     arma::mat m_pos;                          //position matrix for particles [x1 x2 ... xn] x_i \in R^3 m_pos \in R^(3xn)
     std::vector < OrientationKF > m_R;        //vector of orientation Kalman Filters p(R_t|p_t,Y_{1:t})
     arma::mat m_rho;                          //rhos [rho1 ... rhon] rhoi \in R, m_rhos \in R^n
+    arma::mat m_w;                            //weights [w1 ... wn] wi \in R, m_w \in R^(1xn)
 
 
   public:
@@ -294,7 +310,7 @@ namespace Nf
     // dts[0] = time elapsed from timestep t-1 to t
     // ...
     // dts[n] = time elapsed from t-n-1 to t-n
-    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const std::vector < f64 > &dts, const PFParams *p);
+    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p);
 
     // Get all the particle positions
     // return

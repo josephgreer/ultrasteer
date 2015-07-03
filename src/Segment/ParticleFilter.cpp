@@ -36,13 +36,24 @@ namespace Nf
     particleSigmaRho = 3;
     particleMuRho = 0;
 
+    mpp = 83;
+    measurementOffsetSigma = (vec2)(mpp*5*1e-3*ones(2,1));
+
+    offNeedleDopplerMu = 0.56;                                           
+    offNeedleDopplerSigma = 0.75;                                        
+    onNeedleDopplerMu = 2.33;                                            
+    onNeedleDopplerSigma = 0.098;  
+
     minimumMeasurements = 1;
 
-    usw = 83*630*1e-3;
-    ush = 83*480*1e-3;
+    usw = mpp*630*1e-3;
+    ush = mpp*480*1e-3;
 
     sigA = 1;
     sigC = 6;
+
+    n = 50;
+
   }
 
   PFFullStateParams::PFFullStateParams()
@@ -159,6 +170,7 @@ namespace Nf
   ParticleFilter::ParticleFilter(s32 nParticles, const char *name, const PFParams *p)
     : m_nParticles(nParticles)
   {
+    m_w = ones(m_nParticles)/m_nParticles;
   }
 
   ParticleFilter::~ParticleFilter()
@@ -169,6 +181,23 @@ namespace Nf
   {
     Resample(nParticles);
     m_nParticles = nParticles;
+  }
+
+  void ParticleFilter::SetWeights(const arma::mat &w)
+  {
+    m_w = w;
+  }
+
+  mat ParticleFilter::GetWeights()
+  {
+    return m_w;
+  }
+
+  void ParticleFilter::ApplyWeights(const arma::mat &pw)
+  {
+    m_w = m_w%pw;
+    mat tot = sum(m_w,1);
+    m_w = m_w/tot(0,0);
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -249,7 +278,7 @@ namespace Nf
     m_rho = max(m_rho+noiseR, PF_MIN_RHO*ones(1,m_nParticles));
   }
 
-  void ParticleFilterFullState::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const std::vector < f64 > &dts, const PFParams *p)
+  void ParticleFilterFullState::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const vec &dts, const PFParams *p)
   {
     const PFFullStateParams *params = (const PFFullStateParams *)p;
 
@@ -271,10 +300,12 @@ namespace Nf
     vec3 tt;
     vec2 suv, duv, a, b;
     vec3 dr;
-    f64 proj, p_uvx, p_dx, pin;
+    f64 proj, p_uvx, p_dx, pin, dop;
 
     vec usFrameParams;
     usFrameParams << 1 << endr << params->usw << endr << params->ush << endr;
+
+    mat pw = zeros(1,m_nParticles);
 
     bool offFrame;
     // For each particle...
@@ -292,8 +323,10 @@ namespace Nf
 
       p_uvx = p_dx = 0;
 
-      //does the fish tail off the back of the particle intersect the frame?
+      //does the needle flagella of the particle intersect the frame?
       offFrame = true;
+
+      dop = m[0].doppler(0,0);
 
       if(proj <= 0) {
         // ultrasound frame behind the needle tip
@@ -327,14 +360,27 @@ namespace Nf
 
             // calculate p(frame interesects with flagella|doppler)
             pin = sigmoid(m[0].doppler(0,0), params->sigA, params->sigC);
-		  	HERE I AM
+            p_uvx = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), params->measurementOffsetSigma, a, b)+
+              (1-pin)*(1/(params->ush*params->usw));
 
-
+            //TODO change this to sigmoid
+            p_dx = lognpdf(dop, params->onNeedleDopplerMu, params->onNeedleDopplerSigma);
+            offFrame = 0;
+            break;
           }
         }
       }
+
+      // particle doesn't intersect image frame
+      if(offFrame) {
+        p_uvx = 1/(params->ush*params->usw);
+        p_dx = lognpdf(dop, params->offNeedleDopplerMu, params->offNeedleDopplerSigma);
+      }
+
+      pw(0,i) = p_uvx*p_dx;
     }
-    
+
+    ApplyWeights(pw);
   }
 
   mat ParticleFilterFullState::GetParticlePositions(const PFParams *p)
@@ -462,7 +508,7 @@ namespace Nf
     m_rho = max(m_rho+noiseR,ones(1,m_nParticles)*PF_MIN_RHO);
   }
 
-  void ParticleFilterMarginalized::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const std::vector < f64 > &dts, const PFParams *p)
+  void ParticleFilterMarginalized::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const vec &dts, const PFParams *p)
   {
     TipState t;
   }

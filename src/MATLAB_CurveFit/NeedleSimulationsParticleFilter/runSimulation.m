@@ -120,7 +120,7 @@ for t=0:params.dt:params.simulationTime
         % save off pos error
         results.positionError = vertcat(results.positionError, computeAveragePositionError(xp, xcurr, params));
         % save off measurements
-        results.measurements = vertcat(results.measurements, {measurement});
+        results.measurements = measurements;
     end
     
     % draw auxillary information if these params are enabled
