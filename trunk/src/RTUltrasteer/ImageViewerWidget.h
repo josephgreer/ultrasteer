@@ -52,7 +52,8 @@ namespace Nf
   class ImageViewer2DTeleoperationWidget : public ImageViewerWidget
   {
   protected:
-    vtkSmartPointer < vtkTextActor > m_textActor;
+    vtkSmartPointer < vtkTextActor > m_textActor1;
+    vtkSmartPointer < vtkTextActor > m_textActor2;
     vtkSmartPointer < vtkPointPicker > m_pointPicker;
     vtkSmartPointer < vtkImageMapToColors > m_mapTransparency;
     vtkSmartPointer < vtkImageImport > m_maskImporter;
@@ -69,6 +70,7 @@ namespace Nf
     void SetImage(const IplImage *im);
     void SetTargetOverlay(int r, Vec2d px);
     void SetTextOverlay(Vec2d px, Vec3d wpt);
+    void SetInstrOverlay(char* str);
     void SetTeleoperation2DWidget(Teleoperation2DWidget *widget);
     void getImageDim(int &w, int &h);
   };

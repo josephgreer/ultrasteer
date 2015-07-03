@@ -8,6 +8,8 @@
 
 #include <time.h>
 #include "RTCore.h"
+#include "RPFileReader.h"
+#include "SegmentationAlgorithms.h"
 
 namespace Nf {
 
@@ -20,10 +22,15 @@ namespace Nf {
     void SetTarget(Vec3d target);
     void GetTarget(Vec3d &target);
     bool isTargetDefined();
+    void addManualScanFrame(RPData);
+    void resetManualScan();
+    Matrix44d processManualScan();
 
   private:
-    Vec3d m_target; 
+    Vec3d m_target;
+    Matrix44d m_measurement;
     bool m_targetDefined;
+    InPlaneSegmentation m_segmentation; 
 
   };
 
