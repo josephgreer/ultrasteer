@@ -94,7 +94,8 @@ namespace Nf
     : ImageViewerWidget(parent) 
     , m_initTeleop(false)
   {
-    m_textActor = vtkSmartPointer<vtkTextActor>::New();
+    m_textActor1 = vtkSmartPointer<vtkTextActor>::New();
+    m_textActor2 = vtkSmartPointer<vtkTextActor>::New();
     m_pointPicker = vtkSmartPointer<vtkPointPicker>::New();
     m_maskImporter = vtkSmartPointer<vtkImageImport>::New();
     m_mapTransparency = vtkSmartPointer<vtkImageMapToColors>::New();
@@ -149,12 +150,20 @@ namespace Nf
       m_maskActor->GetMapper()->SetInputConnection(m_mapTransparency->GetOutputPort());
       m_renderer->AddActor2D(m_maskActor);
 
-      // Add text overlay
-      m_textActor->GetTextProperty()->SetFontSize ( 24 );
-      m_textActor->SetPosition2 ( 10, 40 );
-      m_renderer->AddActor2D ( m_textActor );
-      m_textActor->SetInput ( "Initialized" );
-      m_textActor->GetTextProperty()->SetColor ( 1.0,0.0,0.0 );
+      // Add text overlay for selected point coordinates
+      m_textActor1->GetTextProperty()->SetFontSize ( 24 );
+      m_textActor1->SetPosition( 10, 10 );
+      m_renderer->AddActor2D ( m_textActor1 );
+      m_textActor1->SetInput ( "Initialized" );
+      m_textActor1->GetTextProperty()->SetColor ( 1.0,0.0,0.0 );
+
+      // Add text overlay for user instructions
+      m_textActor2->GetTextProperty()->SetFontSize ( 24 );
+      int* size = m_renderer->GetSize();
+      m_textActor2->SetPosition( 10, 400 );
+      m_renderer->AddActor2D ( m_textActor2 );
+      m_textActor2->SetInput ( "" );
+      m_textActor2->GetTextProperty()->SetColor ( 0.0,0.0,1.0 );
 
       // Set up interaction 
       vtkSmartPointer<MouseInteractorStylePP> style = 
@@ -194,11 +203,19 @@ namespace Nf
     // Format the click position and print over image
     char str [100];
     int n = sprintf(str, "pix = {%.1f, %.1f}\nworld = {%.2f, %.2f, %.2f}", px.x, px.y, wpt.x, wpt.y, wpt.z);
-    m_textActor->SetInput(str);
+    m_textActor1->SetInput(str);
 
     // Update the VTK rendering
     this->repaint();
 
+  }
+
+  void ImageViewer2DTeleoperationWidget::SetInstrOverlay(char* str)
+  {
+    m_textActor2->SetInput(str);
+    int* size = m_renderer->GetSize();
+    m_textActor2->SetPosition( 10, size[1]-40 );
+    this->repaint();
   }
 
   void ImageViewer2DTeleoperationWidget::SetTargetOverlay(int r, Vec2d px)

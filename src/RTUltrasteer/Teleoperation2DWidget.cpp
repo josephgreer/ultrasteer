@@ -7,16 +7,26 @@ namespace Nf
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
     , m_robot(NULL)
     , m_control(NULL)
+    , m_scanTime(0.0)
+    , m_manualScanning(false)
   {
 
     m_imageViewer = std::tr1::shared_ptr<ImageViewer2DTeleoperationWidget>(new ImageViewer2DTeleoperationWidget(parent));
-
-    m_layout = new QGridLayout(parent);
-    m_layout->addWidget((QWidget *)(m_imageViewer.get()), 0, 0);
-    this->setLayout(m_layout);
-
     m_imageViewer->SetTeleoperation2DWidget(this);
 
+    m_scanButton = new QPushButton("Scan Needle", parent);
+    QFont font = m_scanButton->font();
+    font.setPointSize(16);
+    m_scanButton->setFont(font);
+    connect(m_scanButton, SIGNAL(clicked()), this, SLOT(onStartManualNeedleScan()));
+    
+    m_layout = new QGridLayout(parent);
+    m_layout->addWidget((QWidget *)(m_imageViewer.get()), 0, 0);
+    m_layout->addWidget(m_scanButton, 0, 1);
+    this->setLayout(m_layout);
+
+    m_scanTick = std::tr1::shared_ptr<QTimer>((QTimer *)NULL);
+    
     ADD_CHILD_COLLECTION(m_imageViewer.get());
 
   }
@@ -55,6 +65,53 @@ namespace Nf
     m_control = control;
   }
 
+  void Teleoperation2DWidget::onStartManualNeedleScan()
+  {
+    qDebug() << "Begin manual needle scan\n";
+    m_scanButton->setDisabled(true);
+    
+    if(!m_scanTick) {
+        m_scanTick = std::tr1::shared_ptr<QTimer>(new QTimer());
+        connect(m_scanTick.get(), SIGNAL(timeout()), this, SLOT(onManualScanTick()));
+        m_scanTick->setInterval(100); }
+    
+    m_control->resetManualScan();  
+    m_scanTick->start();
+    m_manualScanning = true; 
+  }
+
+  void Teleoperation2DWidget::onManualScanTick()
+  {
+    // define scan time variables
+    double scanStartT=3000.0, scanDuration=5000.0;
+
+    // increment the scan time counter
+    m_scanTime += 100.0;
+
+    // declare string variables
+    char str [100];
+    int n; 
+
+    // format the message string depending on current time
+    if( m_scanTime < scanStartT )
+      n = sprintf(str, "Prepare for needle scan");
+    if( m_scanTime >= scanStartT && m_scanTime < scanStartT + scanDuration ) 
+      n = sprintf(str, "%.2f seconds remaining", 5.0-((m_scanTime-scanStartT)/1000.0));
+    if( m_scanTime >= scanStartT + scanDuration )
+    {
+      // if scan is complete, stop and reset the timer and process scan
+      m_scanTick->stop();
+      m_scanTime = 0.0;
+      m_scanButton->setEnabled(true);
+      n = sprintf(str," ");
+      m_manualScanning = false;
+      m_control->processManualScan(); 
+    }
+
+    // display the formatted string
+    m_imageViewer->SetInstrOverlay(str);
+  }
+
   void Teleoperation2DWidget::UpdateTargetPoint(Vec2d pt)
   {
     qDebug() << "Update Target Point\n";
@@ -82,7 +139,8 @@ namespace Nf
     , m_rpReaders(NULL)
   {
 
-    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, Teleoperation2DFileWidget), this, "D:/TargetScans/TargetDataSet.b8", "Any File (*.*)");
+    //ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, Teleoperation2DFileWidget), this, "F:/TargetScans/TargetDataSet.b8", "Any File (*.*)");
+    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, Teleoperation2DFileWidget), this, "F:/NeedleScan/6_12_15/Scan1/scan.b8", "Any File (*.*)");
     ADD_INT_PARAMETER(m_frame, "Frame Index", CALLBACK_POINTER(onUpdateFrame, Teleoperation2DFileWidget), this, 1, 1, 100, 1);
 
     onUpdateFile();
@@ -132,6 +190,11 @@ namespace Nf
     m_data = m_rpReaders->GetRPData(m_frame->GetValue());
     m_imageViewer->SetImage(m_data.b8);
     onUpdateOverlay();
+
+    if(m_manualScanning)
+    {
+      m_control->addManualScanFrame(m_data);
+    }
 
   }
 

@@ -28,5 +28,20 @@ namespace Nf {
   {
     return m_targetDefined;
   } 
-  
+
+  void ControlAlgorithms::addManualScanFrame(RPData data)
+  {
+    m_segmentation.addManualScanFrame(data);
+  }
+
+  void ControlAlgorithms::resetManualScan()
+  {
+    m_segmentation.resetManualScan();
+  }
+
+  Matrix44d ControlAlgorithms::processManualScan()
+  {
+    return m_segmentation.processManualScan();
+  }
+
 };

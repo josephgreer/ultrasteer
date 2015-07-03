@@ -4,6 +4,7 @@
 #include "UICore.h"
 #include <QGroupBox>
 #include <QGridLayout>
+#include <QPushButton>
 #include "Resizable.h"
 #include "ImageViewerWidget.h"
 #include "RPFileReader.h"
@@ -23,8 +24,12 @@ namespace Nf
     std::tr1::shared_ptr <ImageViewer2DTeleoperationWidget> m_imageViewer;
     RPData m_data;
     QGridLayout *m_layout;
+    QPushButton *m_scanButton;
     NeedleSteeringRobot* m_robot;
     ControlAlgorithms* m_control;
+    std::tr1::shared_ptr < QTimer > m_scanTick;
+    f32 m_scanTime;
+    bool m_manualScanning;
 
   public:
     Teleoperation2DWidget(QWidget *parent);
@@ -37,6 +42,9 @@ namespace Nf
     std::vector < QVTKWidget * > GetChildWidgets();
     void onUpdateOverlay();
 
+  public slots:
+    void onStartManualNeedleScan();
+    void onManualScanTick();
   };
 
   class Teleoperation2DFileWidget : public Teleoperation2DWidget
