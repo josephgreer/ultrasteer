@@ -160,6 +160,19 @@ namespace Nf
     return 1/(1+exp(-a*(x-c)));
   }
 
+  // merge X(i,:) into Y(:,i)
+  static mat33 procrustesRotation(mat X, mat Y)
+  {
+    mat U,S,V;
+    svd(U,S,V,X*Y.t());
+    R = V*U.t();
+    if(det(R) < 0) {
+      vec rotZ; rotZ << 1 << 1 << -1 << endr;
+      R = V*diagmat(rotZ)*U.t();
+    }
+    return R;
+  }
+
   //////////////////////////////////////////////////////////////////////////////////////////
   /// End Helper Functions
   //////////////////////////////////////////////////////////////////////////////////////////
