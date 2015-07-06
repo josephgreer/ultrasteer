@@ -25,6 +25,9 @@ namespace Nf
     Matrix66d getCurrentCovariance();
     Matrix44d getCurrentEstimate();
 
+    Matrix33d vec2mat(Vec3d r);
+    Vec3d mat2vec(Matrix33d R);
+
   private:	//Methods
     void utf(std::vector<Matrix44d> X, Vec3d u, Matrix44d &x_, Matrix66d &P_, std::vector<Vec6d> &Ex_);
     
@@ -44,9 +47,6 @@ namespace Nf
 
     Matrix33d Rz(double d_th);
     Matrix33d Rx(double d_th);
-
-    Matrix33d vec2mat(Vec3d r);
-    Vec3d mat2vec(Matrix33d R);
     
 
   private:	//Attributes
