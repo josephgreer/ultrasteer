@@ -8,6 +8,7 @@ rng(1);
 params.dt = 1/10;
 params.p1.initRhoSigma = 0;
 params.p3.initRhoSigma = 0;
+params.p3.distanceThresh = 50^2;
 params.doParticleFilter = 1;
 params.doMeasurement = 0;
 params.n = 50;
@@ -28,6 +29,7 @@ for method=[1,3]
     
     close all;
     params.simulationTime = 6;
+    params.p3.subsetSize = 2000;
     [results, xhist, u] = runSimulation(params, @(t,params)commandFcn(t,params));
     
     pathBase = sprintf('./data/testMeasure%d2', method);

@@ -20,7 +20,8 @@ for i=1:params.p100.procrustesit
     D = distanceMatrix(measurements,ctemplate);
     [minD minTemplate] = min(D,[], 2);
     goodDs = find(minD < params.p3.distanceThresh);
-    goodDs = datasample(goodDs, min(params.p100.subsetSize, length(goodDs)), 'Replace', false);
+    goodDs = datasample(goodDs, min(params.p3.subsetSize, length(goodDs)), 'Replace', false);
+    %goodDs = sort(goodDs);
     %display(length(goodDs));
     minTemplate = minTemplate(goodDs);
     
