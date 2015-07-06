@@ -631,5 +631,50 @@ TEST(ParticleFilter, ApplyMeasurement)
     assert(abs(tw(0,i)-psa.ws(0,i))/abs(psa.ws(0,i)) < eps);
   }
 
+  //Method 3, iteration 1
+  sprintf(path, "%s31", basePath);
+  us = loadCommands(path);
+  meas = loadMeasurements(path);
+  PartMethod3 ps3 = loadParticlesMethod3(path);
+  sprintf(path, "%sAfter31", basePath);
+  PartMethod3 ps3a = loadParticlesMethod3(path);
+
+  PFMarginalizedParams pfmp;
+  ParticleFilterMarginalized pfmm(ps3.pos.n_cols, &pfmp);
+  pfmm.SetOrientationKFs(ps3.Rs);
+  pfmm.SetPositions(ps3.pos);
+  pfmm.SetRhos(ps3.rhos);
+  pfmm.SetWeights(ps3.ws);
+  pfmm.ApplyMeasurement(meas, us, ones(pfmp.n)*dt, &pfmp);
+  
+  printf("Method 3 iteration 1:\n");
+  tw = pfmm.GetWeights();
+  for(s32 i=0; i<tw.n_cols; i++) {
+    printf("Calculated weight %.8f matlab weight %.8f\n", tw(0,i), ps3a.ws(0,i));
+    assert(abs(tw(0,i)-ps3a.ws(0,i))/abs(ps3a.ws(0,i)) < eps);
+  }
+
+  //Method 3, iteration 2
+  sprintf(path, "%s32", basePath);
+  us = loadCommands(path);
+  meas = loadMeasurements(path);
+  ps3 = loadParticlesMethod3(path);
+  sprintf(path, "%sAfter32", basePath);
+  ps3a = loadParticlesMethod3(path);
+
+  pfmm = ParticleFilterMarginalized(ps3.pos.n_cols, &pfmp);
+  pfmm.SetOrientationKFs(ps3.Rs);
+  pfmm.SetPositions(ps3.pos);
+  pfmm.SetRhos(ps3.rhos);
+  pfmm.SetWeights(ps3.ws);
+  pfmm.ApplyMeasurement(meas, us, ones(pfmp.n)*dt, &pfmp);
+
+  printf("Method 3 iteration 2:\n");
+  tw = pfmm.GetWeights();
+  for(s32 i=0; i<tw.n_cols; i++) {
+    printf("Calculated weight %.8f matlab weight %.8f\n", tw(0,i), ps3a.ws(0,i));
+    assert(abs(tw(0,i)-ps3a.ws(0,i))/abs(ps3a.ws(0,i)) < eps);
+  }
+
 }
 

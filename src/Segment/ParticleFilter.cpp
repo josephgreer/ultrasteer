@@ -155,21 +155,102 @@ namespace Nf
     return res;
   }
 
+  // convert a vector of measurement histories to a matrix of points
+  // return : 
+  // [x1 ... xn] \in R^(3xn) x_i \in R^3
+  static mat measurementToPointMat(const std::vector < Measurement > &meas)
+  {
+    using ::s32;
+
+    mat res = zeros(3,meas.size());
+    for(s32 i=0; i<meas.size(); i++) {
+      res.col(i) = meas[i].pos;
+    }
+
+    return res;
+  }
+
   static f64 sigmoid(f64 x, f64 a, f64 c)
   {
     return 1/(1+exp(-a*(x-c)));
   }
 
-  // merge X(i,:) into Y(:,i)
-  static mat33 procrustesRotation(mat X, mat Y)
+  //X = [x1 x2 ... xn] x_i \in R^3
+  //Y = [y1 y2 ... ym] y_i \in R^3
+  //D = D_ij = |(x_i-y_j)|^2
+  static mat distanceMatrix(const mat &X, const mat &Y)
   {
-    mat U,V,R;
-    vec S;
-    svd(U,S,V,X*Y.t());
-    R = V*U.t();
-    if(det(R) < 0) {
-      vec rotZ; rotZ << 1 << 1 << -1 << endr;
-      R = V*diagmat(rotZ)*U.t();
+    using ::s32;
+
+    s32 m = X.n_cols;
+    s32 n = Y.n_cols;
+
+    mat D = repmat(((mat)(X.t()*X)).diag(), 1, n)-2*X.t()*Y+repmat(((mat)(Y.t()*Y)).diag().t(), m, 1);
+
+    return D;
+  }
+
+  // sample without replacmenet
+  static uvec sample(uvec x, s32 n)
+  {
+    using ::s32;
+
+    uvec seq(x.n_rows, 1);
+    for(s32 i=0; i<x.n_rows; i++) {
+      seq(i) = i;
+    }
+    seq = shuffle(seq);
+    
+    uvec res(n, 1);
+    for(s32 i=0; i<n; i++)
+      res(i) = x(seq(i));
+
+    return res;
+  }
+
+  //model = current state projected back
+  //model = [x1 x2 ... xn] \in R^(3xn), x1 = current point, ... xn = point n timesteps ago
+  //measurements = [x1 x2 ... xm] \in R^(3xm), x1 = current measurement point, ..., xm = measurement m timesteps ago
+  static mat33 optimalRotationForModel(mat model, mat measurements, const mat &offset, const PFParams *p)
+  {
+    using ::s32;
+
+    const PFMarginalizedParams *pfm = (const PFMarginalizedParams *)p;
+
+    //offset so that model.col(0) is origin (we rotate about that point)
+    measurements = measurements-repmat(offset,1,measurements.n_cols);
+
+    mat33 R = eye(3,3);
+
+    mat cTemplate = model;
+    
+    uvec minTemplate, goodDs, shuf;
+    mat D,U,V,X,Y,dR;
+    vec S, minD;
+    for(s32 i=0; i<pfm->procrustesIt; i++) {
+      //D_ij = distanceSq(measurements(i), cTemplate(j))
+      D = distanceMatrix(measurements,cTemplate);
+
+      minD = min(D, 1);
+      for(s32 r=0; r<D.n_rows; r++) {
+        minTemplate = join_vert(minTemplate,find(D.row(r) == minD(r)));
+      }
+      goodDs = find(minD < pfm->distanceThreshSq);
+      goodDs = sample(goodDs, MIN(pfm->subsetSize, goodDs.n_rows));
+
+      minTemplate = minTemplate.rows(goodDs);
+
+      X = cTemplate.cols(minTemplate);
+      Y = measurements.cols(goodDs);
+
+      svd(U,S,V,X*Y.t());
+      dR = V*U.t();
+      if(det(dR) < 0) {
+        vec rotZ; rotZ << 1 << 1 << -1 << endr;
+        dR = V*diagmat(rotZ)*U.t();
+      }
+      R = (mat33)(dR*R);
+      cTemplate = dR*cTemplate;
     }
     return R;
   }
@@ -524,7 +605,127 @@ namespace Nf
 
   void ParticleFilterMarginalized::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const vec &dts, const PFParams *p)
   {
+    const PFMarginalizedParams *params = (const PFMarginalizedParams *)p;
+
+    // project first particle state backward in time as template 
+    // each particle will rotate and offset this history based on its orientation
     TipState t;
+    t.pos = m_pos.col(0);
+    t.R = m_R[0].mu;
+    t.rho = m_rho(0, 0);
+    std::vector < TipState > ts = t.PropagateBack(u, dts, p);
+    
+    // backward projected points from particle 0.
+    // this will be adjusted for each particle
+    mat modelHist = tipHistoryToPointMatrix(ts);
+    mat cModelHist = zeros(modelHist.n_rows, modelHist.n_cols);
+    
+    mat33 Rdelta, frameMat, Rmeas, measSigma,K,sigmaC,Rc,Rprior;
+
+    vec3 tt, errorVec,v;
+    vec2 suv, duv, a, b;
+    vec3 dr;
+    f64 proj, p_uvx, p_dx, pin, dop;
+
+    vec usFrameParams;
+    usFrameParams << 1 << endr << params->usw << endr << params->ush << endr;
+
+    mat pw = zeros(1,m_nParticles);
+
+    bool offFrame;
+    // For each particle...
+    for(s32 i=0; i<m_nParticles; i++) {
+      Rprior = m_R[i].mu;
+      //delta rotation from particle 0 to particle i
+      Rdelta = (mat33)(m_R[i].mu*m_R[0].mu.t());
+
+      // ultrasound frame behind the needle tip
+      //subtract off first point so we rotate about it
+      cModelHist = modelHist-repmat(modelHist.col(0),1,modelHist.n_cols);
+      // rotate history by Rdelta
+      cModelHist = Rdelta*cModelHist;
+
+      assert(m.size() >= params->minimumMeasurements);
+
+      Rmeas = optimalRotationForModel(cModelHist, measurementToPointMat(m), m_pos.col(i), p);
+      Rmeas = (mat33)(Rmeas*m_R[i].mu);
+
+      if(det(params->measurementSigma) < 1e-6) {
+        // zero measurement noise? just use measurement then
+        m_R[i].mu = Rmeas;
+        m_R[i].sigma.zeros();
+      } else {
+        measSigma = params->measurementSigma;
+        K = (mat33)(m_R[i].sigma*inv(m_R[i].sigma+measSigma));
+        sigmaC = (mat33)((eye(3,3)-K)*m_R[i].sigma);
+        v = SO3Log(Rprior.t()*Rmeas);
+        Rc = (mat33)(Rprior*SO3Exp(K*v));
+        m_R[i] = OrientationKF(Rc, sigmaC);
+      }
+
+      //points from measurement to particle loc
+      dr = m[0].pos.col(0)-m_pos.col(i);
+
+      // look at projection of dr onto particle tip frame.  if it's positive
+      // then we believe it's in front of this particle (in other words, the
+      // ultrasound frame is off the needle in this hypothetical position)
+      proj = ((mat)(dr.t()*m_R[i].mu.col(2)))(0,0);
+
+      p_uvx = p_dx = 0;
+
+      //does the needle flagella of the particle intersect the frame?
+      offFrame = true;
+
+      dop = m[0].doppler(0,0);
+
+      if(proj <= 0) {
+        // offset so that first point is now particle i point
+        cModelHist = cModelHist+repmat(m_pos.col(i),1,cModelHist.n_cols);
+
+        // for each history point...
+        for(s32 j=0; j<cModelHist.n_cols-1; j++) {
+          dr = cModelHist.col(j+1)-cModelHist.col(j);
+
+          // find the point of intersection between ultrasound frame and "flagella"
+          frameMat = (mat33)(join_horiz(join_horiz(-dr, m[0].fbx), m[0].fby));
+
+          tt = solve(frameMat,cModelHist.col(j)-m[0].ful);
+          if(sum(zeros(3,1) <= tt)==3 && sum(tt <= usFrameParams)==3) {
+            // it intersects so look up location in truncated 
+            // gaussian centered at measurement intersections
+            suv = tt.submat(span(1,2), span(0,0));
+
+            // measurement.uv = measurement in image coordinaates in (mm)
+            // p((u,v)|d,x) ~ truncated gaussian centered at shaft particle interesection
+            // calculate limits for truncated gaussian
+            a = suv-usFrameParams.submat(span(1,2),span(0,0));  // if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
+            b = suv;                                            // if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0) 
+
+            duv = suv-m[0].uv.col(0);
+
+            // calculate p(frame interesects with flagella|doppler)
+            pin = sigmoid(m[0].doppler(0,0), params->sigA, params->sigC);
+            p_uvx = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), params->measurementOffsetSigma, a, b)+
+              (1-pin)*(1/(params->ush*params->usw));
+
+            //TODO change this to sigmoid
+            p_dx = lognpdf(dop, params->onNeedleDopplerMu, params->onNeedleDopplerSigma);
+            offFrame = 0;
+            break;
+          }
+        }
+      }
+
+      // particle doesn't intersect image frame
+      if(offFrame) {
+        p_uvx = 1/(params->ush*params->usw);
+        p_dx = lognpdf(dop, params->offNeedleDopplerMu, params->offNeedleDopplerSigma);
+      }
+
+      pw(0,i) = p_uvx*p_dx;
+    }
+
+    ApplyWeights(pw);
   }
 
   mat ParticleFilterMarginalized::GetParticlePositions(const PFParams *p)
