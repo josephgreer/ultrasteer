@@ -163,7 +163,8 @@ namespace Nf
   // merge X(i,:) into Y(:,i)
   static mat33 procrustesRotation(mat X, mat Y)
   {
-    mat U,S,V;
+    mat U,V,R;
+    vec S;
     svd(U,S,V,X*Y.t());
     R = V*U.t();
     if(det(R) < 0) {
