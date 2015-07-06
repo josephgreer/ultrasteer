@@ -223,9 +223,12 @@ namespace Nf
     mat33 R = eye(3,3);
 
     mat cTemplate = model;
+
+    vec rotZ; rotZ << 1 << 1 << -1 << endr;
+    mat33 reflect = diagmat(rotZ);
     
     uvec minTemplate, goodDs, shuf;
-    mat D,U,V,X,Y,dR;
+    mat D,U,V,X,Y,XYt,dR;
     vec S, minD;
     for(s32 i=0; i<pfm->procrustesIt; i++) {
       //D_ij = distanceSq(measurements(i), cTemplate(j))
@@ -237,20 +240,22 @@ namespace Nf
       }
       goodDs = find(minD < pfm->distanceThreshSq);
       goodDs = sample(goodDs, MIN(pfm->subsetSize, goodDs.n_rows));
+      //goodDs = sort(goodDs);
 
       minTemplate = minTemplate.rows(goodDs);
 
       X = cTemplate.cols(minTemplate);
       Y = measurements.cols(goodDs);
-
-      svd(U,S,V,X*Y.t());
+      XYt = X*Y.t();
+      svd(U,S,V,XYt);
       dR = V*U.t();
       if(det(dR) < 0) {
         vec rotZ; rotZ << 1 << 1 << -1 << endr;
-        dR = V*diagmat(rotZ)*U.t();
+        dR = V*reflect*U.t();
       }
       R = (mat33)(dR*R);
       cTemplate = dR*cTemplate;
+      minTemplate.clear();
     }
     return R;
   }
@@ -619,6 +624,8 @@ namespace Nf
     // this will be adjusted for each particle
     mat modelHist = tipHistoryToPointMatrix(ts);
     mat cModelHist = zeros(modelHist.n_rows, modelHist.n_cols);
+    //subtract off first point so we rotate about it
+    mat zModelHist = modelHist-repmat(modelHist.col(0),1,modelHist.n_cols);
     
     mat33 Rdelta, frameMat, Rmeas, measSigma,K,sigmaC,Rc,Rprior;
 
@@ -637,13 +644,10 @@ namespace Nf
     for(s32 i=0; i<m_nParticles; i++) {
       Rprior = m_R[i].mu;
       //delta rotation from particle 0 to particle i
-      Rdelta = (mat33)(m_R[i].mu*m_R[0].mu.t());
+      Rdelta = (mat33)(m_R[i].mu*t.R.t());
 
-      // ultrasound frame behind the needle tip
-      //subtract off first point so we rotate about it
-      cModelHist = modelHist-repmat(modelHist.col(0),1,modelHist.n_cols);
       // rotate history by Rdelta
-      cModelHist = Rdelta*cModelHist;
+      cModelHist = Rdelta*zModelHist;
 
       assert(m.size() >= params->minimumMeasurements);
 
@@ -679,6 +683,10 @@ namespace Nf
       dop = m[0].doppler(0,0);
 
       if(proj <= 0) {
+      // ultrasound frame behind the needle tip
+        Rdelta = (mat33)(m_R[i].mu*t.R.t());
+
+        cModelHist = Rdelta*zModelHist;
         // offset so that first point is now particle i point
         cModelHist = cModelHist+repmat(m_pos.col(i),1,cModelHist.n_cols);
 
@@ -724,7 +732,8 @@ namespace Nf
 
       pw(0,i) = p_uvx*p_dx;
     }
-
+    mat sm = sum(pw, 1);
+    pw = pw/sm(0,0);
     ApplyWeights(pw);
   }
 

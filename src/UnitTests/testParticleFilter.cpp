@@ -583,7 +583,7 @@ TEST(ParticleFilter, ApplyMeasurement)
   char basePath[] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testMeasure";
   char path[150] = {0};
 
-  f64 eps = 1e-3;
+  f64 eps = 1e-2;
 
   f64 dt = 1/10.0;
   //Method 1, iteration 1
@@ -640,6 +640,8 @@ TEST(ParticleFilter, ApplyMeasurement)
   PartMethod3 ps3a = loadParticlesMethod3(path);
 
   PFMarginalizedParams pfmp;
+  pfmp.subsetSize = 2000;
+  pfmp.distanceThreshSq = 50*50;
   ParticleFilterMarginalized pfmm(ps3.pos.n_cols, &pfmp);
   pfmm.SetOrientationKFs(ps3.Rs);
   pfmm.SetPositions(ps3.pos);
@@ -649,9 +651,17 @@ TEST(ParticleFilter, ApplyMeasurement)
   
   printf("Method 3 iteration 1:\n");
   tw = pfmm.GetWeights();
+  std::vector < mat33 > Rmus = pfmm.GetParticleOrientations(&pfmp);
+  std::vector < mat33 > sigmas = pfmm.GetParticleOrientationSigmas(&pfmp);
   for(s32 i=0; i<tw.n_cols; i++) {
     printf("Calculated weight %.8f matlab weight %.8f\n", tw(0,i), ps3a.ws(0,i));
+    ps3a.Rs[i].mu.print("Matlab mu:  ");
+    Rmus[i].print("Calculated mu:  ");
+    ps3a.Rs[i].sigma.print("Matlab mu:  ");
+    sigmas[i].print("Calculated mu:  ");
     assert(abs(tw(0,i)-ps3a.ws(0,i))/abs(ps3a.ws(0,i)) < eps);
+    assert(max(max(abs(ps3a.Rs[i].mu-Rmus[i])))/max(max(abs(ps3a.Rs[i].mu))) < eps);
+    assert(max(max(abs(ps3a.Rs[i].sigma-sigmas[i])))/max(max(abs(ps3a.Rs[i].sigma))) < eps);
   }
 
   //Method 3, iteration 2
@@ -669,11 +679,20 @@ TEST(ParticleFilter, ApplyMeasurement)
   pfmm.SetWeights(ps3.ws);
   pfmm.ApplyMeasurement(meas, us, ones(pfmp.n)*dt, &pfmp);
 
+  Rmus = pfmm.GetParticleOrientations(&pfmp);
+  sigmas = pfmm.GetParticleOrientationSigmas(&pfmp);
+
   printf("Method 3 iteration 2:\n");
   tw = pfmm.GetWeights();
   for(s32 i=0; i<tw.n_cols; i++) {
     printf("Calculated weight %.8f matlab weight %.8f\n", tw(0,i), ps3a.ws(0,i));
+    ps3a.Rs[i].mu.print("Matlab mu:  ");
+    Rmus[i].print("Calculated mu:  ");
+    ps3a.Rs[i].sigma.print("Matlab mu:  ");
+    sigmas[i].print("Calculated mu:  ");
     assert(abs(tw(0,i)-ps3a.ws(0,i))/abs(ps3a.ws(0,i)) < eps);
+    assert(max(max(abs(ps3a.Rs[i].mu-Rmus[i])))/max(max(abs(ps3a.Rs[i].mu))) < eps);
+    assert(max(max(abs(ps3a.Rs[i].sigma-sigmas[i])))/max(max(abs(ps3a.Rs[i].sigma))) < eps);
   }
 
 }
