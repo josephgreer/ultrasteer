@@ -203,4 +203,48 @@ namespace Nf
     f64 dx = log(x)-mu;
     return 1/(x*sigma)*g_normpdfconst*exp(-dx*dx/(2*sigma*sigma));
   }
+
+  mat33 SO3Mean(const std::vector < mat33 > & Rs, const mat & ws, f64 eps)
+  {
+    using ::s32;
+    mat33 res,ires;
+    vec3 A;
+    res = Rs[0];
+    ires = (mat33)res.t();
+    f64 error = eps+1;
+    s32 nIt = 0;
+
+    s32 n = Rs.size();
+
+    while(error > eps && nIt < 100) {
+      A.zeros();
+      for(s32 i=0; i<n; i++)
+        A = A+ws(0,i)*SO3Log(ires*Rs[i]);
+      res = (mat33)(res*SO3Exp(A));
+      ires = (mat33)(res.t());
+      error = norm(A);
+      nIt++;
+    }
+
+    return res;
+  }
+
+  static f64 g_invSqrt2 = 1/std::sqrt(2.0);
+  f64 SO3Distance(const arma::mat33 &R1, const arma::mat33 &R2)
+  {
+    return g_invSqrt2*norm(SO3Hat(SO3Log(R1.t()*R2)),"fro");
+  }
+
+  uvec Sample(const vec &dist, s32 n)
+  {
+    vec samps = randu(n,1);
+    vec sm = cumsum(dist);
+
+    uvec res(n,1);
+    for(s32 i=0; i<n; i++)
+      res(i) = ((uvec)find(samps(i) <= sm, 1, "first"))(0);
+    return res;
+  }
+
+
 }

@@ -24,7 +24,7 @@ for method=[1,3]
     saveMeasurements(results.measurements, pathBase, params);
     saveParticles(results.particles{end}, pathBase, params);
 
-    xp = measureParticles(results.particles{end}, u, xhist, results.measurements, params);
+    xp = measureParticles(results.particles{end}, u, xhist, flip(results.measurements), params);
     saveParticles(xp, sprintf('./data/testMeasureAfter%d1', method), params);
     
     close all;
@@ -36,6 +36,6 @@ for method=[1,3]
     saveCommands(u, pathBase, params);
     saveMeasurements(results.measurements, pathBase, params);
     saveParticles(results.particles{end}, pathBase, params);
-    xp = measureParticles(results.particles{end}, u, xhist, results.measurements, params);
+    xp = measureParticles(results.particles{end}, u, xhist, flip(results.measurements), params);
     saveParticles(xp, sprintf('./data/testMeasureAfter%d2', method), params);
 end

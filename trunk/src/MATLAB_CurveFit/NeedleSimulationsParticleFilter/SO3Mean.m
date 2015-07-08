@@ -14,8 +14,8 @@ error = eps+1;
 
 X = R{1};
 Xinv = inv(X);
-i = 0;
-while error > eps && i<100
+jj = 0;
+while error > eps && jj<100
     A = zeros(3,3);
     for i=1:k
         A = A+w(i)*SO3Log(Xinv*R{i});
@@ -23,6 +23,6 @@ while error > eps && i<100
     X = X*SO3Exp(A);
     Xinv = inv(X);
     error = norm(A);
-    i = i+1;
+    jj = jj+1;
 end
 end

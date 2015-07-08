@@ -53,6 +53,7 @@ namespace Nf
     sigC = 6;
 
     n = 50;
+    neff = 0.5;
 
   }
 
@@ -270,16 +271,16 @@ namespace Nf
   ParticleFilter::ParticleFilter(s32 nParticles, const char *name, const PFParams *p)
     : m_nParticles(nParticles)
   {
-    m_w = ones(m_nParticles)/m_nParticles;
+    m_w = ones(1,m_nParticles)/(f64)m_nParticles;
   }
 
   ParticleFilter::~ParticleFilter()
   {
   }
 
-  void ParticleFilter::SetNumberOfParticles(s32 nParticles)
+  void ParticleFilter::SetNumberOfParticles(s32 nParticles, const PFParams *p)
   {
-    Resample(nParticles);
+    Resample(nParticles, p);
     m_nParticles = nParticles;
   }
 
@@ -291,6 +292,13 @@ namespace Nf
   mat ParticleFilter::GetWeights()
   {
     return m_w;
+  }
+
+
+  f64 ParticleFilter::EffectiveSampleSize()
+  {
+    mat neff = 1/(m_w*m_w.t());
+    return neff(0,0);
   }
 
   void ParticleFilter::ApplyWeights(const arma::mat &pw)
@@ -440,6 +448,8 @@ namespace Nf
         // for each history point...
         for(s32 j=0; j<cModelHist.n_cols-1; j++) {
           dr = cModelHist.col(j+1)-cModelHist.col(j);
+          if(norm(dr) < 1e-3)
+            continue;
 
           // find the point of intersection between ultrasound frame and "flagella"
           frameMat = (mat33)(join_horiz(join_horiz(-dr, m[0].fbx), m[0].fby));
@@ -500,11 +510,25 @@ namespace Nf
 
   TipState ParticleFilterFullState::GetExpectedValue(const PFParams *p)
   {
-    return TipState();
+    TipState res;
+    res.pos = (vec3)mean(m_pos, 1);
+    res.R = SO3Mean(m_R, m_w, 1e-2);
+    res.rho = ((mat)mean(m_rho))(0,0);
+
+    return res;
   }
 
-  void ParticleFilterFullState::Resample(s32 nParticles)
+  void ParticleFilterFullState::Resample(s32 nParticles, const PFParams *p)
   {
+    uvec pids = Sample(m_w.t(), m_nParticles);
+    m_pos = m_pos.cols(pids);
+    m_rho = m_rho.cols(pids);
+
+    std::vector <mat33> newRs(m_nParticles);
+    for(s32 i=0; i<m_nParticles; i++)
+      newRs[i] = m_R[pids(i)];
+    m_R = newRs;
+    m_w = ones(1,m_nParticles)/(f64)m_nParticles;
   }
   
   void ParticleFilterFullState::SetOrientations(const std::vector < arma::mat33 > &ors)
@@ -767,11 +791,31 @@ namespace Nf
 
   TipState ParticleFilterMarginalized::GetExpectedValue(const PFParams *p)
   {
+    TipState res;
+    res.pos = (vec3)mean(m_pos, 1);
+
+    std::vector < mat33 > Rs(m_R.size());
+    for(s32 i=0; i<m_R.size(); i++) 
+      Rs[i] = m_R[i].mu;
+
+    res.R = SO3Mean(Rs, m_w, 1e-2);
+    res.rho = ((mat)mean(m_rho))(0,0);
+
+    return res;
+
     return TipState();
   }
 
-  void ParticleFilterMarginalized::Resample(s32 nParticles)
+  void ParticleFilterMarginalized::Resample(s32 nParticles, const PFParams *p)
   {
+    uvec pids = Sample(m_w, m_nParticles);
+    m_pos = m_pos.cols(pids);
+    m_rho = m_rho.cols(pids);
+
+    std::vector <OrientationKF> newRs(m_nParticles);
+    for(s32 i=0; i<m_nParticles; i++)
+      newRs[i] = m_R[pids(i)];
+    m_R = newRs;
   }
 
   void ParticleFilterMarginalized::SetOrientationKFs(const std::vector < OrientationKF > &ors)

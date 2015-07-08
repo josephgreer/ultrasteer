@@ -5,7 +5,8 @@
 %%%     figureNumber: figure number
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [posErrors, orErrors] = plotParticleFilterResults(results, figureNumber, params)
-states = cell2mat(results.states);
+firsti = find(results.time > params.particleInitTime,1,'first');
+states = cell2mat({results.states{firsti:end}});
 estimatedStates = cell2mat(results.estimatedStates);
 truePos = [states.pos]';
 estimatedPos = [estimatedStates.pos]';
@@ -19,8 +20,10 @@ coordLabels = {'x coord', 'y coord', 'z coord'};
 for i=1:3
 subplot(2,2,i);
 hold on;
-plot(results.time, estimatedPos(:,i));
-plot(results.time, truePos(:,i), 'r--');
+
+time = results.time(firsti:end);
+plot(time, estimatedPos(:,i));
+plot(time, truePos(:,i), 'r--');
 xlabel('time');
 ylabel(coordLabels{i});
 end
@@ -47,13 +50,13 @@ coordLabels = {'x coord', 'y coord', 'z coord'};
 for i=1:3
 subplot(2,2,i);
 hold on;
-plot(results.time, errors(:,i));
+plot(time, errors(:,i));
 xlabel('time');
 ylabel(coordLabels{i});
 end
 
 figure;
-plot(results.time, results.orientationError);
+plot(time, results.orientationError);
 xlabel('time');
 ylabel('orientationError');
 orErrors = mean(results.orientationError);
@@ -67,9 +70,9 @@ for i=1:N
     xpe = expectedValueOfParticles(results.particles{i}, params);
     rhosEst(i) = xpe.rho;
 end
-plot(results.time, rhosTrue,'b');
+plot(time, rhosTrue,'b');
 hold on;
-plot(results.time, rhosEst, 'r');
+plot(time, rhosEst, 'r');
 xlabel('time');
 ylabel('roc');
 

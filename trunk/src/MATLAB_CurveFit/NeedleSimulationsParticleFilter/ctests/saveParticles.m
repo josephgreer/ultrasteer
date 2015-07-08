@@ -7,8 +7,8 @@ if(params.particleFilterMethod == 1)
     qs = [xx.q];
     ws = [xx.w];
     
-    Rs = zeros(9, params.np);
-    for i=1:params.np
+    Rs = zeros(9, size(qs,2));
+    for i=1:size(qs,2)
         Rc = QuatToRotationMatrix(qs(:,i));
         Rs(:,i) = Rc(:);
     end
@@ -23,8 +23,8 @@ elseif(params.particleFilterMethod == 3)
     ws = [xx.w];
     qdists = [xx.qdist];
     
-    Rs = zeros(9, params.np);
-    sigmas = zeros(9, params.np);
+    Rs = zeros(9, length(qdists));
+    sigmas = zeros(9, length(qdists));
     for i=1:params.np
         Rs(:,i) = qdists(i).mu(:);
         sigmas(:,i) = qdists(i).sigma(:);

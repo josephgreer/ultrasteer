@@ -14,6 +14,7 @@ results.positionError = [];
 results.orientationError = [];
 results.particles = [];
 results.measurements = [];
+results.us = [];
 
 
 % initial state of needle
@@ -107,21 +108,23 @@ for t=0:params.dt:params.simulationTime
             %display('resample');
         end
         
-        % save off state
-        results.states = vertcat(results.states, xcurr);
         %save off estimated state
         results.estimatedStates = vertcat(results.estimatedStates, xpe);
         %save off particles
         results.particles = vertcat(results.particles, {xp});
-        % save off time
-        results.time = vertcat(results.time, t);
         % save off orientation error
         results.orientationError = vertcat(results.orientationError, computeAverageOrientationError(xp, xcurr, params));
         % save off pos error
         results.positionError = vertcat(results.positionError, computeAveragePositionError(xp, xcurr, params));
         % save off measurements
-        results.measurements = measurements;
+        results.measurements = vertcat(results.measurements, {measurement});
     end
+    % save off state
+    results.states = vertcat(results.states, xcurr);
+    % save off time
+    results.time = vertcat(results.time, t);
+    % save off commands
+    results.us = vertcat(results.us, {uc});
     
     % draw auxillary information if these params are enabled
     if(params.drawTipFrame && params.drawPastTipFrames)

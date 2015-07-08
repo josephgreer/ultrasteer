@@ -116,4 +116,15 @@ namespace Nf
 
   f64 erf(f64 x);
 
+  // Return the Karcher mean of rotations in Rs weighted by weights in ws
+  // logically w[0]*R[0]+...+w[n]*R[n] 
+  // ws = [w1 ... wn] \in R^(1xn)
+  arma::mat33 SO3Mean(const std::vector < arma::mat33 > & Rs, const arma::mat & ws, f64 eps);
+  
+  //computes the distance between to orientations using Riemannian metric
+  //on SO(3)
+  f64 SO3Distance(const arma::mat33 &R1, const arma::mat33 &R2);
+
+  arma::uvec Sample(const arma::vec &dist, s32 n);
+
 }

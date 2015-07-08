@@ -37,7 +37,7 @@ params.measurementOffsetSigma = diag([params.mpp*5*1e-3 params.mpp*5*1e-3]);
 
 params.sigmaOrientation = diag(1/5000*[pi, pi, pi]);
 
-nTrials = 5;
+nTrials = 1;
 posErrors = [];
 orErrors = [];
 for i=1:nTrials
