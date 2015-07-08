@@ -190,7 +190,7 @@ namespace Nf
       if(this->b8)
         rv.b8 = cvCloneImage(this->b8);
       if(this->color)
-        rv.b8 = cvCloneImage(this->color);
+        rv.color = cvCloneImage(this->color);
       if(this->sig)
         rv.sig = cvCloneImage(this->sig);
       if(this->var)
