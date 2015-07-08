@@ -741,6 +741,7 @@ static f64 computeAverageOrientationError(std::vector < mat33 > R1, std::vector 
 TEST(ParticleFilter, WholeSystem)
 {
   using ::s32;
+  using ::u32;
 
   char basePath[] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testWholeSystem";
   char path[150] = {0};
@@ -749,101 +750,126 @@ TEST(ParticleFilter, WholeSystem)
 
   s32 nTests = 3;
 
-                      //method 1        //Method 2 (unused)         //Method 3     
-  s32 nParticles[] = {500,              200,                        200};
+                      //method 1        //Method 3     
+  s32 nParticles[] = {2000,              200};
 
   std::vector < f64 > avePosErrors;
   std::vector < f64 > aveOrErrors;
 
-  //Method 1
-  for(s32 i=0; i<nTests; i++) {
-    printf("\nTrial %d\n\n", i);
-    s32 initTime = 2;
-    sprintf(path, "%s1%d", basePath, i+1);
-    std::vector < NSCommand > us = loadCommands(path);
-    std::vector < Measurement > meas = loadMeasurements(path, false);
-    mat dts = loadTimes(path);
-    PartMethod1 ps = loadParticlesMethod1(path);
+  PFFullStateParams *pfp;
+  ParticleFilterFullState *pffs;
 
-    PFFullStateParams pfp;
-    pfp.particleSigmaRho = 0;
-    ParticleFilterFullState pffs(nParticles[0], &pfp);
+  PFMarginalizedParams *pmp;
+  ParticleFilterMarginalized *pfms;
 
-    std::vector < TipState > estStates;
-    mat estPos;
-    mat truePos;
-    std::vector < mat33 > estRs;
-    std::vector < mat33 > trueRs;
-    bool started = false;
-    s32 dj = 0;
-    s32 jj = 0;
-    for(s32 j=0; j<dts.n_cols; j++) {
-      if(dts(0,j) <= initTime) {
-        dj = j;
-        continue;
-      }
-      jj = j-dj;
-      printf("\rframe %d of %d", j, dts.n_cols);
-      if(jj >= pfp.minimumMeasurements && !started)  {
-        TipState t; 
-        t.pos = ps.pos.col(j);
-        t.R = ps.Rs[j];
-        t.rho = ps.rhos(0,j);
-        std::vector < TipState > hist;
-        hist.push_back(t);
+  for(s32 mth=0; mth<2; mth++) {
+    //Method 1
+    for(s32 i=0; i<nTests; i++) {
+      printf("\nMethod %d Trial %d\n\n", mth+1,i);
+      s32 initTime = 2;
+      sprintf(path, "%s1%d", basePath, i+1);
+      std::vector < NSCommand > us = loadCommands(path);
+      std::vector < Measurement > meas = loadMeasurements(path, false);
+      mat dts = loadTimes(path);
+      PartMethod1 ps = loadParticlesMethod1(path);
 
-        pffs.InitializeParticleFilter(hist, &pfp);
+      ParticleFilter *pf;
+      PFParams *pp;
 
-        started = true;
-        continue;
-      }
-      if(!started)
-        continue;
-
-
-      pffs.Propagate(&us[j], dts(0,j)-dts(0,j-1), &pfp);
-
-      std::vector < Measurement > cmeas(jj);
-      std::vector < NSCommand > cu(j+1);
-      mat cdts(1,j+1);
-      for(s32 k=0; k<=j; k++) {
-        cu[k] = us[k];
-        if(k < j)
-          cdts(0,k) = dts(0,k+1)-dts(0,k);
-        else
-          cdts(0,k) = dts(0,k)-dts(0,k-1);
-      }
-      for(s32 k=0; k<jj; k++) {
-        cmeas[k] = meas[k];
+      if(mth == 0) {
+        pfp = new PFFullStateParams();
+        pfp->particleSigmaRho = 0;
+        pf =  new ParticleFilterFullState(nParticles[mth], pfp);
+        pp = pfp;
+      } else {
+        pmp = new PFMarginalizedParams();
+        pmp->particleSigmaRho = 0;
+        pfms = new ParticleFilterMarginalized(nParticles[mth], pmp);
+        pf = pfms;
+        pp = pmp;
       }
 
-      std::reverse(cmeas.begin(), cmeas.end());
-      std::reverse(cu.begin(), cu.end());
-      cdts = fliplr(cdts);
-      while(cu.size() < pfp.n) {
-        NSCommand u; memset(&u, 0, sizeof(NSCommand));
-        cu.push_back(u);
+      std::vector < TipState > estStates;
+      mat estPos;
+      mat truePos;
+      std::vector < mat33 > estRs;
+      std::vector < mat33 > trueRs;
+      bool started = false;
+      s32 dj = 0;
+      s32 jj = 0;
+      for(s32 j=0; j<dts.n_cols; j++) {
+        if(dts(0,j) <= initTime) {
+          dj = j;
+          continue;
+        }
+        jj = j-dj;
+        printf("\rframe %d of %d", j, dts.n_cols);
+        if(jj >= pp->minimumMeasurements && !started)  {
+          TipState t; 
+          t.pos = ps.pos.col(j);
+          t.R = ps.Rs[j];
+          t.rho = ps.rhos(0,j);
+          std::vector < TipState > hist;
+          hist.push_back(t);
+
+          pf->InitializeParticleFilter(hist, pp);
+
+          started = true;
+          continue;
+        }
+        if(!started)
+          continue;
+
+
+        pf->Propagate(&us[j], dts(0,j)-dts(0,j-1), pp);
+
+        std::vector < Measurement > cmeas(jj);
+        std::vector < NSCommand > cu(j+1);
+        mat cdts(1,j+1);
+        for(s32 k=0; k<=j; k++) {
+          cu[k] = us[k];
+          if(k < j)
+            cdts(0,k) = dts(0,k+1)-dts(0,k);
+          else
+            cdts(0,k) = dts(0,k)-dts(0,k-1);
+        }
+        for(s32 k=0; k<jj; k++) {
+          cmeas[k] = meas[k];
+        }
+
+        std::reverse(cmeas.begin(), cmeas.end());
+        std::reverse(cu.begin(), cu.end());
+        cdts = fliplr(cdts);
+        while(cu.size() < pp->n) {
+          NSCommand u; memset(&u, 0, sizeof(NSCommand));
+          cu.push_back(u);
+        }
+
+        BEGIN_TIMING(ApplyMeasurement, 100)
+        pf->ApplyMeasurement(cmeas, cu, cdts.t(), pp);
+        END_TIMING(ApplyMeasurement, 100)
+        TipState est = pf->GetExpectedValue(pp);
+        estStates.push_back(est);
+        estPos = join_horiz(estPos, est.pos);
+        estRs.push_back(est.R);
+        truePos = join_horiz(truePos, ps.pos.col(j));
+        trueRs.push_back(ps.Rs[j]);
+
+        f64 nParts = pf->EffectiveSampleSize();
+        if(nParts < pp->neff*nParticles[mth])
+          pf->Resample(nParticles[mth], pp);
       }
 
-      pffs.ApplyMeasurement(cmeas, cu, cdts.t(), &pfp);
-      TipState est = pffs.GetExpectedValue(&pfp);
-      estStates.push_back(est);
-      estPos = join_horiz(estPos, est.pos);
-      estRs.push_back(est.R);
-      truePos = join_horiz(truePos, ps.pos.col(j));
-      trueRs.push_back(ps.Rs[j]);
+      f64 avePosError = computeAveragePositionError(estPos-truePos);
+      NTrace("Ave Pos Error %f\n", avePosError);
+      avePosErrors.push_back(avePosError);
+      f64 aveOrError = computeAverageOrientationError(estRs,trueRs);
+      NTrace("Ave Orientation Error %f\n", aveOrError);
+      aveOrErrors.push_back(aveOrError);
 
-      f64 nParts = pffs.EffectiveSampleSize();
-      if(nParts < pfp.neff*nParticles[0])
-        pffs.Resample(nParticles[0], &pfp);
+      delete pf;
+      delete pp;
     }
-
-    f64 avePosError = computeAveragePositionError(estPos-truePos);
-    NTrace("Ave Pos Error %f\n", avePosError);
-    avePosErrors.push_back(avePosError);
-    f64 aveOrError = computeAverageOrientationError(estRs,trueRs);
-    NTrace("Ave Orientation Error %f\n", aveOrError);
-    aveOrErrors.push_back(aveOrError);
   }
 
 }

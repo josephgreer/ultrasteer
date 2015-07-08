@@ -186,7 +186,15 @@ namespace Nf
     s32 m = X.n_cols;
     s32 n = Y.n_cols;
 
-    mat D = repmat(((mat)(X.t()*X)).diag(), 1, n)-2*X.t()*Y+repmat(((mat)(Y.t()*Y)).diag().t(), m, 1);
+    //mat D = repmat(((mat)(X.t()*X)).diag(), 1, n)-2*X.t()*Y+repmat(((mat)(Y.t()*Y)).diag().t(), m, 1);
+    mat D = zeros(m,n);
+    vec3 delta;
+    for(s32 i=0; i<m; i++) {
+      for(s32 j=0; j<n; j++) {
+        delta = (vec3)(X.col(i) - Y.col(j));
+        D(i,j) = delta(0)*delta(0)+delta(1)*delta(1)+delta(2)*delta(2);
+      }
+    }
 
     return D;
   }
@@ -234,7 +242,7 @@ namespace Nf
     for(s32 i=0; i<pfm->procrustesIt; i++) {
       //D_ij = distanceSq(measurements(i), cTemplate(j))
       D = distanceMatrix(measurements,cTemplate);
-
+      
       minD = min(D, 1);
       for(s32 r=0; r<D.n_rows; r++) {
         minTemplate = join_vert(minTemplate,find(D.row(r) == minD(r)));
@@ -448,7 +456,7 @@ namespace Nf
         // for each history point...
         for(s32 j=0; j<cModelHist.n_cols-1; j++) {
           dr = cModelHist.col(j+1)-cModelHist.col(j);
-          if(norm(dr) < 1e-3)
+          if(((mat)(dr.t()*dr))(0,0) < 1e-6)
             continue;
 
           // find the point of intersection between ultrasound frame and "flagella"
@@ -662,6 +670,7 @@ namespace Nf
     usFrameParams << 1 << endr << params->usw << endr << params->ush << endr;
 
     mat pw = zeros(1,m_nParticles);
+    mat meas = measurementToPointMat(m);
 
     bool offFrame;
     // For each particle...
@@ -674,8 +683,8 @@ namespace Nf
       cModelHist = Rdelta*zModelHist;
 
       assert(m.size() >= params->minimumMeasurements);
-
-      Rmeas = optimalRotationForModel(cModelHist, measurementToPointMat(m), m_pos.col(i), p);
+      
+      Rmeas = optimalRotationForModel(cModelHist, meas, m_pos.col(i), p);
       Rmeas = (mat33)(Rmeas*m_R[i].mu);
 
       if(det(params->measurementSigma) < 1e-6) {
@@ -717,6 +726,8 @@ namespace Nf
         // for each history point...
         for(s32 j=0; j<cModelHist.n_cols-1; j++) {
           dr = cModelHist.col(j+1)-cModelHist.col(j);
+          if(((mat)(dr.t()*dr))(0,0) < 1e-6)
+            continue;
 
           // find the point of intersection between ultrasound frame and "flagella"
           frameMat = (mat33)(join_horiz(join_horiz(-dr, m[0].fbx), m[0].fby));
@@ -808,7 +819,7 @@ namespace Nf
 
   void ParticleFilterMarginalized::Resample(s32 nParticles, const PFParams *p)
   {
-    uvec pids = Sample(m_w, m_nParticles);
+    uvec pids = Sample(m_w.t(), m_nParticles);
     m_pos = m_pos.cols(pids);
     m_rho = m_rho.cols(pids);
 
@@ -816,6 +827,7 @@ namespace Nf
     for(s32 i=0; i<m_nParticles; i++)
       newRs[i] = m_R[pids(i)];
     m_R = newRs;
+    m_w = ones(1,m_nParticles)/(f64)m_nParticles;
   }
 
   void ParticleFilterMarginalized::SetOrientationKFs(const std::vector < OrientationKF > &ors)
