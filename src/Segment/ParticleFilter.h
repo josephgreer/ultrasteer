@@ -292,7 +292,6 @@ namespace Nf
     arma::mat m_pos;                          //position matrix for particles [x1 x2 ... xn] x_i \in R^3 m_pos \in R^(3xn)
     std::vector < OrientationKF > m_R;        //vector of orientation Kalman Filters p(R_t|p_t,Y_{1:t})
     arma::mat m_rho;                          //rhos [rho1 ... rhon] rhoi \in R, m_rhos \in R^n
-    arma::mat m_w;                            //weights [w1 ... wn] wi \in R, m_w \in R^(1xn)
 
 
   public:
