@@ -58,6 +58,7 @@ namespace Nf
     f64 sigA;                                 //  for outlier smooth step sigmoid 1/(1+exp(-A*(t-c))
     f64 sigC;                                 //  for outlier smooth step sigmoid 1/(1+exp(-A*(t-c))
     s32 n;                                    //  how many points do we use for creating needle "flagella"
+    f64 neff;                                 //  resample if the number of effective particles drops below this fraction
  
     PFParams();
   };
@@ -172,10 +173,14 @@ namespace Nf
     virtual std::vector < arma::mat33 > GetParticleOrientations(const PFParams *p) = 0;
     
     //Set the number of particles. Causes a resample
-    virtual void SetNumberOfParticles(s32 nParticles);
+    virtual void SetNumberOfParticles(s32 nParticles, const PFParams *p);
+
+    // Returns the effective number of samples in the particle filter. 
+    // This metric is used for resampling purposes
+    virtual f64 EffectiveSampleSize();
 
     // Resample particles according to particle weight distribution;
-    virtual void Resample(s32 nParticles) = 0;
+    virtual void Resample(s32 nParticles, const PFParams *p) = 0;
 
     // Returns curvatures of each particle
     //   returns:
@@ -238,7 +243,7 @@ namespace Nf
     virtual std::vector < arma::mat33 > GetParticleOrientations(const PFParams *p);
 
     // Resample particles according to particle weight distribution;
-    virtual void Resample(s32 nParticles);
+    virtual void Resample(s32 nParticles, const PFParams *p);
 
 
     // Returns curvatures of each particle
@@ -265,6 +270,12 @@ namespace Nf
     public:
     arma::mat33 mu;                 //represents mean of gaussian distribution
     arma::mat33 sigma;              //covariance of gaussian distribution
+
+    OrientationKF()
+    {
+      this->mu = (arma::mat33)arma::eye(3,3);
+      this->sigma = (arma::mat33)arma::eye(3,3);
+    }
 
    OrientationKF(arma::mat33 mu, arma::mat33 sigma)
    {
@@ -328,7 +339,7 @@ namespace Nf
     virtual std::vector < arma::mat33 > GetParticleOrientationSigmas(const PFParams *p);
 
     // Resample particles according to particle weight distribution;
-    virtual void Resample(s32 nParticles);
+    virtual void Resample(s32 nParticles, const PFParams *p);
 
 
     // Returns curvatures of each particle

@@ -338,3 +338,72 @@ TEST(Math, Erf)
     assert(abs(answer[i]-canswer)<eps);
   }
 }
+
+std::vector < mat33 > loadOrientations(const char *path);
+TEST(Math, SO3Mean)
+{
+  using ::s32;
+
+  char dir[100] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data";
+  char pathBase[150] = "";
+
+  sprintf(pathBase, "%s/testSO3MeanRs.dat", dir);
+
+  std::vector < mat33 > Rs = loadOrientations(pathBase);
+
+  std::vector < mat33 > Rss(Rs.size()-1);
+  for(s32 i=0; i<Rs.size()-1; i++) {
+    Rss[i] = Rs[i];
+  }
+
+  mat33 R = SO3Mean(Rss, ones(1,Rss.size())/(f64)Rss.size(), 1e-3);
+  R.print("R:  ");
+  Rs[Rs.size()-1].print("Rcomp:  ");
+
+  assert(norm(R-Rs[Rs.size()-1]) < 1e-2);
+}
+
+TEST(Math, Sample)
+{
+  using ::s32;
+
+  s32 npts = 50;
+  vec dist = (vec)randu(npts,1);
+  f64 sm = ((mat)sum(dist,0))(0,0);
+  dist = dist/sm;
+  sm = ((mat)sum(dist,0))(0,0);
+  assert(abs(sm-1) < 1e-4);
+
+  s32 n = 1e6;
+  uvec samples = Sample(dist, n);
+
+  vec weights = zeros(npts,1);
+  uvec idxs;
+  for(s32 i=0; i<npts; i++) {
+    idxs = find(samples == i);
+    weights(i) = (f64)idxs.n_rows/(f64)n;
+    assert(abs(weights(i)-dist(i)) < 1e-3);
+    if(abs(weights(i)-dist(i)) > 1e-3)
+      throw std::runtime_error("stupid");
+  }
+
+}
+
+TEST(Math, SO3Distance)
+{
+  using ::s32;
+
+  mat33 R1,R2;
+
+  char dir[100] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data";
+  char pathBase[150] = "";
+
+  sprintf(pathBase, "%s/testSO3DistanceR1.dat", dir);
+  R1.load(pathBase);
+  
+  sprintf(pathBase, "%s/testSO3DistanceR2.dat", dir);
+  R2.load(pathBase);
+
+ f64 dist = SO3Distance(R1,R2);
+ NTrace("Dist %f\n", dist);
+}

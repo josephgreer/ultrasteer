@@ -332,7 +332,7 @@ static void saveOrientations(const std::vector < mat33 > &ors, const char *path)
   res.save(path, raw_ascii);
 }
 
-static std::vector < mat33 > loadOrientations(const char *path)
+std::vector < mat33 > loadOrientations(const char *path)
 {
   using ::s32;
   std::vector < mat33 > res;
@@ -442,7 +442,7 @@ TEST(ParticleFilter, PropagateParticles)
 }
 
 // Assumes one point per measurement
-static std::vector < Measurement > loadMeasurements(const char *basePath)
+static std::vector < Measurement > loadMeasurements(const char *basePath, bool reverse=true)
 {
   using ::s32;
   std::vector < Measurement > res;
@@ -489,6 +489,18 @@ static std::vector < Measurement > loadMeasurements(const char *basePath)
 
     res.push_back(m);
   }
+  if(reverse)
+    std::reverse(res.begin(), res.end());
+  return res;
+}
+
+mat loadTimes(const char *basePath)
+{
+  char path[150] = {0};
+  sprintf(path, "%sdts.dat", basePath);
+
+  mat res; res.load(path);
+  res = res.t();
   return res;
 }
 
@@ -628,7 +640,8 @@ TEST(ParticleFilter, ApplyMeasurement)
   tw = pffs.GetWeights();
   for(s32 i=0; i<tw.n_cols; i++) {
     printf("Calculated weight %.8f matlab weight %.8f\n", tw(0,i), psa.ws(0,i));
-    assert(abs(tw(0,i)-psa.ws(0,i))/abs(psa.ws(0,i)) < eps);
+    if(abs(tw(0,i)-psa.ws(0,i))/abs(psa.ws(0,i)) > eps)
+      throw std::runtime_error("");
   }
 
   //Method 3, iteration 1
@@ -657,11 +670,14 @@ TEST(ParticleFilter, ApplyMeasurement)
     printf("Calculated weight %.8f matlab weight %.8f\n", tw(0,i), ps3a.ws(0,i));
     ps3a.Rs[i].mu.print("Matlab mu:  ");
     Rmus[i].print("Calculated mu:  ");
-    ps3a.Rs[i].sigma.print("Matlab mu:  ");
-    sigmas[i].print("Calculated mu:  ");
-    assert(abs(tw(0,i)-ps3a.ws(0,i))/abs(ps3a.ws(0,i)) < eps);
-    assert(max(max(abs(ps3a.Rs[i].mu-Rmus[i])))/max(max(abs(ps3a.Rs[i].mu))) < eps);
-    assert(max(max(abs(ps3a.Rs[i].sigma-sigmas[i])))/max(max(abs(ps3a.Rs[i].sigma))) < eps);
+    ps3a.Rs[i].sigma.print("Matlab sigma:  ");
+    sigmas[i].print("Calculated sigma:  ");
+    if(abs(tw(0,i)-ps3a.ws(0,i))/abs(ps3a.ws(0,i)) > eps)
+      throw std::runtime_error("");
+    if(max(max(abs(ps3a.Rs[i].mu-Rmus[i])))/max(max(abs(ps3a.Rs[i].mu))) > eps)
+      throw std::runtime_error("");
+    if(max(max(abs(ps3a.Rs[i].sigma-sigmas[i])))/max(max(abs(ps3a.Rs[i].sigma))) > eps)
+      throw std::runtime_error("");
   }
 
   //Method 3, iteration 2
@@ -690,10 +706,146 @@ TEST(ParticleFilter, ApplyMeasurement)
     Rmus[i].print("Calculated mu:  ");
     ps3a.Rs[i].sigma.print("Matlab mu:  ");
     sigmas[i].print("Calculated mu:  ");
-    assert(abs(tw(0,i)-ps3a.ws(0,i))/abs(ps3a.ws(0,i)) < eps);
-    assert(max(max(abs(ps3a.Rs[i].mu-Rmus[i])))/max(max(abs(ps3a.Rs[i].mu))) < eps);
-    assert(max(max(abs(ps3a.Rs[i].sigma-sigmas[i])))/max(max(abs(ps3a.Rs[i].sigma))) < eps);
+    if(abs(tw(0,i)-ps3a.ws(0,i))/abs(ps3a.ws(0,i)) > eps)
+      throw std::runtime_error("");
+    if(max(max(abs(ps3a.Rs[i].mu-Rmus[i])))/max(max(abs(ps3a.Rs[i].mu))) > eps)
+      throw std::runtime_error("");
+    if(max(max(abs(ps3a.Rs[i].sigma-sigmas[i])))/max(max(abs(ps3a.Rs[i].sigma))) > eps)
+      throw std::runtime_error("");
   }
 
 }
+
+static f64 computeAveragePositionError(const mat &delta)
+{
+  mat d = delta;
+  d = square(d);
+  d = sum(d, 0);
+  d = sqrt(d);
+  d.save("C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testWholeSystemCPosError.dat", raw_ascii);
+  d = mean(d, 1);
+  return d(0,0);
+}
+
+static f64 computeAverageOrientationError(std::vector < mat33 > R1, std::vector < mat33 > R2)
+{
+  using ::s32;
+  f64 error = 0;
+  for(s32 i=0; i<R1.size(); i++) {
+    error += SO3Distance(R1[i], R2[i]);
+  }
+  error = error/(f64)R1.size();
+  return error;
+}
+
+TEST(ParticleFilter, WholeSystem)
+{
+  using ::s32;
+
+  char basePath[] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testWholeSystem";
+  char path[150] = {0};
+
+  f64 dt = 1/10.0;
+
+  s32 nTests = 3;
+
+                      //method 1        //Method 2 (unused)         //Method 3     
+  s32 nParticles[] = {500,              200,                        200};
+
+  std::vector < f64 > avePosErrors;
+  std::vector < f64 > aveOrErrors;
+
+  //Method 1
+  for(s32 i=0; i<nTests; i++) {
+    printf("\nTrial %d\n\n", i);
+    s32 initTime = 2;
+    sprintf(path, "%s1%d", basePath, i+1);
+    std::vector < NSCommand > us = loadCommands(path);
+    std::vector < Measurement > meas = loadMeasurements(path, false);
+    mat dts = loadTimes(path);
+    PartMethod1 ps = loadParticlesMethod1(path);
+
+    PFFullStateParams pfp;
+    pfp.particleSigmaRho = 0;
+    ParticleFilterFullState pffs(nParticles[0], &pfp);
+
+    std::vector < TipState > estStates;
+    mat estPos;
+    mat truePos;
+    std::vector < mat33 > estRs;
+    std::vector < mat33 > trueRs;
+    bool started = false;
+    s32 dj = 0;
+    s32 jj = 0;
+    for(s32 j=0; j<dts.n_cols; j++) {
+      if(dts(0,j) <= initTime) {
+        dj = j;
+        continue;
+      }
+      jj = j-dj;
+      printf("\rframe %d of %d", j, dts.n_cols);
+      if(jj >= pfp.minimumMeasurements && !started)  {
+        TipState t; 
+        t.pos = ps.pos.col(j);
+        t.R = ps.Rs[j];
+        t.rho = ps.rhos(0,j);
+        std::vector < TipState > hist;
+        hist.push_back(t);
+
+        pffs.InitializeParticleFilter(hist, &pfp);
+
+        started = true;
+        continue;
+      }
+      if(!started)
+        continue;
+
+
+      pffs.Propagate(&us[j], dts(0,j)-dts(0,j-1), &pfp);
+
+      std::vector < Measurement > cmeas(jj);
+      std::vector < NSCommand > cu(j+1);
+      mat cdts(1,j+1);
+      for(s32 k=0; k<=j; k++) {
+        cu[k] = us[k];
+        if(k < j)
+          cdts(0,k) = dts(0,k+1)-dts(0,k);
+        else
+          cdts(0,k) = dts(0,k)-dts(0,k-1);
+      }
+      for(s32 k=0; k<jj; k++) {
+        cmeas[k] = meas[k];
+      }
+
+      std::reverse(cmeas.begin(), cmeas.end());
+      std::reverse(cu.begin(), cu.end());
+      cdts = fliplr(cdts);
+      while(cu.size() < pfp.n) {
+        NSCommand u; memset(&u, 0, sizeof(NSCommand));
+        cu.push_back(u);
+      }
+
+      pffs.ApplyMeasurement(cmeas, cu, cdts.t(), &pfp);
+      TipState est = pffs.GetExpectedValue(&pfp);
+      estStates.push_back(est);
+      estPos = join_horiz(estPos, est.pos);
+      estRs.push_back(est.R);
+      truePos = join_horiz(truePos, ps.pos.col(j));
+      trueRs.push_back(ps.Rs[j]);
+
+      f64 nParts = pffs.EffectiveSampleSize();
+      if(nParts < pfp.neff*nParticles[0])
+        pffs.Resample(nParticles[0], &pfp);
+    }
+
+    f64 avePosError = computeAveragePositionError(estPos-truePos);
+    NTrace("Ave Pos Error %f\n", avePosError);
+    avePosErrors.push_back(avePosError);
+    f64 aveOrError = computeAverageOrientationError(estRs,trueRs);
+    NTrace("Ave Orientation Error %f\n", aveOrError);
+    aveOrErrors.push_back(aveOrError);
+  }
+
+}
+
 

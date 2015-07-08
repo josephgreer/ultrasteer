@@ -104,6 +104,9 @@ for i=1:length(xp)
 %         assert(norm(abs(xx-xs)) < 1e-5);
         for j=1:length(xs)-1
             dr = xs(:,j+1)-xs(:,j);
+            if(norm(dr) < 1e-5)
+                continue;
+            end
             if(det([-dr measurement.bx measurement.by]) == 0)
                 ss = 0;
             end
@@ -346,6 +349,9 @@ for i=1:params.np
         %         assert(norm(abs(xx-xs)) < 1e-5);
         for j=1:length(xs)-1
             dr = xs(:,j+1)-xs(:,j);
+            if(norm(dr) < 1e-5)
+                continue;
+            end
             if(det([-dr measurement.bx measurement.by]) == 0)
                 ss = 0;
             end
