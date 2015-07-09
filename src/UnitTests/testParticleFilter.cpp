@@ -848,10 +848,15 @@ TEST(ParticleFilter, WholeSystem)
           NSCommand u; memset(&u, 0, sizeof(NSCommand));
           cu.push_back(u);
         }
+        while(cu.size() > pp->n) {
+          cu.pop_back();
+        }
+        while(cmeas.size() > pp->n*1.5)
+          cmeas.pop_back();
         
-        BEGIN_TIMING(ApplyMeasurement, 1)
+        BEGIN_TIMING(ApplyMeasurement, 450)
         pf->ApplyMeasurement(cmeas, cu, cdts.t(), pp);
-        END_TIMING(ApplyMeasurement, 1)
+        END_TIMING(ApplyMeasurement, 450)
         TipState est = pf->GetExpectedValue(pp);
         estStates.push_back(est);
         estPos = join_horiz(estPos, est.pos);

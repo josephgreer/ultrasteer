@@ -91,6 +91,7 @@ for t=0:params.dt:params.simulationTime
         measurements = vertcat({measurement}, measurements);
         if(~params.particlesInit)
             fakeCurr = xhist;
+            %fakeCurr{1}.rho = xhist{1}.rho-4;
             xp = initializeParticles(fakeCurr, u, params);
             params.particlesInit = params.doParticleFilter&length(measurements)>=getMinimumMeasurements(params);
         else

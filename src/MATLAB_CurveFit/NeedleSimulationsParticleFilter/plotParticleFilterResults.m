@@ -63,13 +63,13 @@ orErrors = mean(results.orientationError);
 
 figure;
 N = length(results.particles);
-rhosTrue = zeros(N,1);
-rhosEst = zeros(N,1);
-for i=1:N
-    rhosTrue(i) = results.states{i}.rho;
-    xpe = expectedValueOfParticles(results.particles{i}, params);
-    rhosEst(i) = xpe.rho;
-end
+rhosTrue = [states.rho]';
+% rhosEst = zeros(N,1);
+% for i=1:N
+%     xpe = expectedValueOfParticles(results.particles{i}, params);
+%     rhosEst(i) = xpe.rho;
+% end
+rhosEst = [estimatedStates.rho]';
 plot(time, rhosTrue,'b');
 hold on;
 plot(time, rhosEst, 'r');

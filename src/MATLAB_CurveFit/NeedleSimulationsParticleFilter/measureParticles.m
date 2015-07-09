@@ -126,7 +126,7 @@ for i=1:length(xp)
                 duv = suv-measurement.uv;
                 
                 pin = sigmf(measurement.doppler, [params.sigA, params.sigC]);
-                p_uvx = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.measurementOffsetSigma),...,
+                p_uvx = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.p1.uvOffsetSigma),...,
                     a,b) + ...
                     (1-pin)*(1/(params.ush*params.usw));
                 
