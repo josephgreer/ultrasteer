@@ -68,6 +68,7 @@ params.p1.initPosSigma = diag([5 5 5]);                                     %pos
 params.p1.initPosMu = [0; 0; 0];                                            %pos mu for initial distribution of particles
 params.p1.minimumMeasurements = 1;                                          %minimum number of measurements before we can run measurement equation
 params.p1.particleSigmaPos = diag(1/3*[1 1 1]);                               %sigma pos for particle propagation
+params.p1.uvOffsetSigma = diag([params.mpp*5*1e-3 params.mpp*5*1e-3]);
 
 % method 2
 params.p2.drawPastPos = 1;                                                  %draw past particle points as well.

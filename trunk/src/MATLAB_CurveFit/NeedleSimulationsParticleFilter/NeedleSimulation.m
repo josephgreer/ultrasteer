@@ -41,7 +41,7 @@ params.measurementOffsetSigma = diag([params.mpp*5*1e-3 params.mpp*5*1e-3])
 %params.sigmaVelocity = 50;
 %params.sigmaRho = 0;
 %params.doMeasurement = 0;
-nTrials = 5;
+nTrials = 1;
 
 posErrors = [];
 orErrors = [];

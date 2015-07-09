@@ -204,10 +204,7 @@ namespace Nf
   {
     using ::s32;
 
-    uvec seq(x.n_rows, 1);
-    for(s32 i=0; i<x.n_rows; i++) {
-      seq(i) = i;
-    }
+    uvec seq = linspace<uvec>(0, x.n_rows-1, x.n_rows);
     seq = shuffle(seq);
     
     uvec res(n, 1);
@@ -227,7 +224,7 @@ namespace Nf
     const PFMarginalizedParams *pfm = (const PFMarginalizedParams *)p;
 
     //offset so that model.col(0) is origin (we rotate about that point)
-    //measurements = measurements-repmat(offset,1,measurements.n_cols);
+    measurements = measurements-repmat(offset,1,measurements.n_cols);
 
     mat33 R = eye(3,3);
 
@@ -244,6 +241,7 @@ namespace Nf
       //D_ij = distanceSq(measurements(i), cTemplate(j))
 #if 1
       D = distanceMatrix(measurements,cTemplate);
+      //D = ones(measurements.n_cols, cTemplate.n_cols);
 
       minD = min(D, 1);
       for(s32 r=0; r<D.n_rows; r++) {
@@ -251,6 +249,7 @@ namespace Nf
       }
       goodDs = find(minD < pfm->distanceThreshSq);
       goodDs = sample(goodDs, MIN(pfm->subsetSize, goodDs.n_rows));
+      //goodDs = goodDs.subvec(span(0,MAX(MIN(pfm->subsetSize-1, goodDs.n_rows-1),0)));
       //goodDs = sort(goodDs);
 
       minTemplate = minTemplate.rows(goodDs);

@@ -35,6 +35,14 @@ using ::f64;
 #define DEBUG_ASSERT(x)
 #endif
 
+using ::s8;
+using ::u16;
+using ::s16;
+using ::u32;
+using ::s32;
+using ::f32;
+using ::f64;
+
 namespace Nf
 {
   using ::s8;
@@ -51,7 +59,7 @@ namespace Nf
   u32 g_beginTick##x = timeGetTime(); static u32 g_n##x = 0; static u32 g_tot##x = 0;
 #define END_TIMING(x,y) \
   u32 g_endTick##x = timeGetTime(); g_tot##x += g_endTick##x-g_beginTick##x; \
-  if(g_n##x++ >= y) { \
+  if(++g_n##x >= y) { \
     NTrace("Timing: %s time %f ms\n", #x, (f32)g_tot##x/g_n##x); \
     g_tot##x = 0; \
     g_n##x = 0; \
