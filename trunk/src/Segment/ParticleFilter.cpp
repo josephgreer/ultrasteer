@@ -227,7 +227,7 @@ namespace Nf
     const PFMarginalizedParams *pfm = (const PFMarginalizedParams *)p;
 
     //offset so that model.col(0) is origin (we rotate about that point)
-    measurements = measurements-repmat(offset,1,measurements.n_cols);
+    //measurements = measurements-repmat(offset,1,measurements.n_cols);
 
     mat33 R = eye(3,3);
 
@@ -239,10 +239,12 @@ namespace Nf
     uvec minTemplate, goodDs, shuf;
     mat D,U,V,X,Y,XYt,dR;
     vec S, minD;
+    s32 mm = 0;
     for(s32 i=0; i<pfm->procrustesIt; i++) {
       //D_ij = distanceSq(measurements(i), cTemplate(j))
+#if 1
       D = distanceMatrix(measurements,cTemplate);
-      
+
       minD = min(D, 1);
       for(s32 r=0; r<D.n_rows; r++) {
         minTemplate = join_vert(minTemplate,find(D.row(r) == minD(r)));
@@ -255,11 +257,18 @@ namespace Nf
 
       X = cTemplate.cols(minTemplate);
       Y = measurements.cols(goodDs);
+#else 
+      mm = MIN(MIN(pfm->subsetSize, measurements.n_cols),cTemplate.n_cols);
+
+      // X = cTemplate.cols(span(0,mm-1));
+	  // Y = measurements.cols(span(0,mm-1));
+      X = randu(3, mm);
+      Y = randu(3, mm);
+#endif
       XYt = X*Y.t();
       svd(U,S,V,XYt);
       dR = V*U.t();
       if(det(dR) < 0) {
-        vec rotZ; rotZ << 1 << 1 << -1 << endr;
         dR = V*reflect*U.t();
       }
       R = (mat33)(dR*R);

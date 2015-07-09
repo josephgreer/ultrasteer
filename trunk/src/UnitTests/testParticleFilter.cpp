@@ -743,15 +743,19 @@ TEST(ParticleFilter, WholeSystem)
   using ::s32;
   using ::u32;
 
+#if 1
   char basePath[] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testWholeSystem";
+#else
+  char basePath[] = "C:/Users/Joey/Documents/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testWholeSystem";
+#endif
   char path[150] = {0};
 
   f64 dt = 1/10.0;
 
-  s32 nTests = 3;
+  s32 nTests = 1;
 
                       //method 1        //Method 3     
-  s32 nParticles[] = {2000,              200};
+  s32 nParticles[] = {500,              200};
 
   std::vector < f64 > avePosErrors;
   std::vector < f64 > aveOrErrors;
@@ -844,10 +848,10 @@ TEST(ParticleFilter, WholeSystem)
           NSCommand u; memset(&u, 0, sizeof(NSCommand));
           cu.push_back(u);
         }
-
-        BEGIN_TIMING(ApplyMeasurement, 100)
+        
+        BEGIN_TIMING(ApplyMeasurement, 1)
         pf->ApplyMeasurement(cmeas, cu, cdts.t(), pp);
-        END_TIMING(ApplyMeasurement, 100)
+        END_TIMING(ApplyMeasurement, 1)
         TipState est = pf->GetExpectedValue(pp);
         estStates.push_back(est);
         estPos = join_horiz(estPos, est.pos);
