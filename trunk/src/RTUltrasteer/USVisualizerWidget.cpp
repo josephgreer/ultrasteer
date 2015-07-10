@@ -358,6 +358,7 @@ USVisualizer::USVisualizer(QWidget *parent, USVisualizerWidget *usVis)
   m_layout = new QGridLayout(parent);
   m_layout->addWidget(m_tfWidget, 0, 0);
   m_layout->addWidget(m_usVis, 1, 0);
+  m_layout->setContentsMargins(0,0,0,0);
   this->setLayout(m_layout);
 
   m_tfWidget->SetInteractionObserver(m_usVis);
@@ -397,8 +398,10 @@ std::vector < QVTKWidget * > USVisualizer::GetRepaintList()
 void USVisualizer::UpdateSize(QSize sz)
 {
   ResizableQWidget::UpdateSize(sz);
-  m_tfWidget->UpdateSize(QSize(sz.width()-20, (sz.height()/4)));
-  m_usVis->UpdateSize(QSize(sz.width()-20, (sz.height()*3/4)));
+
+  s32 height1 = sz.height()/4;
+  m_tfWidget->UpdateSize(QSize(sz.width()-20, height1));
+  m_usVis->UpdateSize(QSize(sz.width()-20, sz.height()-height1));
 }
 
 void USVisualizer::AddRPData(RPData rp)
