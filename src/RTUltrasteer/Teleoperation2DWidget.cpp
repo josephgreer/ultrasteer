@@ -188,7 +188,7 @@ namespace Nf
     }
 
     m_data = m_rpReaders->GetRPData(m_frame->GetValue());
-    m_imageViewer->SetImage(m_data.b8);
+    m_imageViewer->SetImage(&m_data);
     onUpdateOverlay();
 
     if(m_manualScanning)
@@ -252,7 +252,7 @@ namespace Nf
       Sleep(300);
 
       m_data = m_rpReaders->GetNextRPData();
-      m_imageViewer->SetImage(m_data.b8);
+      m_imageViewer->SetImage(&m_data);
 
       if(!m_tick) {
         m_tick = std::tr1::shared_ptr<QTimer>(new QTimer());
@@ -286,7 +286,7 @@ namespace Nf
       return;
 
     if(m_addFrames->GetValue()) {
-      m_imageViewer->SetImage(m_data.b8);
+      m_imageViewer->SetImage(&m_data);
       onUpdateOverlay();
     }
   }

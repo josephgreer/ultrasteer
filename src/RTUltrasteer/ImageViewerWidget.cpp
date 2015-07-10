@@ -22,8 +22,7 @@ namespace Nf
   ImageViewerWidget::ImageViewerWidget(QWidget *parent)
     : ResizableQVTKWidget(parent, QSize(VIS_WIDTH, VIS_HEIGHT))
     , Nf::ParameterCollection("Image Viewer Widget")
-    , m_im(NULL)
-    , m_mask(NULL)
+    , m_rp()
     , m_init(false)
   {
     m_mapper = vtkSmartPointer<vtkImageMapper>::New();
@@ -37,26 +36,27 @@ namespace Nf
 
   ImageViewerWidget::~ImageViewerWidget()
   {
-    if(m_im != NULL)
-      cvReleaseImage(&m_im);
+    m_rp.Release();
   }
 
-  void ImageViewerWidget::SetImage(const IplImage *im)
+  void ImageViewerWidget::SetImage(const RPData *rp)
   {
-    if(m_im != NULL)
-      cvReleaseImage(&m_im);
+    if(rp->b8 != NULL) {
+      m_rp.Release();
+      m_rp = rp->Clone();
+    }
 
-    if(im) {
-      m_im = cvCloneImage(im);
 
+    if(m_rp.b8) {
+      IplImage *im = m_rp.b8;
       // Set up importer
       m_importer->SetDataOrigin(0,0,0);
       m_importer->SetDataSpacing(1,1,1);
-      m_importer->SetWholeExtent(0, m_im->width-1, 0, m_im->height-1, 0, 0);
+      m_importer->SetWholeExtent(0, im->width-1, 0, im->height-1, 0, 0);
       m_importer->SetDataExtentToWholeExtent();
       m_importer->SetDataScalarTypeToUnsignedChar();
-      m_importer->SetNumberOfScalarComponents(m_im->nChannels);
-      m_importer->SetImportVoidPointer(m_im->imageData);
+      m_importer->SetNumberOfScalarComponents(im->nChannels);
+      m_importer->SetImportVoidPointer(im->imageData);
       m_importer->Modified();
       m_importer->Update();
 
@@ -86,13 +86,14 @@ namespace Nf
       vtkCamera *cam = m_renderer->GetActiveCamera();
       m_renderer->SetActiveCamera(cam);
     } 
-    if(im)
+    if(m_rp.b8)
       m_init = true;
   }
 
   ImageViewer2DTeleoperationWidget::ImageViewer2DTeleoperationWidget(QWidget *parent)
     : ImageViewerWidget(parent) 
     , m_initTeleop(false)
+    , m_mask(NULL)
   {
     m_textActor1 = vtkSmartPointer<vtkTextActor>::New();
     m_textActor2 = vtkSmartPointer<vtkTextActor>::New();
@@ -110,11 +111,12 @@ namespace Nf
       cvReleaseImage(&m_mask);
   }
 
-  void ImageViewer2DTeleoperationWidget::SetImage(const IplImage *im)
+  void ImageViewer2DTeleoperationWidget::SetImage(const RPData *rp)
   {   
-    ImageViewerWidget::SetImage(im);
+    ImageViewerWidget::SetImage(rp);
     
     if(!m_initTeleop){
+      const IplImage *im = rp->b8;
       // Create blank mask image
       m_mask = cvCloneImage(im);
       cvZero(m_mask);
@@ -237,8 +239,8 @@ namespace Nf
 
   void ImageViewer2DTeleoperationWidget::getImageDim(int &w, int &h)
   {
-    w = m_im->width;
-    h = m_im->height;
+    w = m_rp.b8->width;
+    h = m_rp.b8->height;
   }
 
 

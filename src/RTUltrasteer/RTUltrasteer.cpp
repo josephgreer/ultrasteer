@@ -77,11 +77,11 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   CreateUIElements(rpS, *m_rpStreamingWidget, m_rpStreamingWidget->GetChildWidgets());
 
   QTreeWidgetItem * estF = new QTreeWidgetItem(m_params);
-  estF->setText(0, "PFFileDock");
+  estF->setText(0, "Particle Filter File");
   CreateUIElements(estF, *m_estimatorFileWidget, m_estimatorFileWidget->GetChildWidgets());
 
   QTreeWidgetItem * estS = new QTreeWidgetItem(m_params);
-  estS->setText(0, "PFStreamingDock");
+  estS->setText(0, "Particle Filter Streaming");
   CreateUIElements(estS, *m_estimatorStreamingWidget, m_estimatorStreamingWidget->GetChildWidgets());
 
   QTreeWidgetItem * rpRHW = new QTreeWidgetItem(m_params);

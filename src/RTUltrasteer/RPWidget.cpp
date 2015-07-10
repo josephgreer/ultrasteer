@@ -99,7 +99,7 @@ namespace Nf
 
     if(m_rpReaders)
       m_data = m_rpReaders->GetRPData(m_frame->GetValue());
-    m_imageViewer->SetImage(m_data.b8);
+    m_imageViewer->SetImage(&m_data);
     m_usVis->AddRPData(m_data);
   }
 
@@ -136,7 +136,7 @@ namespace Nf
 
       m_data = m_rpReaders->GetNextRPData();
       m_usVis->Initialize(m_data);
-      m_imageViewer->SetImage(m_data.b8);
+      m_imageViewer->SetImage(&m_data);
 
       if(!m_tick) {
         m_tick = std::tr1::shared_ptr<QTimer>(new QTimer());
@@ -174,7 +174,7 @@ namespace Nf
       m_usVis->UpdatePos(m_data);
     } else {
       m_usVis->AddRPData(m_data);
-      m_imageViewer->SetImage(m_data.b8);
+      m_imageViewer->SetImage(&m_data);
     }
   }
 
