@@ -19,6 +19,9 @@
 
 namespace Nf
 {
+  ////////////////////////////////////////////////////////
+  // Begin ImageViwerWidget
+  ////////////////////////////////////////////////////////
   ImageViewerWidget::ImageViewerWidget(QWidget *parent)
     : ResizableQVTKWidget(parent, QSize(VIS_WIDTH, VIS_HEIGHT))
     , Nf::ParameterCollection("Image Viewer Widget")
@@ -89,7 +92,108 @@ namespace Nf
     if(m_rp.b8)
       m_init = true;
   }
+  ////////////////////////////////////////////////////////
+  // End ImageViwerWidget
+  ////////////////////////////////////////////////////////
 
+  
+  ////////////////////////////////////////////////////////
+  // Begin Image3DImagePlaneWidget
+  ////////////////////////////////////////////////////////
+  Image3DImagePlaneWidget::Image3DImagePlaneWidget(QWidget *parent)
+    : ImageViewerWidget(parent)
+    , m_cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0)
+  {
+    ADD_ACTION_PARAMETER(m_setViewXY, "Set View XY", CALLBACK_POINTER(onSetViewXY, Image3DImagePlaneWidget), this, true); 
+    ADD_ACTION_PARAMETER(m_setViewXZ, "Set View XZ", CALLBACK_POINTER(onSetViewXZ, Image3DImagePlaneWidget), this, true); 
+    ADD_ACTION_PARAMETER(m_setViewYZ, "Set View YZ", CALLBACK_POINTER(onSetViewYZ, Image3DImagePlaneWidget), this, true); 
+  }
+
+  Image3DImagePlaneWidget::~Image3DImagePlaneWidget()
+  {
+    ImageViewerWidget::~ImageViewerWidget();
+  }
+
+  void Image3DImagePlaneWidget::SetImage(const RPData *rp)
+  {
+    if(m_init) {
+      Matrix44d tPose = Matrix44d::FromCvMat(m_rp.gps.pose);
+      Matrix33d pose = tPose.GetOrientation();
+
+      Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, m_rp.gps.pos);
+      Vec2d mpp(m_rp.mpp,m_rp.mpp);
+      Vec2d origin = m_rp.origin;
+      Vec2d mppScale(mpp.x/1000.0, mpp.y/1000.0);
+
+      Vec3d x_axis = rpImageCoordToWorldCoord3(Vec2d(1.0,0.0), posePos, m_cal, origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, origin, mppScale);  
+      Vec3d y_axis = rpImageCoordToWorldCoord3(Vec2d(0.0,1.0), posePos, m_cal, origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, origin, mppScale);
+      x_axis = x_axis.normalized();
+      y_axis = y_axis.normalized();
+      Vec3d z_axis = x_axis.cross(y_axis);
+
+
+      m_imageActor->PokeMatrix(Matrix44d::FromOrientationAndTranslation(Matrix33d::FromCols(x_axis,y_axis,z_axis), rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, origin, mppScale)).GetVTKMatrix());
+      m_imageActor->Update();
+    }
+
+    ImageViewerWidget::SetImage(rp);
+  }
+
+  void Image3DImagePlaneWidget::SetUSVisView(s32 axis1, s32 axis2)
+  {
+    vtkSmartPointer <vtkCamera> camera = vtkSmartPointer<vtkCamera>::New();
+
+    Matrix44d tPose = Matrix44d::FromCvMat(m_rp.gps.pose);
+    Matrix33d pose = tPose.GetOrientation();
+
+    Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, m_rp.gps.pos);
+    Vec2d mpp(m_rp.mpp,m_rp.mpp);
+    Vec2d origin = m_rp.origin;
+    Vec2d mppScale(mpp.x/1000.0, mpp.y/1000.0);
+
+    Vec3d x_axis = rpImageCoordToWorldCoord3(Vec2d(1.0,0.0), posePos, m_cal, origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, origin, mppScale);  
+    Vec3d y_axis = rpImageCoordToWorldCoord3(Vec2d(0.0,1.0), posePos, m_cal, origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, origin, mppScale);
+    x_axis = x_axis.normalized();
+    y_axis = y_axis.normalized();
+    Vec3d z_axis = x_axis.cross(y_axis);
+
+    Matrix33d orientation = Matrix33d::FromCols(x_axis, y_axis, z_axis);
+
+    Vec3d up = orientation.Col(axis1)*-1.0;
+    Vec3d focal = orientation.Col(axis2)*-1.0;
+    camera->SetPosition(0,0,0);
+    camera->SetFocalPoint(focal.x, focal.y, focal.z);
+    camera->SetViewUp(up.x, up.y, up.z);
+
+    f64 *bounds = m_imageActor->GetBounds();
+    m_renderer->SetActiveCamera(camera);
+    m_renderer->ResetCamera(bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], 
+      bounds[5]);
+    m_renderer->GetActiveCamera()->Zoom(1.3);
+  }
+
+  void Image3DImagePlaneWidget::onSetViewXY()
+  {
+    SetUSVisView(1,2);
+  }
+
+  void Image3DImagePlaneWidget::onSetViewXZ()
+  {
+    SetUSVisView(0,1);
+  }
+
+  void Image3DImagePlaneWidget::onSetViewYZ()
+  {
+    SetUSVisView(1,0);
+  }
+  ////////////////////////////////////////////////////////
+  // End Image3DImagePlaneWidget
+  ////////////////////////////////////////////////////////
+
+  
+  ////////////////////////////////////////////////////////
+  // Begin ImageViewer2DTeleoperationWidget
+  ////////////////////////////////////////////////////////
   ImageViewer2DTeleoperationWidget::ImageViewer2DTeleoperationWidget(QWidget *parent)
     : ImageViewerWidget(parent) 
     , m_initTeleop(false)
@@ -242,6 +346,9 @@ namespace Nf
     w = m_rp.b8->width;
     h = m_rp.b8->height;
   }
+  ////////////////////////////////////////////////////////
+  // End ImageViewer2DTeleoperationWidget
+  ////////////////////////////////////////////////////////
 
 
 }
