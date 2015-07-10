@@ -49,12 +49,32 @@ namespace Nf
     virtual void SetImage(const RPData *rp);
   };
 
-  class ImageViewerWidget3DPlane : public ImageViewerWidget
+  class Image3DImagePlaneWidget : public ImageViewerWidget
   {
+  protected:
+    Matrix44d m_cal;        //Calibration Matrix for transducer (maps image coords to world coords)
+
   public:
-    ImageViewerWidget3DPlane(QWidget *parent);
-    virtual ~ImageViewerWidget3DPlane();
+    Image3DImagePlaneWidget(QWidget *parent);
+    virtual ~Image3DImagePlaneWidget();
     virtual void SetImage(const RPData *rp);
+
+    void SetUSVisView(s32 axis1, s32 axis2);
+
+    //setViewXY
+    std::tr1::shared_ptr < Nf::BoolParameter > m_setViewXY;
+    void onSetViewXY();
+    CLASS_CALLBACK(onSetViewXY, Image3DImagePlaneWidget);
+
+    //setViewXZ
+    std::tr1::shared_ptr < Nf::BoolParameter > m_setViewXZ;
+    void onSetViewXZ();
+    CLASS_CALLBACK(onSetViewXZ, Image3DImagePlaneWidget);
+
+    //setViewYZ
+    std::tr1::shared_ptr < Nf::BoolParameter > m_setViewYZ;
+    void onSetViewYZ();
+    CLASS_CALLBACK(onSetViewYZ, Image3DImagePlaneWidget);
   };
 
   class ImageViewer2DTeleoperationWidget : public ImageViewerWidget

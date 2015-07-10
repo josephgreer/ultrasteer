@@ -19,14 +19,21 @@ namespace Nf
   protected:
     std::tr1::shared_ptr < ImageViewerWidget> m_imageViewer;
     std::tr1::shared_ptr < USVisualizer > m_usVis;
+    std::tr1::shared_ptr < Image3DImagePlaneWidget > m_planeVis;
     RPData m_data;
     QGridLayout *m_layout;
+    QtEnums::RPWidgetVisMode m_prevVisMode;
 
   public:
     RPWidget(QWidget *parent, USVisualizer *vis);
     ~RPWidget();
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
+
+    //visualizaiton mode
+    std::tr1::shared_ptr < Nf::EnumParameter > m_visMode;
+    void onSetVisMode();
+    CLASS_CALLBACK(onSetVisMode, RPWidget);
 
     std::vector < QVTKWidget * > GetChildWidgets();
   };
