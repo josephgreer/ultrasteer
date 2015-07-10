@@ -184,7 +184,7 @@ namespace Nf
       return Cubed(ul, Matrix33d::FromCols(xaxis, yaxis, zaxis));
     }
 
-    RPData Clone()
+    RPData Clone() const
     {
       RPData rv;
       if(this->b8)

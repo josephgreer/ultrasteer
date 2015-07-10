@@ -4,6 +4,7 @@
 #include "UICore.h"
 #include <QVTKWidget.h>
 #include "Resizable.h"
+#include "RPFileReader.h"
 #include <vtkImageImport.h>
 #include <vtkImageMapper.h>
 #include <vtkActor2D.h>
@@ -39,14 +40,21 @@ namespace Nf
     vtkSmartPointer < vtkRenderer > m_renderer;
     vtkSmartPointer < vtkImageFlip > m_flip;
     vtkSmartPointer < vtkRenderWindowInteractor > m_interactor;
-    IplImage *m_im;
-    IplImage *m_mask;
+    RPData m_rp;
     bool m_init;
 
   public:
     ImageViewerWidget(QWidget *parent);
     virtual ~ImageViewerWidget();
-    void SetImage(const IplImage *im);
+    virtual void SetImage(const RPData *rp);
+  };
+
+  class ImageViewerWidget3DPlane : public ImageViewerWidget
+  {
+  public:
+    ImageViewerWidget3DPlane(QWidget *parent);
+    virtual ~ImageViewerWidget3DPlane();
+    virtual void SetImage(const RPData *rp);
   };
 
   class ImageViewer2DTeleoperationWidget : public ImageViewerWidget
@@ -60,6 +68,7 @@ namespace Nf
     vtkSmartPointer < vtkImageActor > m_maskActor;
     vtkSmartPointer < vtkImageFlip > m_maskFlip;
     vtkSmartPointer < vtkLookupTable > m_lookUpTable;
+    IplImage *m_mask;
     
     bool m_initTeleop;
     Teleoperation2DWidget *m_teleoperationWidget;
@@ -67,7 +76,7 @@ namespace Nf
   public:
     ImageViewer2DTeleoperationWidget(QWidget *parent);
     virtual ~ImageViewer2DTeleoperationWidget();
-    void SetImage(const IplImage *im);
+    void SetImage(const RPData *rp);
     void SetTargetOverlay(int r, Vec2d px);
     void SetTextOverlay(Vec2d px, Vec3d wpt);
     void SetInstrOverlay(char* str);
