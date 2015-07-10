@@ -44,6 +44,8 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   ADD_BOOL_PARAMETER(m_usDockVisible, "Show Full US Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_rpFileWidgetVisible, "Show Incremental Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_rpStreamingWidgetVisible, "Show Streaming Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
+  ADD_BOOL_PARAMETER(m_estimatorFileWidgetVisible, "Show ParticleFilter File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
+  ADD_BOOL_PARAMETER(m_estimatorStreamingWidgetVisible, "Show ParticleFilter Streaming Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_robotHWWidgetVisible, "Show Robot HW Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_teleoperation2DFileWidgetVisible, "Show 2D Teleoperation File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
   ADD_BOOL_PARAMETER(m_teleoperation2DStreamWidgetVisible, "Show 2D Teleoperation Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
@@ -52,6 +54,8 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   CreateMenuDock();
   CreateRPFileDock();
   CreateRPStreamingDock();
+  CreateEstimatorFileDock();
+  CreateEstimatorStreamingDock();
   CreateRobotHWDock();
   CreateTeleoperation2DFileDock();
   CreateTeleoperation2DStreamDock();
@@ -72,6 +76,14 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   rpS->setText(0, "RPStreamingDock");
   CreateUIElements(rpS, *m_rpStreamingWidget, m_rpStreamingWidget->GetChildWidgets());
 
+  QTreeWidgetItem * estF = new QTreeWidgetItem(m_params);
+  estF->setText(0, "PFFileDock");
+  CreateUIElements(estF, *m_estimatorFileWidget, m_estimatorFileWidget->GetChildWidgets());
+
+  QTreeWidgetItem * estS = new QTreeWidgetItem(m_params);
+  estS->setText(0, "PFStreamingDock");
+  CreateUIElements(estS, *m_estimatorStreamingWidget, m_estimatorStreamingWidget->GetChildWidgets());
+
   QTreeWidgetItem * rpRHW = new QTreeWidgetItem(m_params);
   rpRHW->setText(0, "RobotHW");
   CreateUIElements(rpRHW, *m_robotHWWidget, m_robotHWWidget->GetChildWidgets());
@@ -88,21 +100,35 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   m_roots[std::string("USDock")].dock = m_usDock;
   m_roots[std::string("USDock")].param = m_usDockVisible.get();
   m_roots[std::string("USDock")].root = usVis;
+  m_roots[std::string("USDock")].resize = (Resizable *)m_usVis;
   m_roots[std::string("RPFileDock")].dock = m_rpFileDock;
   m_roots[std::string("RPFileDock")].param = m_rpFileWidgetVisible.get();
   m_roots[std::string("RPFileDock")].root = rpF;
+  m_roots[std::string("RPFileDock")].resize = (Resizable *)m_rpFileWidget;
   m_roots[std::string("RPStreamingDock")].dock = m_rpStreamingDock;
   m_roots[std::string("RPStreamingDock")].param = m_rpStreamingWidgetVisible.get();
   m_roots[std::string("RPStreamingDock")].root = rpS;
+  m_roots[std::string("RPStreamingDock")].resize = (Resizable *)m_rpStreamingWidget;
+  m_roots[std::string("EstimatorFileDock")].dock = m_estimatorFileDock;
+  m_roots[std::string("EstimatorFileDock")].param = m_estimatorFileWidgetVisible.get();
+  m_roots[std::string("EstimatorFileDock")].root = estF;
+  m_roots[std::string("EstimatorFileDock")].resize = (Resizable *)m_estimatorFileWidget;
+  m_roots[std::string("EstimatorStreamingDock")].dock = m_estimatorStreamingDock;
+  m_roots[std::string("EstimatorStreamingDock")].param = m_estimatorStreamingWidgetVisible.get();
+  m_roots[std::string("EstimatorStreamingDock")].root = estS;
+  m_roots[std::string("EstimatorStreamingDock")].resize = (Resizable *)m_estimatorStreamingWidget;
   m_roots[std::string("RobotHWDock")].dock = m_robotHWDock;
   m_roots[std::string("RobotHWDock")].param = m_robotHWWidgetVisible.get();
   m_roots[std::string("RobotHWDock")].root = rpRHW;
+  m_roots[std::string("RobotHWDock")].resize = (Resizable *)m_robotHWWidget;
   m_roots[std::string("2DTeleoperationFileDock")].dock = m_teleoperation2DFileDock;
   m_roots[std::string("2DTeleoperationFileDock")].param = m_teleoperation2DFileWidgetVisible.get();
   m_roots[std::string("2DTeleoperationFileDock")].root = rpTLFW;
+  m_roots[std::string("2DTeleoperationFileDock")].resize = (Resizable *)m_teleoperation2DFileWidget;
   m_roots[std::string("2DTeleoperationStreamingDock")].dock = m_teleoperation2DStreamDock;
   m_roots[std::string("2DTeleoperationStreamingDock")].param = m_teleoperation2DStreamWidgetVisible.get();
   m_roots[std::string("2DTeleoperationStreamingDock")].root = rpTLSW;
+  m_roots[std::string("2DTeleoperationStreamingDock")].resize = (Resizable *)m_teleoperation2DStreamWidget;
 
   QDockWidget *last = NULL;
   for(std::map < std::string, DockWidgetInfo >::iterator i=m_roots.begin(); i!=m_roots.end(); i++) {
@@ -140,13 +166,12 @@ void RTUltrasteer::Resize()
 {
   QSize totalSize = this->size();
   QSize menuSize = m_params->size();
-  QSize usVisSz = m_usVis->size();
-  QSize rpFileSz = m_rpFileWidget->size();
-  QSize rpStreamingSz = m_rpStreamingWidget->size();
   s32 w = totalSize.width()-menuSize.width()-10;
-  m_usVis->UpdateSize(QSize(w, usVisSz.height()-10));
-  m_rpFileWidget->UpdateSize(QSize(w, rpFileSz.height()-10));
-  m_rpStreamingWidget->UpdateSize(QSize(w, rpStreamingSz.height()-10));
+
+  for(std::map<std::string, Nf::DockWidgetInfo >::iterator i=m_roots.begin(); i!=m_roots.end(); i++) {
+    QSize sz = i->second.dock->size();
+    i->second.resize->UpdateSize(QSize(w, sz.height()-100));
+  }
 }
 
 #define EL_VALUE(vec, i) ((i) == 0 ? vec.x : ((i) == 1 ? vec.y : vec.z))
@@ -524,6 +549,28 @@ void RTUltrasteer::CreateRPStreamingDock()
   m_rpStreamingDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
 
+void RTUltrasteer::CreateEstimatorFileDock()
+{
+  m_estimatorFileDock = new QDockWidget(tr("Particle Filter"), this);
+  m_estimatorFileDock->setAllowedAreas(Qt::AllDockWidgetAreas);
+
+  m_estimatorFileWidget = new Nf::EstimatorFileWidget(m_estimatorFileDock);
+  m_estimatorFileDock->setWidget(m_estimatorFileWidget);
+  
+  m_estimatorFileDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
+}
+
+void RTUltrasteer::CreateEstimatorStreamingDock()
+{
+  m_estimatorStreamingDock = new QDockWidget(tr("Particle Filter"), this);
+  m_estimatorStreamingDock->setAllowedAreas(Qt::AllDockWidgetAreas);
+
+  m_estimatorStreamingWidget = new Nf::EstimatorStreamingWidget(m_estimatorStreamingDock);
+  m_estimatorStreamingDock->setWidget(m_estimatorStreamingWidget);
+  
+  m_estimatorStreamingDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
+}
+
 void RTUltrasteer::CreateRobotHWDock()
 {
   m_robotHWDock = new QDockWidget(tr("RobotHWDock"), this);
@@ -596,6 +643,10 @@ RTUltrasteer::~RTUltrasteer()
     delete m_rpFileDock;
   if(m_rpStreamingDock)
     delete m_rpStreamingDock;
+  if(m_estimatorFileDock)
+    delete m_estimatorFileDock;
+  if(m_estimatorStreamingDock)
+    delete m_estimatorStreamingDock;
   if(m_teleoperation2DFileDock)
     delete m_teleoperation2DFileDock;
   if(m_teleoperation2DStreamDock)

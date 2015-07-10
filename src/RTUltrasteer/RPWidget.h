@@ -23,7 +23,7 @@ namespace Nf
     QGridLayout *m_layout;
 
   public:
-    RPWidget(QWidget *parent);
+    RPWidget(QWidget *parent, USVisualizer *vis);
     ~RPWidget();
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
@@ -39,7 +39,7 @@ namespace Nf
     RPFileReaderCollection *m_rpReaders;
 
   public:
-    RPFileWidget(QWidget *parent);
+    RPFileWidget(QWidget *parent, USVisualizer *vis = NULL);
     virtual ~RPFileWidget();
 
     //Filename
@@ -62,7 +62,7 @@ namespace Nf
     std::tr1::shared_ptr < QTimer > m_tick;
 
   public:
-    RPStreamingWidget(QWidget *parent);
+    RPStreamingWidget(QWidget *parent, USVisualizer *vis = NULL);
     virtual ~RPStreamingWidget();
 
     //IP

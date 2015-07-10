@@ -2,18 +2,19 @@
 
 namespace Nf
 {
-  RPWidget::RPWidget(QWidget *parent)
+  RPWidget::RPWidget(QWidget *parent, USVisualizer *vis)
     : Nf::ParameterCollection("RP Image Viewer")
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
   {
-
     m_imageViewer = std::tr1::shared_ptr<ImageViewerWidget>(new ImageViewerWidget(parent));
-    m_usVis = std::tr1::shared_ptr<USVisualizer>(new USVisualizer(parent, NULL));
+    m_usVis = std::tr1::shared_ptr<USVisualizer>(vis != NULL ? vis : new USVisualizer(parent, NULL));
 
     m_layout = new QGridLayout(parent);
     m_layout->addWidget((QWidget *)(m_imageViewer.get()), 0, 0);
     m_layout->addWidget((QWidget *)(m_usVis.get()), 0, 1);
+    m_layout->setContentsMargins(0,0,5,0);
     this->setLayout(m_layout);
+    
 
     ADD_CHILD_COLLECTION(m_usVis.get());
     ADD_CHILD_COLLECTION(m_imageViewer.get());
@@ -45,8 +46,8 @@ namespace Nf
   }
 
   
-  RPFileWidget::RPFileWidget(QWidget *parent)
-    : RPWidget(parent) 
+  RPFileWidget::RPFileWidget(QWidget *parent, USVisualizer *vis)
+    : RPWidget(parent, vis) 
     , m_rpReaders(NULL)
   {
 
@@ -107,8 +108,8 @@ namespace Nf
   }
 
   
-  RPStreamingWidget::RPStreamingWidget(QWidget *parent)
-    : RPWidget(parent) 
+  RPStreamingWidget::RPStreamingWidget(QWidget *parent, USVisualizer *vis)
+    : RPWidget(parent, vis) 
   {
     ADD_STRING_PARAMETER(m_rpIp, "Ulterius IP", NULL, this, "192.168.1.64");
     ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, RPStreamingWidget), this, false);

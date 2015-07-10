@@ -19,6 +19,8 @@
 #include "RPWidget.h"
 #include "RobotHardwareWidget.h"
 #include "Teleoperation2DWidget.h"
+#include "PFVisualizerWidget.h"
+#include "EstimatorWidget.h"
 #include "ControlAlgorithms.h"
 
 namespace Nf
@@ -555,6 +557,7 @@ namespace Nf
     QDockWidget *dock;
     BoolParameter *param;
     QTreeWidgetItem *root;
+    Resizable *resize;
   };
 }
 
@@ -571,6 +574,10 @@ public:
     std::tr1::shared_ptr < Nf::BoolParameter > m_rpStreamingWidgetVisible;
 
     std::tr1::shared_ptr < Nf::BoolParameter > m_rpFileWidgetVisible;
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_estimatorStreamingWidgetVisible;
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_estimatorFileWidgetVisible;
 
     std::tr1::shared_ptr < Nf::BoolParameter > m_robotHWWidgetVisible;
     
@@ -597,6 +604,12 @@ private:
     QDockWidget *m_rpStreamingDock;
     Nf::RPStreamingWidget *m_rpStreamingWidget;
 
+    QDockWidget *m_estimatorFileDock;
+    Nf::EstimatorFileWidget *m_estimatorFileWidget;
+
+    QDockWidget *m_estimatorStreamingDock;
+    Nf::EstimatorStreamingWidget *m_estimatorStreamingWidget;
+
     QDockWidget *m_robotHWDock;
     Nf::RobotHardwareWidget *m_robotHWWidget;
 
@@ -613,6 +626,8 @@ private:
     void CreateMenuDock();
     void CreateRPFileDock();
     void CreateRPStreamingDock();
+    void CreateEstimatorFileDock();
+    void CreateEstimatorStreamingDock();
     void CreateRobotHWDock();
     void CreateTeleoperation2DFileDock();
     void CreateTeleoperation2DStreamDock();
