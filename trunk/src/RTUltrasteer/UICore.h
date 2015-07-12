@@ -238,7 +238,6 @@ namespace Nf
     Q_ENUMS(VisRenderMethod)
     Q_ENUMS(VOLUME_ORIGIN_LOCATION)
     Q_ENUMS(ComPorts)
-    Q_ENUMS(RPWidgetVisMode)
 #else
   class QtEnums
   {
@@ -250,12 +249,6 @@ namespace Nf
     Texture_3D,
     RayCastingMIP,
     GPURayCasting,
-  };
-
-  enum RPWidgetVisMode
-  {
-    Volume = 0,
-    Plane,
   };
 
   //used for specifying origin location when setting a volume from a base frame
