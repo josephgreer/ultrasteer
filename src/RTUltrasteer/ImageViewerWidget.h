@@ -42,6 +42,7 @@ namespace Nf
     vtkSmartPointer < vtkRenderWindowInteractor > m_interactor;
     RPData m_rp;
     bool m_init;
+    bool m_useTrackball;
 
   public:
     ImageViewerWidget(QWidget *parent);

@@ -107,8 +107,10 @@ namespace Nf
     if(m_rpReaders)
       m_data = m_rpReaders->GetRPData(m_frame->GetValue());
     m_imageViewer->SetImage(&m_data);
-    m_usVis->AddRPData(m_data);
-    m_planeVis->SetImage(&m_data);
+    if(m_visTab->currentIndex() == 0)
+      m_usVis->AddRPData(m_data);
+    else
+      m_planeVis->SetImage(&m_data);
   }
 
   RPFileWidget::~RPFileWidget()
@@ -182,8 +184,10 @@ namespace Nf
       m_usVis->UpdatePos(m_data);
     } else {
       m_usVis->AddRPData(m_data);
-      m_planeVis->SetImage(&m_data);
-      m_imageViewer->SetImage(&m_data);
+      if(m_visTab->currentIndex() == 0)
+        m_usVis->AddRPData(m_data);
+      else
+        m_planeVis->SetImage(&m_data);
     }
   }
 
