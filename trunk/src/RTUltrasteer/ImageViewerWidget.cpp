@@ -27,6 +27,7 @@ namespace Nf
     , Nf::ParameterCollection("Image Viewer Widget")
     , m_rp()
     , m_init(false)
+    , m_useTrackball(false)
   {
     m_mapper = vtkSmartPointer<vtkImageMapper>::New();
     m_importer = vtkSmartPointer<vtkImageImport>::New();
@@ -72,14 +73,20 @@ namespace Nf
       m_flip->SetInputData((vtkDataObject *)m_importer->GetOutput());
       m_flip->Update();
       m_imageActor->SetInputData(m_flip->GetOutput());
-      m_renderer->AddActor2D(m_imageActor);
+      m_renderer->AddActor(m_imageActor);
 
       this->GetRenderWindow()->AddRenderer(m_renderer);
 
       // Set up style      
-      vtkSmartPointer<vtkInteractorStyleImage> style = 
-        vtkSmartPointer<vtkInteractorStyleImage>::New();
-      m_interactor->SetInteractorStyle(style);
+      if(!m_useTrackball) {
+        vtkSmartPointer<vtkInteractorStyleImage> style = 
+          vtkSmartPointer<vtkInteractorStyleImage>::New();
+        m_interactor->SetInteractorStyle(style);
+      } else {
+        vtkSmartPointer<vtkInteractorStyleTrackballCamera> style = 
+          vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
+        m_interactor->SetInteractorStyle(style);
+      }
 
       // Render and start interaction
       m_interactor->SetRenderWindow(this->GetRenderWindow());
@@ -104,6 +111,8 @@ namespace Nf
     : ImageViewerWidget(parent)
     , m_cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0)
   {
+    m_useTrackball = true;
+
     ADD_ACTION_PARAMETER(m_setViewXY, "Set View XY", CALLBACK_POINTER(onSetViewXY, Image3DImagePlaneWidget), this, true); 
     ADD_ACTION_PARAMETER(m_setViewXZ, "Set View XZ", CALLBACK_POINTER(onSetViewXZ, Image3DImagePlaneWidget), this, true); 
     ADD_ACTION_PARAMETER(m_setViewYZ, "Set View YZ", CALLBACK_POINTER(onSetViewYZ, Image3DImagePlaneWidget), this, true); 
@@ -115,6 +124,7 @@ namespace Nf
 
   void Image3DImagePlaneWidget::SetImage(const RPData *rp)
   {
+    ImageViewerWidget::SetImage(rp);
     if(m_init) {
       Matrix44d tPose = Matrix44d::FromCvMat(m_rp.gps.pose);
       Matrix33d pose = tPose.GetOrientation();
@@ -130,12 +140,10 @@ namespace Nf
       y_axis = y_axis.normalized();
       Vec3d z_axis = x_axis.cross(y_axis);
 
-
       m_imageActor->PokeMatrix(Matrix44d::FromOrientationAndTranslation(Matrix33d::FromCols(x_axis,y_axis,z_axis), rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, origin, mppScale)).GetVTKMatrix());
       m_imageActor->Update();
     }
-
-    ImageViewerWidget::SetImage(rp);
+    QVTKWidget::update();
   }
 
   void Image3DImagePlaneWidget::SetUSVisView(s32 axis1, s32 axis2)
@@ -158,7 +166,7 @@ namespace Nf
 
     Matrix33d orientation = Matrix33d::FromCols(x_axis, y_axis, z_axis);
 
-    Vec3d up = orientation.Col(axis1)*-1.0;
+    Vec3d up = orientation.Col(axis1)*1.0;
     Vec3d focal = orientation.Col(axis2)*-1.0;
     camera->SetPosition(0,0,0);
     camera->SetFocalPoint(focal.x, focal.y, focal.z);
@@ -169,6 +177,7 @@ namespace Nf
     m_renderer->ResetCamera(bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], 
       bounds[5]);
     m_renderer->GetActiveCamera()->Zoom(1.3);
+    this->update();
   }
 
   void Image3DImagePlaneWidget::onSetViewXY()
