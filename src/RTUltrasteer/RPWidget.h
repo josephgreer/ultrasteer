@@ -4,6 +4,7 @@
 #include "UICore.h"
 #include <QGroupBox>
 #include <QGridLayout>
+#include <QTabWidget>
 #include "Resizable.h"
 #include "ImageViewerWidget.h"
 #include "USVisualizerWidget.h"
@@ -22,18 +23,13 @@ namespace Nf
     std::tr1::shared_ptr < Image3DImagePlaneWidget > m_planeVis;
     RPData m_data;
     QGridLayout *m_layout;
-    QtEnums::RPWidgetVisMode m_prevVisMode;
+    QTabWidget *m_visTab;
 
   public:
     RPWidget(QWidget *parent, USVisualizer *vis);
     ~RPWidget();
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
-
-    //visualizaiton mode
-    std::tr1::shared_ptr < Nf::EnumParameter > m_visMode;
-    void onSetVisMode();
-    CLASS_CALLBACK(onSetVisMode, RPWidget);
 
     std::vector < QVTKWidget * > GetChildWidgets();
   };

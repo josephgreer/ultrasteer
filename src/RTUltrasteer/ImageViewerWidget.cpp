@@ -111,7 +111,6 @@ namespace Nf
 
   Image3DImagePlaneWidget::~Image3DImagePlaneWidget()
   {
-    ImageViewerWidget::~ImageViewerWidget();
   }
 
   void Image3DImagePlaneWidget::SetImage(const RPData *rp)

@@ -5,20 +5,22 @@ namespace Nf
   RPWidget::RPWidget(QWidget *parent, USVisualizer *vis)
     : Nf::ParameterCollection("RP Image Viewer")
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
-    , m_prevVisMode(QtEnums::RPWidgetVisMode::Volume)
   {
     m_imageViewer = std::tr1::shared_ptr<ImageViewerWidget>(new ImageViewerWidget(parent));
     m_usVis = std::tr1::shared_ptr<USVisualizer>(vis != NULL ? vis : new USVisualizer(parent, NULL));
     m_planeVis = std::tr1::shared_ptr<Image3DImagePlaneWidget>(new Image3DImagePlaneWidget(parent));
 
+    m_visTab = new QTabWidget(parent);
+    m_visTab->addTab(m_usVis.get(), "Volume Visualization");
+    m_visTab->addTab(m_planeVis.get(), "Plane Visualization");
+
     m_layout = new QGridLayout(parent);
     m_layout->addWidget((QWidget *)(m_imageViewer.get()), 0, 0);
-    m_layout->addWidget((QWidget *)(m_usVis.get()), 0, 1);
+    m_layout->addWidget((QWidget *)(m_visTab), 0, 1);
     m_layout->setContentsMargins(0,0,5,0);
     this->setLayout(m_layout);
-
     
-    ADD_ENUM_PARAMETER(m_visMode, "Vis Mode", CALLBACK_POINTER(onSetVisMode, RPWidget), this, QtEnums::RPWidgetVisMode::Volume, "RPWidgetVisMode");
+
     ADD_CHILD_COLLECTION(m_usVis.get());
     ADD_CHILD_COLLECTION(m_imageViewer.get());
     ADD_CHILD_COLLECTION(m_planeVis.get());
@@ -26,22 +28,6 @@ namespace Nf
 
   RPWidget::~RPWidget()
   {
-  }
-
-  void RPWidget::onSetVisMode()
-  {
-    if(m_prevVisMode == QtEnums::RPWidgetVisMode::Volume) {
-      m_layout->removeWidget(m_usVis.get());
-    } else {
-      m_layout->removeWidget(m_planeVis.get());
-    }
-    if(m_visMode->GetValue() == QtEnums::RPWidgetVisMode::Volume) {
-      m_layout->addWidget(m_usVis.get(), 0, 1);
-    } else {
-      m_layout->addWidget(m_planeVis.get(), 0, 1);
-    }
-    m_prevVisMode = (QtEnums::RPWidgetVisMode)m_visMode->GetValue();
-    this->repaint();
   }
 
   void RPWidget::UpdateGeometry()
@@ -56,6 +42,7 @@ namespace Nf
     m_layout->getContentsMargins(&ml, &mu, &mr, &mb);
     m_imageViewer->UpdateSize(QSize(sz.width()/2-10, sz.height()));
     m_usVis->UpdateSize(QSize(sz.width()/2-10, sz.height()));
+    m_planeVis->UpdateSize(QSize(sz.width()/2-10, sz.height()));
   }
 
   std::vector < QVTKWidget * > RPWidget::GetChildWidgets()
@@ -120,11 +107,8 @@ namespace Nf
     if(m_rpReaders)
       m_data = m_rpReaders->GetRPData(m_frame->GetValue());
     m_imageViewer->SetImage(&m_data);
-    if(m_visMode->GetValue() == QtEnums::RPWidgetVisMode::Volume)
-      m_usVis->AddRPData(m_data);
-    else
-      m_planeVis->SetImage(&m_data);
-    this->repaint();
+    m_usVis->AddRPData(m_data);
+    m_planeVis->SetImage(&m_data);
   }
 
   RPFileWidget::~RPFileWidget()
@@ -197,10 +181,8 @@ namespace Nf
     if(!m_addFrames->GetValue()) {
       m_usVis->UpdatePos(m_data);
     } else {
-      if(m_visMode->GetValue() == QtEnums::RPWidgetVisMode::Volume)
-        m_usVis->AddRPData(m_data);
-      else
-        m_planeVis->SetImage(&m_data);
+      m_usVis->AddRPData(m_data);
+      m_planeVis->SetImage(&m_data);
       m_imageViewer->SetImage(&m_data);
     }
   }
