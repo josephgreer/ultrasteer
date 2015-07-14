@@ -2,6 +2,7 @@
 #define IMAGEVIEWERWIDGET_H
 
 #include "UICore.h"
+#include "CubeVisualizer.h"
 #include <QVTKWidget.h>
 #include "Resizable.h"
 #include "RPFileReader.h"
@@ -59,6 +60,18 @@ namespace Nf
     Image3DImagePlaneWidget(QWidget *parent);
     virtual ~Image3DImagePlaneWidget();
     virtual void SetImage(const RPData *rp);
+
+    //update Frame boundaries
+    void UpdateFrameBoundaries();
+
+    //showFrameBoundaries
+    std::tr1::shared_ptr < Nf::BoolParameter > m_showFrameBoundaries;
+
+    void onShowExtrasChanged();
+    CLASS_CALLBACK(onShowExtrasChanged, Image3DImagePlaneWidget);
+
+    //Frame Boundaries
+    std::tr1::shared_ptr < Nf::CubeVisualizer > m_frameBoundaries;
 
     void SetUSVisView(s32 axis1, s32 axis2);
 

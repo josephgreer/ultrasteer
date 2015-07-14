@@ -55,7 +55,7 @@ namespace Nf
       IplImage *im = m_rp.b8;
       // Set up importer
       m_importer->SetDataOrigin(0,0,0);
-      m_importer->SetDataSpacing(1,1,1);
+      m_importer->SetDataSpacing(rp->mpp/1000.0,rp->mpp/1000.0,1);
       m_importer->SetWholeExtent(0, im->width-1, 0, im->height-1, 0, 0);
       m_importer->SetDataExtentToWholeExtent();
       m_importer->SetDataScalarTypeToUnsignedChar();
@@ -110,12 +110,14 @@ namespace Nf
   Image3DImagePlaneWidget::Image3DImagePlaneWidget(QWidget *parent)
     : ImageViewerWidget(parent)
     , m_cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0)
+    , m_frameBoundaries((CubeVisualizer *)NULL)
   {
     m_useTrackball = true;
 
     ADD_ACTION_PARAMETER(m_setViewXY, "Set View XY", CALLBACK_POINTER(onSetViewXY, Image3DImagePlaneWidget), this, true); 
     ADD_ACTION_PARAMETER(m_setViewXZ, "Set View XZ", CALLBACK_POINTER(onSetViewXZ, Image3DImagePlaneWidget), this, true); 
     ADD_ACTION_PARAMETER(m_setViewYZ, "Set View YZ", CALLBACK_POINTER(onSetViewYZ, Image3DImagePlaneWidget), this, true); 
+    ADD_BOOL_PARAMETER(m_showFrameBoundaries, "Show Frame Boundary", CALLBACK_POINTER(onShowExtrasChanged, Image3DImagePlaneWidget), this, false);
   }
 
   Image3DImagePlaneWidget::~Image3DImagePlaneWidget()
@@ -140,9 +142,30 @@ namespace Nf
       y_axis = y_axis.normalized();
       Vec3d z_axis = x_axis.cross(y_axis);
 
-      m_imageActor->PokeMatrix(Matrix44d::FromOrientationAndTranslation(Matrix33d::FromCols(x_axis,y_axis,z_axis), rpImageCoordToWorldCoord3(Vec2d(0.0,0.0), posePos, m_cal, origin, mppScale)).GetVTKMatrix());
+      m_imageActor->PokeMatrix(Matrix44d::FromOrientationAndTranslation(Matrix33d::FromCols(x_axis,y_axis,z_axis), rpImageCoordToWorldCoord3(Vec2d(0,0), posePos, m_cal, origin, mppScale)).GetVTKMatrix());
       m_imageActor->Update();
+
+      if(m_frameBoundaries)
+        m_renderer->RemoveActor(m_frameBoundaries->GetActor());
+      u8 cubeColor[3] = {128, 0, 0};
+      m_frameBoundaries = std::tr1::shared_ptr < CubeVisualizer > (new CubeVisualizer(rp->GetFrameBoundaries(m_cal), cubeColor));
+      UpdateFrameBoundaries();
     }
+    QVTKWidget::update();
+  }
+
+  void Image3DImagePlaneWidget::UpdateFrameBoundaries()
+  {
+    if(m_showFrameBoundaries->GetValue() && m_frameBoundaries) {
+      m_renderer->AddActor(m_frameBoundaries->GetActor());
+    } else if(m_frameBoundaries) {
+      m_renderer->RemoveActor(m_frameBoundaries->GetActor());
+    }
+  }
+
+  void Image3DImagePlaneWidget::onShowExtrasChanged()
+  {
+    UpdateFrameBoundaries();
     QVTKWidget::update();
   }
 
@@ -176,7 +199,7 @@ namespace Nf
     m_renderer->SetActiveCamera(camera);
     m_renderer->ResetCamera(bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], 
       bounds[5]);
-    m_renderer->GetActiveCamera()->Zoom(1.3);
+    m_renderer->GetActiveCamera()->Zoom(0.8);
     this->update();
   }
 
