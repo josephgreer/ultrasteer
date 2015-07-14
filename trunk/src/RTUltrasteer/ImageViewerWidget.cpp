@@ -96,6 +96,7 @@ namespace Nf
       vtkCamera *cam = m_renderer->GetActiveCamera();
       m_renderer->SetActiveCamera(cam);
     } 
+    QVTKWidget::update();
     if(m_rp.b8)
       m_init = true;
   }

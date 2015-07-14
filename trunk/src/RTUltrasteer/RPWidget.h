@@ -9,7 +9,7 @@
 #include "ImageViewerWidget.h"
 #include "USVisualizerWidget.h"
 #include "RPFileReader.h"
-#include "RPProcess.h"
+#include "RPUlterius.h"
 
 namespace Nf
 {
@@ -61,7 +61,7 @@ namespace Nf
     Q_OBJECT 
 
   protected:
-    std::tr1::shared_ptr < RPUlteriusProcessManager > m_rpReaders;
+    std::tr1::shared_ptr < RPUlteriusReaderCollection > m_rpReaders;
     std::tr1::shared_ptr < QTimer > m_tick;
 
   public:

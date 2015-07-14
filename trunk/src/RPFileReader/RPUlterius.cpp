@@ -81,7 +81,7 @@ namespace Nf {
       if(i != m_frameQueue.rend()) {
         std::pair < u32, RPData > temp = *i;
         res = temp.second;
-        m_frameQueue.erase(std::next(i).base());
+        m_frameQueue.clear();
       }
     }
 
