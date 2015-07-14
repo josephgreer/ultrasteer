@@ -10,6 +10,8 @@
 ///	author:		Troy Adebar
 ///	date:		  July 2, 2015
 
+#include <armadillo>
+
 namespace Nf
 {
   class InPlaneSegmentation
@@ -21,10 +23,15 @@ namespace Nf
     void resetManualScan();
     Matrix44d processManualScan();
     void processFrame(RPData);    
+    Matrix44d fitPolynomialToDoppler();    
 
   private:
     std::vector <RPData> m_scanFrames;
     Matrix44d measurement;
+    std::vector<Vec3d> m_dopplerPoints;
+    void separateColor(IplImage* combined, IplImage* doppler, IplImage* mask);
+    void largestBlob(IplImage* dopplerAll, cv::Mat &dopplerLargest);
+
   };
 }
 
