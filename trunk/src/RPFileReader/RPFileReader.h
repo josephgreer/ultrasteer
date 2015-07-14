@@ -98,7 +98,7 @@ namespace Nf
     }
   };
 
-  inline Vec3d rpImageCoordToWorldCoord3(const Vec2d &image, const Matrix44d &posePos, const Matrix44d &calibration, Vec2d &start, const Vec2d &scale)
+  inline Vec3d rpImageCoordToWorldCoord3(const Vec2d &image, const Matrix44d &posePos, const Matrix44d &calibration, const Vec2d &start, const Vec2d &scale)
   {
     Vec4d world =  posePos*calibration*Vec4d(1, (image.y-start.y)*scale.y, (image.x-start.x)*scale.x, 1.0);
     return Vec3d(world.x, world.y, world.z);
@@ -167,7 +167,7 @@ namespace Nf
       return *this;
     }
 
-    Cubed GetFrameBoundaries(Matrix44d cal)
+    Cubed GetFrameBoundaries(Matrix44d cal) const
     {
       Matrix44d tPose = Matrix44d::FromCvMat(this->gps.pose);
       Matrix33d pose = tPose.GetOrientation();
