@@ -274,6 +274,7 @@ void USVisualizerWidget::AddRPData(RPData rp)
     m_renderer->RemoveActor(m_frameBoundaries->GetActor());
   m_frameBoundaries = std::tr1::shared_ptr < CubeVisualizer > (new CubeVisualizer(rp.GetFrameBoundaries(m_rpvc->GetCal()), cubeColor));
   UpdateFrameBoundaries();
+  QVTKWidget::update();
 }
 
 void USVisualizerWidget::UpdatePos(RPData rp)
