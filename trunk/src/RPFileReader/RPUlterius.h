@@ -14,14 +14,15 @@ namespace Nf {
 	class RPUlteriusReaderCollection : RPReaderCollection {
 
 	public:
-		RPData GetNextRPData();
+		virtual RPData GetNextRPData();
 
 		uDataDesc GetImageDesc(RP_TYPE type);
-		u8 AddData(void* data, int type, int sz, bool cine, int frmnum);
+		virtual u8 AddData(void* data, int type, int sz, bool cine, int frmnum, bool doLock = true);
 
 		RPUlteriusReaderCollection(const char *ip, f64 mpp, Vec2d origin);
 		virtual ~RPUlteriusReaderCollection();
 
+    RPData AssembleRPData();
     void DeleteFramesBefore(s32 frame);
     void PurgeExcessFrames();
 		void EnableType(RP_TYPE type, u8 enable);
@@ -41,4 +42,24 @@ namespace Nf {
     Vec2d m_origin;
     u32 m_mask;
 	};
+  
+  class RPCallbackReceiver
+  {
+  public:
+    virtual void Callback(const RPData *rp) = 0;
+  };
+
+  class RPUlteriusReaderCollectionPush : public RPUlteriusReaderCollection 
+  {
+  protected:
+    RPCallbackReceiver *m_cb;
+
+public:
+		RPUlteriusReaderCollectionPush(const char *ip, f64 mpp, Vec2d origin);
+    virtual ~RPUlteriusReaderCollectionPush();
+		virtual u8 AddData(void* data, int type, int sz, bool cine, int frmnum, bool doLock = true);
+		virtual RPData GetNextRPData();
+
+    void SetRPCallbackReceiver(RPCallbackReceiver *cb);
+  };
 };

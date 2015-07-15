@@ -120,6 +120,7 @@ namespace Nf
   
   RPStreamingWidget::RPStreamingWidget(QWidget *parent, USVisualizer *vis)
     : RPWidget(parent, vis) 
+    , m_isInit(false)
   {
     ADD_STRING_PARAMETER(m_rpIp, "Ulterius IP", NULL, this, "192.168.1.129");
     ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, RPStreamingWidget), this, false);
@@ -131,30 +132,35 @@ namespace Nf
     onInitializeToggle();
     onAddFramesToggle();
     
-    m_tick = std::tr1::shared_ptr<QTimer>((QTimer *)NULL);
-    m_rpReaders = std::tr1::shared_ptr<RPUlteriusReaderCollection>((RPUlteriusReaderCollection *)NULL);
+    m_rpReaders = std::tr1::shared_ptr<RPUlteriusReaderCollectionPush>((RPUlteriusReaderCollectionPush *)NULL);
+
+    connect(this, SIGNAL(frameSignal()), SLOT(onFrame()), Qt::QueuedConnection);
   }
 
   void RPStreamingWidget::onInitializeToggle()
   {
     if(m_init->GetValue()) {
-      m_rpReaders = std::tr1::shared_ptr < RPUlteriusReaderCollection >(new RPUlteriusReaderCollection(m_rpIp->GetValue().c_str(), (f64)m_mpp->GetValue(), m_origin->GetValue()));
-      Sleep(30);  //Wait for old processes to die
+      m_rpReaders = std::tr1::shared_ptr < RPUlteriusReaderCollectionPush >(new RPUlteriusReaderCollectionPush(m_rpIp->GetValue().c_str(), (f64)m_mpp->GetValue(), m_origin->GetValue()));
+      m_rpReaders->SetRPCallbackReceiver(this);
       m_rpReaders->EnableType(RPF_BPOST8, 1);
       m_rpReaders->EnableType(RPF_GPS,1);
-      Sleep(300);
-
-      m_data = m_rpReaders->GetNextRPData();
-      m_usVis->Initialize(m_data);
-      m_imageViewer->SetImage(&m_data);
-
-      if(!m_tick) {
-        m_tick = std::tr1::shared_ptr<QTimer>(new QTimer());
-        connect(m_tick.get(), SIGNAL(timeout()), this, SLOT(onTick()));
-        m_tick->setInterval(1000.0/(m_framerate->GetValue()*2.0));
-        m_tick->start();
-      }
     }
+  }
+
+  void RPStreamingWidget::InitializeAssets()
+  {
+    if(!(m_lock.tryLock(30) && m_data.b8 && m_data.gps.valid)) 
+      return;
+
+    RPData rp = m_data.Clone();
+
+    m_lock.unlock();
+
+    m_usVis->Initialize(m_data);
+    m_imageViewer->SetImage(&m_data);
+    m_isInit = true;
+
+    rp.Release();
   }
 
   void RPStreamingWidget::onAddFramesToggle()
@@ -164,31 +170,45 @@ namespace Nf
       return;
 
     if(m_addFrames->GetValue()) {
-      m_data = m_rpReaders->GetNextRPData();
       m_usVis->Reinitialize();
     }
   }
 
-  void RPStreamingWidget::onTick()
+  void RPStreamingWidget::onFrame()
   {
-    if(!m_init->GetValue())
+    if(!m_init->GetValue() || !m_lock.tryLock(30))
+      return;
+    
+    RPData rp = m_data.Clone();
+    m_lock.unlock();
+    if(rp.b8 == NULL || !rp.gps.valid)
       return;
 
-    if(m_data.gps.valid)
-      m_data.Release();
-    m_data = m_rpReaders->GetNextRPData();
-    if(m_data.b8 == NULL || !m_data.gps.valid)
-      return;
+    if(!m_isInit)
+      InitializeAssets();
+      
 
     if(!m_addFrames->GetValue()) {
-      m_usVis->UpdatePos(m_data);
-      m_imageViewer->SetImage(&m_data);
+      m_usVis->UpdatePos(rp);
+      m_imageViewer->SetImage(&rp);
     } else {
-      m_imageViewer->SetImage(&m_data);
+      m_imageViewer->SetImage(&rp);
       if(m_visTab->currentIndex() == 0)
-        m_usVis->AddRPData(m_data);
+        m_usVis->AddRPData(rp);
       else
-        m_planeVis->SetImage(&m_data);
+        m_planeVis->SetImage(&rp);
+    }
+    rp.Release();
+  }
+
+  void RPStreamingWidget::Callback(const RPData *rp)
+  {
+    if(rp && m_lock.tryLock(30)) {
+      m_data.Release();
+      m_data = *rp;
+      m_lock.unlock();
+      emit frameSignal();
+      //QMetaObject::invokeMethod(this, "onFrame", Qt::QueuedConnection);
     }
   }
 

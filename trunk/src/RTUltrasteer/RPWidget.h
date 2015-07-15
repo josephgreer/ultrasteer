@@ -56,17 +56,20 @@ namespace Nf
     CLASS_CALLBACK(onUpdateFrame, RPFileWidget);
   };
 
-  class RPStreamingWidget : public RPWidget
+  class RPStreamingWidget : public RPWidget, public RPCallbackReceiver
   {
     Q_OBJECT 
 
   protected:
-    std::tr1::shared_ptr < RPUlteriusReaderCollection > m_rpReaders;
-    std::tr1::shared_ptr < QTimer > m_tick;
+    std::tr1::shared_ptr < RPUlteriusReaderCollectionPush > m_rpReaders;
+    bool m_isInit;
+    QMutex m_lock;
 
   public:
     RPStreamingWidget(QWidget *parent, USVisualizer *vis = NULL);
     virtual ~RPStreamingWidget();
+
+    void InitializeAssets();
 
     //IP
     std::tr1::shared_ptr < Nf::StringParameter > m_rpIp;
@@ -92,8 +95,13 @@ namespace Nf
     //Origin
     std::tr1::shared_ptr < Nf::Vec2dParameter > m_origin;
 
+    virtual void Callback(const RPData *rp);
+
   public slots:
-    void onTick();
+    void onFrame();
+
+  signals:
+    void frameSignal();
   };
 }
 

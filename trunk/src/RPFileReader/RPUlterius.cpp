@@ -57,11 +57,8 @@ namespace Nf {
     gThis = NULL;
   }
 
-  RPData RPUlteriusReaderCollection::GetNextRPData()
+  RPData RPUlteriusReaderCollection::AssembleRPData()
   {
-    if(!m_lock.tryLock(30))
-      return RPData();
-
     if(m_mask&RPF_GPS && !m_gps.gps.valid) {
       m_lock.unlock();
       return RPData();
@@ -81,14 +78,28 @@ namespace Nf {
       if(i != m_frameQueue.rend()) {
         std::pair < u32, RPData > temp = *i;
         res = temp.second;
-        m_frameQueue.clear();
+        DeleteFramesBefore(i->first);
+        m_frameQueue.erase(i->first);
+      } else {
+        res = RPData();
       }
     }
 
-    m_lock.unlock();
     res.origin = m_origin;
     res.mpp = (f32)m_mpp;
     res.gps = m_gps.gps;
+    return res;
+  }
+
+  RPData RPUlteriusReaderCollection::GetNextRPData()
+  {
+    if(!m_lock.tryLock(30))
+      return RPData();
+
+    RPData res = AssembleRPData();
+
+    m_lock.unlock();
+
     return res;
   }
 
@@ -137,10 +148,12 @@ namespace Nf {
   void RPUlteriusReaderCollection::DeleteFramesBefore(s32 frame)
   {
     s32 num = m_frameQueue.begin()->first;
-    while(num < frame) {
+    while(num < frame && m_frameQueue.size() > 0) {
       std::pair < u32, RPData > el = *m_frameQueue.begin();
       el.second.Release();
       m_frameQueue.erase(m_frameQueue.begin());
+      if(m_frameQueue.size() == 0)
+        break;
       num = m_frameQueue.begin()->first;
     }
   }
@@ -155,7 +168,7 @@ namespace Nf {
     }
   }
 
-  u8 RPUlteriusReaderCollection::AddData(void* data, int type, int sz, bool cine, int frmnum)
+  u8 RPUlteriusReaderCollection::AddData(void* data, int type, int sz, bool cine, int frmnum, bool doLock)
   {
     u32 tick = GetTickCount();
     RP_TYPE tp = (RP_TYPE)type;
@@ -225,7 +238,7 @@ namespace Nf {
           break;
     }
 
-    if(!m_lock.tryLock(20)) {
+    if(doLock && !m_lock.tryLock(20)) {
       rp.Release();
       return 0;
     }
@@ -240,7 +253,8 @@ namespace Nf {
       //else
       //  frmnum = 0;
       m_gps = rp;
-      m_lock.unlock();
+      if(doLock)
+        m_lock.unlock();
       return 1;
     }
     RPData rpp = m_frameQueue[frmnum];
@@ -271,8 +285,47 @@ namespace Nf {
     //DeleteFramesBefore(frmnum);
     PurgeExcessFrames();
 
-    m_lock.unlock();
+    if(doLock)
+      m_lock.unlock();
     return 1;
+  }
+
+  
+  RPUlteriusReaderCollectionPush::RPUlteriusReaderCollectionPush(const char *ip, f64 mpp, Vec2d origin)
+    : RPUlteriusReaderCollection(ip, mpp, origin)
+    , m_cb(NULL)
+  {
+  }
+
+  RPUlteriusReaderCollectionPush::~RPUlteriusReaderCollectionPush()
+  {
+    gThis = NULL;
+  }
+
+
+  u8 RPUlteriusReaderCollectionPush::AddData(void* data, int type, int sz, bool cine, int frmnum, bool doLock)
+  {
+    u8 rv = RPUlteriusReaderCollection::AddData(data, type, sz, cine, frmnum, false);
+
+    RPData rp = AssembleRPData();
+    if(!rp.FullSet(m_mask))
+      return 1;
+
+    if(m_cb)
+      m_cb->Callback(&rp);
+
+    return 1;
+  }
+
+  void RPUlteriusReaderCollectionPush::SetRPCallbackReceiver(RPCallbackReceiver *cb)
+  {
+    m_cb = cb;
+  }
+
+  RPData RPUlteriusReaderCollectionPush::GetNextRPData()
+  {
+    throw std::runtime_error("Shouldn't call GetNextRPData() on RPUlteriusReaderCollectionPush");
+    return RPData();
   }
 
 };
