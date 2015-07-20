@@ -144,6 +144,7 @@ namespace Nf
       m_rpReaders->SetRPCallbackReceiver(this);
       m_rpReaders->EnableType(RPF_BPOST8, 1);
       m_rpReaders->EnableType(RPF_GPS,1);
+      Sleep(200);
     }
   }
 
