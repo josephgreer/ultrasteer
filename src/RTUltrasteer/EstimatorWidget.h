@@ -10,6 +10,8 @@
 #include "RPFileReader.h"
 #include "RPProcess.h"
 #include "PFVisualizerWidget.h"
+#include "RobotHardwareWidget.h"
+#include "SaveDataWidget.h"
 #include "RPWidget.h"
 
 namespace Nf
@@ -26,10 +28,18 @@ namespace Nf
   class EstimatorStreamingWidget : public RPStreamingWidget
   {
     Q_OBJECT 
+      
+  protected:
+    std::tr1::shared_ptr < RobotHardwareWidget > m_hwWidget;
+    std::tr1::shared_ptr < SaveDataWidget > m_saveDataWidget;
+    std::tr1::shared_ptr < QGridLayout > m_bottomRow;
 
   public:
     EstimatorStreamingWidget(QWidget *parent);
     virtual ~EstimatorStreamingWidget();
+
+    
+    virtual void UpdateSize(QSize sz);
 
   };
 }
