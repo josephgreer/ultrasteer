@@ -37,6 +37,7 @@ namespace Nf
   public:
     EstimatorStreamingWidget(QWidget *parent);
     virtual ~EstimatorStreamingWidget();
+    virtual void onInitializeToggle();
 
     
     virtual void UpdateSize(QSize sz);

@@ -76,7 +76,7 @@ namespace Nf
 
     //Stream
     std::tr1::shared_ptr < Nf::BoolParameter > m_init;
-    void onInitializeToggle();
+    virtual void onInitializeToggle();
     CLASS_CALLBACK(onInitializeToggle, RPStreamingWidget);
 
     //Add Frames
