@@ -63,16 +63,13 @@ namespace Nf
       m_importer->SetImportVoidPointer(im->imageData);
       m_importer->Modified();
       m_importer->Update();
-
-      m_flip->Update();
     }
 
     // Initialize
     if(!m_init) {
-      m_flip->SetFilteredAxes(1);
-      m_flip->SetInputData((vtkDataObject *)m_importer->GetOutput());
-      m_flip->Update();
-      m_imageActor->SetInputData(m_flip->GetOutput());
+      m_imageActor->RotateZ(180);
+      m_imageActor->RotateY(180);
+      m_imageActor->SetInputData(m_importer->GetOutput());
       m_renderer->AddActor(m_imageActor);
 
       this->GetRenderWindow()->AddRenderer(m_renderer);
@@ -190,7 +187,7 @@ namespace Nf
 
     Matrix33d orientation = Matrix33d::FromCols(x_axis, y_axis, z_axis);
 
-    Vec3d up = orientation.Col(axis1)*1.0;
+    Vec3d up = orientation.Col(axis1)*-1.0;
     Vec3d focal = orientation.Col(axis2)*-1.0;
     camera->SetPosition(0,0,0);
     camera->SetFocalPoint(focal.x, focal.y, focal.z);
