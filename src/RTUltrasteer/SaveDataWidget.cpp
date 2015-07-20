@@ -11,5 +11,12 @@ namespace Nf
   SaveDataWidget::~SaveDataWidget()
   {
   }
+
+  void SaveDataWidget::SetEnabled(bool enabled)
+  {
+    ui.progressBar->setEnabled(enabled);
+    ui.startRecordingButton->setEnabled(enabled);
+    ui.saveDataButton->setEnabled(enabled);
+  }
 }
 

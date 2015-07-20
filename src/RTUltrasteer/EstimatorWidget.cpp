@@ -21,6 +21,8 @@ namespace Nf
     m_bottomRow->addWidget(m_saveDataWidget.get(), 0, 1, Qt::Alignment(Qt::AlignTop));
     m_layout->addLayout(m_bottomRow.get(), 1, 0, 1, 2);
 
+    m_saveDataWidget->SetEnabled(false);
+
     ADD_CHILD_COLLECTION(m_hwWidget.get());
   }
 
@@ -34,6 +36,11 @@ namespace Nf
     m_planeVis->UpdateSize(QSize(sz.width()/2-10, (3*sz.height())/4));
     m_hwWidget->UpdateSize(QSize(3*sz.width()/4-10, (sz.height())/4));
     m_saveDataWidget->UpdateSize(QSize(sz.width()/4-10, (sz.height())/4));
+  }
+
+  void EstimatorStreamingWidget::onInitializeToggle()
+  {
+    RPStreamingWidget::onInitializeToggle();
   }
 
   EstimatorStreamingWidget::~EstimatorStreamingWidget()

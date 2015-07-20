@@ -18,6 +18,8 @@ namespace Nf
     SaveDataWidget(QWidget *parent = 0, Qt::WFlags flags = 0);
     ~SaveDataWidget();
 
+    void SetEnabled(bool enable);
+
   private:
     Ui::SaveDataWidget ui;
   };

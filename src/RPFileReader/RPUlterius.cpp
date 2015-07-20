@@ -164,7 +164,7 @@ namespace Nf {
       std::pair < u32, RPData > el = *m_frameQueue.begin();
       el.second.Release();
       m_frameQueue.erase(m_frameQueue.begin());
-      //printf("Dropping Frame\n");
+      NTrace("Dropping Frame\n");
     }
   }
 
