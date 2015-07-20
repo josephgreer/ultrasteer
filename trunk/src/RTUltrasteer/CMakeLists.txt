@@ -36,12 +36,12 @@ INCLUDE_DIRECTORIES(
 ) 
 
 SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp USVisualizerWidget.cpp UICore.cpp VTKTransferFunctionWidget.cpp FileWidget.cpp Resizable.cpp ImageViewerWidget.cpp RPWidget.cpp RobotHardwareWidget.cpp RobotControlsWidget.cpp Teleoperation2DWidget.cpp
-	PFVisualizerWidget.cpp EstimatorWidget.cpp)
+	PFVisualizerWidget.cpp EstimatorWidget.cpp SaveDataWidget.cpp)
 
 SET(ultrasteerHeaders RTUltrasteer.h USVisualizerWidget.h UICore.h VTKTransferFunctionWidget.h FileWidget.h Resizable.h ImageViewerWidget.h RPWidget.h RobotHardwareWidget.h RobotControlsWidget.h Teleoperation2DWidget.h MouseInteractorStylePP.h
-	PFVisualizerWidget.h EstimatorWidget.h)
+	PFVisualizerWidget.h EstimatorWidget.h SaveDataWidget.h)
 
-SET(ultrasteerUI RTUltrasteer.ui FileWidget.ui RobotControlsWidget.ui)
+SET(ultrasteerUI RTUltrasteer.ui FileWidget.ui RobotControlsWidget.ui SaveDataWidget.ui)
 
 SET(ultrasteerResources RTUltrasteer.qrc)
 
