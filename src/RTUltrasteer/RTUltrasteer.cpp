@@ -567,6 +567,8 @@ void RTUltrasteer::CreateEstimatorStreamingDock()
 
   m_estimatorStreamingWidget = new Nf::EstimatorStreamingWidget(m_estimatorStreamingDock);
   m_estimatorStreamingDock->setWidget(m_estimatorStreamingWidget);
+
+  m_estimatorStreamingWidget->SetRobot(&m_robot);
   
   m_estimatorStreamingDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }

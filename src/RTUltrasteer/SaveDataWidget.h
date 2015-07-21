@@ -19,8 +19,10 @@ namespace Nf
     ~SaveDataWidget();
 
     void SetEnabled(bool enable);
+    void SetProgressBarValue(s32 value);
+    void SetProgressBarRange(s32 range);
 
-  private:
+  public:
     Ui::SaveDataWidget ui;
   };
 };

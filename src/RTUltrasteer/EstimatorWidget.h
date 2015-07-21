@@ -25,6 +25,13 @@ namespace Nf
     virtual ~EstimatorFileWidget();
   };
 
+  struct DataFrame
+  {
+    RPData rp;
+    NSCommand u;
+    u32 timestamp;
+  };
+
   class EstimatorStreamingWidget : public RPStreamingWidget
   {
     Q_OBJECT 
@@ -33,14 +40,21 @@ namespace Nf
     std::tr1::shared_ptr < RobotHardwareWidget > m_hwWidget;
     std::tr1::shared_ptr < SaveDataWidget > m_saveDataWidget;
     std::tr1::shared_ptr < QGridLayout > m_bottomRow;
+    std::vector < DataFrame > m_dataToSave;
+    std::vector < DataFrame > m_unusedData;
+    NeedleSteeringRobot *m_robot;
 
   public:
     EstimatorStreamingWidget(QWidget *parent);
     virtual ~EstimatorStreamingWidget();
     virtual void onInitializeToggle();
+    virtual void SetRobot(NeedleSteeringRobot *robot);
 
     
     virtual void UpdateSize(QSize sz);
+
+public slots:
+    void onSaveDataClicked();
 
   };
 }
