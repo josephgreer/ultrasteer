@@ -18,5 +18,16 @@ namespace Nf
     ui.startRecordingButton->setEnabled(enabled);
     ui.saveDataButton->setEnabled(enabled);
   }
+
+
+  void SaveDataWidget::SetProgressBarValue(s32 value)
+  {
+    ui.progressBar->setValue(value);
+  }
+
+  void SaveDataWidget::SetProgressBarRange(s32 range)
+  {
+    ui.progressBar->setRange(0, range);
+  }
 }
 
