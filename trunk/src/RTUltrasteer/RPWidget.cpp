@@ -6,6 +6,8 @@ namespace Nf
     : Nf::ParameterCollection("RP Image Viewer")
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
   {
+    ADD_ENUM_PARAMETER(m_displayMode, "Display Modality", CALLBACK_POINTER(onSetDisplayMode, RPWidget), this, QtEnums::DisplayModality::DM_BPOST8, "DisplayModality");
+
     m_imageViewer = std::tr1::shared_ptr<ImageViewerWidget>(new ImageViewerWidget(parent));
     m_usVis = std::tr1::shared_ptr<USVisualizer>(vis != NULL ? vis : new USVisualizer(parent, NULL));
     m_planeVis = std::tr1::shared_ptr<Image3DImagePlaneWidget>(new Image3DImagePlaneWidget(parent));
@@ -28,6 +30,12 @@ namespace Nf
 
   RPWidget::~RPWidget()
   {
+  }
+
+  void RPWidget::onSetDisplayMode()
+  {
+    //NOT YET IMPLEMENTED
+    __asm int 3;
   }
 
   void RPWidget::UpdateGeometry()

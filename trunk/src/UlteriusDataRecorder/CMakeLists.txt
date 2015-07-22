@@ -43,5 +43,5 @@ ADD_EXECUTABLE(UlteriusDataRecorder
  #Must be lowercase windows
 
 TARGET_LINK_LIBRARIES(UlteriusDataRecorder RPFileReader RPFileWriter Segment ${OpenCV_LIBS} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${UlteriusDir}/lib/ulterius_old.lib
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/liblapack.lib ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/libblas.lib)
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/liblapack.lib ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/libblas.lib winmm.lib)
 

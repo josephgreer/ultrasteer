@@ -238,6 +238,7 @@ namespace Nf
     Q_ENUMS(VisRenderMethod)
     Q_ENUMS(VOLUME_ORIGIN_LOCATION)
     Q_ENUMS(ComPorts)
+    Q_ENUMS(DisplayModality)
 #else
   class QtEnums
   {
@@ -259,6 +260,13 @@ namespace Nf
     VOL_QUARTER_LEFT,
     VOL_QUARTER_RIGHT,
     VOL_MIDDLE,
+  };
+
+  enum DisplayModality
+  {
+    DM_NULL_TYPE = -1,
+    DM_BPOST8 = 4,
+    DM_BPOST32 = 8
   };
 
   };

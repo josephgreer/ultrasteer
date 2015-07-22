@@ -218,6 +218,15 @@ namespace Nf
       return true;
     }
 
+    IplImage * GetType(RP_TYPE type)
+    {
+      if(type == RPF_BPOST8)
+        return this->b8;
+      else if(type == RPF_BPOST32 || type == RPF_COLOR)
+        return this->color;
+      return NULL;
+    }
+
     void Release()
     {
       if(this->b8)

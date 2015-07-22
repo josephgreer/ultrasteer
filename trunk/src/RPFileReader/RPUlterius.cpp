@@ -170,7 +170,7 @@ namespace Nf {
 
   u8 RPUlteriusReaderCollection::AddData(void* data, int type, int sz, bool cine, int frmnum, bool doLock)
   {
-    u32 tick = GetTickCount();
+    u32 tick = timeGetTime();
     RP_TYPE tp = (RP_TYPE)type;
     uDataDesc desc = GetImageDesc(tp);
 
@@ -182,6 +182,7 @@ namespace Nf {
           {
             IplImage *im = cvCreateImage(size/*cvSize(desc.roi.brx-desc.roi.ulx, desc.roi.bry-desc.roi.uly)*/,
               IPL_DEPTH_8U, 1);
+            im->BorderMode[0] = (s32)tick;
             rp.b8 = im;
 
             u8 *psrc = (u8 *)data;//+(desc.w/**desc.roi.uly+desc.roi.ulx*/)*(desc.ss>>3);
@@ -195,6 +196,7 @@ namespace Nf {
           {
             IplImage *im = cvCreateImage(size/*cvSize(desc.roi.brx-desc.roi.ulx, desc.roi.bry-desc.roi.uly)*/,
               IPL_DEPTH_8U, 4);
+            im->BorderMode[0] = (s32)tick;
             rp.color = im;
 
             u8 *psrc = (u8 *)data;//+(desc.w/**desc.roi.uly+desc.roi.ulx*/)*(desc.ss>>3);

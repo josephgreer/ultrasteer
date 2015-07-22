@@ -28,8 +28,14 @@ namespace Nf
   struct DataFrame
   {
     RPData rp;
+    GPS_Data needleTip;
     NSCommand u;
-    u32 timestamp;
+  };
+
+  enum EstimatorState {
+    ES_READY = 0,
+    ES_RECORDING,
+    ES_ESTIMATING,
   };
 
   class EstimatorStreamingWidget : public RPStreamingWidget
@@ -43,6 +49,7 @@ namespace Nf
     std::vector < DataFrame > m_dataToSave;
     std::vector < DataFrame > m_unusedData;
     NeedleSteeringRobot *m_robot;
+    EstimatorState m_state;      
 
   public:
     EstimatorStreamingWidget(QWidget *parent);
