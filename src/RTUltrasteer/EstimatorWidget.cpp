@@ -14,6 +14,7 @@ namespace Nf
 
   EstimatorStreamingWidget::EstimatorStreamingWidget(QWidget *parent)
     : RPStreamingWidget(parent, (USVisualizer *)new PFVisualizer(parent))
+    , m_state(ES_READY)
     , m_hwWidget(new RobotHardwareWidget(parent))
     , m_saveDataWidget(new SaveDataWidget(parent))
     , m_bottomRow(new QGridLayout(parent))
@@ -76,7 +77,6 @@ namespace Nf
       cvSetImageData(rp.b8, currB8, temp.b8->widthStep);
       cvSetImageData(rp.color, currColor, temp.b8->widthStep*4);
       d.rp = rp;
-      d.timestamp = 0;
       m_unusedData.push_back(d);
 
       currColor += colorFrameSz;

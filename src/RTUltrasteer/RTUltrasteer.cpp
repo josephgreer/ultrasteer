@@ -494,7 +494,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
       s32 len = strlen(meta.key(ky));
       maxLen = len > maxLen ? len : maxLen;
     }
-    combo->setMaximumWidth(maxLen*8);     //multiply strlen by 8 to get right width of the combo box
+    combo->setMaximumWidth(maxLen*10);     //multiply strlen by 8 to get right width of the combo box
     combo->setCurrentIndex(enums[i]->GetValue());
 
     std::tr1::shared_ptr < Nf::EnumSlotForwarder > uiElem (new Nf::EnumSlotForwarder(enums[i]->GetEnumName(),

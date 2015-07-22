@@ -40,7 +40,7 @@ USVisualizerWidget::USVisualizerWidget(RPVolumeCreator *rpvc)
   ADD_ACTION_PARAMETER(m_setViewXY, "Set View XY", CALLBACK_POINTER(onSetViewXY, USVisualizerWidget), this, true); 
   ADD_ACTION_PARAMETER(m_setViewXZ, "Set View XZ", CALLBACK_POINTER(onSetViewXZ, USVisualizerWidget), this, true); 
   ADD_ACTION_PARAMETER(m_setViewYZ, "Set View YZ", CALLBACK_POINTER(onSetViewYZ, USVisualizerWidget), this, true); 
-  ADD_ENUM_PARAMETER(m_renderMode, "Render Mode", CALLBACK_POINTER(onSetRenderMode, USVisualizerWidget), this, QtEnums::VisRenderMethod::RayCastingMIP, "VisRenderMethod");
+  ADD_ENUM_PARAMETER(m_renderMode, "Render Mode", CALLBACK_POINTER(onSetRenderMode, USVisualizerWidget), this, QtEnums::VisRenderMethod::GPURayCasting, "VisRenderMethod");
   ADD_CHILD_COLLECTION(m_rpvc);
 }
 

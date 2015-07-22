@@ -30,6 +30,11 @@ namespace Nf
     ~RPWidget();
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
+    
+    //displayMode
+    std::tr1::shared_ptr < Nf::EnumParameter > m_displayMode;
+    void onSetDisplayMode();
+    CLASS_CALLBACK(onSetDisplayMode, RPWidget);
 
     std::vector < QVTKWidget * > GetChildWidgets();
   };
