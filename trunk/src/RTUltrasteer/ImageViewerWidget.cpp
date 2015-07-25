@@ -162,11 +162,11 @@ namespace Nf
     }
     if(m_rp.gps2.valid) {
       if(m_sphereVis == NULL) {
-        CreateSphere(m_rp.gps2.pos, 5.0);
+        CreateSphere(m_rp.gps2.pos, 1.0);
         m_renderer->AddActor(m_sphereVis->GetActor());
       } else {
         m_sphereVis->SetCenter(m_rp.gps2.pos);
-        m_sphereVis->SetRadius(5.0);
+        m_sphereVis->SetRadius(1.0);
       }
     }
   }

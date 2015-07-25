@@ -137,7 +137,7 @@ namespace Nf
     ADD_FLOAT_PARAMETER(m_mpp, "MPP", CALLBACK_POINTER(onInitializeToggle, RPStreamingWidget), this, 87, 20, 150, 1.0);
     ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onInitializeToggle, RPStreamingWidget), this, Vec2d(330, 78), Vec2d(0,0), Vec2d(10000, 10000), Vec2d(1,1));
     ADD_BOOL_PARAMETER(m_rcvDoppler, "Receive Doppler", CALLBACK_POINTER(onDataToAcquireChanged, RPStreamingWidget), this, false);
-    ADD_BOOL_PARAMETER(m_rcvGps2, "Receive GPS2", CALLBACK_POINTER(onDataToAcquireChanged, RPStreamingWidget), this, false);
+    ADD_BOOL_PARAMETER(m_rcvGps2, "Receive GPS2", CALLBACK_POINTER(onDataToAcquireChanged, RPStreamingWidget), this, true);
 
     onInitializeToggle();
     onAddFramesToggle();
@@ -154,6 +154,10 @@ namespace Nf
       m_rpReaders->SetRPCallbackReceiver(this);
       m_rpReaders->EnableType(RPF_BPOST8, 1);
       m_rpReaders->EnableType(RPF_GPS,1);
+      if(m_rcvGps2->GetValue())
+        m_rpReaders->EnableType(RPF_GPS2, 1);
+      if(m_rcvDoppler->GetValue())
+        m_rpReaders->EnableType(RPF_BPOST32, 1);
       Sleep(200);
     }
   }
