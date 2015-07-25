@@ -59,7 +59,7 @@ namespace Nf {
 
   RPData RPUlteriusReaderCollection::AssembleRPData()
   {
-    if((m_mask&RPF_GPS && !m_gps.gps.valid) || (m_mask&RPF_GPS2 && !m_gps2.gps.valid)) {
+    if((m_mask&RPF_GPS && !m_gps.gps.valid) || (m_mask&RPF_GPS2 && !m_gps2.gps2.valid)) {
       m_lock.unlock();
       return RPData();
     }
@@ -89,7 +89,7 @@ namespace Nf {
     res.origin = m_origin;
     res.mpp = (f32)m_mpp;
     res.gps = m_gps.gps;
-    res.gps2 = m_gps2.gps;
+    res.gps2 = m_gps2.gps2;
     return res;
   }
 
@@ -113,7 +113,7 @@ namespace Nf {
     u32 mask = m_ulterius->getDataToAcquire();
     bool rv = m_ulterius->setDataToAcquire(mask|type);
     ASSERT(rv);
-    m_mask = mask;
+    m_mask = m_mask|type;
   }
 
   void RPUlteriusReaderCollection::EnableMask(u32 mask)
