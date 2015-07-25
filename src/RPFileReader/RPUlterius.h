@@ -33,6 +33,7 @@ namespace Nf {
 
 	protected:
     RPData m_gps;
+    RPData m_gps2;
 		std::map < RP_TYPE, u8 > m_types;
 		std::map < RP_TYPE, uDataDesc > m_descs;
 		ulterius* m_ulterius;

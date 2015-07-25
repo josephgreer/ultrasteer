@@ -100,6 +100,14 @@ namespace Nf
     //Origin
     std::tr1::shared_ptr < Nf::Vec2dParameter > m_origin;
 
+    //Doppler
+    std::tr1::shared_ptr < Nf::BoolParameter > m_rcvDoppler;
+    void onDataToAcquireChanged();
+    CLASS_CALLBACK(onDataToAcquireChanged, RPStreamingWidget);
+
+    //GPS2
+    std::tr1::shared_ptr < Nf::BoolParameter > m_rcvGps2;
+
     virtual void Callback(const RPData *rp);
 
   public slots:

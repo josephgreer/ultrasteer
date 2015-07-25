@@ -107,6 +107,7 @@ namespace Nf
   ////////////////////////////////////////////////////////
   Image3DImagePlaneWidget::Image3DImagePlaneWidget(QWidget *parent)
     : ImageViewerWidget(parent)
+    , SphereContainer()
     , m_cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0)
     , m_frameBoundaries((CubeVisualizer *)NULL)
   {
@@ -158,6 +159,15 @@ namespace Nf
       m_renderer->AddActor(m_frameBoundaries->GetActor());
     } else if(m_frameBoundaries) {
       m_renderer->RemoveActor(m_frameBoundaries->GetActor());
+    }
+    if(m_rp.gps2.valid) {
+      if(m_sphereVis == NULL) {
+        CreateSphere(m_rp.gps2.pos, 5.0);
+        m_renderer->AddActor(m_sphereVis->GetActor());
+      } else {
+        m_sphereVis->SetCenter(m_rp.gps2.pos);
+        m_sphereVis->SetRadius(5.0);
+      }
     }
   }
 

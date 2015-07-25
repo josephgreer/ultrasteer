@@ -25,6 +25,7 @@ using namespace Nf;
 USVisualizerWidget::USVisualizerWidget(RPVolumeCreator *rpvc)
 : Nf::ResizableQVTKWidget(NULL, QSize(VIS_WIDTH, VIS_HEIGHT))
 , Nf::ParameterCollection("Ultrasound Visualization")
+, Nf::SphereContainer()
 , m_volumeAxes(NULL)
 , m_frameBoundaries((CubeVisualizer *)NULL)
 , m_volume(NULL)
@@ -40,7 +41,7 @@ USVisualizerWidget::USVisualizerWidget(RPVolumeCreator *rpvc)
   ADD_ACTION_PARAMETER(m_setViewXY, "Set View XY", CALLBACK_POINTER(onSetViewXY, USVisualizerWidget), this, true); 
   ADD_ACTION_PARAMETER(m_setViewXZ, "Set View XZ", CALLBACK_POINTER(onSetViewXZ, USVisualizerWidget), this, true); 
   ADD_ACTION_PARAMETER(m_setViewYZ, "Set View YZ", CALLBACK_POINTER(onSetViewYZ, USVisualizerWidget), this, true); 
-  ADD_ENUM_PARAMETER(m_renderMode, "Render Mode", CALLBACK_POINTER(onSetRenderMode, USVisualizerWidget), this, QtEnums::VisRenderMethod::GPURayCasting, "VisRenderMethod");
+  ADD_ENUM_PARAMETER(m_renderMode, "Render Mode", CALLBACK_POINTER(onSetRenderMode, USVisualizerWidget), this, QtEnums::VisRenderMethod::RayCastingMIP, "VisRenderMethod");
   ADD_CHILD_COLLECTION(m_rpvc);
 }
 
@@ -65,6 +66,15 @@ void USVisualizerWidget::UpdateFrameBoundaries()
     m_renderer->AddActor(m_frameBoundaries->GetActor());
   } else if(m_frameBoundaries) {
     m_renderer->RemoveActor(m_frameBoundaries->GetActor());
+  }
+  if(m_last.gps2.valid) {
+    if(m_sphereVis == NULL) {
+      CreateSphere(m_last.gps2.pos, 5.0);
+      m_renderer->AddActor(m_sphereVis->GetActor());
+    } else {
+      m_sphereVis->SetCenter(m_last.gps2.pos);
+      m_sphereVis->SetRadius(5.0);
+    }
   }
 }
 

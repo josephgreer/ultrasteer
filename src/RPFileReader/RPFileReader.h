@@ -18,6 +18,7 @@ namespace Nf
     RPF_COLOR_CVV = 2048,
     RPF_COLOR_CVV_VAR = 2049,
     RPF_GPS = 131072,
+    RPF_GPS2 = 262144,
   } RP_TYPE;
 
   static const std::string RP_FILE_TYPES[] = {
@@ -129,6 +130,7 @@ namespace Nf
     IplImage *sig;
     IplImage *var;
     GPS_Data gps;
+    GPS_Data gps2;
     f32 mpp;
     Vec2d origin;
     Squarei roi;
@@ -141,6 +143,7 @@ namespace Nf
       var = NULL;
       mpp = 0;
       gps.valid = 0;
+      gps2.valid = 0;
       origin = Vec2d(0,0);
     }
 
@@ -152,6 +155,7 @@ namespace Nf
       this->var = rp.var;
       this->mpp = rp.mpp;
       this->gps = rp.gps;
+      this->gps2 = rp.gps2;
       this->origin = rp.origin;
     }
 
@@ -163,6 +167,7 @@ namespace Nf
       this->var = rhs.var;
       this->mpp = rhs.mpp;
       this->gps = rhs.gps;
+      this->gps2 = rhs.gps2;
       this->origin = rhs.origin;
       return *this;
     }
@@ -197,6 +202,7 @@ namespace Nf
         rv.var = cvCloneImage(this->var);
 
       rv.gps = this->gps;
+      rv.gps2 = this->gps2;
       rv.mpp = this->mpp;
       rv.origin = this->origin;
 
@@ -214,6 +220,8 @@ namespace Nf
       if(mask&RPF_COLOR_CVV_VAR && !this->var)
         return false;
       if(mask&RPF_GPS && !this->gps.valid)
+        return false;
+      if(mask&RPF_GPS2 && !this->gps2.valid)
         return false;
       return true;
     }
