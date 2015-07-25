@@ -51,7 +51,7 @@ namespace Nf
     virtual void SetImage(const RPData *rp);
   };
 
-  class Image3DImagePlaneWidget : public ImageViewerWidget
+  class Image3DImagePlaneWidget : public ImageViewerWidget, public SphereContainer
   {
   protected:
     Matrix44d m_cal;        //Calibration Matrix for transducer (maps image coords to world coords)

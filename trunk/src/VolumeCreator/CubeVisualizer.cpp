@@ -194,5 +194,68 @@ namespace Nf {
   ////////////////////////////////////////////////////////
   //End AxesVisualizer Class
   ///////////////////////////////////////////////////////
+
+  //////////////////////////////////////////////////////
+  //Begin SphereVisualizer Class
+  //////////////////////////////////////////////////////
+  SphereVisualizer::SphereVisualizer(const Vec3d &cen, f64 radius)
+  {
+    m_sphereSource = vtkSmartPointer<vtkSphereSource>::New();
+    m_sphereSource->SetCenter(cen.x, cen.y, cen.z);
+    m_sphereSource->SetRadius(radius);
+
+    vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper->SetInputConnection(m_sphereSource->GetOutputPort());
+
+    m_mapper = mapper;
+
+    vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+    actor->SetMapper(m_mapper);
+
+    m_actor = actor;
+   
+  }
+
+  void SphereVisualizer::SetCenter(const Vec3d &cen)
+  {
+    m_sphereSource->SetCenter(cen.x, cen.y, cen.z);
+  }
+
+  void SphereVisualizer::SetRadius(f64 rad)
+  {
+    m_sphereSource->SetRadius(rad);
+    m_sphereSource->Modified();
+    m_sphereSource->Update();
+  }
+  ////////////////////////////////////////////////////////
+  //End SphereVisualizer Class
+  ///////////////////////////////////////////////////////
+  
+  ////////////////////////////////////////////////////////
+  //Begin SphereContainer Class
+  ///////////////////////////////////////////////////////
+  SphereContainer::SphereContainer()
+    : m_sphereVis(NULL)
+  {
+  }
+
+  void SphereContainer::CreateSphere(const Vec3d &cen, f64 rad)
+  {
+    m_sphereVis = std::tr1::shared_ptr < SphereVisualizer > (new SphereVisualizer(cen, rad));
+  }
+
+  void SphereContainer::SetSphereCenter(const Vec3d &cen)
+  {
+    m_sphereVis->SetCenter(cen);
+  }
+
+  void SphereContainer::SetSphereRadius(f64 rad)
+  {
+    m_sphereVis->SetRadius(rad);
+  }
+  ////////////////////////////////////////////////////////
+  //End SphereContainer Class
+  ///////////////////////////////////////////////////////
+
 };
 

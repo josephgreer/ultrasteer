@@ -136,6 +136,8 @@ namespace Nf
     ADD_INT_PARAMETER(m_framerate, "Ulterius Framerate", CALLBACK_POINTER(onFramerateChanged, RPStreamingWidget), this, 15, 1, 30, 1);
     ADD_FLOAT_PARAMETER(m_mpp, "MPP", CALLBACK_POINTER(onInitializeToggle, RPStreamingWidget), this, 87, 20, 150, 1.0);
     ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onInitializeToggle, RPStreamingWidget), this, Vec2d(330, 78), Vec2d(0,0), Vec2d(10000, 10000), Vec2d(1,1));
+    ADD_BOOL_PARAMETER(m_rcvDoppler, "Receive Doppler", CALLBACK_POINTER(onDataToAcquireChanged, RPStreamingWidget), this, false);
+    ADD_BOOL_PARAMETER(m_rcvGps2, "Receive GPS2", CALLBACK_POINTER(onDataToAcquireChanged, RPStreamingWidget), this, false);
 
     onInitializeToggle();
     onAddFramesToggle();
@@ -153,6 +155,18 @@ namespace Nf
       m_rpReaders->EnableType(RPF_BPOST8, 1);
       m_rpReaders->EnableType(RPF_GPS,1);
       Sleep(200);
+    }
+  }
+
+  void RPStreamingWidget::onDataToAcquireChanged()
+  {
+    if(m_init->GetValue()) {
+      u32 mask = RPF_GPS|RPF_BPOST8;
+      if(m_rcvDoppler->GetValue() == true)
+        mask = mask|RPF_BPOST32;
+      if(m_rcvGps2->GetValue() == true)
+        mask = mask|RPF_GPS2;
+      m_rpReaders->EnableMask(mask);
     }
   }
 

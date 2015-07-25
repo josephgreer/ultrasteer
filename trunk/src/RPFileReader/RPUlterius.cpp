@@ -59,7 +59,7 @@ namespace Nf {
 
   RPData RPUlteriusReaderCollection::AssembleRPData()
   {
-    if(m_mask&RPF_GPS && !m_gps.gps.valid) {
+    if((m_mask&RPF_GPS && !m_gps.gps.valid) || (m_mask&RPF_GPS2 && !m_gps2.gps.valid)) {
       m_lock.unlock();
       return RPData();
     }
@@ -67,6 +67,7 @@ namespace Nf {
     RPData res;
     bool fullSet = false;
     u32 mask = m_mask&(~RPF_GPS);
+    mask = mask&(~RPF_GPS2);
     if(m_frameQueue.size() > 0) {
       FrameCollectionQueue::reverse_iterator i = m_frameQueue.rbegin();
       do {
@@ -88,6 +89,7 @@ namespace Nf {
     res.origin = m_origin;
     res.mpp = (f32)m_mpp;
     res.gps = m_gps.gps;
+    res.gps2 = m_gps2.gps;
     return res;
   }
 
@@ -238,6 +240,39 @@ namespace Nf {
             rp.gps.valid = 1;
           }
           break;
+        case RPF_GPS2:
+          {
+            u8 *raw = (u8 *)data;
+            s32 idx = 0;
+            rp.gps2.tick = tick;
+            rp.gps2.pos.x = *(double *)&raw[idx];  idx += sizeof(double);
+            rp.gps2.pos.y = *(double *)&raw[idx];   idx += sizeof(double);
+            rp.gps2.pos.z = *(double *)&raw[idx];   idx += sizeof(double);
+
+            rp.gps2.posaer.x = *(double *)&raw[idx];  idx += sizeof(double);
+            rp.gps2.posaer.y = *(double *)&raw[idx];   idx += sizeof(double);
+            rp.gps2.posaer.z = *(double *)&raw[idx];   idx += sizeof(double);
+
+            double m[9];
+            for(int i=0; i<9; i++) {
+              m[i] = *(double *)&raw[idx];   idx += sizeof(double);
+            }
+            double me[16] = {m[0], m[1], m[2], 0, 
+              m[3], m[4], m[5], 0, 
+              m[6], m[7], m[8], 0, 
+              0,    0,    0,    1};
+            cv::Mat(4,4,CV_64F,me).copyTo(rp.gps2.pose);
+            rp.gps2.pose = rp.gps2.pose.t();
+
+            for(int i=0; i<5; i++) {
+              rp.gps2.offset[i] = *(double *)&raw[idx];  idx += sizeof(double);
+            }
+
+            rp.gps2.quality = *(unsigned short *)&raw[idx];  idx+= sizeof(unsigned short);
+
+            rp.gps2.valid = 1;
+          }
+          break;
     }
 
     if(doLock && !m_lock.tryLock(20)) {
@@ -258,6 +293,16 @@ namespace Nf {
       if(doLock)
         m_lock.unlock();
       return 1;
+    } else if((RP_TYPE)type == RPF_GPS2) {
+      ////if it's gps just replace the last sample with gps
+      //if(m_frameQueue.size())
+      //  frmnum = m_frameQueue.rbegin()->first;
+      //else
+      //  frmnum = 0;
+      m_gps2 = rp;
+      if(doLock)
+        m_lock.unlock();
+      return 1;
     }
     RPData rpp = m_frameQueue[frmnum];
     switch(tp) {
@@ -275,6 +320,10 @@ namespace Nf {
         case RPF_GPS:
           {
             rpp.gps = rp.gps;
+          }
+        case RPF_GPS2:
+          {
+            rpp.gps2 = rp.gps2;
           }
           break;
 
