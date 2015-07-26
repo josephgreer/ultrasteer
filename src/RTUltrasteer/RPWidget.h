@@ -109,9 +109,11 @@ namespace Nf
     std::tr1::shared_ptr < Nf::BoolParameter > m_rcvGps2;
 
     virtual void Callback(const RPData *rp);
+    void HandleFrame(RPData &rp);
+
 
   public slots:
-    void onFrame();
+    virtual void onFrame();
 
   signals:
     void frameSignal();

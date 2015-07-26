@@ -2,7 +2,6 @@
 
 namespace Nf
 {
-#define MAX_TIMESTEPS 800
   EstimatorFileWidget::EstimatorFileWidget(QWidget *parent)
     : RPFileWidget(parent, (USVisualizer *)new PFVisualizer(parent))
   {
@@ -23,15 +22,10 @@ namespace Nf
     m_bottomRow->addWidget(m_saveDataWidget.get(), 0, 1, Qt::Alignment(Qt::AlignTop));
     m_layout->addLayout(m_bottomRow.get(), 1, 0, 1, 2);
 
-    m_saveDataWidget->SetEnabled(false);
-
     ADD_CHILD_COLLECTION(m_hwWidget.get());
 
-    m_saveDataWidget->SetProgressBarRange(MAX_TIMESTEPS);
-    m_saveDataWidget->SetProgressBarValue(0);
-
     
-    Connect(m_saveDataWidget->ui.startRecordingButton, SIGNAL(clicked()), SLOT(onSaveDataClicked()));
+    Connect(m_saveDataWidget->ui.allocateDataButton, SIGNAL(clicked()), SLOT(onSaveDataClicked()));
   }
 
   void EstimatorStreamingWidget::UpdateSize(QSize sz)
@@ -60,31 +54,24 @@ namespace Nf
     RPData temp = m_data.Clone();
     m_lock.unlock();
 
-    //s32 colorFrameSz = temp.color->widthStep*temp.color->height;
-    s32 colorFrameSz = temp.b8->widthStep*temp.b8->height*4;
-    s32 b8FrameSz = temp.b8->widthStep*temp.b8->height;
-    u8 *memColor = (u8 *)malloc(colorFrameSz*MAX_TIMESTEPS);
-    u8 *memB8 = (u8 *)malloc(b8FrameSz*MAX_TIMESTEPS);
-
-    u8 *currColor = memColor;
-    u8 * currB8 = memB8;
-
-    DataFrame d;
-    RPData rp;
-    for(s32 i=0; i<MAX_TIMESTEPS; i++) {
-      rp.b8 = cvCreateImageHeader(cvSize(temp.b8->width, temp.b8->height), IPL_DEPTH_8U, 1);
-      rp.color = cvCreateImageHeader(cvSize(temp.b8->width, temp.b8->height), IPL_DEPTH_8U, 4);
-      cvSetImageData(rp.b8, currB8, temp.b8->widthStep);
-      cvSetImageData(rp.color, currColor, temp.b8->widthStep*4);
-      d.rp = rp;
-      m_unusedData.push_back(d);
-
-      currColor += colorFrameSz;
-      currB8 += b8FrameSz;
-    }
+    m_saveDataWidget->AllocateData(temp);
 
     temp.Release();
 
+  }
+
+  void EstimatorStreamingWidget::onFrame()
+  {
+    if(!m_init->GetValue() || !m_lock.tryLock(30))
+      return;
+    
+    RPData rp = m_data.Clone();
+    HandleFrame(rp);
+    DataFrame d;
+    d.u = m_u;
+    d.rp = rp;
+    m_saveDataWidget->SaveDataFrame(d);
+    rp.Release();
   }
 
   void EstimatorStreamingWidget::SetRobot(NeedleSteeringRobot *robot)
