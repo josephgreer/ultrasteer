@@ -25,13 +25,6 @@ namespace Nf
     virtual ~EstimatorFileWidget();
   };
 
-  struct DataFrame
-  {
-    RPData rp;
-    GPS_Data needleTip;
-    NSCommand u;
-  };
-
   enum EstimatorState {
     ES_READY = 0,
     ES_RECORDING,
@@ -46,10 +39,9 @@ namespace Nf
     std::tr1::shared_ptr < RobotHardwareWidget > m_hwWidget;
     std::tr1::shared_ptr < SaveDataWidget > m_saveDataWidget;
     std::tr1::shared_ptr < QGridLayout > m_bottomRow;
-    std::vector < DataFrame > m_dataToSave;
-    std::vector < DataFrame > m_unusedData;
     NeedleSteeringRobot *m_robot;
     EstimatorState m_state;      
+    NSCommand m_u;
 
   public:
     EstimatorStreamingWidget(QWidget *parent);
@@ -62,6 +54,7 @@ namespace Nf
 
 public slots:
     void onSaveDataClicked();
+    virtual void onFrame();
 
   };
 }

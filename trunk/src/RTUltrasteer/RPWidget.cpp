@@ -207,6 +207,12 @@ namespace Nf
       return;
     
     RPData rp = m_data.Clone();
+    HandleFrame(rp);
+    rp.Release();
+  }
+
+  void RPStreamingWidget::HandleFrame(RPData &rp)
+  {
     m_lock.unlock();
     if(rp.b8 == NULL || !rp.gps.valid)
       return;
@@ -225,7 +231,6 @@ namespace Nf
       else
         m_planeVis->SetImage(&rp);
     }
-    rp.Release();
   }
 
   void RPStreamingWidget::Callback(const RPData *rp)
