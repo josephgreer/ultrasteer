@@ -50,6 +50,7 @@ namespace Nf
   public:
     s32 AddWriter(RP_TYPE type);
     s32 AddGPSWriter();
+    s32 AddGPSWriter2();
 
     s32 WriteNextRPData(const RPData *data);
     s32 Cleanup(const RPFileHeader *header);
@@ -59,6 +60,7 @@ namespace Nf
   protected:
     std::map < RP_TYPE, RPFileWriter * > m_writers;
     RPGPSWriter *m_gps;
+    RPGPSWriter *m_gps2;
     RPFileHeader m_header;
     char m_path[100];
     bool m_writeOver;

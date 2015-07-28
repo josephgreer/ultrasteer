@@ -30,7 +30,7 @@ namespace Nf
 
     Ui::RobotControlsWidgetClass ui;
 
-    private slots:
+    public slots:
       void RotPosInc(void);
       void RotNegInc(void);
       void StopRoll(void);

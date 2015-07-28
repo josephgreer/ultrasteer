@@ -175,6 +175,9 @@ namespace Nf
     strcpy(m_path, path);
     m_header = *header;
     m_writeOver = false;
+
+    m_gps = NULL;
+    m_gps2 = NULL;
   }
 
   s32 RPFileWriterCollection::AddWriter(RP_TYPE type)
@@ -293,6 +296,54 @@ namespace Nf
     return 0;
   }
 
+  
+  s32 RPFileWriterCollection::AddGPSWriter2()
+  {
+    char filename[100];
+    sprintf(filename, "%s.%s", m_path, "gps2");
+    
+
+    FILE *temp = fopen(filename, "rb");
+    if(temp && !m_writeOver) {
+      printf("File %s already exists.  Do you want to open? (Y/N)\n", filename);
+
+
+      bool writeOver = false;
+      bool run = true;
+      while(run) {
+        if(kbhit()) {
+          char input = getch();
+          switch(input) {
+        case 'y':
+        case 'Y':
+          writeOver = true;
+          break;
+        case 'n':
+        case 'N':
+          writeOver = false;
+          break;
+        default:
+          break;
+          }
+          run = false;
+        }
+      }
+      if(!writeOver) {
+        return  -1;
+      } else {
+        m_writeOver = true;
+      }
+    }
+    if(temp)
+      fclose(temp);
+
+
+    RPFileHeader _header = m_header;
+    _header.type = RPF_GPS2;
+    m_gps2 = new RPGPSWriter(filename, &_header);
+    return 0;
+  }
+
 
   s32 RPFileWriterCollection::WriteNextRPData(const RPData *data)
   {
@@ -312,6 +363,8 @@ namespace Nf
     }
     if(m_gps)
       m_gps->WriteNextGPSDatum(&data->gps);
+    if(m_gps2)
+      m_gps->WriteNextGPSDatum(&data->gps);
 
     return 0;
   }
@@ -328,6 +381,8 @@ namespace Nf
 
     if(m_gps)
       m_gps->Cleanup(header);
+    if(m_gps2)
+      m_gps2->Cleanup(header);
 
     return 0;
   }
