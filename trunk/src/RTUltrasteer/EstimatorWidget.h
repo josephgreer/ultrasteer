@@ -27,6 +27,7 @@ namespace Nf
 
   enum EstimatorState {
     ES_READY = 0,
+    ES_PRIMED,
     ES_RECORDING,
     ES_ESTIMATING,
   };
@@ -41,7 +42,10 @@ namespace Nf
     std::tr1::shared_ptr < QGridLayout > m_bottomRow;
     NeedleSteeringRobot *m_robot;
     EstimatorState m_state;      
-    NSCommand m_u;
+    NSCommand m_u; 
+    bool m_executeCommand;
+    virtual void ExecuteCommand();
+    Vec3d m_tipOffset;
 
   public:
     EstimatorStreamingWidget(QWidget *parent);
@@ -51,6 +55,10 @@ namespace Nf
 
     
     virtual void UpdateSize(QSize sz);
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_insertion;
+    void onInsertionPushed();
+    CLASS_CALLBACK(onInsertionPushed, EstimatorStreamingWidget);
 
 public slots:
     void onSaveDataClicked();

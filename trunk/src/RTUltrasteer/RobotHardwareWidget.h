@@ -59,6 +59,8 @@ namespace Nf
     CLASS_CALLBACK(onInitArticulation, RobotHardwareWidget)
 
     void setRobot(NeedleSteeringRobot* robot);
+
+    RobotControlsWidget *GetRCWidget() { return m_rcwidget; }
   };
 }
 

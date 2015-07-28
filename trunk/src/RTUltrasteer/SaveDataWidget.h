@@ -16,6 +16,14 @@ namespace Nf
   {
     RPData rp;
     NSCommand u;
+
+    DataFrame Clone() 
+    {
+      DataFrame res;
+      res.rp = this->rp.Clone();
+      res.u = this->u;
+      return res;
+    }
   };
 
   class SaveDataWidget : public ResizableQFrame
@@ -31,19 +39,20 @@ namespace Nf
     void SetProgressBarValue(s32 value);
     void SetProgressBarRange(s32 range);
 
-    void AllocateData(RPData &data);
     void BeginRecording();
     void SaveDataFrame(DataFrame &data);
     void DoneRecording();
+    void StartRecording();
+    void StopRecording();
+    void SaveData(RPFileHeader header);
+    void FreeData();
 
   public:
     Ui::SaveDataWidget ui;
     std::vector < DataFrame > m_dataToSave;
-    std::vector < DataFrame > m_unusedData;
 
   public slots:
     void onStartRecordingClicked();
-    void onSaveDataClicked();
 
   protected:
     bool m_isRecording;

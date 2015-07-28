@@ -14,6 +14,7 @@ namespace Nf
     f64 dutyCycle;            // duty cycle fraction \in [0,1]
     f64 v;                    // velocity in mm/s
     f64 dtheta;               // rotation about needle axis \in [0, 2*pi]
+    u32 tick;                 // tick count used for time measurement.
   };
 
   struct Measurement
