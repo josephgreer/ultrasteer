@@ -23,14 +23,20 @@ namespace Nf
     void resetManualScan();
     Matrix44d processManualScan();
     void processFrame(RPData);    
-    Matrix44d fitPolynomialToDoppler();    
+    void fitPolynomialandLineToDoppler();
+    void findExtents();
+    void measureTipFrame();
 
   private:
     std::vector <RPData> m_scanFrames;
     Matrix44d measurement;
-    std::vector<Vec3d> m_dopplerPoints;
     void separateColor(IplImage* combined, IplImage* doppler, IplImage* mask);
     void largestBlob(IplImage* dopplerAll, cv::Mat &dopplerLargest);
+    arma::vec m_tipPt;
+    Matrix44d m_tipFrame;
+    arma::vec m_c1lin, m_c2lin, m_c1poly, m_c2poly;
+    arma::mat m_dopplerPoints;
+    int m_NdopplerPoints;
 
   };
 }
