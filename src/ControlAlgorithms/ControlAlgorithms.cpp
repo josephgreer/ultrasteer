@@ -2,6 +2,8 @@
 #include "math.h"
 #include <time.h>
 
+#define   RHO   60.0  // radius of curvature for needle in mm
+
 namespace Nf {
 
   ControlAlgorithms::ControlAlgorithms()
@@ -13,16 +15,39 @@ namespace Nf {
   {
   }
 
-  void ControlAlgorithms::SetTarget(Vec3d target)
+  void ControlAlgorithms::SetTarget(Vec3d t)
   {
-    m_target = target;
+    m_t = t;
     m_targetDefined = true;
   }
 
-  void ControlAlgorithms::GetTarget(Vec3d &target)
+  void ControlAlgorithms::GetTarget(Vec3d &t)
   {
-    target = m_target;
+    t = m_t;
   } 
+
+  void ControlAlgorithms::GetPoseEstimate(Matrix44d x)
+  {
+    Vec3d u;
+    GetIncrementalInputVector(u);
+    m_UKF.processUpdateUKF(u);
+
+    m_UKF.getCurrentStateEstimate(x);
+  }
+
+  void ControlAlgorithms::GetIncrementalInputVector(Vec3d &u)
+  {
+    double currentInsMM = m_robot->getInsMM();
+    double l = currentInsMM - m_lastInsMM;
+
+    double currentRollDeg = m_robot->getRollAngle();
+    double d_th = currentRollDeg - m_lastRollDeg;
+
+    u = Vec3d(d_th,RHO,l);
+
+    m_lastInsMM = currentInsMM;
+    m_lastRollDeg = currentRollDeg;
+  }
 
   bool ControlAlgorithms::isTargetDefined()
   {
@@ -39,9 +64,16 @@ namespace Nf {
     m_segmentation.resetManualScan();
   }
 
-  Matrix44d ControlAlgorithms::processManualScan()
+  void ControlAlgorithms::processManualScan()
   {
-    return m_segmentation.processManualScan();
+    Vec3d u;
+    GetIncrementalInputVector(u);
+    m_UKF.fullUpdateUKF(u, m_segmentation.processManualScan());
+  }
+  
+  void ControlAlgorithms::setRobot(NeedleSteeringRobot* robot)
+  {
+    m_robot = robot;
   }
 
 };

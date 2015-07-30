@@ -10,6 +10,8 @@
 #include "RTCore.h"
 #include "RPFileReader.h"
 #include "SegmentationAlgorithms.h"
+#include "UnscentedKalmanFilter.h"
+#include "NeedleSteeringRobot.h"
 
 namespace Nf {
 
@@ -19,20 +21,27 @@ namespace Nf {
   public:
     ControlAlgorithms();
     ~ControlAlgorithms();
-    void SetTarget(Vec3d target);
-    void GetTarget(Vec3d &target);
+    void SetTarget(Vec3d t);
+    void GetTarget(Vec3d &t);
+    void GetPoseEstimate(Matrix44d x);
     bool isTargetDefined();
     void addManualScanFrame(RPData);
     void resetManualScan();
-    Matrix44d processManualScan();
+    void processManualScan();
+    void setRobot(NeedleSteeringRobot* robot);
+    void GetIncrementalInputVector(Vec3d &u);
 
   private:
-    Vec3d m_target;
+    Vec3d m_t;
     Matrix44d m_measurement;
     bool m_targetDefined;
     InPlaneSegmentation m_segmentation; 
+    UnscentedKalmanFilter m_UKF;
+    NeedleSteeringRobot* m_robot;
+
+    double m_lastInsMM;
+    double m_lastRollDeg;
 
   };
-
 };
 

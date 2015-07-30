@@ -200,7 +200,7 @@ namespace Nf
 
   void Teleoperation2DWidget::onUpdateOverlay()
   {
-    if( m_control && m_control->isTargetDefined() )
+    if( m_control )
     {
       // Get the image pose/position information
       Matrix44d cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0);
@@ -209,15 +209,43 @@ namespace Nf
       Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, m_data.gps.pos);
       Vec2d scale(m_data.mpp/1000.0, m_data.mpp/1000.0);
 
-      // Convert the world target coordinates to the 3D image frame using the GPS data
-      Vec3d pt_world;
-      m_control->GetTarget(pt_world);
-      Vec3d pt_img3D = rpWorldCoord3ToImageCoord(pt_world, posePos, cal, m_data.origin, scale);
+      // Get the pose of the needle tip frame
+      Matrix44d T_world;
+      m_control->GetPoseEstimate(T_world);
+      Matrix33d R_world = T_world.GetOrientation();
 
-      // Interpet circle location and draw the overlay circle
-      int z = fabs(pt_img3D.z);
-      m_imageViewer->SetTargetOverlay(40-z, Vec2d(pt_img3D.x,pt_img3D.y));
+      // Define 3 points to draw the z and y axes of the tip frame
+      Vec3d p_world = T_world.GetPosition();
+      Vec3d pz_world = p_world + R_world*Vec3d(0.0,0.0,10.0);
+      Vec3d py_world = p_world + R_world*Vec3d(0.0,2.0,0.0);
+
+      // Convert the 3 points to image coordinates
+      Vec3d p_img3D = rpWorldCoord3ToImageCoord(p_world, posePos, cal, m_data.origin, scale);
+      Vec3d pz_img3D = rpWorldCoord3ToImageCoord(pz_world, posePos, cal, m_data.origin, scale);
+      Vec3d py_img3D = rpWorldCoord3ToImageCoord(py_world, posePos, cal, m_data.origin, scale);
+      
+      // Show the points if the image plane is close enough to the tip
+      bool showTipFrame = fabs(p_img3D.z) < 5.0 ;
+      
+      int z = 500; // Results in a negative radius so target isn't displayed
+      Vec3d t_img3D(0.0,0.0,0.0);
+
+      if ( m_control->isTargetDefined() ) // Display the target position (t) if it's defined
+      {
+        // Convert the world target coordinates to the 3D image frame using the GPS data
+        Vec3d t_world;
+        m_control->GetTarget(t_world);
+        t_img3D = rpWorldCoord3ToImageCoord(t_world, posePos, cal, m_data.origin, scale);
+
+        // Interpet circle location and draw the overlay circle
+        z = fabs(t_img3D.z);
+      }
+
+      // Update the overlay
+      m_imageViewer->SetPoseOverlay(40-z, Vec2d(t_img3D.x,t_img3D.y), showTipFrame, Vec2d(p_img3D.x, p_img3D.y),
+         Vec2d(pz_img3D.x, pz_img3D.y),  Vec2d(py_img3D.x, py_img3D.y) );
     }
+
   }
 
   Teleoperation2DFileWidget::~Teleoperation2DFileWidget()

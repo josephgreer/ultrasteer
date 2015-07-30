@@ -111,7 +111,7 @@ namespace Nf
     ImageViewer2DTeleoperationWidget(QWidget *parent);
     virtual ~ImageViewer2DTeleoperationWidget();
     void SetImage(const RPData *rp);
-    void SetTargetOverlay(int r, Vec2d px);
+    void SetPoseOverlay(int r, Vec2d t, bool show, Vec2d p, Vec2d pz, Vec2d py);
     void SetTextOverlay(Vec2d px, Vec3d wpt);
     void SetInstrOverlay(char* str);
     void SetTeleoperation2DWidget(Teleoperation2DWidget *widget);
