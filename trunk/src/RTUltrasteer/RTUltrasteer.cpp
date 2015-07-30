@@ -139,6 +139,7 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   }
 
   onSetDocksVisible();
+  m_control.setRobot(&m_robot);
 }
 
 void RTUltrasteer::onSetDocksVisible()

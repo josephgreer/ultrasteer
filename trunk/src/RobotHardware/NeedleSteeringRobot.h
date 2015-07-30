@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include <QDebug>
 #include "RollDevice.h"
 #include "InsertionDevice.h"
 #include "ArticulationDevice.h"

@@ -18,7 +18,8 @@ namespace Nf
   public: //Methods
     UnscentedKalmanFilter(void);
     ~UnscentedKalmanFilter(void);
-    void updateUKF(Vec3d u, Matrix44d z);
+    void fullUpdateUKF(Vec3d u, Matrix44d z);
+    void processUpdateUKF(Vec3d u);
     void getCurrentStateEstimate(Matrix44d &x_out);
     void resetEstimate();    
     void zeroRotationEstimate();

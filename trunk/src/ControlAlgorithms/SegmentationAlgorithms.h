@@ -37,7 +37,6 @@ namespace Nf
     arma::vec m_c1lin, m_c2lin, m_c1poly, m_c2poly;
     arma::mat m_dopplerPoints;
     int m_NdopplerPoints;
-
   };
 }
 

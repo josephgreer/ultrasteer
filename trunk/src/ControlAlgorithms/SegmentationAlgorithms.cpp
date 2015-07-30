@@ -173,7 +173,7 @@ namespace Nf {
     Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, data.gps.pos);
     Vec2d scale(data.mpp/1000.0, data.mpp/1000.0);
 
-    BEGIN_TIMING(DopplerPointSaving,3);
+    //BEGIN_TIMING(DopplerPointSaving,10);
     // iterate through the pixels, and save the coordinates of non-zero pixels
     for (int i = 0; i < gray_mat.cols; i++ ) {
       for (int j = 0; j < gray_mat.rows; j++) {
@@ -184,12 +184,10 @@ namespace Nf {
           m_dopplerPoints(m_NdopplerPoints,1) = pt.y;
           m_dopplerPoints(m_NdopplerPoints,2) = pt.z;
           m_NdopplerPoints++;
-        }else{
-          int i = 1;
         }
       } 
     }
-    END_TIMING(DopplerPointSaving,3)
+    //END_TIMING(DopplerPointSaving,10)
 
     // save images for debugging
     cvSaveImage("F:/bmode.jpg", data.b8);
@@ -206,7 +204,7 @@ namespace Nf {
   // Fit polynomial and line to 3D Doppler coordinates
   void InPlaneSegmentation::fitPolynomialandLineToDoppler()
   {
-    BEGIN_TIMING(CURVEFITTING,1);
+    //BEGIN_TIMING(CURVEFITTING,1);
 
     using namespace arma;
     if( m_dopplerPoints.size() < 1 )
@@ -237,7 +235,7 @@ namespace Nf {
     NTrace("a_lin_x= { %f, %f }\n", m_c1lin(0), m_c1lin(1));
     NTrace("a_lin_y= {  %f, %f }\n", m_c2lin(0), m_c2lin(1));
 
-    END_TIMING(CURVEFITTING,1)
+    //END_TIMING(CURVEFITTING,1)
   }
 
   // Find the location of the tip of the best-fit polynomial

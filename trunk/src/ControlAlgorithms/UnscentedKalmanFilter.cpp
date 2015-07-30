@@ -33,8 +33,8 @@ namespace Nf
 
   }
 
-  /// \brief		Update Kalman filter
-  void UnscentedKalmanFilter::updateUKF(Vec3d u, Matrix44d z)
+  /// \brief		Update Kalman filter using measurement z
+  void UnscentedKalmanFilter::fullUpdateUKF(Vec3d u, Matrix44d z)
   {
     // create Sigma points X for the current estimate distribution
     std::vector<Matrix44d> X;
@@ -65,6 +65,18 @@ namespace Nf
     // update state and covariance
     x_hat = addDifferentialPose( x_, K*differentialPose( z, z_) );
     P_hat = P_ - K*Pzz*K.Transpose();    
+  }
+
+  /// \brief		Update Kalman filter without measurement
+  void UnscentedKalmanFilter::processUpdateUKF(Vec3d u)
+  {
+    // create Sigma points X for the current estimate distribution
+    std::vector<Matrix44d> X;
+    sigmas(x_hat, P_hat+Q, X);
+
+    // apply unscented transformation for process model 
+    std::vector<Vec6d> Ex_;       // transformed error vectors
+    utf(X, u, x_hat, P_hat, Ex_);
   }
   
   /// \brief		Unscented transform of process Sigma points
@@ -308,13 +320,13 @@ namespace Nf
     return Matrix44d::FromOrientationAndTranslation(R, p);
   }
   
-  /// \brief		Get the current needle state estimate
-/*  void UnscentedKalmanFilter::getCurrentStateEstimate(vnl_vector<double> &x_out)
+  /// Get the current needle state estimate
+  void UnscentedKalmanFilter::getCurrentStateEstimate(Matrix44d &x_out)
   {
     x_out = x_hat;
   }
 
-  /// \brief		Reset the Kalman filter estimate
+/*  /// \brief		Reset the Kalman filter estimate
   void UnscentedKalmanFilter::resetEstimate()
   {
     // Set mean of initial position prior (orientation already 0)
