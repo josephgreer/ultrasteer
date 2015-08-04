@@ -51,6 +51,7 @@ namespace Nf
     virtual void SetImage(const RPData *rp);
   };
 
+  
   class Image3DImagePlaneWidget : public ImageViewerWidget, public SphereContainer
   {
   protected:
@@ -90,6 +91,7 @@ namespace Nf
     void onSetViewYZ();
     CLASS_CALLBACK(onSetViewYZ, Image3DImagePlaneWidget);
   };
+
 
   class ImageViewer2DTeleoperationWidget : public ImageViewerWidget
   {

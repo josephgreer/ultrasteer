@@ -33,7 +33,7 @@ TEST(Basic, UKF)
   Matrix44d z = Matrix44d::FromOrientationAndTranslation(R,p);
 
   // Update the filter and print the results
-  m_UKF.updateUKF(u,z);
+  m_UKF.fullUpdateUKF(u,z);
   x_hat = m_UKF.getCurrentEstimate();
   P_hat = m_UKF.getCurrentCovariance();
     
@@ -52,7 +52,7 @@ TEST(Basic, UKF)
   z = Matrix44d::FromOrientationAndTranslation(R,p);
 
   // Update the filter and print the results
-  m_UKF.updateUKF(u,z);
+  m_UKF.fullUpdateUKF(u,z);
   x_hat = m_UKF.getCurrentEstimate();
   P_hat = m_UKF.getCurrentCovariance();
     
