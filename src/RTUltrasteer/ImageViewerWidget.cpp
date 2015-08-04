@@ -45,14 +45,25 @@ namespace Nf
 
   void ImageViewerWidget::SetImage(const RPData *rp)
   {
-    if(rp->b8 != NULL) {
+    if(rp->color != NULL) {
       m_rp.Release();
       m_rp = rp->Clone();
     }
 
+    if(m_rp.color) {
+      IplImage *orig = m_rp.color;
+      CvSize s = cvSize(orig->width, orig->height);
+      int d = orig->depth;
+      
+      // THIS IS A HACK TO GET THE DOPPLER TO DISPLAY, NEED TO TALK TO JOEY ABOUT THIS
+      IplImage* R = cvCreateImage(s, d, 1);
+      IplImage* G = cvCreateImage(s, d, 1);
+      IplImage* B = cvCreateImage(s, d, 1);
+      IplImage* X = cvCreateImage(s, d, 1);
+      IplImage* im = cvCreateImage(s, d, 4);
+      cvSplit(orig, B, G, R, X);
+      cvMerge(R, G, B, R, im);
 
-    if(m_rp.b8) {
-      IplImage *im = m_rp.b8;
       // Set up importer
       m_importer->SetDataOrigin(0,0,0);
       m_importer->SetDataSpacing(rp->mpp/1000.0,rp->mpp/1000.0,1);
@@ -93,15 +104,16 @@ namespace Nf
       vtkCamera *cam = m_renderer->GetActiveCamera();
       m_renderer->SetActiveCamera(cam);
     } 
-    QVTKWidget::update();
-    if(m_rp.b8)
-      m_init = true;
+
+    if(m_rp.color)
+      QVTKWidget::update();
+    m_init = true;
   }
   ////////////////////////////////////////////////////////
   // End ImageViwerWidget
   ////////////////////////////////////////////////////////
 
-  
+ 
   ////////////////////////////////////////////////////////
   // Begin Image3DImagePlaneWidget
   ////////////////////////////////////////////////////////
@@ -228,7 +240,7 @@ namespace Nf
   ////////////////////////////////////////////////////////
   // End Image3DImagePlaneWidget
   ////////////////////////////////////////////////////////
-
+  
   
   ////////////////////////////////////////////////////////
   // Begin ImageViewer2DTeleoperationWidget
@@ -363,15 +375,24 @@ namespace Nf
     this->repaint();
   }
 
-  void ImageViewer2DTeleoperationWidget::SetTargetOverlay(int r, Vec2d px)
+  void ImageViewer2DTeleoperationWidget::SetPoseOverlay(int r, Vec2d t, bool show, Vec2d p, Vec2d pz, Vec2d py)
   {
     // Zero the image and draw a circle at the click point
     cvZero(m_mask);
 
     if( r > -1 ) // If we have a circle to draw
     {
-      cvCircle(m_mask,cvPoint(px.x,m_mask->height-1-px.y),r,cvScalar(1.0),5,CV_AA);
+      cvCircle(m_mask,cvPoint(t.x,m_mask->height-1-t.y),r,cvScalar(1.0),5,CV_AA);
+    }
 
+    if( show ) // If we want to show the tip frame       
+    {
+      cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(pz.x, pz.y),cvScalar(1.0),5,CV_AA);
+      cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(py.x, py.y),cvScalar(1.0),2,CV_AA);
+    }
+      
+    if( show || r > -1 )
+    {
       // Update the VTK rendering
       m_maskImporter->Update();
       m_maskImporter->Modified();
