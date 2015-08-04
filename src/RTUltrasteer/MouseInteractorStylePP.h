@@ -48,11 +48,11 @@ namespace Nf
     virtual void OnLeftButtonDown() 
     {	
       qDebug() << "Pressed left mouse button." << "\n";
-      
-	  // play a sound effect
+
+      // play a sound effect
       QSound::play("C:/Windows/Media/Windows Default.wav");
-	  
-	  // find coordinates in viewer pixels
+
+      // find coordinates in viewer pixels
       Vec2d vw;
       vw.x = this->Interactor->GetEventPosition()[0];
       vw.y = this->Interactor->GetEventPosition()[1];

@@ -66,7 +66,8 @@ namespace Nf
 
       // Set up importer
       m_importer->SetDataOrigin(0,0,0);
-      m_importer->SetDataSpacing(rp->mpp/1000.0,rp->mpp/1000.0,1);
+      m_importer->SetDataSpacing(1,1,1);
+      //m_importer->SetDataSpacing(rp->mpp/1000.0,rp->mpp/1000.0,1);
       m_importer->SetWholeExtent(0, im->width-1, 0, im->height-1, 0, 0);
       m_importer->SetDataExtentToWholeExtent();
       m_importer->SetDataScalarTypeToUnsignedChar();
@@ -78,10 +79,17 @@ namespace Nf
 
     // Initialize
     if(!m_init) {
-      m_imageActor->RotateZ(180);
-      m_imageActor->RotateY(180);
-      m_imageActor->SetInputData(m_importer->GetOutput());
-      m_renderer->AddActor(m_imageActor);
+
+      m_flip->SetFilteredAxes(1);
+      m_flip->SetInputData((vtkDataObject *)m_importer->GetOutput());
+      m_flip->Update();
+      m_imageActor->SetInputData(m_flip->GetOutput());
+      m_renderer->AddActor2D(m_imageActor);
+
+      //m_imageActor->RotateZ(180);
+      //m_imageActor->RotateY(180);
+      //m_imageActor->SetInputData(m_importer->GetOutput());
+      //m_renderer->AddActor(m_imageActor);
 
       this->GetRenderWindow()->AddRenderer(m_renderer);
 
@@ -278,6 +286,7 @@ namespace Nf
 
       // Set up mask importer
       m_maskImporter->SetDataOrigin(0,0,0);
+      //m_maskImporter->SetDataSpacing(rp->mpp/1000.0,rp->mpp/1000.0,1);
       m_maskImporter->SetDataSpacing(1,1,1);
       m_maskImporter->SetWholeExtent(0, m_mask->width-1, 0, m_mask->height-1, 0, 0);
       m_maskImporter->SetDataExtentToWholeExtent();
@@ -306,6 +315,10 @@ namespace Nf
       m_maskFlip->Update();
       m_maskActor->GetMapper()->SetInputConnection(m_mapTransparency->GetOutputPort());
       m_renderer->AddActor2D(m_maskActor);
+      //m_maskActor->RotateZ(180);
+      //m_maskActor->RotateY(180);
+      //m_maskActor->GetMapper()->SetInputConnection(m_mapTransparency->GetOutputPort());
+      //m_renderer->AddActor2D(m_maskActor);
 
       // Add text overlay for selected point coordinates
       m_textActor1->GetTextProperty()->SetFontSize ( 24 );
@@ -359,7 +372,7 @@ namespace Nf
 
     // Format the click position and print over image
     char str [100];
-    int n = sprintf(str, "pix = {%.1f, %.1f}\nworld = {%.2f, %.2f, %.2f}", px.x, px.y, wpt.x, wpt.y, wpt.z);
+    int n = sprintf(str, "vwr pix = {%.1f, %.1f}\nimg pix = {%.2f, %.2f, %.2f}", px.x, px.y, wpt.x, wpt.y, wpt.z);
     m_textActor1->SetInput(str);
 
     // Update the VTK rendering
