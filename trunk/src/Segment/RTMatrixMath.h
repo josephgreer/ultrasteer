@@ -18,6 +18,8 @@
 #include <vnl/algo/vnl_cholesky.h>
 #include <vnl/algo/vnl_matrix_inverse.h>
 
+#include <armadillo>
+
 #include "RTUtil.h"
 
 namespace Nf
@@ -877,6 +879,19 @@ namespace Nf
       for(s32 r=0; r<4; r++) {
         for(s32 c=0; c<4; c++) {
           data[r][c] = rhs->Element[r][c];
+        }
+      }
+
+      return Matrix44d(data);
+    }
+
+    static Matrix44d FromArmaMatrix4x4(const arma::mat rhs)
+    {
+      f64 data[4][4];
+
+      for(s32 r=0; r<4; r++) {
+        for(s32 c=0; c<4; c++) {
+          data[r][c] = rhs(r,c);
         }
       }
 

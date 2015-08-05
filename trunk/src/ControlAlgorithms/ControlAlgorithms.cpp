@@ -26,11 +26,11 @@ namespace Nf {
     t = m_t;
   } 
 
-  void ControlAlgorithms::GetPoseEstimate(Matrix44d x)
+  void ControlAlgorithms::GetPoseEstimate(Matrix44d &x)
   {
     Vec3d u;
     GetIncrementalInputVector(u);
-    m_UKF.processUpdateUKF(u);
+    //m_UKF.processUpdateUKF(u);
 
     m_UKF.getCurrentStateEstimate(x);
   }
@@ -64,11 +64,13 @@ namespace Nf {
     m_segmentation.resetManualScan();
   }
 
-  void ControlAlgorithms::processManualScan()
+  Matrix44d ControlAlgorithms::processManualScan()
   {
     Vec3d u;
     GetIncrementalInputVector(u);
-    m_UKF.fullUpdateUKF(u, m_segmentation.processManualScan());
+    Matrix44d T = m_segmentation.processManualScan();
+    m_UKF.fullUpdateUKF(u, T);
+    return T;
   }
   
   void ControlAlgorithms::setRobot(NeedleSteeringRobot* robot)

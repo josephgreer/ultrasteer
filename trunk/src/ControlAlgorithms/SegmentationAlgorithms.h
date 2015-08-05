@@ -25,7 +25,7 @@ namespace Nf
     void processFrame(RPData);    
     void fitPolynomialandLineToDoppler();
     void findExtents();
-    void measureTipFrame();
+    Matrix44d measureTipFrame();
 
   private:
     std::vector <RPData> m_scanFrames;

@@ -260,6 +260,7 @@ namespace Nf
   {
     m_textActor1 = vtkSmartPointer<vtkTextActor>::New();
     m_textActor2 = vtkSmartPointer<vtkTextActor>::New();
+    m_textActor3 = vtkSmartPointer<vtkTextActor>::New();
     m_pointPicker = vtkSmartPointer<vtkPointPicker>::New();
     m_maskImporter = vtkSmartPointer<vtkImageImport>::New();
     m_mapTransparency = vtkSmartPointer<vtkImageMapToColors>::New();
@@ -300,7 +301,7 @@ namespace Nf
       m_lookUpTable->SetNumberOfTableValues(2);
       m_lookUpTable->SetRange(0.0,1.0);
       m_lookUpTable->SetTableValue( 0.0, 0.0, 0.0, 0.0, 0.0 ); //label 0 is transparent
-      m_lookUpTable->SetTableValue( 1.0, 1.0, 0.0, 0.0, 1.0 ); //label 1 is opaque and red
+      m_lookUpTable->SetTableValue( 1.0, 0.0, 0.0, 1.0, 1.0 ); //label 1 is opaque and blue
       m_lookUpTable->Build();
 
       // Map the image values to transparencies
@@ -320,20 +321,27 @@ namespace Nf
       //m_maskActor->GetMapper()->SetInputConnection(m_mapTransparency->GetOutputPort());
       //m_renderer->AddActor2D(m_maskActor);
 
-      // Add text overlay for selected point coordinates
+      // Add text overlay for selected target coordinates
       m_textActor1->GetTextProperty()->SetFontSize ( 24 );
       m_textActor1->SetPosition( 10, 10 );
       m_renderer->AddActor2D ( m_textActor1 );
       m_textActor1->SetInput ( "Initialized" );
-      m_textActor1->GetTextProperty()->SetColor ( 1.0,0.0,0.0 );
+      m_textActor1->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
 
       // Add text overlay for user instructions
       m_textActor2->GetTextProperty()->SetFontSize ( 24 );
-      int* size = m_renderer->GetSize();
+      //int* size = m_renderer->GetSize();
       m_textActor2->SetPosition( 10, 400 );
       m_renderer->AddActor2D ( m_textActor2 );
       m_textActor2->SetInput ( "" );
-      m_textActor2->GetTextProperty()->SetColor ( 0.0,0.0,1.0 );
+      m_textActor2->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
+
+      // Add text overlay for segmentation results
+      m_textActor3->GetTextProperty()->SetFontSize ( 24 );
+      m_textActor3->SetPosition( 10, 200 );
+      m_renderer->AddActor2D ( m_textActor3 );
+      m_textActor3->SetInput ( "" );
+      m_textActor3->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
 
       // Set up interaction 
       vtkSmartPointer<MouseInteractorStylePP> style = 
@@ -367,24 +375,40 @@ namespace Nf
     m_teleoperationWidget = widget;  
   }
 
-  void ImageViewer2DTeleoperationWidget::SetTextOverlay(Vec2d px, Vec3d wpt)
+  void ImageViewer2DTeleoperationWidget::SetTargetText(Vec2d px, Vec3d wpt)
   {
-
     // Format the click position and print over image
     char str [100];
-    int n = sprintf(str, "vwr pix = {%.1f, %.1f}\nimg pix = {%.2f, %.2f, %.2f}", px.x, px.y, wpt.x, wpt.y, wpt.z);
+    int n = sprintf(str, "i = {%.1f, %.1f}\nt = {%.2f, %.2f, %.2f}", px.x, px.y, wpt.x, wpt.y, wpt.z);
     m_textActor1->SetInput(str);
 
     // Update the VTK rendering
     this->repaint();
-
   }
 
-  void ImageViewer2DTeleoperationWidget::SetInstrOverlay(char* str)
+  void ImageViewer2DTeleoperationWidget::SetInstructionText(char* str)
   {
     m_textActor2->SetInput(str);
     int* size = m_renderer->GetSize();
     m_textActor2->SetPosition( 10, size[1]-40 );
+    this->repaint();
+  }
+
+  void ImageViewer2DTeleoperationWidget::SetSegmentationText(Matrix33d R, Vec3d p)
+  {
+    // Format the click position and print over image
+    char str [100];
+    int n = sprintf(str, "p = {%.2f, %.2f, %.2f}\nR = \n%.2f, %.2f, %.2f\n%.2f, %.2f, %.2f\n%.2f, %.2f, %.2f", 
+      p.x, p.y, p.z,
+      R.m_data[0][0], R.m_data[0][1], R.m_data[0][2], 
+      R.m_data[1][0], R.m_data[1][1], R.m_data[1][2], 
+      R.m_data[2][0], R.m_data[2][1], R.m_data[2][2]);
+    m_textActor3->SetInput(str);
+
+    int* size = m_renderer->GetSize();
+    m_textActor3->SetPosition( 10, int(size[1]/2) );
+
+    // Update the VTK rendering
     this->repaint();
   }
 
@@ -400,8 +424,8 @@ namespace Nf
 
     if( show ) // If we want to show the tip frame       
     {
-      cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(pz.x, pz.y),cvScalar(1.0),5,CV_AA);
-      cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(py.x, py.y),cvScalar(1.0),2,CV_AA);
+      cvLine(m_mask,cvPoint(p.x,m_mask->height-1-p.y),cvPoint(pz.x, m_mask->height-1-pz.y),cvScalar(1.0),3,CV_AA);
+      cvLine(m_mask,cvPoint(p.x,m_mask->height-1-p.y),cvPoint(py.x, m_mask->height-1-py.y),cvScalar(1.0),3,CV_AA);
     }
       
     if( show || r > -1 )

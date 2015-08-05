@@ -98,6 +98,7 @@ namespace Nf
   protected:
     vtkSmartPointer < vtkTextActor > m_textActor1;
     vtkSmartPointer < vtkTextActor > m_textActor2;
+    vtkSmartPointer < vtkTextActor > m_textActor3;
     vtkSmartPointer < vtkPointPicker > m_pointPicker;
     vtkSmartPointer < vtkImageMapToColors > m_mapTransparency;
     vtkSmartPointer < vtkImageImport > m_maskImporter;
@@ -114,8 +115,9 @@ namespace Nf
     virtual ~ImageViewer2DTeleoperationWidget();
     void SetImage(const RPData *rp);
     void SetPoseOverlay(int r, Vec2d t, bool show, Vec2d p, Vec2d pz, Vec2d py);
-    void SetTextOverlay(Vec2d px, Vec3d wpt);
-    void SetInstrOverlay(char* str);
+    void SetTargetText(Vec2d px, Vec3d wpt);
+    void SetSegmentationText(Matrix33d R, Vec3d p);
+    void SetInstructionText(char* str);
     void SetTeleoperation2DWidget(Teleoperation2DWidget *widget);
     void getImageDim(int &w, int &h);
   };

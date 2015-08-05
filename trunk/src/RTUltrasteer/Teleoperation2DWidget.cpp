@@ -105,11 +105,12 @@ namespace Nf
       m_scanButton->setEnabled(true);
       n = sprintf(str," ");
       m_manualScanning = false;
-      m_control->processManualScan(); 
+      Matrix44d T = m_control->processManualScan(); 
+      m_imageViewer->SetSegmentationText(T.GetOrientation(),T.GetPosition());
     }
 
     // display the formatted string
-    m_imageViewer->SetInstrOverlay(str);
+    m_imageViewer->SetInstructionText(str);
   }
 
   void Teleoperation2DWidget::UpdateTargetPoint(Vec2d pt)
@@ -128,6 +129,9 @@ namespace Nf
 
       // Update the control algorithm target point
       m_control->SetTarget(pt_world);
+
+      // Update the text overlay in ImageViewerWidget for debugging
+      m_imageViewer->SetTargetText(pt,pt_world);
 
       // Update the overlay
       onUpdateOverlay();
@@ -217,7 +221,7 @@ namespace Nf
       // Define 3 points to draw the z and y axes of the tip frame
       Vec3d p_world = T_world.GetPosition();
       Vec3d pz_world = p_world + R_world*Vec3d(0.0,0.0,10.0);
-      Vec3d py_world = p_world + R_world*Vec3d(0.0,2.0,0.0);
+      Vec3d py_world = p_world + R_world*Vec3d(0.0,5.0,0.0);
 
       // Convert the 3 points to image coordinates
       Vec3d p_img3D = rpWorldCoord3ToImageCoord(p_world, posePos, cal, m_data.origin, scale);

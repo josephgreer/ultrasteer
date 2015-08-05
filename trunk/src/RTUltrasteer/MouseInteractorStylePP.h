@@ -69,9 +69,6 @@ namespace Nf
       int w,h;
       m_imageViewerWidget->getImageDim(w, h);
       im.y = double(h - 1) - ima[1]; 
-      
-      // Update the text overlay in ImageViewerWidget for debugging
-      m_imageViewerWidget->SetTextOverlay(vw,im);
 
       // Update the target control point through Teleoperation2DWidget
       Vec2d im2D( im.x, im.y );
