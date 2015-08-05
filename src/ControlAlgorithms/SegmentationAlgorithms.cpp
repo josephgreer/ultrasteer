@@ -1,7 +1,7 @@
 #define I_IND   2    // z is independent
 #define I_DEP1  0    // x is dependent
 #define I_DEP2  1    // y is dependent
-#define DIR     >    // > indicates +ve is insertion, < indicates -ve is insertion
+#define DIR     <    // > indicates +ve is insertion, < indicates -ve is insertion
 
 #include "SegmentationAlgorithms.h"
 
@@ -57,8 +57,7 @@ namespace Nf {
 
     fitPolynomialandLineToDoppler();
     findExtents();
-    measureTipFrame();
-    return Matrix44d::I();
+    return measureTipFrame();
   }
 
   // Separate combined BGR doppler + B-mode image into grayscale Doppler only and mask
@@ -272,7 +271,7 @@ namespace Nf {
   }
 
   // Find the orientation of the needle tip frame based on the polynomial
-  void InPlaneSegmentation::measureTipFrame()
+  Matrix44d InPlaneSegmentation::measureTipFrame()
   {
     using namespace arma;
     
@@ -307,6 +306,8 @@ namespace Nf {
     mat h_row;
     h_row << 0 << 0 << 0 << 1;
     T.insert_rows(3,h_row);
+
+    return Matrix44d::FromArmaMatrix4x4(T);
 
   }
   }

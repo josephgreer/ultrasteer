@@ -36,35 +36,37 @@ namespace Nf
   /// \brief		Update Kalman filter using measurement z
   void UnscentedKalmanFilter::fullUpdateUKF(Vec3d u, Matrix44d z)
   {
-    // create Sigma points X for the current estimate distribution
-    std::vector<Matrix44d> X;
-    sigmas(x_hat, P_hat+Q, X);
+    //// create Sigma points X for the current estimate distribution
+    //std::vector<Matrix44d> X;
+    //sigmas(x_hat, P_hat+Q, X);
 
-    // apply unscented transformation for process model 
-    Matrix44d x_;                 // transformed mean
-    Matrix66d P_;                 // transformed covariance
-    std::vector<Vec6d> Ex_;       // transformed error vectors
-    utf(X, u, x_, P_, Ex_);
+    //// apply unscented transformation for process model 
+    //Matrix44d x_;                 // transformed mean
+    //Matrix66d P_;                 // transformed covariance
+    //std::vector<Vec6d> Ex_;       // transformed error vectors
+    //utf(X, u, x_, P_, Ex_);
 
-    // resample sigma points
-    std::vector<Matrix44d> X_;    
-    sigmas(x_, P_+R, X_);
+    //// resample sigma points
+    //std::vector<Matrix44d> X_;    
+    //sigmas(x_, P_+R, X_);
 
-    // apply unscented transform for measurement model
-    Matrix44d z_;                 // transformed measurement mean
-    Matrix66d Pzz;                // transformed measurement covariance
-    std::vector<Vec6d> Ez;        // transformed measurement error vectors
-    utg(X_, z_, Pzz, Ez);
+    //// apply unscented transform for measurement model
+    //Matrix44d z_;                 // transformed measurement mean
+    //Matrix66d Pzz;                // transformed measurement covariance
+    //std::vector<Vec6d> Ez;        // transformed measurement error vectors
+    //utg(X_, z_, Pzz, Ez);
 
-    // define transformated cross-covariance
-    Matrix66d Pxz;
-    for( int i = 0; i < Ez.size(); i++ )
-      Pxz += ( (Matrix66d::OuterProduct(Ex_[i],Ez[i]) )*( 0.5/N ) );
-    Matrix66d K = Pxz*Pzz.Inverse();
+    //// define transformated cross-covariance
+    //Matrix66d Pxz;
+    //for( int i = 0; i < Ez.size(); i++ )
+    //  Pxz += ( (Matrix66d::OuterProduct(Ex_[i],Ez[i]) )*( 0.5/N ) );
+    //Matrix66d K = Pxz*Pzz.Inverse();
 
-    // update state and covariance
-    x_hat = addDifferentialPose( x_, K*differentialPose( z, z_) );
-    P_hat = P_ - K*Pzz*K.Transpose();    
+    //// update state and covariance
+    //x_hat = addDifferentialPose( x_, K*differentialPose( z, z_) );
+    //P_hat = P_ - K*Pzz*K.Transpose();    
+
+    x_hat = z;
   }
 
   /// \brief		Update Kalman filter without measurement

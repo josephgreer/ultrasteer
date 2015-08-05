@@ -23,11 +23,11 @@ namespace Nf {
     ~ControlAlgorithms();
     void SetTarget(Vec3d t);
     void GetTarget(Vec3d &t);
-    void GetPoseEstimate(Matrix44d x);
+    void GetPoseEstimate(Matrix44d &x);
     bool isTargetDefined();
     void addManualScanFrame(RPData);
     void resetManualScan();
-    void processManualScan();
+    Matrix44d processManualScan();
     void setRobot(NeedleSteeringRobot* robot);
     void GetIncrementalInputVector(Vec3d &u);
 
