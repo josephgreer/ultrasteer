@@ -99,6 +99,7 @@ namespace Nf
     vtkSmartPointer < vtkTextActor > m_textActor1;
     vtkSmartPointer < vtkTextActor > m_textActor2;
     vtkSmartPointer < vtkTextActor > m_textActor3;
+    vtkSmartPointer < vtkTextActor > m_textActor4;
     vtkSmartPointer < vtkPointPicker > m_pointPicker;
     vtkSmartPointer < vtkImageMapToColors > m_mapTransparency;
     vtkSmartPointer < vtkImageImport > m_maskImporter;
@@ -118,6 +119,7 @@ namespace Nf
     void SetTargetText(Vec2d px, Vec3d wpt);
     void SetSegmentationText(Matrix33d R, Vec3d p);
     void SetInstructionText(char* str);
+    void SetVarianceText(Vec3d var);
     void SetTeleoperation2DWidget(Teleoperation2DWidget *widget);
     void getImageDim(int &w, int &h);
   };

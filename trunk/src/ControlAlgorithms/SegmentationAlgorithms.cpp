@@ -1,7 +1,7 @@
 #define I_IND   2    // z is independent
 #define I_DEP1  0    // x is dependent
 #define I_DEP2  1    // y is dependent
-#define DIR     <    // > indicates +ve is insertion, < indicates -ve is insertion
+#define DIR     -1.0 // insertion is along the -ve z direction
 
 #include "SegmentationAlgorithms.h"
 
@@ -260,14 +260,14 @@ namespace Nf {
     double minVal = proj.min(min_row, col);
 
     // Extract the minimum and maximum extent coordinates
-    mat maxPt = m_dopplerPoints.row(max_row);
-    mat minPt = m_dopplerPoints.row(min_row);
+    mat pt_a = m_dopplerPoints.row(max_row);
+    mat pt_b = m_dopplerPoints.row(min_row);
 
     // Pick the tip point
-    if( maxPt(0,I_IND) DIR minPt(0,I_IND) )
-      m_tipPt = trans(maxPt);
+    if( DIR*pt_a(0,I_IND) > DIR*pt_b(0,I_IND) )
+      m_tipPt = trans(pt_a);
     else
-      m_tipPt = trans(minPt);
+      m_tipPt = trans(pt_b);
   }
 
   // Find the orientation of the needle tip frame based on the polynomial
@@ -292,6 +292,12 @@ namespace Nf {
     // Remove z-axis components from y_axis
     y_axis = y_axis - dot(y_axis,z_axis)*z_axis;
     y_axis = normalise(y_axis);
+
+    // Flip the axes if insertion is along negative indep. axis
+    if (DIR < 0){ 
+      z_axis = -1*z_axis; 
+      y_axis = -1*y_axis; 
+    }
 
     // Create rotation matrix representation of the frame
     vec x_axis = cross(y_axis, z_axis);

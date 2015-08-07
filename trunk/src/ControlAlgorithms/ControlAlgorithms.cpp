@@ -77,5 +77,29 @@ namespace Nf {
   {
     m_robot = robot;
   }
+  
+  void ControlAlgorithms::ControlCorrection()
+  {
+    if(m_targetDefined)
+    {
+    // Get current tip frame estimate
+    Matrix44d T = m_UKF.getCurrentEstimate();
+    Vec3d p = T.GetPosition();
+    Matrix33d R = T.GetOrientation();
 
+    // Get relative error in the current tip frame
+    Vec3d e = R.Inverse()*(m_t-p);
+    f32 d_th = atan2(-e.x,e.y);
+    
+    // Check if needle tip is past target
+    if( e.z < 0 )
+      int i = 1;// Do end of steering tasks
+
+    // Correct needle rotation
+    m_robot->RotateIncremental(d_th);
+
+    }else{
+      NTrace("No target defined; skipping correction\n");
+    }
+  }
 };
