@@ -19,7 +19,7 @@ namespace Nf
     font.setPointSize(16);
     m_scanButton->setFont(font);
     connect(m_scanButton, SIGNAL(clicked()), this, SLOT(onStartManualNeedleScan()));
-    
+
     m_layout = new QGridLayout(parent);
     m_layout->addWidget((QWidget *)(m_imageViewer.get()), 0, 0);
     m_layout->addWidget(m_scanButton, 0, 1);

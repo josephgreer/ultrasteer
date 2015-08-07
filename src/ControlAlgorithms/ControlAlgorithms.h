@@ -30,6 +30,7 @@ namespace Nf {
     Matrix44d processManualScan();
     void setRobot(NeedleSteeringRobot* robot);
     void GetIncrementalInputVector(Vec3d &u);
+    void ControlCorrection();
 
   private:
     Vec3d m_t;

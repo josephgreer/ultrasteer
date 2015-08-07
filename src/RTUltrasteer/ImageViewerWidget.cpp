@@ -17,6 +17,8 @@
 #include <stdio.h>
 #include <vtkProperty.h>
 
+#define MAX_VAR_NORM 10;
+
 namespace Nf
 {
   ////////////////////////////////////////////////////////
@@ -261,6 +263,7 @@ namespace Nf
     m_textActor1 = vtkSmartPointer<vtkTextActor>::New();
     m_textActor2 = vtkSmartPointer<vtkTextActor>::New();
     m_textActor3 = vtkSmartPointer<vtkTextActor>::New();
+    m_textActor4 = vtkSmartPointer<vtkTextActor>::New();
     m_pointPicker = vtkSmartPointer<vtkPointPicker>::New();
     m_maskImporter = vtkSmartPointer<vtkImageImport>::New();
     m_mapTransparency = vtkSmartPointer<vtkImageMapToColors>::New();
@@ -343,6 +346,13 @@ namespace Nf
       m_textActor3->SetInput ( "" );
       m_textActor3->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
 
+      // Add text overlay for estimate variance
+      m_textActor3->GetTextProperty()->SetFontSize ( 24 );
+      m_textActor3->SetPosition( 200, 200 );
+      m_renderer->AddActor2D ( m_textActor3 );
+      m_textActor3->SetInput ( "" );
+      m_textActor3->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
+
       // Set up interaction 
       vtkSmartPointer<MouseInteractorStylePP> style = 
         vtkSmartPointer<MouseInteractorStylePP>::New();
@@ -409,6 +419,21 @@ namespace Nf
     m_textActor3->SetPosition( 10, int(size[1]/2) );
 
     // Update the VTK rendering
+    this->repaint();
+  }
+
+  void ImageViewer2DTeleoperationWidget::SetVarianceText(Vec3d var)
+  {
+    char str [100];
+    int n = sprintf(str,"s_x = %.2f\ns_y = %.2f\ns_z = %.2f",var.x,var.y,var.z);
+    m_textActor4->SetInput(str);
+
+    int* size = m_renderer->GetSize();
+    m_textActor4->SetPosition( 10, size[0]-100 );
+    
+    f32 danger = var.normalized()/MAX_VAR_NORM;
+    m_textActor4->GetTextProperty()->SetColor( 1.0,1.0-danger,1.0-danger );
+
     this->repaint();
   }
 
