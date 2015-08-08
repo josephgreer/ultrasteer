@@ -1,5 +1,7 @@
 #include "Teleoperation2DWidget.h"
 
+#define   TSCAN   4000.0  // total manual scan time in ms
+
 namespace Nf
 {
   Teleoperation2DWidget::Teleoperation2DWidget(QWidget *parent)
@@ -7,8 +9,6 @@ namespace Nf
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
     , m_robot(NULL)
     , m_control(NULL)
-    , m_scanTime(0.0)
-    , m_manualScanning(false)
   {
 
     m_imageViewer = std::tr1::shared_ptr<ImageViewer2DTeleoperationWidget>(new ImageViewer2DTeleoperationWidget(parent));
@@ -18,14 +18,32 @@ namespace Nf
     QFont font = m_scanButton->font();
     font.setPointSize(16);
     m_scanButton->setFont(font);
+    m_scanButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
     connect(m_scanButton, SIGNAL(clicked()), this, SLOT(onStartManualNeedleScan()));
 
+    m_teleoperateButton = new QPushButton("Start Teleoperation", parent);
+    font = m_teleoperateButton->font();
+    font.setPointSize(16);
+    m_teleoperateButton->setFont(font);
+    m_teleoperateButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    connect(m_teleoperateButton, SIGNAL(clicked()), this, SLOT(onStartStopTeleoperation()));
+
+    m_leftSubLayout = new QVBoxLayout(parent);
+    m_leftSubLayout->addWidget((QWidget *)(m_imageViewer.get()));
+
+    m_rightSubLayout = new QVBoxLayout(parent); 
+    m_rightSubLayout->addWidget(m_scanButton);
+    m_rightSubLayout->addWidget(m_teleoperateButton);
+    m_rightSubLayout->setMargin(0);
+    m_rightSubLayout->setContentsMargins(QMargins(0,0,0,0));
+    m_rightSubLayout->setSpacing(0);
+    
     m_layout = new QGridLayout(parent);
-    m_layout->addWidget((QWidget *)(m_imageViewer.get()), 0, 0);
-    m_layout->addWidget(m_scanButton, 0, 1);
+    m_layout->addLayout(m_leftSubLayout,0,0);    
+    m_layout->addLayout(m_rightSubLayout,0,1);
     this->setLayout(m_layout);
 
-    m_scanTick = std::tr1::shared_ptr<QTimer>((QTimer *)NULL);
+    m_preScanTimer = std::tr1::shared_ptr<QTimer>((QTimer *)NULL);
     
     ADD_CHILD_COLLECTION(m_imageViewer.get());
 
@@ -63,78 +81,52 @@ namespace Nf
   void Teleoperation2DWidget::setControl(ControlAlgorithms* control)
   {
     m_control = control;
+    m_imageViewer->setControl(m_control);
+  }
+
+  void Teleoperation2DWidget::onStartStopTeleoperation()
+  {
+    if( m_control->startStopTeleoperation() ){
+      m_teleoperateButton->setText("Stop Teleoperation");
+    }else{
+      m_teleoperateButton->setText("Start Teleoperation");
+    }
   }
 
   void Teleoperation2DWidget::onStartManualNeedleScan()
   {
-    qDebug() << "Begin manual needle scan\n";
-    m_scanButton->setDisabled(true);
-    
-    if(!m_scanTick) {
-        m_scanTick = std::tr1::shared_ptr<QTimer>(new QTimer());
-        connect(m_scanTick.get(), SIGNAL(timeout()), this, SLOT(onManualScanTick()));
-        m_scanTick->setInterval(100); }
-    
-    m_control->resetManualScan();  
-    m_scanTick->start();
-    m_manualScanning = true; 
-  }
+    //m_scanButton->setDisabled(true);
+    //
+    if(!m_preScanTimer) {
+        m_preScanTimer = std::tr1::shared_ptr<QTimer>(new QTimer());
+        connect(m_preScanTimer.get(), SIGNAL(timeout()), this, SLOT(onManualTimeout()));
+        m_preScanTimer->setInterval(2000); }
+    m_preScanTimer->start();
 
-  void Teleoperation2DWidget::onManualScanTick()
-  {
-    // define scan time variables
-    double scanStartT=3000.0, scanDuration=5000.0;
-
-    // increment the scan time counter
-    m_scanTime += 100.0;
-
-    // declare string variables
+    // print prepare for scan message
     char str [100];
-    int n; 
-
-    // format the message string depending on current time
-    if( m_scanTime < scanStartT )
-      n = sprintf(str, "Prepare for needle scan");
-    if( m_scanTime >= scanStartT && m_scanTime < scanStartT + scanDuration ) 
-      n = sprintf(str, "%.2f seconds remaining", 5.0-((m_scanTime-scanStartT)/1000.0));
-    if( m_scanTime >= scanStartT + scanDuration )
-    {
-      // if scan is complete, stop and reset the timer and process scan
-      m_scanTick->stop();
-      m_scanTime = 0.0;
-      m_scanButton->setEnabled(true);
-      n = sprintf(str," ");
-      m_manualScanning = false;
-      Matrix44d T = m_control->processManualScan(); 
-      m_imageViewer->SetSegmentationText(T.GetOrientation(),T.GetPosition());
-    }
-
-    // display the formatted string
+    int n = sprintf(str, "Prepare for needle scan");
     m_imageViewer->SetInstructionText(str);
   }
 
-  void Teleoperation2DWidget::UpdateTargetPoint(Vec2d pt)
+  void Teleoperation2DWidget::onManualTimeout()
   {
-    qDebug() << "Update Target Point\n";
+      // stop the preparation timer and begin the manual scan
+      m_preScanTimer->stop();
+      m_scanTimer.start();
+      m_control->startStopManualScanning(true);
+  }
 
-    if(m_data.gps.valid)
-    { 
-      // Convert the input image point to world coordinates using the GPS data
-      Matrix44d cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0);
-      Matrix44d tPose = Matrix44d::FromCvMat(m_data.gps.pose);
-      Matrix33d pose = tPose.GetOrientation();
-      Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, m_data.gps.pos);
-      Vec2d scale(m_data.mpp/1000.0, m_data.mpp/1000.0);
-      Vec3d pt_world = rpImageCoordToWorldCoord3(pt, posePos, cal, m_data.origin, scale);
+  void Teleoperation2DWidget::displayScanTimeRemaining()
+  {
+    qint64 nsecs = m_scanTimer.nsecsElapsed();
+    double secs = double(nsecs/1000000);
+    char str [100];
+    int n = sprintf(str, ".2%f seconds remaining...",secs);
+    m_imageViewer->SetInstructionText(str);
 
-      // Update the control algorithm target point
-      m_control->SetTarget(pt_world);
-
-      // Update the text overlay in ImageViewerWidget for debugging
-      m_imageViewer->SetTargetText(pt,pt_world);
-
-      // Update the overlay
-      onUpdateOverlay();
+    if( secs > TSCAN ){
+      m_control->startStopManualScanning( false );
     }
   }
 
@@ -193,63 +185,8 @@ namespace Nf
 
     m_data = m_rpReaders->GetRPData(m_frame->GetValue());
     m_imageViewer->SetImage(&m_data);
-    onUpdateOverlay();
-
-    if(m_manualScanning)
-    {
-      m_control->addManualScanFrame(m_data);
-    }
-
-  }
-
-  void Teleoperation2DWidget::onUpdateOverlay()
-  {
-    if( m_control )
-    {
-      // Get the image pose/position information
-      Matrix44d cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0);
-      Matrix44d tPose = Matrix44d::FromCvMat(m_data.gps.pose);
-      Matrix33d pose = tPose.GetOrientation();
-      Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, m_data.gps.pos);
-      Vec2d scale(m_data.mpp/1000.0, m_data.mpp/1000.0);
-
-      // Get the pose of the needle tip frame
-      Matrix44d T_world;
-      m_control->GetPoseEstimate(T_world);
-      Matrix33d R_world = T_world.GetOrientation();
-
-      // Define 3 points to draw the z and y axes of the tip frame
-      Vec3d p_world = T_world.GetPosition();
-      Vec3d pz_world = p_world + R_world*Vec3d(0.0,0.0,10.0);
-      Vec3d py_world = p_world + R_world*Vec3d(0.0,5.0,0.0);
-
-      // Convert the 3 points to image coordinates
-      Vec3d p_img3D = rpWorldCoord3ToImageCoord(p_world, posePos, cal, m_data.origin, scale);
-      Vec3d pz_img3D = rpWorldCoord3ToImageCoord(pz_world, posePos, cal, m_data.origin, scale);
-      Vec3d py_img3D = rpWorldCoord3ToImageCoord(py_world, posePos, cal, m_data.origin, scale);
-      
-      // Show the points if the image plane is close enough to the tip
-      bool showTipFrame = fabs(p_img3D.z) < 5.0 ;
-      
-      int z = 500; // Results in a negative radius so target isn't displayed
-      Vec3d t_img3D(0.0,0.0,0.0);
-
-      if ( m_control->isTargetDefined() ) // Display the target position (t) if it's defined
-      {
-        // Convert the world target coordinates to the 3D image frame using the GPS data
-        Vec3d t_world;
-        m_control->GetTarget(t_world);
-        t_img3D = rpWorldCoord3ToImageCoord(t_world, posePos, cal, m_data.origin, scale);
-
-        // Interpet circle location and draw the overlay circle
-        z = fabs(t_img3D.z);
-      }
-
-      // Update the overlay
-      m_imageViewer->SetPoseOverlay(40-z, Vec2d(t_img3D.x,t_img3D.y), showTipFrame, Vec2d(p_img3D.x, p_img3D.y),
-         Vec2d(pz_img3D.x, pz_img3D.y),  Vec2d(py_img3D.x, py_img3D.y) );
-    }
-
+    m_control->controlHeartBeat(m_data);
+    m_imageViewer->onUpdateOverlay();
   }
 
   Teleoperation2DFileWidget::~Teleoperation2DFileWidget()
@@ -319,7 +256,8 @@ namespace Nf
 
     if(m_addFrames->GetValue()) {
       m_imageViewer->SetImage(&m_data);
-      onUpdateOverlay();
+      m_imageViewer->onUpdateOverlay();
+      // add control heartbeat
     }
   }
 

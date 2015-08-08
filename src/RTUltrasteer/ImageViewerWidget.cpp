@@ -358,6 +358,7 @@ namespace Nf
         vtkSmartPointer<MouseInteractorStylePP>::New();
       style->SetImageViewerWidget(this);
       style->SetTeleoperation2DWidget(m_teleoperationWidget);
+      style->SetControl(m_control);
       style->SetRenderWindowInteractor(m_interactor);
       m_interactor->SetInteractorStyle(style);
 
@@ -385,11 +386,46 @@ namespace Nf
     m_teleoperationWidget = widget;  
   }
 
-  void ImageViewer2DTeleoperationWidget::SetTargetText(Vec2d px, Vec3d wpt)
+  void ImageViewer2DTeleoperationWidget::setControl(ControlAlgorithms* control)
+  {
+    m_control = control;
+  }
+
+  void ImageViewer2DTeleoperationWidget::onUpdateOverlay()
+  {   
+    // zero the mask image
+    cvZero(m_mask);
+
+    // get current values for overlaying
+    Vec3d p_img, pz_img, py_img;
+    Vec3d p;
+    Matrix33d R;
+    Vec3d t_img, t;
+    Vec3d Sxyz;
+    bool show_p, show_t, show_S;
+    m_control->getOverlayValues(show_p, p_img, pz_img, py_img, p, R,
+      show_t, t_img, t,
+      show_S, Sxyz);
+
+    // update tip pose estimate and variance
+    if( show_p ){
+      SetSegmentationText(R, p);
+      SetVarianceText(Sxyz);
+      DrawTipIcon(p_img, pz_img, py_img);
+    }
+
+    // update target
+    if( show_t ){
+      SetTargetText(Vec2d(t_img.x,t_img.y), t);
+      DrawTargetIcon(t_img);
+    }
+  }
+
+  void ImageViewer2DTeleoperationWidget::SetTargetText(Vec2d t_img, Vec3d t_wld)
   {
     // Format the click position and print over image
     char str [100];
-    int n = sprintf(str, "i = {%.1f, %.1f}\nt = {%.2f, %.2f, %.2f}", px.x, px.y, wpt.x, wpt.y, wpt.z);
+    int n = sprintf(str, "t_img = {%.1f, %.1f}\nt_wld = {%.2f, %.2f, %.2f}", t_img.x, t_img.y, t_wld.x, t_wld.y, t_wld.z);
     m_textActor1->SetInput(str);
 
     // Update the VTK rendering
@@ -431,36 +467,36 @@ namespace Nf
     int* size = m_renderer->GetSize();
     m_textActor4->SetPosition( 10, size[0]-100 );
     
-    f32 danger = var.normalized()/MAX_VAR_NORM;
+    f32 danger = var.magnitude()/MAX_VAR_NORM;
     m_textActor4->GetTextProperty()->SetColor( 1.0,1.0-danger,1.0-danger );
 
     this->repaint();
   }
 
-  void ImageViewer2DTeleoperationWidget::SetPoseOverlay(int r, Vec2d t, bool show, Vec2d p, Vec2d pz, Vec2d py)
+  void ImageViewer2DTeleoperationWidget::DrawTargetIcon(Vec3d t)
   {
-    // Zero the image and draw a circle at the click point
-    cvZero(m_mask);
+    int r = 40-t.z;
 
     if( r > -1 ) // If we have a circle to draw
     {
       cvCircle(m_mask,cvPoint(t.x,m_mask->height-1-t.y),r,cvScalar(1.0),5,CV_AA);
-    }
 
-    if( show ) // If we want to show the tip frame       
-    {
-      cvLine(m_mask,cvPoint(p.x,m_mask->height-1-p.y),cvPoint(pz.x, m_mask->height-1-pz.y),cvScalar(1.0),3,CV_AA);
-      cvLine(m_mask,cvPoint(p.x,m_mask->height-1-p.y),cvPoint(py.x, m_mask->height-1-py.y),cvScalar(1.0),3,CV_AA);
-    }
-      
-    if( show || r > -1 )
-    {
       // Update the VTK rendering
       m_maskImporter->Update();
       m_maskImporter->Modified();
       this->repaint();
     }
+  }
 
+  void ImageViewer2DTeleoperationWidget::DrawTipIcon(Vec3d p, Vec3d pz, Vec3d py)
+  {
+    cvLine(m_mask,cvPoint(p.x,m_mask->height-1-p.y),cvPoint(pz.x, m_mask->height-1-pz.y),cvScalar(1.0),3,CV_AA);
+    cvLine(m_mask,cvPoint(p.x,m_mask->height-1-p.y),cvPoint(py.x, m_mask->height-1-py.y),cvScalar(1.0),3,CV_AA);
+
+    // Update the VTK rendering
+    m_maskImporter->Update();
+    m_maskImporter->Modified();
+    this->repaint();
   }
 
   void ImageViewer2DTeleoperationWidget::getImageDim(int &w, int &h)

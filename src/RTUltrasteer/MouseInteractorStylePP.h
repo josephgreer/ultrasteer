@@ -23,6 +23,7 @@
 #include <QtDebug>
 #include <vtkInteractorStyleTrackballCamera.h>
 #include "Teleoperation2DWidget.h"
+#include "ControlAlgorithms.h"
 #include <QSound>
 
 namespace Nf
@@ -41,6 +42,9 @@ namespace Nf
 
     void SetTeleoperation2DWidget(Teleoperation2DWidget *widget)
     { m_TeleoperationWidget = widget; }
+
+    void SetControl(ControlAlgorithms *control)
+    { m_control = control; }
 
     void SetRenderWindowInteractor(vtkSmartPointer < vtkRenderWindowInteractor > interactor)
     { m_interactor = interactor; }
@@ -70,9 +74,10 @@ namespace Nf
       m_imageViewerWidget->getImageDim(w, h);
       im.y = double(h - 1) - ima[1]; 
 
-      // Update the target control point through Teleoperation2DWidget
+      // Update the target control point
       Vec2d im2D( im.x, im.y );
-      m_TeleoperationWidget->UpdateTargetPoint(im2D);
+      m_control->SetTarget(im2D);
+      m_imageViewerWidget->onUpdateOverlay();
 
       // Forward events if functionality is desired
       //vtkInteractorStyleImage::OnLeftButtonDown();
@@ -82,6 +87,7 @@ namespace Nf
     // Point arry for user selected image point
     ImageViewer2DTeleoperationWidget* m_imageViewerWidget;
     Teleoperation2DWidget *m_TeleoperationWidget;
+    ControlAlgorithms *m_control;
     vtkSmartPointer < vtkRenderWindowInteractor > m_interactor;
   };
 }

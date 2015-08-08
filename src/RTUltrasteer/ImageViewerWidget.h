@@ -3,6 +3,7 @@
 
 #include "UICore.h"
 #include "CubeVisualizer.h"
+#include "ControlAlgorithms.h"
 #include <QVTKWidget.h>
 #include "Resizable.h"
 #include "RPFileReader.h"
@@ -31,6 +32,7 @@
 namespace Nf
 {
   class Teleoperation2DWidget; // Empty to avoid circular dependency
+  //class ControlAlgorithms;    // Empty to avoid circular dependency
 
   class ImageViewerWidget : public ResizableQVTKWidget, public ParameterCollection
   {
@@ -110,18 +112,22 @@ namespace Nf
     
     bool m_initTeleop;
     Teleoperation2DWidget *m_teleoperationWidget;
+    ControlAlgorithms *m_control;
 
   public:
     ImageViewer2DTeleoperationWidget(QWidget *parent);
     virtual ~ImageViewer2DTeleoperationWidget();
     void SetImage(const RPData *rp);
-    void SetPoseOverlay(int r, Vec2d t, bool show, Vec2d p, Vec2d pz, Vec2d py);
+    void DrawTargetIcon(Vec3d t);
+    void DrawTipIcon(Vec3d p, Vec3d pz, Vec3d py);
     void SetTargetText(Vec2d px, Vec3d wpt);
     void SetSegmentationText(Matrix33d R, Vec3d p);
     void SetInstructionText(char* str);
     void SetVarianceText(Vec3d var);
     void SetTeleoperation2DWidget(Teleoperation2DWidget *widget);
     void getImageDim(int &w, int &h);
+    void setControl(ControlAlgorithms* control);
+    void onUpdateOverlay();
   };
 
 }

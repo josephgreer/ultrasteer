@@ -209,6 +209,12 @@ namespace Nf
   {
     return P_hat;
   }
+  
+  /// \brief  Get the current variance of the x,y,z estimates
+  Vec3d UnscentedKalmanFilter::getCurrentXYZVariance()
+  {
+    return Vec3d(P_hat.m_data[0][0],P_hat.m_data[1][1],P_hat.m_data[2][2]);
+  }
 
   /// \brief		Create Sigma point to represent a normal distribution
   void UnscentedKalmanFilter::sigmas(Matrix44d x, Matrix66d P, std::vector<Matrix44d> &X)
