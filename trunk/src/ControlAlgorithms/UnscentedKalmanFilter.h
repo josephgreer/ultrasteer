@@ -25,6 +25,7 @@ namespace Nf
     void zeroRotationEstimate();
     Matrix66d getCurrentCovariance();
     Matrix44d getCurrentEstimate();
+    Vec3d getCurrentXYZVariance();
 
     Matrix33d vec2mat(Vec3d r);
     Vec3d mat2vec(Matrix33d R);

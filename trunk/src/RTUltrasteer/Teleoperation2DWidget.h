@@ -4,6 +4,7 @@
 #include "UICore.h"
 #include <QGroupBox>
 #include <QGridLayout>
+#include <QElapsedTimer>
 #include <QPushButton>
 #include "Resizable.h"
 #include "ImageViewerWidget.h"
@@ -13,6 +14,7 @@
 #include <QtDebug>
 #include "NeedleSteeringRobot.h"
 #include "ControlAlgorithms.h"
+
 
 namespace Nf
 {
@@ -24,27 +26,30 @@ namespace Nf
     std::tr1::shared_ptr <ImageViewer2DTeleoperationWidget> m_imageViewer;
     RPData m_data;
     QGridLayout *m_layout;
+    QVBoxLayout *m_rightSubLayout;
+    QVBoxLayout *m_leftSubLayout;
     QPushButton *m_scanButton;
+    QPushButton *m_teleoperateButton;
     NeedleSteeringRobot* m_robot;
     ControlAlgorithms* m_control;
-    std::tr1::shared_ptr < QTimer > m_scanTick;
-    f32 m_scanTime;
-    bool m_manualScanning;
+    std::tr1::shared_ptr < QTimer > m_preScanTimer;
+    QElapsedTimer m_scanTimer;
+    //f32 m_scanTime;
 
   public:
     Teleoperation2DWidget(QWidget *parent);
     virtual ~Teleoperation2DWidget();
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
-    void UpdateTargetPoint(Vec2d pt);
     void setRobot(NeedleSteeringRobot* robot);
     void setControl(ControlAlgorithms* control);
     std::vector < QVTKWidget * > GetChildWidgets();
-    void onUpdateOverlay();
+    void displayScanTimeRemaining();
 
   public slots:
     void onStartManualNeedleScan();
-    void onManualScanTick();
+    void onStartStopTeleoperation();
+    void onManualTimeout();
   };
 
   class Teleoperation2DFileWidget : public Teleoperation2DWidget
