@@ -34,15 +34,16 @@ namespace Nf
     ControlAlgorithms* m_control;
     std::tr1::shared_ptr < QTimer > m_preScanTimer;
     QElapsedTimer m_scanTimer;
+    bool m_controlInit;
     //f32 m_scanTime;
 
   public:
-    Teleoperation2DWidget(QWidget *parent);
+    Teleoperation2DWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control);
     virtual ~Teleoperation2DWidget();
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
-    void setRobot(NeedleSteeringRobot* robot);
-    void setControl(ControlAlgorithms* control);
+    //void setRobot(NeedleSteeringRobot* robot);
+    //void setControl(ControlAlgorithms* control);
     std::vector < QVTKWidget * > GetChildWidgets();
     void displayScanTimeRemaining();
 
@@ -60,7 +61,7 @@ namespace Nf
     RPFileReaderCollection *m_rpReaders;
 
   public:
-    Teleoperation2DFileWidget(QWidget *parent);
+    Teleoperation2DFileWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control);
     virtual ~Teleoperation2DFileWidget();
 
     //Filename
@@ -84,7 +85,7 @@ namespace Nf
     std::tr1::shared_ptr < QTimer > m_tick;
 
   public:
-    Teleoperation2DStreamingWidget(QWidget *parent);
+    Teleoperation2DStreamingWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control);
     virtual ~Teleoperation2DStreamingWidget();
 
     //IP

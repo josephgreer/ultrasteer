@@ -1,18 +1,18 @@
 #include "Teleoperation2DWidget.h"
 
-#define   TSCAN   4000.0  // total manual scan time in ms
+#define   TSCAN   4.0  // total manual scan time in ms
 
 namespace Nf
 {
-  Teleoperation2DWidget::Teleoperation2DWidget(QWidget *parent)
+  Teleoperation2DWidget::Teleoperation2DWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control)
     : Nf::ParameterCollection("Teleoperation 2D")
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
-    , m_robot(NULL)
-    , m_control(NULL)
   {
+    m_robot = robot;
+    m_control = control;
 
-    m_imageViewer = std::tr1::shared_ptr<ImageViewer2DTeleoperationWidget>(new ImageViewer2DTeleoperationWidget(parent));
-    m_imageViewer->SetTeleoperation2DWidget(this);
+    m_imageViewer = std::tr1::shared_ptr<ImageViewer2DTeleoperationWidget>(new ImageViewer2DTeleoperationWidget(parent, control));
+    //m_imageViewer->SetTeleoperation2DWidget(this);
 
     m_scanButton = new QPushButton("Scan Needle", parent);
     QFont font = m_scanButton->font();
@@ -73,16 +73,17 @@ namespace Nf
     return res;
   }
 
-  void Teleoperation2DWidget::setRobot(NeedleSteeringRobot* robot)
-  {
-    m_robot = robot;
-  }
+  //void Teleoperation2DWidget::setRobot(NeedleSteeringRobot* robot)
+  //{
+  //  m_robot = robot;
+  //}
 
-  void Teleoperation2DWidget::setControl(ControlAlgorithms* control)
-  {
-    m_control = control;
-    m_imageViewer->setControl(m_control);
-  }
+  //void Teleoperation2DWidget::setControl(ControlAlgorithms* control)
+  //{
+  //  m_control = control;
+  //  m_imageViewer->setControl(m_control);
+  //  m_controlInit = true;
+  //}
 
   void Teleoperation2DWidget::onStartStopTeleoperation()
   {
@@ -114,29 +115,31 @@ namespace Nf
       // stop the preparation timer and begin the manual scan
       m_preScanTimer->stop();
       m_scanTimer.start();
+      displayScanTimeRemaining();
       m_control->startStopManualScanning(true);
   }
 
   void Teleoperation2DWidget::displayScanTimeRemaining()
   {
     qint64 nsecs = m_scanTimer.nsecsElapsed();
-    double secs = double(nsecs/1000000);
+    double secs = double(nsecs/1e9);
     char str [100];
-    int n = sprintf(str, ".2%f seconds remaining...",secs);
+    int n = sprintf(str, "%.2f seconds remaining...",TSCAN-secs);
     m_imageViewer->SetInstructionText(str);
 
     if( secs > TSCAN ){
       m_control->startStopManualScanning( false );
+      m_imageViewer->SetInstructionText(" ");
     }
   }
 
-  Teleoperation2DFileWidget::Teleoperation2DFileWidget(QWidget *parent)
-    : Teleoperation2DWidget(parent) 
+  Teleoperation2DFileWidget::Teleoperation2DFileWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control)
+    : Teleoperation2DWidget(parent, robot, control) 
     , m_rpReaders(NULL)
   {
 
     //ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, Teleoperation2DFileWidget), this, "F:/TargetScans/TargetDataSet.b8", "Any File (*.*)");
-    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, Teleoperation2DFileWidget), this, "F:/NeedleScan/6_12_15/Scan1/scan.b8", "Any File (*.*)");
+    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, Teleoperation2DFileWidget), this, "D:/NeedleScan/6_12_15/Scan1/scan.b8", "Any File (*.*)");
     ADD_INT_PARAMETER(m_frame, "Frame Index", CALLBACK_POINTER(onUpdateFrame, Teleoperation2DFileWidget), this, 1, 1, 100, 1);
 
     onUpdateFile();
@@ -185,8 +188,13 @@ namespace Nf
 
     m_data = m_rpReaders->GetRPData(m_frame->GetValue());
     m_imageViewer->SetImage(&m_data);
+
     m_control->controlHeartBeat(m_data);
     m_imageViewer->onUpdateOverlay();
+
+    if( m_control->inManualScanning() )
+      displayScanTimeRemaining();
+
   }
 
   Teleoperation2DFileWidget::~Teleoperation2DFileWidget()
@@ -194,8 +202,8 @@ namespace Nf
 
   }
   
-  Teleoperation2DStreamingWidget::Teleoperation2DStreamingWidget(QWidget *parent)
-    : Teleoperation2DWidget(parent) 
+  Teleoperation2DStreamingWidget::Teleoperation2DStreamingWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control)
+    : Teleoperation2DWidget(parent, robot, control) 
   {
     ADD_STRING_PARAMETER(m_rpIp, "Ulterius IP", NULL, this, "192.168.1.64");
     ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, Teleoperation2DStreamingWidget), this, false);

@@ -115,7 +115,7 @@ namespace Nf
     ControlAlgorithms *m_control;
 
   public:
-    ImageViewer2DTeleoperationWidget(QWidget *parent);
+    ImageViewer2DTeleoperationWidget(QWidget *parent, ControlAlgorithms* control);
     virtual ~ImageViewer2DTeleoperationWidget();
     void SetImage(const RPData *rp);
     void DrawTargetIcon(Vec3d t);

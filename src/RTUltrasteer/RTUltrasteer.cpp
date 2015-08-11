@@ -591,11 +591,11 @@ void RTUltrasteer::CreateTeleoperation2DFileDock()
   m_teleoperation2DFileDock = new QDockWidget(tr("2DTeleoperationFileDock"), this);
   m_teleoperation2DFileDock->setAllowedAreas(Qt::AllDockWidgetAreas);
 
-  m_teleoperation2DFileWidget = new Nf::Teleoperation2DFileWidget(m_teleoperation2DFileDock);
+  m_teleoperation2DFileWidget = new Nf::Teleoperation2DFileWidget(m_teleoperation2DFileDock, &m_robot, &m_control);
   m_teleoperation2DFileDock->setWidget(m_teleoperation2DFileWidget);
 
-  m_teleoperation2DFileWidget->setRobot(&m_robot);
-  m_teleoperation2DFileWidget->setControl(&m_control);
+  //m_teleoperation2DFileWidget->setRobot(&m_robot);
+  //m_teleoperation2DFileWidget->setControl(&m_control);
     
   m_teleoperation2DFileDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
@@ -605,11 +605,11 @@ void RTUltrasteer::CreateTeleoperation2DStreamDock()
   m_teleoperation2DStreamDock = new QDockWidget(tr("2DTeleoperationStreamingDock"), this);
   m_teleoperation2DStreamDock->setAllowedAreas(Qt::AllDockWidgetAreas);
 
-  m_teleoperation2DStreamWidget = new Nf::Teleoperation2DStreamingWidget(m_teleoperation2DStreamDock);
+  m_teleoperation2DStreamWidget = new Nf::Teleoperation2DStreamingWidget(m_teleoperation2DStreamDock, &m_robot, &m_control);
   m_teleoperation2DStreamDock->setWidget(m_teleoperation2DStreamWidget);
 
-  m_teleoperation2DStreamWidget->setRobot(&m_robot);
-  m_teleoperation2DStreamWidget->setControl(&m_control);
+  //m_teleoperation2DStreamWidget->setRobot(&m_robot);
+  //m_teleoperation2DStreamWidget->setControl(&m_control);
     
   m_teleoperation2DStreamDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
