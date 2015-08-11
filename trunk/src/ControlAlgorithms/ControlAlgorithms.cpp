@@ -84,7 +84,12 @@ namespace Nf {
 
   void ControlAlgorithms::controlHeartBeat(RPData data)
   {
-    m_data = data;
+    if(m_data.gps.valid)
+    {
+      m_data.Release();
+    }
+    
+    m_data = data.Clone();
 
     if( m_inManualScanning ) // if manually scanning
       m_segmentation.addManualScanFrame(data);
@@ -183,7 +188,7 @@ namespace Nf {
     if( m_targetDefined ){ // if we have defined the target
       t_img = WorldPtToImagePt(m_t);
 
-      if( fabs(t_img.z) < 5.0 ){ // if the target is within 5 mm of the image plane
+      if( fabs(t_img.z) < 10.0 ){ // if the target is within 5 mm of the image plane
         show_t = true;
         t = m_t;
       }
@@ -195,7 +200,7 @@ namespace Nf {
       p = T.GetPosition();
       p_img = WorldPtToImagePt(p);
 
-      if( fabs(p_img.z) < 5.0 ){ // if the tip estimate is within 5 mm of the image plane
+      if( fabs(p_img.z) < 15.0 ){ // if the tip estimate is within 5 mm of the image plane
         show_S = true;
         Sxyz = m_UKF.getCurrentXYZVariance();
 

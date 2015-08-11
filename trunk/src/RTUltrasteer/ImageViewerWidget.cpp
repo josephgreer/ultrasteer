@@ -255,11 +255,13 @@ namespace Nf
   ////////////////////////////////////////////////////////
   // Begin ImageViewer2DTeleoperationWidget
   ////////////////////////////////////////////////////////
-  ImageViewer2DTeleoperationWidget::ImageViewer2DTeleoperationWidget(QWidget *parent)
+  ImageViewer2DTeleoperationWidget::ImageViewer2DTeleoperationWidget(QWidget *parent, ControlAlgorithms* control)
     : ImageViewerWidget(parent) 
     , m_initTeleop(false)
     , m_mask(NULL)
   {
+    m_control = control;
+
     m_textActor1 = vtkSmartPointer<vtkTextActor>::New();
     m_textActor2 = vtkSmartPointer<vtkTextActor>::New();
     m_textActor3 = vtkSmartPointer<vtkTextActor>::New();
@@ -383,7 +385,7 @@ namespace Nf
 
   void ImageViewer2DTeleoperationWidget::SetTeleoperation2DWidget(Teleoperation2DWidget *widget)
   { 
-    m_teleoperationWidget = widget;  
+    m_teleoperationWidget = widget;
   }
 
   void ImageViewer2DTeleoperationWidget::setControl(ControlAlgorithms* control)
