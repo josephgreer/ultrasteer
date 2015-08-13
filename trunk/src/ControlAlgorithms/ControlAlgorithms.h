@@ -48,6 +48,7 @@ namespace Nf {
 
   private:
     Vec3d m_t;
+    Matrix44d m_x;
     Matrix44d m_measurement;
     bool m_targetDefined;
     bool m_estimateDefined;
