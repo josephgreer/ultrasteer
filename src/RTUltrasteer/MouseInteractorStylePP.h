@@ -70,9 +70,9 @@ namespace Nf
       this->Interactor->GetPicker()->GetPickPosition(ima);
       Vec3d im(ima[0],ima[1],ima[2]);
       // flip the y-axis point
-      int w,h;
-      m_imageViewerWidget->getImageDim(w, h);
-      im.y = double(h - 1) - ima[1]; 
+      //int w,h;
+      //m_imageViewerWidget->getImageDim(w, h);
+      im.y = -1.0*ima[1]; 
 
       // Update the target control point
       Vec2d im2D( im.x, im.y );

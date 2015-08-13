@@ -189,11 +189,11 @@ namespace Nf {
     //END_TIMING(DopplerPointSaving,10)
 
     // save images for debugging
-    cvSaveImage("D:/bmode.jpg", data.b8);
-    cvSaveImage("D:/doppler.jpg", data.color);
-    cvSaveImage("D:/binary.jpg",binary);
-    cvSaveImage("D:/gray.jpg",gray);
-    imwrite("D:/graySingle.jpg",gray_mat);
+    cvSaveImage("F:/bmode.jpg", data.b8);
+    cvSaveImage("F:/doppler.jpg", data.color);
+    cvSaveImage("F:/binary.jpg",binary);
+    cvSaveImage("F:/gray.jpg",gray);
+    imwrite("F:/graySingle.jpg",gray_mat);
 
     // Clean up
     cvReleaseImage(&binary);
