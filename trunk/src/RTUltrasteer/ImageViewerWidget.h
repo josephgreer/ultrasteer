@@ -44,6 +44,7 @@ namespace Nf
     vtkSmartPointer < vtkImageFlip > m_flip;
     vtkSmartPointer < vtkRenderWindowInteractor > m_interactor;
     RPData m_rp;
+    IplImage *m_temp;
     bool m_init;
     bool m_useTrackball;
 

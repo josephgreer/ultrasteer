@@ -30,6 +30,7 @@ namespace Nf
     , m_rp()
     , m_init(false)
     , m_useTrackball(false)
+    , m_temp(NULL)
   {
     m_mapper = vtkSmartPointer<vtkImageMapper>::New();
     m_importer = vtkSmartPointer<vtkImageImport>::New();
@@ -43,6 +44,10 @@ namespace Nf
   ImageViewerWidget::~ImageViewerWidget()
   {
     m_rp.Release();
+    if(m_temp != NULL) {
+      cvReleaseImage(&m_temp);
+      m_temp = NULL;
+    }
   }
 
   void ImageViewerWidget::SetImage(const RPData *rp)
@@ -53,19 +58,17 @@ namespace Nf
     }
 
     if(m_rp.color) {
-      IplImage *orig = m_rp.color;
-      CvSize s = cvSize(orig->width, orig->height);
-      int d = orig->depth;
-      
-      // THIS IS A HACK TO GET THE DOPPLER TO DISPLAY, NEED TO TALK TO JOEY ABOUT THIS
-      IplImage* R = cvCreateImage(s, d, 1);
-      IplImage* G = cvCreateImage(s, d, 1);
-      IplImage* B = cvCreateImage(s, d, 1);
-      IplImage* X = cvCreateImage(s, d, 1);
-      IplImage* im = cvCreateImage(s, d, 4);
-      cvSplit(orig, B, G, R, X);
-      cvMerge(R, G, B, R, im);
 
+      if(m_temp == NULL) {
+        IplImage *orig = m_rp.color;
+        CvSize s = cvSize(orig->width, orig->height);
+        int d = orig->depth;
+        int nchans = orig->nChannels == 4 ? 3 : orig->nChannels;
+        m_temp = cvCreateImage(s, d, nchans);
+      }
+      cvCvtColor(m_rp.color,m_temp, CV_BGRA2RGB);
+      IplImage *im = m_temp;
+      
       // Set up importer
       m_importer->SetDataOrigin(0,0,0);
       SetDataSpacing(rp);
@@ -321,15 +324,15 @@ namespace Nf
       m_mapTransparency->SetInputData((vtkDataObject *)m_maskImporter->GetOutput());
 
       // Flip the overlay image
-      m_maskFlip->SetFilteredAxes(1);
-      m_maskFlip->SetInputConnection(m_mapTransparency->GetOutputPort());
-      m_maskFlip->Update();
-      m_maskActor->GetMapper()->SetInputConnection(m_mapTransparency->GetOutputPort());
-      m_renderer->AddActor2D(m_maskActor);
-      //m_maskActor->RotateZ(180);
-      //m_maskActor->RotateY(180);
+      //m_maskFlip->SetFilteredAxes(1);
+      //m_maskFlip->SetInputConnection(m_mapTransparency->GetOutputPort());
+      //m_maskFlip->Update();
       //m_maskActor->GetMapper()->SetInputConnection(m_mapTransparency->GetOutputPort());
       //m_renderer->AddActor2D(m_maskActor);
+      m_maskActor->RotateZ(180);
+      m_maskActor->RotateY(180);
+      m_maskActor->GetMapper()->SetInputConnection(m_mapTransparency->GetOutputPort());
+      m_renderer->AddActor2D(m_maskActor);
 
       // Add text overlay for selected target coordinates
       m_textActor1->GetTextProperty()->SetFontSize ( 24 );
@@ -486,7 +489,7 @@ namespace Nf
 
     if( r > -1 ) // If we have a circle to draw
     {
-      cvCircle(m_mask,cvPoint(t.x,m_mask->height-1-t.y),r,cvScalar(1.0),5,CV_AA);
+      cvCircle(m_mask,cvPoint(t.x,t.y),r,cvScalar(1.0),5,CV_AA);
 
       // Update the VTK rendering
       m_maskImporter->Update();
@@ -497,8 +500,8 @@ namespace Nf
 
   void ImageViewer2DTeleoperationWidget::DrawTipIcon(Vec3d p, Vec3d pz, Vec3d py)
   {
-    cvLine(m_mask,cvPoint(p.x,m_mask->height-1-p.y),cvPoint(pz.x, m_mask->height-1-pz.y),cvScalar(1.0),3,CV_AA);
-    cvLine(m_mask,cvPoint(p.x,m_mask->height-1-p.y),cvPoint(py.x, m_mask->height-1-py.y),cvScalar(1.0),3,CV_AA);
+    cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(pz.x, m_mask->height-1-pz.y),cvScalar(1.0),3,CV_AA);
+    cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(py.x, m_mask->height-1-py.y),cvScalar(1.0),3,CV_AA);
 
     // Update the VTK rendering
     m_maskImporter->Update();
