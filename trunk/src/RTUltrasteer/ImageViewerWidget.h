@@ -51,6 +51,7 @@ namespace Nf
     ImageViewerWidget(QWidget *parent);
     virtual ~ImageViewerWidget();
     virtual void SetImage(const RPData *rp);
+    virtual void SetDataSpacing(const RPData *rp);
   };
 
   
@@ -128,6 +129,7 @@ namespace Nf
     void getImageDim(int &w, int &h);
     void setControl(ControlAlgorithms* control);
     void onUpdateOverlay();
+    virtual void SetDataSpacing(const RPData *rp);
   };
 
 }
