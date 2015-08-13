@@ -68,8 +68,7 @@ namespace Nf
 
       // Set up importer
       m_importer->SetDataOrigin(0,0,0);
-      m_importer->SetDataSpacing(1,1,1);
-      //m_importer->SetDataSpacing(rp->mpp/1000.0,rp->mpp/1000.0,1);
+      SetDataSpacing(rp);
       m_importer->SetWholeExtent(0, im->width-1, 0, im->height-1, 0, 0);
       m_importer->SetDataExtentToWholeExtent();
       m_importer->SetDataScalarTypeToUnsignedChar();
@@ -82,16 +81,16 @@ namespace Nf
     // Initialize
     if(!m_init) {
 
-      m_flip->SetFilteredAxes(1);
-      m_flip->SetInputData((vtkDataObject *)m_importer->GetOutput());
-      m_flip->Update();
-      m_imageActor->SetInputData(m_flip->GetOutput());
-      m_renderer->AddActor2D(m_imageActor);
+      //m_flip->SetFilteredAxes(1);
+      //m_flip->SetInputData((vtkDataObject *)m_importer->GetOutput());
+      //m_flip->Update();
+      //m_imageActor->SetInputData(m_flip->GetOutput());
+      //m_renderer->AddActor2D(m_imageActor);
 
-      //m_imageActor->RotateZ(180);
-      //m_imageActor->RotateY(180);
-      //m_imageActor->SetInputData(m_importer->GetOutput());
-      //m_renderer->AddActor(m_imageActor);
+      m_imageActor->RotateZ(180);
+      m_imageActor->RotateY(180);
+      m_imageActor->SetInputData(m_importer->GetOutput());
+      m_renderer->AddActor(m_imageActor);
 
       this->GetRenderWindow()->AddRenderer(m_renderer);
 
@@ -119,6 +118,12 @@ namespace Nf
       QVTKWidget::update();
     m_init = true;
   }
+
+  void ImageViewerWidget::SetDataSpacing(const RPData *rp)
+  {
+    m_importer->SetDataSpacing(rp->mpp/1000.0,rp->mpp/1000.0,1);
+  }
+
   ////////////////////////////////////////////////////////
   // End ImageViwerWidget
   ////////////////////////////////////////////////////////
@@ -505,6 +510,11 @@ namespace Nf
   {
     w = m_rp.b8->width;
     h = m_rp.b8->height;
+  }
+
+  void ImageViewer2DTeleoperationWidget::SetDataSpacing(const RPData *rp)
+  {
+    m_importer->SetDataSpacing(1,1,1);
   }
   ////////////////////////////////////////////////////////
   // End ImageViewer2DTeleoperationWidget
