@@ -500,8 +500,8 @@ namespace Nf
 
   void ImageViewer2DTeleoperationWidget::DrawTipIcon(Vec3d p, Vec3d pz, Vec3d py)
   {
-    cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(pz.x, m_mask->height-1-pz.y),cvScalar(1.0),3,CV_AA);
-    cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(py.x, m_mask->height-1-py.y),cvScalar(1.0),3,CV_AA);
+    cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(pz.x, pz.y),cvScalar(1.0),3,CV_AA);
+    cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(py.x, py.y),cvScalar(1.0),3,CV_AA);
 
     // Update the VTK rendering
     m_maskImporter->Update();

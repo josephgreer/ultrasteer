@@ -44,8 +44,12 @@ namespace Nf {
   {
     if( start ){
         resetManualScan();
+        m_inManualScanning = true;
+    }else{
+      m_inManualScanning = false;
+      m_x = processManualScan();
+      m_estimateDefined = true;
     }
-    m_inManualScanning = start;
   }
   
   void ControlAlgorithms::SetTarget(Vec2d t_im)
@@ -196,11 +200,13 @@ namespace Nf {
 
     if( m_estimateDefined ){ // if we have defined the estimate
       Matrix44d T;
-      GetPoseEstimate(T);
+      T = m_x;
+      //GetPoseEstimate(T);
       p = T.GetPosition();
+      R = T.GetOrientation();
       p_img = WorldPtToImagePt(p);
 
-      if( fabs(p_img.z) < 15.0 ){ // if the tip estimate is within 5 mm of the image plane
+      if( fabs(p_img.z) < 10.0 ){ // if the tip estimate is within 5 mm of the image plane
         show_S = true;
         Sxyz = m_UKF.getCurrentXYZVariance();
 
