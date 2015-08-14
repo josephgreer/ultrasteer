@@ -49,6 +49,8 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   ADD_BOOL_PARAMETER(m_robotHWWidgetVisible, "Show Robot HW Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_teleoperation2DFileWidgetVisible, "Show 2D Teleoperation File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
   ADD_BOOL_PARAMETER(m_teleoperation2DStreamWidgetVisible, "Show 2D Teleoperation Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
+  ADD_BOOL_PARAMETER(m_emCalibrationFileWidgetVisible, "Show EM Calibration File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
+  ADD_BOOL_PARAMETER(m_emCalibrationStreamWidgetVisible, "Show EM Calibration Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
 
   CreateUSVisualizer();
   CreateMenuDock();
@@ -59,6 +61,8 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   CreateRobotHWDock();
   CreateTeleoperation2DFileDock();
   CreateTeleoperation2DStreamDock();
+  CreateEMCalibrationFileDock();
+  CreateEMCalibrationStreamDock();
 
   QTreeWidgetItem * rt = new QTreeWidgetItem(m_params);
   rt->setText(0, this->GetName());
@@ -96,6 +100,14 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   rpTLSW->setText(0, "Teleoperation2DStream");
   CreateUIElements(rpTLSW, *m_teleoperation2DStreamWidget, m_teleoperation2DStreamWidget->GetChildWidgets());
 
+  QTreeWidgetItem * rpEMCFW = new QTreeWidgetItem(m_params);
+  rpEMCFW->setText(0, "EMCalibrationFile");
+  CreateUIElements(rpEMCFW, *m_EMCalibrationFileWidget, m_EMCalibrationFileWidget->GetChildWidgets());
+
+  QTreeWidgetItem * rpEMCSW = new QTreeWidgetItem(m_params);
+  rpEMCSW->setText(0, "EMCalibrationStream");
+  CreateUIElements(rpEMCSW, *m_EMCalibrationStreamWidget, m_EMCalibrationStreamWidget->GetChildWidgets());
+
   //Add to our map of root dock windows
   m_roots[std::string("USDock")].dock = m_usDock;
   m_roots[std::string("USDock")].param = m_usDockVisible.get();
@@ -129,6 +141,14 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   m_roots[std::string("2DTeleoperationStreamingDock")].param = m_teleoperation2DStreamWidgetVisible.get();
   m_roots[std::string("2DTeleoperationStreamingDock")].root = rpTLSW;
   m_roots[std::string("2DTeleoperationStreamingDock")].resize = (Resizable *)m_teleoperation2DStreamWidget;
+  m_roots[std::string("EMCalibrationFileDock")].dock = m_EMCalibrationFileDock;
+  m_roots[std::string("EMCalibrationFileDock")].param = m_emCalibrationFileWidgetVisible.get();
+  m_roots[std::string("EMCalibrationFileDock")].root = rpEMCFW;
+  m_roots[std::string("EMCalibrationFileDock")].resize = (Resizable *)m_EMCalibrationFileWidget;
+  m_roots[std::string("EMCalibrationStreamingDock")].dock = m_EMCalibrationStreamDock;
+  m_roots[std::string("EMCalibrationStreamingDock")].param = m_emCalibrationStreamWidgetVisible.get();
+  m_roots[std::string("EMCalibrationStreamingDock")].root = rpEMCSW;
+  m_roots[std::string("EMCalibrationStreamingDock")].resize = (Resizable *)m_EMCalibrationStreamWidget;
 
   QDockWidget *last = NULL;
   for(std::map < std::string, DockWidgetInfo >::iterator i=m_roots.begin(); i!=m_roots.end(); i++) {
@@ -596,10 +616,7 @@ void RTUltrasteer::CreateTeleoperation2DFileDock()
 
   m_teleoperation2DFileWidget = new Nf::Teleoperation2DFileWidget(m_teleoperation2DFileDock, &m_robot, &m_control);
   m_teleoperation2DFileDock->setWidget(m_teleoperation2DFileWidget);
-
-  //m_teleoperation2DFileWidget->setRobot(&m_robot);
-  //m_teleoperation2DFileWidget->setControl(&m_control);
-    
+      
   m_teleoperation2DFileDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
 
@@ -610,12 +627,36 @@ void RTUltrasteer::CreateTeleoperation2DStreamDock()
 
   m_teleoperation2DStreamWidget = new Nf::Teleoperation2DStreamingWidget(m_teleoperation2DStreamDock, &m_robot, &m_control);
   m_teleoperation2DStreamDock->setWidget(m_teleoperation2DStreamWidget);
-
-  //m_teleoperation2DStreamWidget->setRobot(&m_robot);
-  //m_teleoperation2DStreamWidget->setControl(&m_control);
-    
+      
   m_teleoperation2DStreamDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
+
+
+
+void RTUltrasteer::CreateEMCalibrationFileDock()
+{
+  m_EMCalibrationFileDock = new QDockWidget(tr("EMCalibrationFileDock"), this);
+  m_EMCalibrationFileDock->setAllowedAreas(Qt::AllDockWidgetAreas);
+
+  m_EMCalibrationFileWidget = new Nf::EMCalibrationFileWidget(m_EMCalibrationFileDock);
+  m_EMCalibrationFileDock->setWidget(m_EMCalibrationFileWidget);
+
+  m_EMCalibrationFileDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
+}
+
+void RTUltrasteer::CreateEMCalibrationStreamDock()
+{
+  m_EMCalibrationStreamDock = new QDockWidget(tr("EMCalibrationStreamingDock"), this);
+  m_EMCalibrationStreamDock->setAllowedAreas(Qt::AllDockWidgetAreas);
+
+  m_EMCalibrationStreamWidget = new Nf::EMCalibrationStreamingWidget(m_EMCalibrationStreamDock);
+  m_EMCalibrationStreamDock->setWidget(m_EMCalibrationStreamWidget);
+    
+  m_EMCalibrationStreamDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
+}
+
+
+
 
 void RTUltrasteer::CreateMenuDock()
 {
@@ -657,4 +698,8 @@ RTUltrasteer::~RTUltrasteer()
     delete m_teleoperation2DFileDock;
   if(m_teleoperation2DStreamDock)
     delete m_teleoperation2DStreamDock;
+  if(m_EMCalibrationFileDock)
+    delete m_EMCalibrationFileDock;
+  if(m_EMCalibrationStreamDock)
+    delete m_EMCalibrationStreamDock;
 }
