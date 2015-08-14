@@ -170,6 +170,12 @@ namespace Nf {
     }
   }
 
+  void RPUlteriusReaderCollection::SetFrameInformation(f64 mpp, Vec2d origin)
+  {
+    m_mpp = mpp;
+    m_origin = origin;
+  }
+
   u8 RPUlteriusReaderCollection::AddData(void* data, int type, int sz, bool cine, int frmnum, bool doLock)
   {
     u32 tick = timeGetTime();

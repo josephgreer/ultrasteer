@@ -51,12 +51,12 @@ namespace Nf
   public:
     ImageViewerWidget(QWidget *parent);
     virtual ~ImageViewerWidget();
-    virtual void SetImage(const RPData *rp);
+    virtual void SetImage(const RPData *rp, RP_TYPE type);
     virtual void SetDataSpacing(const RPData *rp);
   };
 
   
-  class Image3DImagePlaneWidget : public ImageViewerWidget, public SphereContainer
+  class Image3DImagePlaneWidget : public ImageViewerWidget, public SphereContainer, public AxisContainer
   {
   protected:
     Matrix44d m_cal;        //Calibration Matrix for transducer (maps image coords to world coords)
@@ -64,7 +64,7 @@ namespace Nf
   public:
     Image3DImagePlaneWidget(QWidget *parent);
     virtual ~Image3DImagePlaneWidget();
-    virtual void SetImage(const RPData *rp);
+    virtual void SetImage(const RPData *rp, RP_TYPE type);
 
     //update Frame boundaries
     void UpdateFrameBoundaries();
@@ -119,7 +119,7 @@ namespace Nf
   public:
     ImageViewer2DTeleoperationWidget(QWidget *parent, ControlAlgorithms* control);
     virtual ~ImageViewer2DTeleoperationWidget();
-    void SetImage(const RPData *rp);
+    void SetImage(const RPData *rp, RP_TYPE type);
     void DrawTargetIcon(Vec3d t);
     void DrawTipIcon(Vec3d p, Vec3d pz, Vec3d py);
     void SetTargetText(Vec2d px, Vec3d wpt);

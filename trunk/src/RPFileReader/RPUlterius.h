@@ -31,6 +31,8 @@ namespace Nf {
 
 		void UpdateImageDescs();
 
+    virtual void SetFrameInformation(f64 mpp, Vec2d origin);
+
 	protected:
     RPData m_gps;
     RPData m_gps2;

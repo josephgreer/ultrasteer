@@ -68,6 +68,7 @@ void USVisualizerWidget::UpdateFrameBoundaries()
     m_renderer->RemoveActor(m_frameBoundaries->GetActor());
   }
   if(m_last.gps2.valid) {
+    Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(m_last.gps2.pose).GetOrientation(), m_last.gps2.pos);
     if(m_sphereVis == NULL) {
       CreateSphere(m_last.gps2.pos, 1.0);
       m_renderer->AddActor(m_sphereVis->GetActor());
@@ -77,6 +78,16 @@ void USVisualizerWidget::UpdateFrameBoundaries()
     } else {
       m_sphereVis->SetCenter(m_last.gps2.pos);
       m_sphereVis->SetRadius(1.0);
+    }
+    if(m_axis == NULL) {
+      CreateAxis(posePos, 5.0);
+      m_renderer->AddActor(m_axis);
+    }
+    else if(!m_renderer->HasViewProp(m_axis)) {
+      UpdateAxis(posePos);
+      m_renderer->AddActor(m_axis);
+    } else {
+      UpdateAxis(posePos);
     }
   }
 }

@@ -33,7 +33,7 @@ namespace Nf
     
     //displayMode
     std::tr1::shared_ptr < Nf::EnumParameter > m_displayMode;
-    void onSetDisplayMode();
+    virtual void onSetDisplayMode();
     CLASS_CALLBACK(onSetDisplayMode, RPWidget);
 
     std::vector < QVTKWidget * > GetChildWidgets();
@@ -59,6 +59,8 @@ namespace Nf
     std::tr1::shared_ptr < Nf::IntParameter > m_frame;
     void onUpdateFrame();
     CLASS_CALLBACK(onUpdateFrame, RPFileWidget);
+
+    virtual void onSetDisplayMode();
   };
 
   class RPStreamingWidget : public RPWidget, public RPCallbackReceiver
@@ -99,6 +101,8 @@ namespace Nf
 
     //Origin
     std::tr1::shared_ptr < Nf::Vec2dParameter > m_origin;
+    void onFrameInfoChanged();
+    CLASS_CALLBACK(onFrameInfoChanged, RPStreamingWidget);
 
     //Doppler
     std::tr1::shared_ptr < Nf::BoolParameter > m_rcvDoppler;

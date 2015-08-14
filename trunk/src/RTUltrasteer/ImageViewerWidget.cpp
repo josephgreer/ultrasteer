@@ -50,25 +50,51 @@ namespace Nf
     }
   }
 
-  void ImageViewerWidget::SetImage(const RPData *rp)
+  static s32 correctNumChannels(const IplImage *a)
   {
-    if(rp->color != NULL) {
+    if(a->nChannels == 4)
+      return 3;
+    return a->nChannels;
+  }
+
+  static bool correctSizeImage(const IplImage *a, const IplImage *b)
+  {
+    if(a->width != b->width)
+      return false;
+    if(a->height != b->height)
+      return false;
+    if(a->depth != b->depth)
+      return false;
+    if(correctNumChannels(a) != b->nChannels)
+      return false;
+
+    return true;
+  }
+
+  void ImageViewerWidget::SetImage(const RPData *rp, RP_TYPE type)
+  {
+    if(rp->GetType(type) != NULL) {
       m_rp.Release();
       m_rp = rp->Clone();
     }
 
-    if(m_rp.color) {
+    IplImage *modality = m_rp.GetType(type);
 
-      if(m_temp == NULL) {
-        IplImage *orig = m_rp.color;
-        CvSize s = cvSize(orig->width, orig->height);
-        int d = orig->depth;
-        int nchans = orig->nChannels == 4 ? 3 : orig->nChannels;
-        m_temp = cvCreateImage(s, d, nchans);
+    if(modality != NULL) {
+
+      if(m_temp == NULL || !correctSizeImage(modality, m_temp)) {
+        if(m_temp != NULL) 
+          cvReleaseImage(&m_temp);
+        m_temp = cvCreateImage(cvSize(modality->width, modality->height), modality->depth, correctNumChannels(modality));
       }
-      cvCvtColor(m_rp.color,m_temp, CV_BGRA2RGB);
-      IplImage *im = m_temp;
-      
+      IplImage *im;
+      if(modality->nChannels == 4) {
+        cvCvtColor(modality, m_temp, CV_BGRA2RGB);
+        im = m_temp;
+      } else {
+        im = modality;
+      }
+
       // Set up importer
       m_importer->SetDataOrigin(0,0,0);
       SetDataSpacing(rp);
@@ -83,13 +109,6 @@ namespace Nf
 
     // Initialize
     if(!m_init) {
-
-      //m_flip->SetFilteredAxes(1);
-      //m_flip->SetInputData((vtkDataObject *)m_importer->GetOutput());
-      //m_flip->Update();
-      //m_imageActor->SetInputData(m_flip->GetOutput());
-      //m_renderer->AddActor2D(m_imageActor);
-
       m_imageActor->RotateZ(180);
       m_imageActor->RotateY(180);
       m_imageActor->SetInputData(m_importer->GetOutput());
@@ -116,10 +135,9 @@ namespace Nf
       vtkCamera *cam = m_renderer->GetActiveCamera();
       m_renderer->SetActiveCamera(cam);
     } 
-
-    if(m_rp.color)
-      QVTKWidget::update();
-    m_init = true;
+    if(m_rp.GetType(type) != NULL)
+      m_init = true;
+    QVTKWidget::update();
   }
 
   void ImageViewerWidget::SetDataSpacing(const RPData *rp)
@@ -153,9 +171,9 @@ namespace Nf
   {
   }
 
-  void Image3DImagePlaneWidget::SetImage(const RPData *rp)
+  void Image3DImagePlaneWidget::SetImage(const RPData *rp, RP_TYPE type)
   {
-    ImageViewerWidget::SetImage(rp);
+    ImageViewerWidget::SetImage(rp, type);
     if(m_init) {
       Matrix44d tPose = Matrix44d::FromCvMat(m_rp.gps.pose);
       Matrix33d pose = tPose.GetOrientation();
@@ -191,12 +209,19 @@ namespace Nf
       m_renderer->RemoveActor(m_frameBoundaries->GetActor());
     }
     if(m_rp.gps2.valid) {
+      Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(m_rp.gps2.pose).GetOrientation(), m_rp.gps2.pos);
       if(m_sphereVis == NULL) {
         CreateSphere(m_rp.gps2.pos, 1.0);
         m_renderer->AddActor(m_sphereVis->GetActor());
       } else {
         m_sphereVis->SetCenter(m_rp.gps2.pos);
         m_sphereVis->SetRadius(1.0);
+      }
+      if(m_axis == NULL) {
+        CreateAxis(posePos, 5);
+        m_renderer->AddActor(m_axis);
+      } else {
+        UpdateAxis(posePos);
       }
     }
   }
@@ -288,9 +313,9 @@ namespace Nf
       cvReleaseImage(&m_mask);
   }
 
-  void ImageViewer2DTeleoperationWidget::SetImage(const RPData *rp)
+  void ImageViewer2DTeleoperationWidget::SetImage(const RPData *rp, RP_TYPE type)
   {   
-    ImageViewerWidget::SetImage(rp);
+    ImageViewerWidget::SetImage(rp, type);
     
     if(!m_initTeleop){
       const IplImage *im = rp->b8;

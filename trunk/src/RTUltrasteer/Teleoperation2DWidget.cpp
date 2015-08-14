@@ -187,7 +187,7 @@ namespace Nf
     }
 
     m_data = m_rpReaders->GetRPData(m_frame->GetValue());
-    m_imageViewer->SetImage(&m_data);
+    m_imageViewer->SetImage(&m_data, RPF_BPOST32);
 
     m_control->controlHeartBeat(m_data);
     m_imageViewer->onUpdateOverlay();
@@ -229,7 +229,7 @@ namespace Nf
       Sleep(300);
 
       m_data = m_rpReaders->GetNextRPData();
-      m_imageViewer->SetImage(&m_data);
+      m_imageViewer->SetImage(&m_data, RPF_BPOST32);
 
       if(!m_tick) {
         m_tick = std::tr1::shared_ptr<QTimer>(new QTimer());
@@ -263,7 +263,7 @@ namespace Nf
       return;
 
     if(m_addFrames->GetValue()) {
-      m_imageViewer->SetImage(&m_data);
+      m_imageViewer->SetImage(&m_data, RPF_BPOST32);
       m_imageViewer->onUpdateOverlay();
       // add control heartbeat
     }
