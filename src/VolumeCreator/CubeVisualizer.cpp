@@ -256,6 +256,31 @@ namespace Nf {
   ////////////////////////////////////////////////////////
   //End SphereContainer Class
   ///////////////////////////////////////////////////////
+  
+  ////////////////////////////////////////////////////////
+  //Begin AxisContainer Class
+  ///////////////////////////////////////////////////////
+  AxisContainer::AxisContainer()
+    : m_axis(NULL)
+  {
+  }
+
+  void AxisContainer::CreateAxis(const Matrix44d &posePos, s32 scale)
+  {
+    m_axis = vtkSmartPointer<vtkAxesActor>::New();
+    m_axis->SetTotalLength(scale, scale, scale);
+    m_axis->PokeMatrix(posePos.GetVTKMatrix());
+    m_axis->Modified();
+  }
+
+  void AxisContainer::UpdateAxis(const Matrix44d &posePos)
+  {
+    m_axis->PokeMatrix(posePos.GetVTKMatrix());
+    m_axis->Modified();
+  }
+  ////////////////////////////////////////////////////////
+  //End AxisContainer Class
+  ///////////////////////////////////////////////////////
 
 };
 

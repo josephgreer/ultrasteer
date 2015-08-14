@@ -490,13 +490,16 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
     const QMetaObject &mo = Nf::QtEnums::staticMetaObject;
     QMetaEnum meta = mo.enumerator(mo.indexOfEnumerator(enums[i]->GetEnumName()));
     s32 maxLen = 0;
+    s32 curKy = -1;
     for(s32 ky=0; ky<meta.keyCount(); ky++) {
       combo->insertItem(ky, meta.key(ky));
       s32 len = strlen(meta.key(ky));
       maxLen = len > maxLen ? len : maxLen;
+      if(meta.value(ky) == enums[i]->GetValue())
+        curKy = ky;
     }
-    combo->setMaximumWidth(maxLen*10);     //multiply strlen by 8 to get right width of the combo box
-    combo->setCurrentIndex(enums[i]->GetValue());
+    combo->setMaximumWidth(maxLen*8);     //multiply strlen by 8 to get right width of the combo box
+    combo->setCurrentIndex(curKy);
 
     std::tr1::shared_ptr < Nf::EnumSlotForwarder > uiElem (new Nf::EnumSlotForwarder(enums[i]->GetEnumName(),
       enums[i]->GetCallback(), enums[i]->GetContext(), (QObject *)combo, repainters, NULL));

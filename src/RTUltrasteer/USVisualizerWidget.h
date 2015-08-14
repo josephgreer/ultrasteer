@@ -15,7 +15,7 @@
 #include <QGridLayout>
 #include "VTKTransferFunctionWidget.h"
 
-class USVisualizerWidget : public Nf::ResizableQVTKWidget, public Nf::ParameterCollection, public Nf::Reinitializer, public Nf::SphereContainer
+class USVisualizerWidget : public Nf::ResizableQVTKWidget, public Nf::ParameterCollection, public Nf::Reinitializer, public Nf::SphereContainer, public Nf::AxisContainer
 {
     Q_OBJECT
 public: 

@@ -15,6 +15,7 @@ namespace Nf
     m_visTab = new QTabWidget(parent);
     m_visTab->addTab(m_usVis.get(), "Volume Visualization");
     m_visTab->addTab(m_planeVis.get(), "Plane Visualization");
+    m_visTab->setCurrentIndex(1);
 
     m_layout = new QGridLayout(parent);
     m_layout->addWidget((QWidget *)(m_imageViewer.get()), 0, 0);
@@ -34,8 +35,7 @@ namespace Nf
 
   void RPWidget::onSetDisplayMode()
   {
-    //NOT YET IMPLEMENTED
-    __asm int 3;
+    return;
   }
 
   void RPWidget::UpdateGeometry()
@@ -107,6 +107,11 @@ namespace Nf
     onUpdateFrame();
   }
 
+  void RPFileWidget::onSetDisplayMode()
+  {
+    onUpdateFrame();
+  }
+
   void RPFileWidget::onUpdateFrame()
   {
     if(m_data.gps.valid)
@@ -114,11 +119,11 @@ namespace Nf
 
     if(m_rpReaders)
       m_data = m_rpReaders->GetRPData(m_frame->GetValue());
-    m_imageViewer->SetImage(&m_data);
+    m_imageViewer->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
     if(m_visTab->currentIndex() == 0)
       m_usVis->AddRPData(m_data);
     else
-      m_planeVis->SetImage(&m_data);
+      m_planeVis->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
   }
 
   RPFileWidget::~RPFileWidget()
@@ -134,8 +139,8 @@ namespace Nf
     ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, RPStreamingWidget), this, false);
     ADD_BOOL_PARAMETER(m_addFrames, "Add Frames", CALLBACK_POINTER(onAddFramesToggle, RPStreamingWidget), this, false);
     ADD_INT_PARAMETER(m_framerate, "Ulterius Framerate", CALLBACK_POINTER(onFramerateChanged, RPStreamingWidget), this, 15, 1, 30, 1);
-    ADD_FLOAT_PARAMETER(m_mpp, "MPP", CALLBACK_POINTER(onInitializeToggle, RPStreamingWidget), this, 87, 20, 150, 1.0);
-    ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onInitializeToggle, RPStreamingWidget), this, Vec2d(330, 78), Vec2d(0,0), Vec2d(10000, 10000), Vec2d(1,1));
+    ADD_FLOAT_PARAMETER(m_mpp, "MPP", CALLBACK_POINTER(onFrameInfoChanged, RPStreamingWidget), this, 152, 20, 180, 1.0);
+    ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onFrameInfoChanged, RPStreamingWidget), this, Vec2d(330, 77), Vec2d(0,0), Vec2d(10000, 10000), Vec2d(1,1));
     ADD_BOOL_PARAMETER(m_rcvDoppler, "Receive Doppler", CALLBACK_POINTER(onDataToAcquireChanged, RPStreamingWidget), this, false);
     ADD_BOOL_PARAMETER(m_rcvGps2, "Receive GPS2", CALLBACK_POINTER(onDataToAcquireChanged, RPStreamingWidget), this, true);
 
@@ -184,7 +189,7 @@ namespace Nf
     m_lock.unlock();
 
     m_usVis->Initialize(m_data);
-    m_imageViewer->SetImage(&m_data);
+    m_imageViewer->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
     m_isInit = true;
 
     rp.Release();
@@ -223,13 +228,13 @@ namespace Nf
 
     if(!m_addFrames->GetValue()) {
       m_usVis->UpdatePos(rp);
-      m_imageViewer->SetImage(&rp);
+      m_imageViewer->SetImage(&rp, (RP_TYPE)m_displayMode->GetValue());
     } else {
-      m_imageViewer->SetImage(&rp);
+      m_imageViewer->SetImage(&rp, (RP_TYPE)m_displayMode->GetValue());
       if(m_visTab->currentIndex() == 0)
         m_usVis->AddRPData(rp);
       else
-        m_planeVis->SetImage(&rp);
+        m_planeVis->SetImage(&rp, (RP_TYPE)m_displayMode->GetValue());
     }
   }
 
@@ -250,6 +255,11 @@ namespace Nf
       return;
 
     //m_rpReaders->SetFrameRate(m_framerate->GetValue());
+  }
+
+  void RPStreamingWidget::onFrameInfoChanged()
+  {
+    m_rpReaders->SetFrameInformation(m_mpp->GetValue(), m_origin->GetValue());
   }
 
   RPStreamingWidget::~RPStreamingWidget()

@@ -24,7 +24,7 @@ namespace Nf
     m_bottomRow->addWidget(m_saveDataWidget.get(), 0, 1, Qt::Alignment(Qt::AlignTop));
     m_layout->addLayout(m_bottomRow.get(), 1, 0, 1, 2);
 
-    m_tipOffset = Vec3d(20.9, 1.902, 3.912);
+    m_tipOffset = Vec3d(20.99, -0.471, 4.52);
     
     m_u.v = 0;
     m_u.tick = 0;

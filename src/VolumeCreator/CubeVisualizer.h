@@ -7,6 +7,7 @@
 #include <vtkSmartPointer.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkSphereSource.h>
+#include <vtkAxesActor.h>
 
 #include "RTCore.h"
 
@@ -61,5 +62,15 @@ namespace Nf {
     virtual void CreateSphere(const Vec3d &cen, f64 rad);
     virtual void SetSphereCenter(const Vec3d &cen);
     virtual void SetSphereRadius(f64 rad);
+  };
+
+  class AxisContainer
+  {
+  protected:
+    vtkSmartPointer < vtkAxesActor > m_axis;
+  public:
+    AxisContainer();
+    virtual void CreateAxis(const Matrix44d &posePos, s32 scale);
+    virtual void UpdateAxis(const Matrix44d &posePos);
   };
 };
