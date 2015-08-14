@@ -872,6 +872,20 @@ namespace Nf
       return Matrix44d(data);
     }
 
+    arma::mat ToArmaMatrix4x4()
+    {
+      using namespace arma;
+      mat A(4, 4);
+
+      for(int i = 0; i < 4; i++)
+      {
+        for(int j = 0; j < 4; j++){
+          A << this->m_data[i][j];}
+        A << endr;
+      }
+      return A;
+    }
+
     static Matrix44d FromVtkMatrix4x4(const vtkMatrix4x4 *rhs)
     {
       f64 data[4][4];

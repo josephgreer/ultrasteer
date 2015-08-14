@@ -194,7 +194,6 @@ namespace Nf
 
     if( m_control->inManualScanning() )
       displayScanTimeRemaining();
-
   }
 
   Teleoperation2DFileWidget::~Teleoperation2DFileWidget()

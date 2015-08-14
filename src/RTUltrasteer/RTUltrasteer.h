@@ -19,6 +19,7 @@
 #include "RPWidget.h"
 #include "RobotHardwareWidget.h"
 #include "Teleoperation2DWidget.h"
+#include "EMCalibrationWidget.h"
 #include "PFVisualizerWidget.h"
 #include "EstimatorWidget.h"
 #include "ControlAlgorithms.h"
@@ -584,6 +585,10 @@ public:
     std::tr1::shared_ptr < Nf::BoolParameter > m_teleoperation2DFileWidgetVisible;
     
     std::tr1::shared_ptr < Nf::BoolParameter > m_teleoperation2DStreamWidgetVisible;
+    
+    std::tr1::shared_ptr < Nf::BoolParameter > m_emCalibrationFileWidgetVisible;
+    
+    std::tr1::shared_ptr < Nf::BoolParameter > m_emCalibrationStreamWidgetVisible;
 
     void onSetDocksVisible();
     CLASS_CALLBACK(onSetDocksVisible, RTUltrasteer);
@@ -619,6 +624,12 @@ private:
     QDockWidget *m_teleoperation2DStreamDock;
     Nf::Teleoperation2DStreamingWidget *m_teleoperation2DStreamWidget;
 
+    QDockWidget *m_EMCalibrationFileDock;
+    Nf::EMCalibrationFileWidget *m_EMCalibrationFileWidget;
+
+    QDockWidget *m_EMCalibrationStreamDock;
+    Nf::EMCalibrationStreamingWidget *m_EMCalibrationStreamWidget;
+
     NeedleSteeringRobot m_robot;
     Nf::ControlAlgorithms m_control;
 
@@ -631,6 +642,8 @@ private:
     void CreateRobotHWDock();
     void CreateTeleoperation2DFileDock();
     void CreateTeleoperation2DStreamDock();
+    void CreateEMCalibrationFileDock();
+    void CreateEMCalibrationStreamDock();
     void resizeEvent(QResizeEvent *event);
     void Resize();
 
