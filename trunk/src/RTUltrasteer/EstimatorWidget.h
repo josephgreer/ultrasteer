@@ -28,8 +28,9 @@ namespace Nf
   enum EstimatorState {
     ES_READY = 0,
     ES_PRIMED,
-    ES_RECORDING,
-    ES_ESTIMATING,
+    ES_RECORDING1,
+    ES_RECORDING2,
+    ES_PAUSED,
   };
 
   class EstimatorStreamingWidget : public RPStreamingWidget
@@ -59,6 +60,14 @@ namespace Nf
     std::tr1::shared_ptr < Nf::BoolParameter > m_insertion;
     void onInsertionPushed();
     CLASS_CALLBACK(onInsertionPushed, EstimatorStreamingWidget);
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_pauseInsertion;
+    void onPauseInsertionPushed();
+    CLASS_CALLBACK(onPauseInsertionPushed, EstimatorStreamingWidget);
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_saveGPS;
+    void onSaveGPS();
+    CLASS_CALLBACK(onSaveGPS, EstimatorStreamingWidget);
 
 public slots:
     void onSaveDataClicked();
