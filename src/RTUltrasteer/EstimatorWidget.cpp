@@ -31,7 +31,9 @@ namespace Nf
     m_u.dtheta = 0;
     m_u.dutyCycle = 0;
 
-    ADD_BOOL_PARAMETER(m_insertion, "Insert", CALLBACK_POINTER(onInsertionPushed, EstimatorStreamingWidget), this, false);
+    ADD_ACTION_PARAMETER(m_insertion, "[Stop] Insert", CALLBACK_POINTER(onInsertionPushed, EstimatorStreamingWidget), this, false);
+    ADD_ACTION_PARAMETER(m_pauseInsertion, "[Un]Pause Insert", CALLBACK_POINTER(onPauseInsertionPushed, EstimatorStreamingWidget), this, false);
+    ADD_ACTION_PARAMETER(m_saveGPS, "Save GPS", CALLBACK_POINTER(onSaveGPS, EstimatorStreamingWidget), this, false);
     ADD_CHILD_COLLECTION(m_hwWidget.get());
 
     Connect(m_saveDataWidget->ui.saveDataButton, SIGNAL(clicked()), SLOT(onSaveDataClicked()));
@@ -58,7 +60,9 @@ namespace Nf
     case ES_PRIMED:
       m_state = ES_PRIMED;
       break;
-    case ES_RECORDING:
+    case ES_RECORDING1:
+    case ES_RECORDING2:
+    case ES_PAUSED:
     default:
       break;
     }
@@ -109,59 +113,116 @@ namespace Nf
     rp.gps2.pos = rp.gps2.pos+Vec3d(pose.at<f64>(0, 0), pose.at<f64>(0, 1), pose.at<f64>(0, 2))*m_tipOffset.x
       +Vec3d(pose.at<f64>(1, 0), pose.at<f64>(1, 1), pose.at<f64>(1, 2))*m_tipOffset.y+Vec3d(pose.at<f64>(2, 0), pose.at<f64>(2, 1), pose.at<f64>(2, 2))*m_tipOffset.z;
     HandleFrame(rp);
-
-    switch(m_state) {
-    case ES_READY:
-    case ES_PRIMED:
-      break;
-    case ES_RECORDING: 
-      {
-        if(m_executeCommand)
-          ExecuteCommand();
-        break;
-      }
-    default:
-      break;
-    }
+    
     DataFrame d;
     d.rp = rp;
     if(d.rp.b8 != NULL)
       m_u.tick = (u32)d.rp.b8->BorderMode[0];
     d.u = m_u;
-    m_saveDataWidget->SaveDataFrame(d);
+    switch(m_state) {
+    case ES_READY:
+    case ES_PRIMED: 
+      {
+        m_saveDataWidget->SaveDataFrame(d);
+        break;
+      }
+    case ES_RECORDING1: 
+      {
+        if(m_executeCommand)
+          ExecuteCommand();
+        break;
+        d.u.v = 0;
+        m_saveDataWidget->SaveDataFrame(d);
+        m_state = ES_RECORDING2;
+      }
+    case ES_RECORDING2: 
+      {
+        if(m_executeCommand)
+          ExecuteCommand();
+        break;
+        m_saveDataWidget->SaveDataFrame(d);
+      }
+    case ES_PAUSED:
+      {
+        d.u.v = 0;
+        // how we signal that this is a valid gps reading
+        d.rp.gps2.offset[0] = 12345.0;
+        m_saveDataWidget->SaveDataFrame(d);
+        m_saveDataWidget->StopRecording();
+      }
+    default:
+      {
+        m_saveDataWidget->SaveDataFrame(d);
+        break;
+      }
+    }
     rp.Release();
-  }
 
+  }
 
   void EstimatorStreamingWidget::onInsertionPushed()
   {
-    if(m_insertion->GetValue()) {
-      switch(m_state) {
-      case ES_READY:
-        break;
-      case ES_PRIMED:
-        m_executeCommand = true;
-        m_u.v = INSERT_VEL;
-        m_saveDataWidget->StartRecording();
-        m_state = ES_RECORDING;
-      case ES_RECORDING:
-      default:
-        break;
-      }
-    } else {
-      switch(m_state) {
-      case ES_READY:
-        m_state = ES_READY;
-        break;
-      case ES_PRIMED:
-      case ES_RECORDING:
-        m_hwWidget->GetRCWidget()->StopInsertion();
-        m_u.v = 0;
-        m_state = ES_PRIMED;
-      default:
-        break;
-      }
+    switch(m_state) {
+    case ES_READY:
+      m_state = ES_READY;
+      break;
+    case ES_PRIMED:
+      m_executeCommand = true;
+      m_u.v = INSERT_VEL;
+      m_saveDataWidget->StartRecording();
+      m_state = ES_RECORDING1;
+    case ES_RECORDING1:
+    case ES_RECORDING2:
+    case ES_PAUSED:
+      m_hwWidget->GetRCWidget()->StopInsertion();
+      m_u.v = 0;
+      m_state = ES_PRIMED;
       m_saveDataWidget->StopRecording();
+    default:
+      break;
+    }
+  }
+
+
+  void EstimatorStreamingWidget::onPauseInsertionPushed()
+  {
+    switch(m_state) {
+    case ES_READY:
+    case ES_PRIMED:
+      break;
+    case ES_RECORDING1:
+    case ES_RECORDING2:
+      m_hwWidget->GetRCWidget()->StopInsertion();
+      m_saveDataWidget->StopRecording();
+      m_state = ES_PAUSED;
+      break;
+    case ES_PAUSED:
+      m_executeCommand = true;
+      m_u.v = INSERT_VEL;
+      m_state = ES_RECORDING1;
+      m_saveDataWidget->StartRecording();
+      break;
+    default:
+      break;
+    }
+  }
+
+
+  void EstimatorStreamingWidget::onSaveGPS()
+  {
+    switch(m_state) {
+    case ES_READY:
+    case ES_PRIMED:
+    case ES_RECORDING1:
+    case ES_RECORDING2:
+      break;
+    case ES_PAUSED:
+      //if we're paused and saveGPS is called, then we want to save a dataframe worth of GPS then stop recording.
+      //stop recording is set after a frame's worth of data is received
+      m_saveDataWidget->StartRecording();
+      break;
+    default:
+      break;
     }
   }
 
