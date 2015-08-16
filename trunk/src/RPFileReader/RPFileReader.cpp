@@ -85,7 +85,7 @@ namespace Nf
 
   static int readGPSDatumImageFromCurrentOffset(FILE *f, RPFileHeader *header, GPS_Data *data)
   {
-    assert(header->type == RPF_GPS);
+    assert(header->type == RPF_GPS || header->type == RPF_GPS2);
     assert(f != NULL);
 
     char raw[168] = {0};
@@ -270,6 +270,7 @@ namespace Nf
   RPFileReaderCollection::RPFileReaderCollection() 
     : m_type(RPF_NULL_TYPE)
     , m_gps(NULL)
+    , m_gps2(NULL)
   {
   }
 
@@ -298,6 +299,11 @@ namespace Nf
   void RPFileReaderCollection::AddGPSReader(RPGPSReaderBasic *gps)
   {
     m_gps = (RPGPSReader *)gps;
+  }
+
+  void RPFileReaderCollection::AddGPSReader2(RPGPSReaderBasic *gps2)
+  {
+    m_gps2 = (RPGPSReader *)gps2;
   }
 
   s32 RPFileReaderCollection::GetCurrentFrame()
@@ -344,7 +350,11 @@ namespace Nf
     if(m_gps)
       rv.gps = m_gps->GetNextGPSDatum();
     else 
-	  rv.gps = GPS_Data();
+	    rv.gps = GPS_Data();
+    if(m_gps2)
+      rv.gps2 = m_gps2->GetNextGPSDatum();
+    else 
+	    rv.gps2 = GPS_Data();
 
     RPFileHeader header;
     if(m_readers.find(RPF_BPOST8) != m_readers.end())
@@ -404,6 +414,10 @@ namespace Nf
       rv.gps = m_gps->GetPreviousGPSDatum();
     else 
       rv.gps = GPS_Data();
+    if(m_gps2)
+      rv.gps2 = m_gps2->GetNextGPSDatum();
+    else 
+	    rv.gps2 = GPS_Data();
 
     RPFileHeader header;
     if(m_readers.find(RPF_BPOST8) != m_readers.end())
@@ -464,6 +478,10 @@ namespace Nf
       rv.gps = m_gps->GetGPSDatum(frame);
     else 
       rv.gps = GPS_Data();
+    if(m_gps2)
+      rv.gps2 = m_gps2->GetNextGPSDatum();
+    else 
+	    rv.gps2 = GPS_Data();
 
     RPFileHeader header;
     if(m_readers.find(RPF_BPOST8) != m_readers.end())

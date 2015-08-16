@@ -127,9 +127,15 @@ namespace Nf
       fwrite(&m_dataToSave[i].u, 1, sizeof(NSCommand), f);
     }
     ////////////////////////////////////
+    header.frames = m_dataToSave.size();
+    header.dr = (s32)(m_dataToSave[0].rp.mpp+0.5);
+    header.ld = (s32)(m_dataToSave[0].rp.origin.x+0.5);
+    header.extra = (s32)(m_dataToSave[0].rp.origin.y+0.5);
 
+    rpw->Cleanup(&header);
     fclose(f);
     FreeData();
+    ui.progressBar->setValue(0);
   }
 
 }

@@ -89,11 +89,26 @@ namespace Nf
     RPFileReader *tempReader = new RPFileReader(temp);
     s32 nframes = tempReader->GetHeader().frames;
     m_rpReaders->AddReader(RPF_BPOST8, (RPReader*)tempReader);
+
+    //BPOST32
     sprintf(temp,"%s.b32",fname.c_str());
     tempReader = new RPFileReader(temp);
-    m_rpReaders->AddReader(RPF_BPOST32, (RPReader *)tempReader);
+    if(tempReader->GetHeader().frames != 0)
+      m_rpReaders->AddReader(RPF_BPOST32, (RPReader *)tempReader);
+    else
+      delete tempReader;
+
+    //GPS1
     sprintf(temp,"%s.gps1",fname.c_str());
-    m_rpReaders->AddGPSReader((RPGPSReaderBasic *)new RPGPSReader(temp));  
+    RPGPSReader *tempGPS = new RPGPSReader(temp);
+    m_rpReaders->AddGPSReader((RPGPSReaderBasic *)tempGPS);
+
+    sprintf(temp,"%s.gps2",fname.c_str());
+    tempGPS = new RPGPSReader(temp);
+    if(tempGPS->GetHeader().frames != 0)
+      m_rpReaders->AddGPSReader2((RPGPSReaderBasic *)tempGPS);
+    else
+      delete tempGPS;
 
     m_frame->SetMax(nframes);
 

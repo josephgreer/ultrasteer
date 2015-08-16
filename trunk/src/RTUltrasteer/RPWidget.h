@@ -52,7 +52,7 @@ namespace Nf
 
     //Filename
     std::tr1::shared_ptr < Nf::FileParameter > m_rpFile;
-    void onUpdateFile();
+    virtual void onUpdateFile();
     CLASS_CALLBACK(onUpdateFile, RPFileWidget);
 
     //Frame index
