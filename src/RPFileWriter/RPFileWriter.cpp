@@ -6,7 +6,7 @@ namespace Nf
 {
   static int writeGPSDatum(FILE *f, RPFileHeader *header, const GPS_Data *data)
   {
-    assert(header->type == RPF_GPS);
+    assert(header->type == RPF_GPS || header->type == RPF_GPS2);
     assert(f != NULL);
 
     char raw[168] = {0};
@@ -65,7 +65,6 @@ namespace Nf
   s32 RPGPSWriter::Cleanup(const RPFileHeader *header) 
   {
     RPFileHeader _header = *header;
-    _header.type = RPF_GPS;
     if(fseek(m_file, 0, SEEK_SET) != 0) {
       printf("RPGPSWriter::Cleanup, Error seeking GPS file to beginning\n");
       return -1;
@@ -364,7 +363,7 @@ namespace Nf
     if(m_gps)
       m_gps->WriteNextGPSDatum(&data->gps);
     if(m_gps2)
-      m_gps->WriteNextGPSDatum(&data->gps);
+      m_gps2->WriteNextGPSDatum(&data->gps2);
 
     return 0;
   }
@@ -379,10 +378,15 @@ namespace Nf
       }
     }
 
-    if(m_gps)
-      m_gps->Cleanup(header);
-    if(m_gps2)
-      m_gps2->Cleanup(header);
+    RPFileHeader temp; memcpy(&temp, header, sizeof(RPFileHeader));
+    if(m_gps) {
+      temp.type = RPF_GPS;
+      m_gps->Cleanup(&temp);
+    }
+    if(m_gps2) {
+      temp.type = RPF_GPS2;
+      m_gps2->Cleanup(&temp);
+    }
 
     return 0;
   }

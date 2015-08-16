@@ -1,16 +1,104 @@
 #include "EstimatorWidget.h"
+#include "NeedleTipCalibrationPP.h"
 #include <QKeyEvent>
 
 namespace Nf
 {
 #define INSERT_VEL 2 //mm/s
+
   EstimatorFileWidget::EstimatorFileWidget(QWidget *parent)
     : RPFileWidget(parent, (USVisualizer *)new PFVisualizer(parent))
+    , m_state(EFS_READY)
   {
+    ADD_ACTION_PARAMETER(m_needleCalib, "Needle Calibration Mode", CALLBACK_POINTER(onNeedleCalibrationPushed, EstimatorFileWidget), this, false);
   }
 
   EstimatorFileWidget::~EstimatorFileWidget()
   {
+  }
+
+  void EstimatorFileWidget::onUpdateFile()
+  {
+    RPFileWidget::onUpdateFile();
+    
+    bool validFile = m_frame->GetMax() > 0;
+    switch(m_state) {
+    case EFS_READY: 
+      {
+        if(validFile)
+          m_state = EFS_PRIMED;
+        break;
+      }
+    case EFS_PRIMED: 
+      {
+        break;
+      }
+    case EFS_NEEDLE_CALIB:
+      {
+        break;
+      }
+    default: 
+      {
+        throw std::runtime_error("EstimatorFileWidget: unknown state\n");
+        break;
+      }
+    }
+  }
+
+  void EstimatorFileWidget::onNeedleCalibrationPushed()
+  {
+    switch(m_state)
+    {
+    case EFS_READY: 
+      {
+        break;
+      }
+    case EFS_PRIMED:
+      {
+        m_state = EFS_NEEDLE_CALIB;
+
+        vtkSmartPointer < vtkRenderWindowInteractor > interactor = m_imageViewer->GetWindowInteractor();
+        vtkSmartPointer < vtkPointPicker > picker = vtkPointPicker::New();
+        vtkSmartPointer < NeedleTipCalibrationPP > style = NeedleTipCalibrationPP::New();
+        interactor->SetPicker(picker);
+        interactor->SetInteractorStyle(style);
+        break;
+      }
+    case EFS_NEEDLE_CALIB: 
+      {
+        m_state = EFS_READY;
+        break;
+      }
+    default: 
+      {
+        throw std::runtime_error("EstimatorFileWidget: unknown state\n");
+        break;
+      }
+    }
+  }
+
+  void EstimatorFileWidget::onPointPushed(f64 point[])
+  {
+    switch(m_state)
+    {
+    case EFS_READY:
+      {
+        break;
+      }
+    case EFS_PRIMED:
+      {
+        break;
+      }
+    case EFS_NEEDLE_CALIB:
+      {
+        break;
+      }
+    default: 
+      {
+        throw std::runtime_error("EstimatorFileWidget: unknown state\n");
+        break;
+      }
+    }
   }
 
   EstimatorStreamingWidget::EstimatorStreamingWidget(QWidget *parent)

@@ -16,13 +16,31 @@
 
 namespace Nf
 {
+
+  enum EstimatorFileState {
+    EFS_READY = 0,
+    EFS_PRIMED,
+    EFS_NEEDLE_CALIB,
+  };
+
   class EstimatorFileWidget : public RPFileWidget
   {
     Q_OBJECT 
 
+  protected:
+    EstimatorFileState m_state;
+
   public:
     EstimatorFileWidget(QWidget *parent);
     virtual ~EstimatorFileWidget();
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_needleCalib;
+    void onNeedleCalibrationPushed();
+    CLASS_CALLBACK(onNeedleCalibrationPushed, EstimatorFileWidget);
+
+    virtual void onUpdateFile();
+
+    virtual void onPointPushed(f64 point[]);
   };
 
   enum EstimatorState {

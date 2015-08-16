@@ -277,6 +277,7 @@ namespace Nf
     GPS_Data GetPreviousGPSDatum();
     GPS_Data GetGPSDatum(int frame);
     int GetCurrentFrame();
+    RPFileHeader GetHeader() { return m_header; }
   };
 
   class RPReader {
@@ -317,6 +318,7 @@ namespace Nf
   public:
     void AddReader(RP_TYPE type, RPReader * reader);
     void AddGPSReader(RPGPSReaderBasic *gps);
+    void AddGPSReader2(RPGPSReaderBasic *gps2);
 
     RPData GetNextRPData();
     RPData GetPreviousRPData();
@@ -331,6 +333,7 @@ namespace Nf
     RP_TYPE m_type;
     std::map < RP_TYPE, RPFileReader * > m_readers;
     RPGPSReader *m_gps;
+    RPGPSReader *m_gps2;
   };
 
 };
