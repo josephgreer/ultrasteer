@@ -9,6 +9,8 @@
 #include <vtkRendererCollection.h>
 #include <vtkPointPicker.h>
 #include <vtkInteractorStyleImage.h>
+#include <vtkPointData.h>
+#include <vtkImageData.h>
 #include "EstimatorWidget.h"
 
 namespace Nf
@@ -19,10 +21,14 @@ namespace Nf
   private:
     EstimatorFileWidget *m_estimatorWidget;
     vtkSmartPointer < vtkRenderWindowInteractor > m_interactor;
+    vtkSmartPointer < vtkPointData > m_pointData;
+    vtkSmartPointer < vtkImageData > m_image;
 
   public:
+    NeedleTipCalibrationPP();
+
     static NeedleTipCalibrationPP* New()
-    { return new NeedleTipCalibrationPP; }
+    { return new NeedleTipCalibrationPP(); }
 
     vtkTypeMacro(NeedleTipCalibrationPP, vtkInteractorStyleImage);
 
@@ -31,6 +37,8 @@ namespace Nf
 
     void SetRenderWindowInteractor(vtkSmartPointer < vtkRenderWindowInteractor > interactor)
     { m_interactor = interactor; }
+
+    void SetImageData(vtkSmartPointer <vtkImageData> imageData) { m_image = imageData; }
 
     virtual void OnLeftButtonDown(); 
   };

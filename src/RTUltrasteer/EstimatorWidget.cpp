@@ -11,6 +11,7 @@ namespace Nf
     , m_state(EFS_READY)
   {
     ADD_ACTION_PARAMETER(m_needleCalib, "Needle Calibration Mode", CALLBACK_POINTER(onNeedleCalibrationPushed, EstimatorFileWidget), this, false);
+    onUpdateFile();
   }
 
   EstimatorFileWidget::~EstimatorFileWidget()
@@ -60,6 +61,7 @@ namespace Nf
         vtkSmartPointer < vtkRenderWindowInteractor > interactor = m_imageViewer->GetWindowInteractor();
         vtkSmartPointer < vtkPointPicker > picker = vtkPointPicker::New();
         vtkSmartPointer < NeedleTipCalibrationPP > style = NeedleTipCalibrationPP::New();
+        style->SetImageData(m_imageViewer->GetImageData());
         interactor->SetPicker(picker);
         interactor->SetInteractorStyle(style);
         break;
