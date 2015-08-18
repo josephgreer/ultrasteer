@@ -7,6 +7,8 @@
 #include <cxcore.h>
 #include <highgui.h>
 
+#define NOMINAL_SOS 1540.0
+
 namespace Nf
 {
   typedef enum {
@@ -52,8 +54,8 @@ namespace Nf
     int bl[2];
     int probe;
     int txf;
-    int sf;        
-    int dr;           //co-opted for mpp
+    int sf;           //co-opted for speed of sound
+    int dr;           //co-opted for mpp horizontal
     int ld;           //co-opted for origin_x
     int extra;        //co-opted for origin_y
   } RPFileHeader;
@@ -131,7 +133,7 @@ namespace Nf
     IplImage *var;
     GPS_Data gps;
     GPS_Data gps2;
-    f32 mpp;
+    Vec2d mpp;
     Vec2d origin;
     Squarei roi;
 
@@ -141,7 +143,7 @@ namespace Nf
       color = NULL;
       sig = NULL;
       var = NULL;
-      mpp = 0;
+      mpp = Vec2d(0,0);
       gps.valid = 0;
       gps2.valid = 0;
       origin = Vec2d(0,0);
@@ -177,7 +179,7 @@ namespace Nf
       Matrix44d tPose = Matrix44d::FromCvMat(this->gps.pose);
       Matrix33d pose = tPose.GetOrientation();
       Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, this->gps.pos);
-      Vec2d scale(this->mpp/1000.0, this->mpp/1000.0);
+      Vec2d scale(this->mpp.x/1000.0, this->mpp.y/1000.0);
       Vec3d ul = rpImageCoordToWorldCoord3(Vec2d(0,0), posePos, cal, this->origin, scale);
       Vec3d ur = rpImageCoordToWorldCoord3(Vec2d(this->b8->width,0), posePos, cal, this->origin, scale); 
       Vec3d bl = rpImageCoordToWorldCoord3(Vec2d(0,this->b8->height), posePos, cal, this->origin, scale); 

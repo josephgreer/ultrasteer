@@ -114,7 +114,7 @@ namespace Nf
     m_bottomRow->addWidget(m_saveDataWidget.get(), 0, 1, Qt::Alignment(Qt::AlignTop));
     m_layout->addLayout(m_bottomRow.get(), 1, 0, 1, 2);
 
-    m_tipOffset = Vec3d(20.99, -0.471, 4.52);
+    m_tipOffset = Vec3d(0, 0, 0);
     
     m_u.v = 0;
     m_u.tick = 0;
@@ -199,10 +199,6 @@ namespace Nf
       return;
     
     RPData rp = m_data.Clone();
-    cv::Mat pose = rp.gps2.pose.t();
-    rp.gps2.pos = rp.gps2.pos+Vec3d(pose.at<f64>(0, 0), pose.at<f64>(0, 1), pose.at<f64>(0, 2))*m_tipOffset.x
-      +Vec3d(pose.at<f64>(1, 0), pose.at<f64>(1, 1), pose.at<f64>(1, 2))*m_tipOffset.y+Vec3d(pose.at<f64>(2, 0), pose.at<f64>(2, 1), pose.at<f64>(2, 2))*m_tipOffset.z;
-    HandleFrame(rp);
     
     DataFrame d;
     d.rp = rp;
@@ -246,6 +242,11 @@ namespace Nf
         break;
       }
     }
+    
+    cv::Mat pose = rp.gps2.pose.t();
+    rp.gps2.pos = rp.gps2.pos+Vec3d(pose.at<f64>(0, 0), pose.at<f64>(0, 1), pose.at<f64>(0, 2))*m_tipOffset.x
+      +Vec3d(pose.at<f64>(1, 0), pose.at<f64>(1, 1), pose.at<f64>(1, 2))*m_tipOffset.y+Vec3d(pose.at<f64>(2, 0), pose.at<f64>(2, 1), pose.at<f64>(2, 2))*m_tipOffset.z;
+    HandleFrame(rp);
     rp.Release();
 
   }

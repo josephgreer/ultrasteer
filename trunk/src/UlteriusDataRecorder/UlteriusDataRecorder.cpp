@@ -10,7 +10,7 @@ using namespace Nf;
 
 static void printUsage()
 {
-  printf("UlteriusDataRecorder.exe -ip xxx.xxx.xxx.xxx -d directory -n name -t typeMask -mpp mpp -ox origin_x -oy origin_y -f framerate\n");
+  printf("UlteriusDataRecorder.exe -ip xxx.xxx.xxx.xxx -d directory -n name -t typeMask -mpp mpp -sos speedofsound -ox origin_x -oy origin_y -f framerate\n");
 }
 
 static void releaseRPData(RPData *rp)
@@ -62,12 +62,17 @@ int main( int argc, const char* argv[] )
 
   s32 mask = atoi(argv[8]);
 
-  f64 mpp = atof(argv[10]);
+  f64 mppx = atof(argv[10]);
+  f64 sos = atof(argv[12]);
 
-  f64 ox = atof(argv[12]);
-  f64 oy = atof(argv[14]);
+  f64 mult = sos/NOMINAL_SOS;
 
-  f32 framerate = atof(argv[16]);
+  Vec2d mpp(mppx, mult*mppx);
+
+  f64 ox = atof(argv[14]);
+  f64 oy = atof(argv[16]);
+
+  f32 framerate = atof(argv[18]);
 
   RPUlteriusReaderCollection rpReaders(ip,mpp, Vec2d(ox,oy));
   //RPUlteriusProcessManager rpReaders(ip,mpp,Vec2d(ox,oy),framerate);
@@ -155,7 +160,8 @@ int main( int argc, const char* argv[] )
 
   printf("\nCleaning up...\n");
   header.frames = frame;
-  header.dr = (s32)(mpp+0.5);
+  header.sf = (s32)sos;
+  header.dr = (s32)(mpp.x+0.5);
   header.ld = (s32)(ox+0.5);
   header.extra = (s32)(oy+0.5);
   if(writers) {

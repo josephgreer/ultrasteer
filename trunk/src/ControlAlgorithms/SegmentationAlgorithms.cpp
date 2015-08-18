@@ -170,7 +170,7 @@ namespace Nf {
     Matrix44d tPose = Matrix44d::FromCvMat(data.gps.pose);
     Matrix33d pose = tPose.GetOrientation();
     Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, data.gps.pos);
-    Vec2d scale(data.mpp/1000.0, data.mpp/1000.0);
+    Vec2d scale(data.mpp.x/1000.0, data.mpp.y/1000.0);
 
     //BEGIN_TIMING(DopplerPointSaving,10);
     // iterate through the pixels, and save the coordinates of non-zero pixels

@@ -128,7 +128,8 @@ namespace Nf
     }
     ////////////////////////////////////
     header.frames = m_dataToSave.size();
-    header.dr = (s32)(m_dataToSave[0].rp.mpp+0.5);
+    header.sf = (s32)(m_dataToSave[0].rp.mpp.y/m_dataToSave[0].rp.mpp.x*NOMINAL_SOS+0.5);
+    header.dr = (s32)(m_dataToSave[0].rp.mpp.x+0.5);
     header.ld = (s32)(m_dataToSave[0].rp.origin.x+0.5);
     header.extra = (s32)(m_dataToSave[0].rp.origin.y+0.5);
 

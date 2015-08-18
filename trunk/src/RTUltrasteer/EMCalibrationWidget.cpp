@@ -194,7 +194,9 @@ namespace Nf
   void EMCalibrationStreamingWidget::onInitializeToggle()
   {
     if(m_init->GetValue()) {
-      m_rpReaders = std::tr1::shared_ptr < RPUlteriusProcessManager >(new RPUlteriusProcessManager(m_rpIp->GetValue().c_str(), (f64)m_mpp->GetValue(), m_origin->GetValue(), m_framerate->GetValue()));
+      //TODO: TAKE INTO ACCOUNT SOS
+      Vec2d mpp(m_mpp->GetValue(), m_mpp->GetValue());
+      m_rpReaders = std::tr1::shared_ptr < RPUlteriusProcessManager >(new RPUlteriusProcessManager(m_rpIp->GetValue().c_str(), mpp, m_origin->GetValue(), m_framerate->GetValue()));
       Sleep(30);  //Wait for old processes to die
       m_rpReaders->EnableType(RPF_BPOST8, 1);
       m_rpReaders->EnableType(RPF_GPS,1);
