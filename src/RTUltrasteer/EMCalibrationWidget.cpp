@@ -122,8 +122,8 @@ namespace Nf
       m_b.reset();
     }else{ // If finished collecting data, solve the stylus calibration
       arma::mat x = arma::solve(m_A,m_b);
-      arma::mat t= x.rows(0,2);
-      m_pcal = x.rows(3,5);
+      arma::mat t= x.rows(3,5);
+      m_pcal = x.rows(0,2);
       RenderTargetPoints(true,t);
       m_stylusCalibrationComplete = true;
     }
@@ -247,50 +247,50 @@ namespace Nf
     m_renderer->SetActiveCamera(cam);
   }
   
-  void EMCalibrationWidget::addFrame(void)
+  void EMCalibrationWidget::addFrame(RPData &rp)
   {
     using namespace arma;
 
     if( m_inStylusCalibration->GetValue() ) // if we are in stylus calibration mode
     {
       // directly add point position to visualization
-      Vec3d p = m_data.gps.pos;
+      Vec3d p = rp.gps.pos;
       m_stylusPoints->InsertNextPoint(p.x,p.y,p.z);
       m_stylusPoints->Modified();
       m_glyphFilter->Update();
       resetView();
 
-      // print positions for debugging
-      int N = m_stylusPoints->GetNumberOfPoints();
-      double x[3];
-      for( int i = 0; i<N; i++ ){
-        m_stylusPoints->GetPoint(i,x);
-        NTrace("pt[%d] = {%.2f, %.2f, %.2f}\n",i,x[0],x[1],x[2]);
-      }
+      //// print positions for debugging
+      //int N = m_stylusPoints->GetNumberOfPoints();
+      //double x[3];
+      //for( int i = 0; i<N; i++ ){
+      //  m_stylusPoints->GetPoint(i,x);
+      //  NTrace("pt[%d] = {%.2f, %.2f, %.2f}\n",i,x[0],x[1],x[2]);
+      //}
 
       // extract current position and orientation, and save into the Ax = b matrices for least-squares
-      Matrix44d pose = Matrix44d::FromCvMat(m_data.gps.pose);
-      pose.SetPosition(p); // current implementation of m_data.gps.pose does not include position in 4x4
+      Matrix44d pose = Matrix44d::FromCvMat(rp.gps.pose);
+      pose.SetPosition(p); // current implementation of rp.gps.pose does not include position in 4x4
       mat T = pose.ToArmaMatrix4x4();
       mat R_i = T.submat(0,0,2,2);
       mat p_i = T.submat(0,3,2,3);
       m_A.insert_rows(m_A.n_rows,join_rows(R_i,-eye(3,3)));
       m_b.insert_rows(m_b.n_rows,-p_i);
 
-      // Print the combined matrix for debugging
-      NTrace("m_A = {\n");
-      for( int i = 0; i<m_A.n_rows; i++){
-        NTrace("%.2f, %.2f, %.2f %.2f, %.2f, %.2f\n",m_A.at(i,0),m_A.at(i,1),m_A.at(i,2),m_A.at(i,3),m_A.at(i,4),m_A.at(i,5));
-      }
-      NTrace("}\n");
+      //// Print the combined matrix for debugging
+      //NTrace("m_A = {\n");
+      //for( int i = 0; i<m_A.n_rows; i++){
+      //  NTrace("%.2f, %.2f, %.2f %.2f, %.2f, %.2f\n",m_A.at(i,0),m_A.at(i,1),m_A.at(i,2),m_A.at(i,3),m_A.at(i,4),m_A.at(i,5));
+      //}
+      //NTrace("}\n");
       QVTKWidget::update();
     }
 
     if( m_inRobotCalibration->GetValue() && m_stylusCalibrationComplete ) // if we are in robot calibration mode
     {
-      Vec3d p = m_data.gps.pos;
-      Matrix44d pose = Matrix44d::FromCvMat(m_data.gps.pose);
-      pose.SetPosition(p); // current implementation of m_data.gps.pose does not include position in 4x4
+      Vec3d p = rp.gps.pos;
+      Matrix44d pose = Matrix44d::FromCvMat(rp.gps.pose);
+      pose.SetPosition(p); // current implementation of rp.gps.pose does not include position in 4x4
       mat T = pose.ToArmaMatrix4x4();
       mat R_i = T.submat(0,0,2,2);
       mat p_i = T.submat(0,3,2,3);
@@ -357,7 +357,7 @@ namespace Nf
     }
 
     m_data = m_rpReaders->GetRPData(m_frame->GetValue());
-    addFrame();
+    addFrame(m_data);
   }
 
   EMCalibrationFileWidget::~EMCalibrationFileWidget()
@@ -368,7 +368,7 @@ namespace Nf
   EMCalibrationStreamingWidget::EMCalibrationStreamingWidget(QWidget *parent)
     : EMCalibrationWidget(parent) 
   {
-    ADD_STRING_PARAMETER(m_rpIp, "Ulterius IP", NULL, this, "192.168.1.64");
+    ADD_STRING_PARAMETER(m_rpIp, "Ulterius IP", NULL, this, "192.168.1.129");
     ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, EMCalibrationStreamingWidget), this, false);
     ADD_BOOL_PARAMETER(m_addFrames, "Add Frames", CALLBACK_POINTER(onAddFramesToggle, EMCalibrationStreamingWidget), this, false);
     ADD_INT_PARAMETER(m_framerate, "Ulterius Framerate", CALLBACK_POINTER(onFramerateChanged, EMCalibrationStreamingWidget), this, 11, 1, 30, 1);
@@ -378,8 +378,9 @@ namespace Nf
     onInitializeToggle();
     onAddFramesToggle();
 
-    m_tick = std::tr1::shared_ptr<QTimer>((QTimer *)NULL);
-    m_rpReaders = std::tr1::shared_ptr<RPUlteriusProcessManager>((RPUlteriusProcessManager *)NULL);
+    m_rpReaders = std::tr1::shared_ptr<RPUlteriusReaderCollectionPush>((RPUlteriusReaderCollectionPush *)NULL);
+
+    connect(this, SIGNAL(frameSignal()), SLOT(onFrame()), Qt::QueuedConnection);
   }
 
   void EMCalibrationStreamingWidget::onInitializeToggle()
@@ -387,20 +388,11 @@ namespace Nf
     if(m_init->GetValue()) {
       //TODO: TAKE INTO ACCOUNT SOS
       Vec2d mpp(m_mpp->GetValue(), m_mpp->GetValue());
-      m_rpReaders = std::tr1::shared_ptr < RPUlteriusProcessManager >(new RPUlteriusProcessManager(m_rpIp->GetValue().c_str(), mpp, m_origin->GetValue(), m_framerate->GetValue()));
-      Sleep(30);  //Wait for old processes to die
-      m_rpReaders->EnableType(RPF_BPOST8, 1);
-      m_rpReaders->EnableType(RPF_GPS,1);
-      Sleep(300);
-
-      m_data = m_rpReaders->GetNextRPData();
-
-      if(!m_tick) {
-        m_tick = std::tr1::shared_ptr<QTimer>(new QTimer());
-        connect(m_tick.get(), SIGNAL(timeout()), this, SLOT(onTick()));
-        m_tick->setInterval(90);
-        m_tick->start();
-      }
+      m_rpReaders = std::tr1::shared_ptr < RPUlteriusReaderCollectionPush >(new RPUlteriusReaderCollectionPush(m_rpIp->GetValue().c_str(), mpp, m_origin->GetValue()));
+      m_rpReaders->SetRPCallbackReceiver(this);
+      u32 mask = RPF_GPS|RPF_BPOST8;
+      m_rpReaders->EnableMask(mask);
+      Sleep(30);
     }
   }
 
@@ -409,25 +401,31 @@ namespace Nf
     //Don't do anything if we're not initialized
     if(!m_init->GetValue())
       return;
-
-    if(m_addFrames->GetValue()) {
-      m_data = m_rpReaders->GetNextRPData();
-    }
   }
 
-  void EMCalibrationStreamingWidget::onTick()
+  void EMCalibrationStreamingWidget::onFrame()
   {
-    if(!m_init->GetValue())
+    if(!m_init->GetValue() || !m_lock.tryLock(30))
       return;
 
-    if(m_data.gps.valid)
-      m_data.Release();
-    m_data = m_rpReaders->GetNextRPData();
-    if(m_data.b8 == NULL || !m_data.gps.valid)
-      return;
+    RPData rp = m_data.Clone();
+    m_lock.unlock();
 
     if(m_addFrames->GetValue()) {
-      addFrame();
+      addFrame(rp);
+    }
+
+    rp.Release();
+  }
+
+  void EMCalibrationStreamingWidget::Callback(const RPData *rp)
+  {
+    if(rp && m_lock.tryLock(30)) {
+      m_data.Release();
+      m_data = *rp;
+      m_lock.unlock();
+      emit frameSignal();
+      //QMetaObject::invokeMethod(this, "onFrame", Qt::QueuedConnection);
     }
   }
 
@@ -435,8 +433,6 @@ namespace Nf
   {
     if(!m_init->GetValue())
       return;
-
-    m_rpReaders->SetFrameRate(m_framerate->GetValue());
   }
 
   EMCalibrationStreamingWidget::~EMCalibrationStreamingWidget()
