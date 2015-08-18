@@ -142,7 +142,7 @@ namespace Nf
 
   void ImageViewerWidget::SetDataSpacing(const RPData *rp)
   {
-    m_importer->SetDataSpacing(rp->mpp/1000.0,rp->mpp/1000.0,1);
+    m_importer->SetDataSpacing(rp->mpp.x,rp->mpp.y,1);
   }
 
   ////////////////////////////////////////////////////////
@@ -179,7 +179,7 @@ namespace Nf
       Matrix33d pose = tPose.GetOrientation();
 
       Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, m_rp.gps.pos);
-      Vec2d mpp(m_rp.mpp,m_rp.mpp);
+      Vec2d mpp = m_rp.mpp;
       Vec2d origin = m_rp.origin;
       Vec2d mppScale(mpp.x/1000.0, mpp.y/1000.0);
 
@@ -240,7 +240,7 @@ namespace Nf
     Matrix33d pose = tPose.GetOrientation();
 
     Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, m_rp.gps.pos);
-    Vec2d mpp(m_rp.mpp,m_rp.mpp);
+    Vec2d mpp = m_rp.mpp;
     Vec2d origin = m_rp.origin;
     Vec2d mppScale(mpp.x/1000.0, mpp.y/1000.0);
 

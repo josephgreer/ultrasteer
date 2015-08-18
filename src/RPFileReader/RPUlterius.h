@@ -19,7 +19,7 @@ namespace Nf {
 		uDataDesc GetImageDesc(RP_TYPE type);
 		virtual u8 AddData(void* data, int type, int sz, bool cine, int frmnum, bool doLock = true);
 
-		RPUlteriusReaderCollection(const char *ip, f64 mpp, Vec2d origin);
+		RPUlteriusReaderCollection(const char *ip, Vec2d mpp, Vec2d origin);
 		virtual ~RPUlteriusReaderCollection();
 
     RPData AssembleRPData();
@@ -31,7 +31,7 @@ namespace Nf {
 
 		void UpdateImageDescs();
 
-    virtual void SetFrameInformation(f64 mpp, Vec2d origin);
+    virtual void SetFrameInformation(Vec2d mpp, Vec2d origin);
 
 	protected:
     RPData m_gps;
@@ -41,7 +41,7 @@ namespace Nf {
 		ulterius* m_ulterius;
 		FrameCollectionQueue m_frameQueue;
 		QMutex m_lock;
-		f64 m_mpp;
+		Vec2d m_mpp;
     Vec2d m_origin;
     u32 m_mask;
 	};
@@ -58,7 +58,7 @@ namespace Nf {
     RPCallbackReceiver *m_cb;
 
 public:
-		RPUlteriusReaderCollectionPush(const char *ip, f64 mpp, Vec2d origin);
+		RPUlteriusReaderCollectionPush(const char *ip, Vec2d mpp, Vec2d origin);
     virtual ~RPUlteriusReaderCollectionPush();
 		virtual u8 AddData(void* data, int type, int sz, bool cine, int frmnum, bool doLock = true);
 		virtual RPData GetNextRPData();

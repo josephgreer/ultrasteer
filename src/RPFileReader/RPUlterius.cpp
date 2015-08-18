@@ -29,7 +29,7 @@ namespace Nf {
     return res;
   }
 
-  RPUlteriusReaderCollection::RPUlteriusReaderCollection(const char *ip, f64 mpp, Vec2d origin)
+  RPUlteriusReaderCollection::RPUlteriusReaderCollection(const char *ip, Vec2d mpp, Vec2d origin)
     : m_mask(0)
     , m_mpp(mpp)
     , m_origin(origin)
@@ -87,7 +87,7 @@ namespace Nf {
     }
 
     res.origin = m_origin;
-    res.mpp = (f32)m_mpp;
+    res.mpp = m_mpp;
     res.gps = m_gps.gps;
     res.gps2 = m_gps2.gps2;
     return res;
@@ -170,7 +170,7 @@ namespace Nf {
     }
   }
 
-  void RPUlteriusReaderCollection::SetFrameInformation(f64 mpp, Vec2d origin)
+  void RPUlteriusReaderCollection::SetFrameInformation(Vec2d mpp, Vec2d origin)
   {
     m_mpp = mpp;
     m_origin = origin;
@@ -348,7 +348,7 @@ namespace Nf {
   }
 
   
-  RPUlteriusReaderCollectionPush::RPUlteriusReaderCollectionPush(const char *ip, f64 mpp, Vec2d origin)
+  RPUlteriusReaderCollectionPush::RPUlteriusReaderCollectionPush(const char *ip, Vec2d mpp, Vec2d origin)
     : RPUlteriusReaderCollection(ip, mpp, origin)
     , m_cb(NULL)
   {

@@ -315,7 +315,7 @@ namespace Nf {
       Matrix33d pose = tPose.GetOrientation();
 
       Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, rp.gps.pos);
-      Vec2d mpp(rp.mpp,rp.mpp);
+      Vec2d mpp = rp.mpp;
       Vec2d origin = rp.origin;
       Vec2d mppScale(mpp.x/1000.0, mpp.y/1000.0);
 
@@ -371,7 +371,7 @@ namespace Nf {
     Nf::NTrace("ROI x y w h %d %d %d %d\n", rp.roi.ul.x, rp.roi.ul.y, (rp.roi.lr-rp.roi.ul).x, (rp.roi.lr-rp.roi.ul).y);
     if(rp.roi.lr.x > rp.roi.ul.x && rp.roi.lr.y > rp.roi.ul.y)
       cvSetImageROI(rp.b8, cvRect(rp.roi.ul.x, rp.roi.ul.y, (rp.roi.lr-rp.roi.ul).x, (rp.roi.lr-rp.roi.ul).y)); 
-    m_volume.AddFrame(rp.b8, pose, rp.gps.pos, m_cal,rp.origin,Vec2d(rp.mpp, rp.mpp));
+    m_volume.AddFrame(rp.b8, pose, rp.gps.pos, m_cal,rp.origin,rp.mpp);
     m_importer->Modified();
   }
 
@@ -472,7 +472,7 @@ namespace Nf {
         tPose = Matrix44d::FromCvMat(rp.gps.pose);
         pose = tPose.GetOrientation();
 
-        m_volume.AddFrame(rp.b8, pose, rp.gps.pos, m_cal, rp.origin, Vec2d(rp.mpp, rp.mpp));
+        m_volume.AddFrame(rp.b8, pose, rp.gps.pos, m_cal, rp.origin, rp.mpp);
         rp.Release();
 
         rp = m_rpReaders.GetNextRPData();

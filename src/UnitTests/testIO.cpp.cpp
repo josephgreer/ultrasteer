@@ -15,14 +15,14 @@ typedef struct {
   char ip[100];
   u32 typeMask;
   u32 nframes;
-  f64 mpp;
+  Vec2d mpp;
   Vec2d origin;
 } BasicsRPUlteriusTest;
 
 TEST(IO, UlteriusCaptureRate)
 {
 	BasicsRPUlteriusTest tests[] = {
-    {"192.168.1.129", RPF_BPOST8|RPF_GPS, 200, 87.0, Vec2d(330.0, 78.0)}
+    {"192.168.1.129", RPF_BPOST8|RPF_GPS, 200, Vec2d(87.0,87.0), Vec2d(330.0, 78.0)}
 	};
 
 	for(s32 n=0; n<sizeof(tests)/sizeof(tests[0]); n++){

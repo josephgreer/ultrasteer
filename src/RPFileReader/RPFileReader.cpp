@@ -77,7 +77,8 @@ namespace Nf
       assert(0);
     }
 
-    rv.mpp = header->dr;
+    f64 mult = header->sf > 0 ? header->sf/NOMINAL_SOS : 1.0;
+    rv.mpp = Vec2d(header->dr*mult, header->dr);
     rv.origin = Vec2d(header->ld, header->extra);
 
     return rv;
@@ -324,7 +325,7 @@ namespace Nf
             rv.b8 = temp.b8;
             if(temp.origin.x > 0 && temp.origin.y > 0)
               rv.origin = temp.origin;
-            if(temp.mpp)
+            if((temp.mpp.x > 0 && temp.mpp.y > 0))
               rv.mpp = temp.mpp;
             break;
           case RPF_BPOST32:
@@ -332,7 +333,7 @@ namespace Nf
             rv.color = temp.color;
             if(temp.origin.x > 0 && temp.origin.y > 0)
               rv.origin = temp.origin;
-            if(temp.mpp)
+            if((temp.mpp.x > 0 && temp.mpp.y > 0))
               rv.mpp = temp.mpp;
             break;
           case RPF_COLOR_CVV:
@@ -367,8 +368,8 @@ namespace Nf
 
     if(rv.origin.x == 0 && rv.origin.y == 0)
       rv.origin = Vec2d(320.0, 0.0);
-    if(rv.mpp == 0) {
-      rv.mpp = 83;
+    if(rv.mpp.x == 0 || rv.mpp.y == 0) {
+      rv.mpp = Vec2d(83,83);
       rv.gps.pose = rv.gps.pose.t();
     }
 
@@ -387,7 +388,7 @@ namespace Nf
             rv.b8 = temp.b8;
             if(temp.origin.x > 0 && temp.origin.y > 0)
               rv.origin = temp.origin;
-            if(temp.mpp)
+            if(temp.mpp.x > 0 && temp.mpp.y > 0)
               rv.mpp = temp.mpp;
             break;
           case RPF_BPOST32:
@@ -395,7 +396,7 @@ namespace Nf
             rv.color = temp.color;
             if(temp.origin.x > 0 && temp.origin.y > 0)
               rv.origin = temp.origin;
-            if(temp.mpp)
+            if(temp.mpp.x > 0 && temp.mpp.y > 0)
               rv.mpp = temp.mpp;
             break;
           case RPF_COLOR_CVV:
@@ -430,8 +431,8 @@ namespace Nf
 
     if(rv.origin.x == 0 && rv.origin.y == 0)
       rv.origin = Vec2d(320.0, 0.0);
-    if(rv.mpp == 0) {
-      rv.mpp = 83;
+    if(rv.mpp.x == 0 || rv.mpp.y == 0) {
+      rv.mpp = Vec2d(83,83);
       rv.gps.pose = rv.gps.pose.t();
     }
     
@@ -451,7 +452,7 @@ namespace Nf
             rv.b8 = temp.b8;
             if(temp.origin.x > 0 && temp.origin.y > 0)
               rv.origin = temp.origin;
-            if(temp.mpp)
+            if(temp.mpp.x > 0 && temp.mpp.y > 0)
               rv.mpp = temp.mpp;
             break;
           case RPF_BPOST32:
@@ -459,7 +460,7 @@ namespace Nf
             rv.color = temp.color;
             if(temp.origin.x > 0 && temp.origin.y > 0)
               rv.origin = temp.origin;
-            if(temp.mpp)
+            if(temp.mpp.x > 0 && temp.mpp.y > 0)
               rv.mpp = temp.mpp;
             break;
           case RPF_COLOR_CVV:
@@ -494,8 +495,8 @@ namespace Nf
 
     if(rv.origin.x == 0 && rv.origin.y == 0)
       rv.origin = Vec2d(320.0, 0.0);
-    if(rv.mpp == 0) {
-      rv.mpp = 83;
+    if(rv.mpp.x == 0 || rv.mpp.y == 0) {
+      rv.mpp = Vec2d(83, 83);
       rv.gps.pose = rv.gps.pose.t();
     }
     

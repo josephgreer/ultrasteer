@@ -65,7 +65,7 @@ namespace Nf {
       Matrix44d tPose = Matrix44d::FromCvMat(m_data.gps.pose);
       Matrix33d pose = tPose.GetOrientation();
       Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, m_data.gps.pos);
-      Vec2d scale(m_data.mpp/1000.0, m_data.mpp/1000.0);
+      Vec2d scale(m_data.mpp.x/1000.0, m_data.mpp.y/1000.0);
       return rpImageCoordToWorldCoord3(p_im, posePos, m_cal, m_data.origin, scale);
     }else{
       return Vec3d(999.9,999.9,999.9);
@@ -79,7 +79,7 @@ namespace Nf {
       Matrix44d tPose = Matrix44d::FromCvMat(m_data.gps.pose);
       Matrix33d pose = tPose.GetOrientation();
       Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, m_data.gps.pos);
-      Vec2d scale(m_data.mpp/1000.0, m_data.mpp/1000.0);
+      Vec2d scale(m_data.mpp.x/1000.0, m_data.mpp.y/1000.0);
       return rpWorldCoord3ToImageCoord(p_world, posePos, m_cal, m_data.origin, scale);
     }else{
       return Vec3d(999.9,999.9,999.9);

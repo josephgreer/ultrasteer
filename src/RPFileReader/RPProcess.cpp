@@ -96,7 +96,7 @@ namespace Nf {
 
   }
 
-  RPUlteriusProcessManager::RPUlteriusProcessManager(const char *ip, f64 mpp, Vec2d origin, f32 framerate)
+  RPUlteriusProcessManager::RPUlteriusProcessManager(const char *ip, Vec2d mpp, Vec2d origin, f32 framerate)
     : m_mpp(mpp)
     , m_origin(origin)
   {
@@ -331,7 +331,7 @@ namespace Nf {
 
     m_lock->unlock();
     res.origin = m_origin;
-    res.mpp = (f32)m_mpp;
+    res.mpp = m_mpp;
     return res;
   }
 

@@ -99,6 +99,9 @@ namespace Nf
     //MPP
     std::tr1::shared_ptr < Nf::FloatParameter > m_mpp;
 
+    //SOS
+    std::tr1::shared_ptr < Nf::FloatParameter > m_sos;
+
     //Origin
     std::tr1::shared_ptr < Nf::Vec2dParameter > m_origin;
     void onFrameInfoChanged();
