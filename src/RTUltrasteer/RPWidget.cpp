@@ -117,6 +117,9 @@ namespace Nf
       m_rpReaders = NULL;
     }
 
+    //If we have a valid frame, set it
+    m_frame->SetValue(1);
+
     m_usVis->Reinitialize();
     
     onUpdateFrame();

@@ -71,6 +71,11 @@ namespace Nf
     {
       return ((QTreeWidgetItem *)m_element)->checkState(1) == Qt::Checked;
     }
+
+    void SetValue(const bool &val)
+    {
+      ((QTreeWidgetItem *)m_element)->setCheckState(1, val ? Qt::Checked : Qt::Unchecked);
+    }
   };
 
   class ActionSlotForwarder : public SlotForwarder, public UIElement < bool >
@@ -86,6 +91,11 @@ namespace Nf
     bool GetValue()
     {
       return true;
+    }
+
+    void SetValue(const bool &val)
+    {
+      return;
     }
   };
 
@@ -104,6 +114,12 @@ namespace Nf
     {
       QSpinBox *sb = (QSpinBox *)m_element;
       return (s32)sb->value();
+    }
+
+    void SetValue(const s32 &val)
+    {
+      QSpinBox *sb = (QSpinBox *)m_element;
+      sb->setValue(val);
     }
 
     void SetMin(s32 min)
@@ -140,6 +156,12 @@ namespace Nf
     {
       QDoubleSpinBox *sb = (QDoubleSpinBox *)m_element;
       return (f32)sb->value();
+    }
+
+    void SetValue(const f32 &val)
+    {
+      QDoubleSpinBox *sb = (QDoubleSpinBox *)m_element;
+      return sb->setValue(val);
     }
 
     void SetMin(f32 min)
@@ -180,6 +202,18 @@ namespace Nf
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
       QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
       return Vec3d((f64)x->value(), (f64)y->value(), (f64)z->value());
+    }
+
+    void SetValue(const Vec3d &val)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
+      x->setValue(val.x);
+      y->setValue(val.y);
+      z->setValue(val.z);
     }
 
     void SetMin(Vec3d min)
@@ -243,6 +277,18 @@ namespace Nf
       return Vec3f((f32)x->value(), (f32)y->value(), (f32)z->value());
     }
 
+    void SetValue(const Vec3f &val)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
+      x->setValue(val.x);
+      y->setValue(val.y);
+      z->setValue(val.z);
+    }
+
     void SetMin(Vec3f min)
     {
       SBContainer *item = (SBContainer *)m_element;
@@ -302,6 +348,18 @@ namespace Nf
       QSpinBox *y = (QSpinBox *)item->obj[1];
       QSpinBox *z = (QSpinBox *)item->obj[2];
       return Vec3i((s32)x->value(), (s32)y->value(), (s32)z->value());
+    }
+
+    void SetValue(const Vec3i &val)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 3);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
+      x->setValue(val.x);
+      y->setValue(val.y);
+      z->setValue(val.z);
     }
 
     void SetMin(Vec3i min)
@@ -364,6 +422,16 @@ namespace Nf
       return Vec2d((f64)x->value(), (f64)y->value());
     }
 
+    void SetValue(const Vec2d &val)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 2);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      x->setValue(val.x);
+      y->setValue(val.y);
+    }
+
     void SetMin(Vec2d min)
     {
       SBContainer *item = (SBContainer *)m_element;
@@ -416,6 +484,16 @@ namespace Nf
       QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
       return Vec2f((f32)x->value(), (f32)y->value());
+    }
+
+    void SetValue(const Vec2f &val)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 2);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      x->setValue(val.x);
+      y->setValue(val.y);
     }
 
     void SetMin(Vec2f min)
@@ -472,6 +550,16 @@ namespace Nf
       return Vec2i((s32)x->value(), (s32)y->value());
     }
 
+    void SetValue(const Vec2i &val)
+    {
+      SBContainer *item = (SBContainer *)m_element;
+      assert(item->nsbs == 2);
+      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
+      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      x->setValue(val.x);
+      y->setValue(val.y);
+    }
+
     void SetMin(Vec2i min)
     {
       SBContainer *item = (SBContainer *)m_element;
@@ -523,6 +611,19 @@ namespace Nf
       m_enumName = enumName;
     }
 
+    void SetValue(const s32 &val)
+    {
+      QComboBox *combo = (QComboBox *)m_element;
+      const QMetaObject &mo = QtEnums::staticMetaObject;
+      QMetaEnum meta = mo.enumerator(mo.indexOfEnumerator(m_enumName.c_str()));
+      for(s32 ky=0; ky<meta.keyCount(); ky++) {
+        if(meta.value(ky) == val) {
+          combo->setCurrentIndex(ky);
+          break;
+        }
+      }
+    }
+
     s32 GetValue()
     {
       QComboBox *combo = (QComboBox *)m_element;
@@ -547,6 +648,12 @@ namespace Nf
     {
       FileWidget *fw = (FileWidget *)m_element;
       return std::string(fw->GetFilename());
+    }
+
+    void SetValue(const std::string &val)
+    {
+      FileWidget *fw = (FileWidget *)m_element;
+      fw->SetFilename(val.c_str());
     }
   };
 }

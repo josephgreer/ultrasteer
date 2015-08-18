@@ -78,7 +78,7 @@ namespace Nf
     }
 
     f64 mult = header->sf > 0 ? header->sf/NOMINAL_SOS : 1.0;
-    rv.mpp = Vec2d(header->dr*mult, header->dr);
+    rv.mpp = Vec2d(header->dr, header->dr*mult);
     rv.origin = Vec2d(header->ld, header->extra);
 
     return rv;

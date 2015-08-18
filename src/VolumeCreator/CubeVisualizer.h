@@ -33,6 +33,17 @@ namespace Nf {
     CubeVisualizer(const Nf::Cubed &cube, const u8 color[3]);
   };
 
+#if 0
+  class PointCloudVisualizer : public GeometryVisualizer
+  {
+  protected:
+    vtkSmartPointer < vtkPointSource > m_pointSource;
+
+  public:
+
+  };
+#endif
+
   class AxesVisualizer : public GeometryVisualizer
   {
   protected:
