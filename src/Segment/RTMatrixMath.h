@@ -849,6 +849,13 @@ namespace Nf
       return res;
     }
 
+    void SetPosition(const Vec3d &p)
+    {
+      this->m_data[0][3] = p.x;
+      this->m_data[1][3] = p.y;
+      this->m_data[2][3] = p.z;
+    }
+
     Matrix44d operator=(const Matrix44d &rhs)
     {
       memcpy(&this->m_data[0][0], &rhs.m_data[0][0], sizeof(f64)*16);
@@ -880,8 +887,7 @@ namespace Nf
       for(int i = 0; i < 4; i++)
       {
         for(int j = 0; j < 4; j++){
-          A << this->m_data[i][j];}
-        A << endr;
+          A(i,j) = this->m_data[i][j];}
       }
       return A;
     }

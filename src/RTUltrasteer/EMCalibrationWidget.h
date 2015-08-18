@@ -16,6 +16,7 @@
 #include "ControlAlgorithms.h"
 #include "vtkVertexGlyphFilter.h"
 #include <vtkProperty.h>
+#include <QtGui/QFileDialog>
 
 namespace Nf
 {
@@ -30,21 +31,45 @@ namespace Nf
     void onCalibrateStylus();
     CLASS_CALLBACK(onCalibrateStylus, EMCalibrationWidget);
 
+    //In robot calibration
+    std::tr1::shared_ptr < Nf::BoolParameter > m_inRobotCalibration;
+    void onCalibrateRobot();
+    CLASS_CALLBACK(onCalibrateRobot, EMCalibrationWidget);
+
+    //Robot fiducial number
+    std::tr1::shared_ptr < Nf::IntParameter > m_robotFiducialNumber;
+    void onUpdateFiducial();
+    CLASS_CALLBACK(onUpdateFiducial, EMCalibrationWidget);
+    
     RPData m_data;
     QGridLayout *m_layout;
-    bool m_stylusInit;
-    bool m_inRobotCalibration;
+    bool m_viewportInit;
+    vtkSmartPointer < vtkPoints > m_targetPoints;
+    vtkSmartPointer < vtkPolyData > m_targetPolyData;
+    vtkSmartPointer<vtkVertexGlyphFilter> m_targetGlyphFilter;
+    vtkSmartPointer < vtkPolyDataMapper > m_targetMapper;
+    vtkSmartPointer < vtkActor > m_targetActor;
+
     vtkSmartPointer < vtkPoints > m_stylusPoints;
     vtkSmartPointer < vtkPolyData > m_polyData;
     vtkSmartPointer<vtkVertexGlyphFilter> m_glyphFilter;
     vtkSmartPointer < vtkPolyDataMapper > m_mapper;
     vtkSmartPointer < vtkActor > m_actor;
+    
     vtkSmartPointer < vtkRenderer > m_renderer;
     vtkSmartPointer < vtkImageFlip > m_flip;
     vtkSmartPointer < vtkRenderWindowInteractor > m_interactor;
     
-    arma::mat A;
-    arma::mat b;
+    // stylus calibration variables
+    arma::mat m_A;
+    arma::mat m_b;
+    arma::mat m_pcal;
+    bool m_stylusCalibrationComplete;
+
+    // robot calibration variables
+    arma::mat m_fiducialMeasurements;
+    arma::mat m_fiducialCoordinates;
+    arma::mat m_currentFiducialMeasurements;
 
   public:
     EMCalibrationWidget(QWidget *parent);
@@ -55,6 +80,10 @@ namespace Nf
     void addFrame();
     void initializeStylusCal();
     void resetView();
+    void RenderTargetPoints(bool, arma::mat = arma::mat());
+    void RenderMeasuredPoints(bool, arma::mat = arma::mat());
+    void initViewport();
+    void solveRobotRegistration();
 
   //public slots:
   //  void onStartManualNeedleScan();
