@@ -142,7 +142,7 @@ namespace Nf
 
   void ImageViewerWidget::SetDataSpacing(const RPData *rp)
   {
-    m_importer->SetDataSpacing(rp->mpp.x,rp->mpp.y,1);
+    m_importer->SetDataSpacing(rp->mpp.x/1000.0,rp->mpp.y/1000.0,1);
   }
 
   ////////////////////////////////////////////////////////
