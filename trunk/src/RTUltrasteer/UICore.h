@@ -44,6 +44,7 @@ namespace Nf
   {
   public:
     virtual T GetValue() = 0;  //Get the UI element's value
+    virtual void SetValue(const T &val) = 0;
   };
 
   template <class T>
@@ -98,6 +99,12 @@ namespace Nf
     virtual void SetUIElement(std::tr1::shared_ptr < UIElement < T > > element)
     {
       m_element = element;
+    }
+
+    virtual void SetValue(const T &val)
+    {
+      if(m_element != NULL)
+        m_element->SetValue(val);
     }
 
     virtual const char * GetName()
