@@ -8,8 +8,7 @@
 #include <QPushButton>
 #include "Resizable.h"
 #include "ImageViewerWidget.h"
-#include "RPFileReader.h"
-#include "RPProcess.h"
+#include "RPUlterius.h"
 #include "ImageViewerWidget.h"
 #include <QtDebug>
 #include "NeedleSteeringRobot.h"
@@ -77,7 +76,7 @@ namespace Nf
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
     std::vector < QVTKWidget * > GetChildWidgets();
-    void addFrame();
+    void addFrame(RPData &rp);
     void initializeStylusCal();
     void resetView();
     void RenderTargetPoints(bool, arma::mat = arma::mat());
@@ -111,13 +110,13 @@ namespace Nf
     void onUpdateFrame();    
   };
 
-  class EMCalibrationStreamingWidget : public EMCalibrationWidget
+  class EMCalibrationStreamingWidget : public EMCalibrationWidget, public RPCallbackReceiver
   {
     Q_OBJECT 
 
   protected:
-    std::tr1::shared_ptr < RPUlteriusProcessManager > m_rpReaders;
-    std::tr1::shared_ptr < QTimer > m_tick;
+    std::tr1::shared_ptr < RPUlteriusReaderCollectionPush > m_rpReaders;
+    QMutex m_lock;
 
   public:
     EMCalibrationStreamingWidget(QWidget *parent);
@@ -147,8 +146,13 @@ namespace Nf
     //Origin
     std::tr1::shared_ptr < Nf::Vec2dParameter > m_origin;
 
+    virtual void Callback(const RPData *rp);
+
     public slots:
-      void onTick();
+      virtual void onFrame();
+
+  signals:
+    void frameSignal();
 
   };
 
