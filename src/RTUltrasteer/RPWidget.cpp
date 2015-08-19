@@ -124,6 +124,9 @@ namespace Nf
     m_usVis->Reinitialize();
     
     onUpdateFrame();
+
+    if(m_visTab->currentIndex() == 1)
+      m_planeVis->onSetViewXY();
   }
 
   void RPFileWidget::onSetDisplayMode()
@@ -143,9 +146,6 @@ namespace Nf
       m_usVis->AddRPData(m_data);
     else
       m_planeVis->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
-
-    if(m_visTab->currentIndex() == 1)
-      m_planeVis->onSetViewXY();
   }
 
   RPFileWidget::~RPFileWidget()
