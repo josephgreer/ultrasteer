@@ -22,7 +22,8 @@ namespace Nf
     m_layout->addWidget((QWidget *)(m_visTab), 0, 1);
     m_layout->setContentsMargins(0,0,5,0);
     this->setLayout(m_layout);
-    
+
+    m_cal = Matrix44d(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0);
 
     ADD_CHILD_COLLECTION(m_usVis.get());
     ADD_CHILD_COLLECTION(m_imageViewer.get());
@@ -142,6 +143,9 @@ namespace Nf
       m_usVis->AddRPData(m_data);
     else
       m_planeVis->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
+
+    if(m_visTab->currentIndex() == 1)
+      m_planeVis->onSetViewXY();
   }
 
   RPFileWidget::~RPFileWidget()

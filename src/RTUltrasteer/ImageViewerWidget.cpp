@@ -31,6 +31,7 @@ namespace Nf
     , m_init(false)
     , m_useTrackball(false)
     , m_temp(NULL)
+    , m_cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0)
   {
     m_mapper = vtkSmartPointer<vtkImageMapper>::New();
     m_importer = vtkSmartPointer<vtkImageImport>::New();
@@ -142,7 +143,17 @@ namespace Nf
 
   void ImageViewerWidget::SetDataSpacing(const RPData *rp)
   {
-    m_importer->SetDataSpacing(rp->mpp.x/1000.0,rp->mpp.y/1000.0,1);
+
+    Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(rp->gps.pose).GetOrientation(), rp->gps.pos);
+    Vec2d mpp = rp->mpp;
+    Vec2d origin = rp->origin;
+    Vec2d mppScale(mpp.x/1000.0, mpp.y/1000.0);
+
+    Vec3d first = rpImageCoordToWorldCoord3(Vec2d(0,0), posePos, m_cal, origin, mppScale);
+    Vec3d second = rpImageCoordToWorldCoord3(Vec2d(0,1), posePos, m_cal, origin, mppScale);
+    f64 spacingy = (second-first).magnitude();
+
+    m_importer->SetDataSpacing(rp->mpp.x/1000.0,spacingy,1);
   }
 
   ////////////////////////////////////////////////////////
@@ -156,7 +167,6 @@ namespace Nf
   Image3DImagePlaneWidget::Image3DImagePlaneWidget(QWidget *parent)
     : ImageViewerWidget(parent)
     , SphereContainer()
-    , m_cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0)
     , m_frameBoundaries((CubeVisualizer *)NULL)
   {
     m_useTrackball = true;

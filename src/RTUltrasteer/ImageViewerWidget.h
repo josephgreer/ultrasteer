@@ -47,6 +47,7 @@ namespace Nf
     IplImage *m_temp;
     bool m_init;
     bool m_useTrackball;
+    Matrix44d m_cal;        //Calibration Matrix for transducer (maps image coords to world coords)
 
   public:
     ImageViewerWidget(QWidget *parent);
@@ -54,15 +55,13 @@ namespace Nf
     virtual void SetImage(const RPData *rp, RP_TYPE type);
     virtual void SetDataSpacing(const RPData *rp);
     virtual vtkSmartPointer < vtkRenderWindowInteractor > GetWindowInteractor() { return m_interactor; }
+    virtual vtkSmartPointer < vtkRenderer > GetRenderer() { return m_renderer; }
     vtkSmartPointer <vtkImageData> GetImageData() { return m_importer->GetOutput(); }
   };
 
   
   class Image3DImagePlaneWidget : public ImageViewerWidget, public SphereContainer, public AxisContainer
   {
-  protected:
-    Matrix44d m_cal;        //Calibration Matrix for transducer (maps image coords to world coords)
-
   public:
     Image3DImagePlaneWidget(QWidget *parent);
     virtual ~Image3DImagePlaneWidget();

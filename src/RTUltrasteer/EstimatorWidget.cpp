@@ -12,6 +12,10 @@ namespace Nf
   {
     ADD_ACTION_PARAMETER(m_needleCalib, "Needle Calibration Mode", CALLBACK_POINTER(onNeedleCalibrationPushed, EstimatorFileWidget), this, false);
     onUpdateFile();
+
+    m_calibrationPoints = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(0, 1, 0)));
+
+    m_planeVis->GetRenderer()->AddActor(m_calibrationPoints->GetActor());
   }
 
   EstimatorFileWidget::~EstimatorFileWidget()
@@ -62,13 +66,16 @@ namespace Nf
         vtkSmartPointer < vtkPointPicker > picker = vtkPointPicker::New();
         vtkSmartPointer < NeedleTipCalibrationPP > style = NeedleTipCalibrationPP::New();
         style->SetImageData(m_imageViewer->GetImageData());
+        style->SetEstimatorWidget(this);
         interactor->SetPicker(picker);
         interactor->SetInteractorStyle(style);
         break;
       }
     case EFS_NEEDLE_CALIB: 
       {
-        m_state = EFS_READY;
+        m_state = EFS_PRIMED;
+        m_calibrationPoints->ClearPoints();
+        m_planeVis->repaint();
         break;
       }
     default: 
@@ -79,8 +86,9 @@ namespace Nf
     }
   }
 
-  void EstimatorFileWidget::onPointPushed(f64 point[])
+  void EstimatorFileWidget::onPointPushed(Vec2d point)
   {
+    Vec2d mppScale(m_data.mpp.x/1000.0, m_data.mpp.y/1000.0);
     switch(m_state)
     {
     case EFS_READY:
@@ -93,6 +101,9 @@ namespace Nf
       }
     case EFS_NEEDLE_CALIB:
       {
+        Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(m_data.gps.pose).GetOrientation(), m_data.gps.pos);
+        m_calibrationPoints->AddPoint(rpImageCoordToWorldCoord3(point, posePos, m_cal, m_data.origin, mppScale));
+        m_planeVis->repaint();
         break;
       }
     default: 

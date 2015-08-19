@@ -27,6 +27,8 @@ namespace Nf
       pt[0] /= spacing[0];
       pt[1] /= spacing[1];
 
+      m_estimatorWidget->onPointPushed(Vec2d(pt[0], pt[1]));
+
       // Forward events
       vtkInteractorStyleImage::OnLeftButtonDown();
     }
