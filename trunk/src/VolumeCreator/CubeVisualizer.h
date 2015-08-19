@@ -7,7 +7,9 @@
 #include <vtkSmartPointer.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkSphereSource.h>
+#include <vtkPoints.h>
 #include <vtkAxesActor.h>
+#include <vtkGlyph3D.h>
 
 #include "RTCore.h"
 
@@ -33,16 +35,20 @@ namespace Nf {
     CubeVisualizer(const Nf::Cubed &cube, const u8 color[3]);
   };
 
-#if 0
   class PointCloudVisualizer : public GeometryVisualizer
   {
   protected:
-    vtkSmartPointer < vtkPointSource > m_pointSource;
+    vtkSmartPointer < vtkPoints > m_points;
+    vtkSmartPointer < vtkPolyData > m_polyData;
+    vtkSmartPointer < vtkSphereSource > m_sphereSource;
+    vtkSmartPointer < vtkGlyph3D > m_glyph3D;
 
   public:
-
+    PointCloudVisualizer(f64 rad, Vec3d color);
+    void AddPoint(const Vec3d &point);
+    void ClearPoints();
+    void SetRadius(f64 rad);
   };
-#endif
 
   class AxesVisualizer : public GeometryVisualizer
   {

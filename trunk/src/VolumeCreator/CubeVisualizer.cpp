@@ -5,6 +5,7 @@
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
 #include <vtkPolyData.h>
+#include <vtkProperty.h>
 
 namespace Nf {
 
@@ -229,6 +230,55 @@ namespace Nf {
   }
   ////////////////////////////////////////////////////////
   //End SphereVisualizer Class
+  ///////////////////////////////////////////////////////
+
+  //////////////////////////////////////////////////////
+  //Begin PointCloudVisualizer Class
+  //////////////////////////////////////////////////////
+  PointCloudVisualizer::PointCloudVisualizer(f64 rad, Vec3d color)
+  {
+    m_points = vtkSmartPointer<vtkPoints>::New();
+
+    m_sphereSource = vtkSmartPointer<vtkSphereSource>::New();
+    m_sphereSource->SetRadius(rad);
+    m_sphereSource->Update();
+    
+    m_polyData = vtkSmartPointer<vtkPolyData>::New();
+
+    m_glyph3D = vtkSmartPointer<vtkGlyph3D>::New();
+    m_glyph3D->SetSourceConnection(m_sphereSource->GetOutputPort());
+    m_glyph3D->SetInputData(m_polyData);
+    m_glyph3D->Update();
+
+    m_mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    m_mapper->SetInputConnection(m_glyph3D->GetOutputPort());
+
+    m_actor = vtkSmartPointer<vtkActor>::New();
+    m_actor->SetMapper(m_mapper);
+    m_actor->GetProperty()->SetColor(color.x, color.y, color.z);
+  }
+
+  void PointCloudVisualizer::AddPoint(const Vec3d &cen)
+  {
+    m_points->InsertNextPoint(cen.x, cen.y, cen.z);
+    m_polyData->SetPoints(m_points);
+    m_polyData->Modified();
+  }
+
+  void PointCloudVisualizer::ClearPoints()
+  {
+    m_points = vtkSmartPointer<vtkPoints>::New();
+    m_polyData->SetPoints(m_points);
+    m_polyData->Modified();
+  }
+
+  void PointCloudVisualizer::SetRadius(f64 rad)
+  {
+    m_sphereSource->SetRadius(rad);
+    m_sphereSource->Modified();
+  }
+  ////////////////////////////////////////////////////////
+  //End PointCloudVisualizer Class
   ///////////////////////////////////////////////////////
   
   ////////////////////////////////////////////////////////

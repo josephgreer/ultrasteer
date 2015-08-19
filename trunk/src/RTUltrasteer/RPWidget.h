@@ -24,6 +24,7 @@ namespace Nf
     RPData m_data;
     QGridLayout *m_layout;
     QTabWidget *m_visTab;
+    Matrix44d m_cal;
 
   public:
     RPWidget(QWidget *parent, USVisualizer *vis);

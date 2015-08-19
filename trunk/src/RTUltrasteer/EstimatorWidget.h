@@ -13,6 +13,7 @@
 #include "RobotHardwareWidget.h"
 #include "SaveDataWidget.h"
 #include "RPWidget.h"
+#include "CubeVisualizer.h"
 
 namespace Nf
 {
@@ -29,6 +30,7 @@ namespace Nf
 
   protected:
     EstimatorFileState m_state;
+    std::tr1::shared_ptr < PointCloudVisualizer > m_calibrationPoints;
 
   public:
     EstimatorFileWidget(QWidget *parent);
@@ -40,7 +42,7 @@ namespace Nf
 
     virtual void onUpdateFile();
 
-    virtual void onPointPushed(f64 point[]);
+    virtual void onPointPushed(Vec2d point);
   };
 
   enum EstimatorState {
