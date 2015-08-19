@@ -59,11 +59,8 @@ namespace Nf
     vtkSmartPointer < vtkImageFlip > m_flip;
     vtkSmartPointer < vtkRenderWindowInteractor > m_interactor;
     
-    // stylus calibration variables
-    arma::mat m_A;
-    arma::mat m_b;
-    arma::mat m_pcal;
-    bool m_stylusCalibrationComplete;
+    // stylus calibration object
+    StylusCalibration *m_stylusCalibration;
 
     // robot calibration variables
     arma::mat m_fiducialMeasurements;

@@ -66,5 +66,25 @@ namespace Nf {
     Matrix44d m_cal;
 
   };
-};
+
+  class StylusCalibration
+  {
+  public:
+    StylusCalibration();
+    ~StylusCalibration();
+    void addMeasurement(arma::mat, arma::mat);
+    void clearMeasurements(void);
+    void solveCalibration(void);
+    arma::mat getCalibrationVector(void);
+    arma::mat getCenter(void);
+    bool isComplete(void);
+
+  protected:
+    arma::mat m_A;
+    arma::mat m_b;
+    arma::mat m_vcal;
+    arma::mat m_c;
+    bool m_stylusCalibrationComplete;
+  };
+}
 
