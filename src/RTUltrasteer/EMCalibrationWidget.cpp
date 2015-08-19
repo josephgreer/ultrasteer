@@ -7,7 +7,6 @@ namespace Nf
     : Nf::ParameterCollection("EM Calibration")
     , ResizableQVTKWidget(parent, QSize(VIS_WIDTH, VIS_HEIGHT))
     , m_viewportInit(false)
-    , m_stylusCalibrationComplete(false)
   {
     // create layout
     m_layout = new QGridLayout(parent);
@@ -43,6 +42,9 @@ namespace Nf
     // initialize viewport
     initViewport();
 
+    // create stylus calibration object
+    m_stylusCalibration = new StylusCalibration;
+
     // add framework params
     ADD_BOOL_PARAMETER(m_inStylusCalibration, "Calibrate Stylus", CALLBACK_POINTER(onCalibrateStylus, EMCalibrationWidget), this, false);
     ADD_BOOL_PARAMETER(m_inRobotCalibration, "Calibrate Robot", CALLBACK_POINTER(onCalibrateRobot, EMCalibrationWidget), this, false);
@@ -51,6 +53,7 @@ namespace Nf
 
   EMCalibrationWidget::~EMCalibrationWidget()
   {
+    delete m_stylusCalibration;
   }
 
   void EMCalibrationWidget::UpdateGeometry()
@@ -118,20 +121,16 @@ namespace Nf
     if( m_inStylusCalibration->GetValue() ){ // If starting a new stylus calibration
       RenderTargetPoints(false);
       RenderMeasuredPoints(false);
-      m_A.reset();
-      m_b.reset();
+      m_stylusCalibration->clearMeasurements();
     }else{ // If finished collecting data, solve the stylus calibration
-      arma::mat x = arma::solve(m_A,m_b);
-      arma::mat t= x.rows(3,5);
-      m_pcal = x.rows(0,2);
-      RenderTargetPoints(true,t);
-      m_stylusCalibrationComplete = true;
+      m_stylusCalibration->solveCalibration();
+      RenderTargetPoints(true,m_stylusCalibration->getCenter());
     }
   }
 
   void EMCalibrationWidget::onCalibrateRobot(void)
   {
-    if( m_stylusCalibrationComplete ){ // If starting a new robot calibration
+    if( m_stylusCalibration->isComplete() ){ // If starting a new robot calibration
       if( m_inRobotCalibration->GetValue() ){
         RenderTargetPoints(false);
         RenderMeasuredPoints(false);
@@ -268,14 +267,13 @@ namespace Nf
       //  NTrace("pt[%d] = {%.2f, %.2f, %.2f}\n",i,x[0],x[1],x[2]);
       //}
 
-      // extract current position and orientation, and save into the Ax = b matrices for least-squares
+      // extract current position and orientation, pass them to the stylus calibration object
       Matrix44d pose = Matrix44d::FromCvMat(rp.gps.pose);
       pose.SetPosition(p); // current implementation of rp.gps.pose does not include position in 4x4
       mat T = pose.ToArmaMatrix4x4();
       mat R_i = T.submat(0,0,2,2);
       mat p_i = T.submat(0,3,2,3);
-      m_A.insert_rows(m_A.n_rows,join_rows(R_i,-eye(3,3)));
-      m_b.insert_rows(m_b.n_rows,-p_i);
+      m_stylusCalibration->addMeasurement(R_i,p_i);
 
       //// Print the combined matrix for debugging
       //NTrace("m_A = {\n");
@@ -286,7 +284,7 @@ namespace Nf
       QVTKWidget::update();
     }
 
-    if( m_inRobotCalibration->GetValue() && m_stylusCalibrationComplete ) // if we are in robot calibration mode
+    if( m_inRobotCalibration->GetValue() && m_stylusCalibration->isComplete() ) // if we are in robot calibration mode
     {
       Vec3d p = rp.gps.pos;
       Matrix44d pose = Matrix44d::FromCvMat(rp.gps.pose);
@@ -296,7 +294,7 @@ namespace Nf
       mat p_i = T.submat(0,3,2,3);
 
       // calculate the position of the stylus tip at the current time
-      mat p_tip = R_i*m_pcal + p_i;
+      mat p_tip = R_i*m_stylusCalibration->getCalibrationVector() + p_i;
 
       // add the current frame to a matrix of measurements
       m_currentFiducialMeasurements.insert_cols(m_currentFiducialMeasurements.n_cols,p_tip);
@@ -310,7 +308,7 @@ namespace Nf
     : EMCalibrationWidget(parent) 
     , m_rpReaders(NULL)
   {
-    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, EMCalibrationFileWidget), this, "F:/NeedleScan/6_12_15/Scan1/scan.b8", "Any File (*.*)");
+    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, EMCalibrationFileWidget), this, "F:/NeedleScan/8_18_15/TroyData/scan.gps1", "Any File (*.*)");
     ADD_INT_PARAMETER(m_frame, "Frame Index", CALLBACK_POINTER(onUpdateFrame, EMCalibrationFileWidget), this, 1, 1, 100, 1);
     onUpdateFile();
   }
@@ -328,16 +326,25 @@ namespace Nf
     m_rpReaders = new RPFileReaderCollection();
 
     char temp[200];
-    sprintf(temp,"%s.b8",fname.c_str());
-    RPFileReader *tempReader = new RPFileReader(temp);
-    s32 nframes = tempReader->GetHeader().frames;
-    m_rpReaders->AddReader(RPF_BPOST8, (RPReader*)tempReader);
-    sprintf(temp,"%s.b32",fname.c_str());
-    tempReader = new RPFileReader(temp);
-    m_rpReaders->AddReader(RPF_BPOST32, (RPReader *)tempReader);
-    sprintf(temp,"%s.gps1",fname.c_str());
-    m_rpReaders->AddGPSReader((RPGPSReaderBasic *)new RPGPSReader(temp));  
 
+    s32 nframes;
+
+    //sprintf(temp,"%s.b8",fname.c_str());
+    //tempReader = new RPFileReader(temp);
+    //m_rpReaders->AddReader(RPF_BPOST8, (RPReader*)tempReader);
+    //
+    //sprintf(temp,"%s.b32",fname.c_str());
+    //tempReader = new RPFileReader(temp);
+    //m_rpReaders->AddReader(RPF_BPOST32, (RPReader *)tempReader);
+    
+    sprintf(temp,"%s.gps1",fname.c_str());
+    RPGPSReader *tempReader = new RPGPSReader(temp);
+    m_rpReaders->AddGPSReader((RPGPSReaderBasic *)tempReader);  
+    sprintf(temp,"%s.gps2",fname.c_str());
+    tempReader = new RPGPSReader(temp);
+    m_rpReaders->AddGPSReader2((RPGPSReaderBasic *)tempReader);
+
+    nframes = tempReader->GetHeader().frames;
     if(nframes <= 0) {
       delete m_rpReaders;
       m_rpReaders = NULL;
@@ -345,6 +352,7 @@ namespace Nf
     }
 
     m_frame->SetMax(nframes);
+    m_frame->SetValue(1);
 
     onUpdateFrame();
   }

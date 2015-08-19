@@ -489,8 +489,10 @@ namespace Nf
       header = m_readers[RPF_BPOST8]->GetHeader();
     else if(m_readers.find(RPF_BPOST32) != m_readers.end())
       header = m_readers[RPF_BPOST32]->GetHeader();
-    else
+    else if(m_readers.find(RPF_COLOR) != m_readers.end())
       header = m_readers[RPF_COLOR]->GetHeader();
+    else
+      header = m_gps->GetHeader();
     rv.roi = Squarei(Vec2i(header.ul[0], header.ul[1]), Vec2i(header.br[0], header.br[1]));
 
     if(rv.origin.x == 0 && rv.origin.y == 0)

@@ -220,4 +220,50 @@ namespace Nf {
     }
   }
 
+  StylusCalibration::StylusCalibration()
+  {
+    m_stylusCalibrationComplete = false;
+  }
+
+  StylusCalibration::~StylusCalibration()
+  {
+  }
+
+  void StylusCalibration::addMeasurement(arma::mat R_i, arma::mat p_i)
+  {
+    using namespace arma;
+    m_A.insert_rows(m_A.n_rows,join_rows(R_i,-eye(3,3)));
+    m_b.insert_rows(m_b.n_rows,-p_i);
+  }
+
+  void StylusCalibration::clearMeasurements(void)
+  {
+    using namespace arma;
+    m_A.reset();
+    m_b.reset();
+    m_stylusCalibrationComplete = false;
+  }
+
+  void StylusCalibration::solveCalibration(void)
+  {
+    arma::mat x = arma::solve(m_A,m_b);
+    m_vcal = x.rows(0,2);
+    m_c = x.rows(3,5);
+    m_stylusCalibrationComplete = true;
+  }
+
+  arma::mat StylusCalibration::getCalibrationVector(void)
+  {
+    return m_vcal;
+  }
+
+  arma::mat StylusCalibration::getCenter(void)
+  {
+    return m_c;
+  }
+
+  bool StylusCalibration::isComplete(void)
+  {
+    return m_stylusCalibrationComplete;
+  }
 };
