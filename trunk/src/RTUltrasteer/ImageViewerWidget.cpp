@@ -240,6 +240,7 @@ namespace Nf
   {
     UpdateFrameBoundaries();
     QVTKWidget::update();
+    m_renderer->ResetCameraClippingRange();
   }
 
   void Image3DImagePlaneWidget::SetUSVisView(s32 axis1, s32 axis2)

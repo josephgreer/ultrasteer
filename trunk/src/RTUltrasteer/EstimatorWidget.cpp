@@ -11,15 +11,25 @@ namespace Nf
     , m_state(EFS_READY)
   {
     ADD_ACTION_PARAMETER(m_needleCalib, "Needle Calibration Mode", CALLBACK_POINTER(onNeedleCalibrationPushed, EstimatorFileWidget), this, false);
-    onUpdateFile();
+    ADD_ACTION_PARAMETER(m_doNeedleCalib, "Do Needle Calibration", CALLBACK_POINTER(onDoNeedleCalibrationPushed, EstimatorFileWidget), this, false);
 
     m_calibrationPoints = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(0, 1, 0)));
+    m_calibTip = std::tr1::shared_ptr < SphereVisualizer > (new SphereVisualizer(Vec3d(0,0,0), 1));
+    m_calibTip->SetColor(Vec3d(1,0,0));
 
     m_planeVis->GetRenderer()->AddActor(m_calibrationPoints->GetActor());
+    onUpdateFile();
   }
 
   EstimatorFileWidget::~EstimatorFileWidget()
   {
+  }
+
+  void EstimatorFileWidget::onUpdateFrame()
+  {
+    RPFileWidget::onUpdateFrame();
+
+    UpdateCalibTipVis();
   }
 
   void EstimatorFileWidget::onUpdateFile()
@@ -39,6 +49,10 @@ namespace Nf
         break;
       }
     case EFS_NEEDLE_CALIB:
+      {
+        break;
+      }
+    case EFS_NEEDLE_CALIBRATED:
       {
         break;
       }
@@ -69,13 +83,42 @@ namespace Nf
         style->SetEstimatorWidget(this);
         interactor->SetPicker(picker);
         interactor->SetInteractorStyle(style);
+
+        m_R.clear();
+        m_yx.clear();
         break;
       }
     case EFS_NEEDLE_CALIB: 
+    case EFS_NEEDLE_CALIBRATED: 
       {
         m_state = EFS_PRIMED;
         m_calibrationPoints->ClearPoints();
         m_planeVis->repaint();
+        break;
+      }
+    default: 
+      {
+        throw std::runtime_error("EstimatorFileWidget: unknown state\n");
+        break;
+      }
+    }
+  }
+
+  void EstimatorFileWidget::onDoNeedleCalibrationPushed()
+  {
+    switch(m_state)
+    {
+    case EFS_READY: 
+    case EFS_PRIMED:
+      {
+        break;
+      }
+    case EFS_NEEDLE_CALIB: 
+    case EFS_NEEDLE_CALIBRATED: 
+      {
+        m_tipCalibSoln = arma::solve(m_R, m_yx);
+        m_state = EFS_NEEDLE_CALIBRATED;
+        UpdateCalibTipVis();
         break;
       }
     default: 
@@ -100,12 +143,48 @@ namespace Nf
         break;
       }
     case EFS_NEEDLE_CALIB:
+    case EFS_NEEDLE_CALIBRATED:
       {
         Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(m_data.gps.pose).GetOrientation(), m_data.gps.pos);
-        m_calibrationPoints->AddPoint(rpImageCoordToWorldCoord3(point, posePos, m_cal, m_data.origin, mppScale));
+        Vec3d y = rpImageCoordToWorldCoord3(point, posePos, m_cal, m_data.origin, mppScale);
+        m_calibrationPoints->AddPoint(y);
         m_planeVis->repaint();
+
+        m_R = arma::join_vert(m_R,posePos.GetOrientation().ToArmaMat());
+        m_yx = arma::join_vert(m_yx, (y-m_data.gps2.pos).ToArmaVec());
+      }
+      break;
+    default: 
+      {
+        throw std::runtime_error("EstimatorFileWidget: unknown state\n");
         break;
       }
+    }
+  }
+
+  void EstimatorFileWidget::UpdateCalibTipVis()
+  {
+    Vec2d mppScale(m_data.mpp.x/1000.0, m_data.mpp.y/1000.0);
+    switch(m_state)
+    {
+    case EFS_READY:
+    case EFS_PRIMED:
+    case EFS_NEEDLE_CALIB:
+      {
+        if(m_planeVis->GetRenderer()->HasViewProp(m_calibTip->GetActor()))
+          m_planeVis->GetRenderer()->RemoveActor(m_calibTip->GetActor());
+      }
+      break;
+    case EFS_NEEDLE_CALIBRATED:
+      {
+        if(!m_planeVis->GetRenderer()->HasViewProp(m_calibTip->GetActor()))
+          m_planeVis->GetRenderer()->AddActor(m_calibTip->GetActor());
+
+        Matrix33d tipFrame = Matrix44d::FromCvMat(m_data.gps2.pose).GetOrientation();
+        m_calibTip->SetCenter(m_data.gps2.pos+tipFrame.Col(0)*m_tipCalibSoln.at(0,0)+tipFrame.Col(1)*m_tipCalibSoln.at(1,0)+tipFrame.Col(2)*m_tipCalibSoln.at(2,0));
+        m_planeVis->repaint();
+      }
+      break;
     default: 
       {
         throw std::runtime_error("EstimatorFileWidget: unknown state\n");

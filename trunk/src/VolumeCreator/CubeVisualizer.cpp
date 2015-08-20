@@ -27,6 +27,11 @@ namespace Nf {
   {
     return m_mapper;
   }
+
+  void GeometryVisualizer::SetColor(const Vec3d &color)
+  {
+    m_actor->GetProperty()->SetColor(color.x, color.y, color.z);
+  }
   ////////////////////////////////////////////////////////
   //End GeometryVisualizer Class
   ///////////////////////////////////////////////////////
@@ -255,7 +260,7 @@ namespace Nf {
 
     m_actor = vtkSmartPointer<vtkActor>::New();
     m_actor->SetMapper(m_mapper);
-    m_actor->GetProperty()->SetColor(color.x, color.y, color.z);
+    SetColor(color);
   }
 
   void PointCloudVisualizer::AddPoint(const Vec3d &cen)

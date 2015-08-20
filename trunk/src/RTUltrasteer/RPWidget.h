@@ -58,7 +58,7 @@ namespace Nf
 
     //Frame index
     std::tr1::shared_ptr < Nf::IntParameter > m_frame;
-    void onUpdateFrame();
+    virtual void onUpdateFrame();
     CLASS_CALLBACK(onUpdateFrame, RPFileWidget);
 
     virtual void onSetDisplayMode();
