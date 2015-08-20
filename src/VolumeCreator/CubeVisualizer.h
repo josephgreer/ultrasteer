@@ -24,6 +24,7 @@ namespace Nf {
   public:
     virtual vtkSmartPointer<vtkActor> GetActor();
     virtual vtkSmartPointer<vtkPolyDataMapper> GetMapper();
+    virtual void SetColor(const Vec3d &color);
   };
 
   class CubeVisualizer : public GeometryVisualizer

@@ -22,6 +22,7 @@ namespace Nf
     EFS_READY = 0,
     EFS_PRIMED,
     EFS_NEEDLE_CALIB,
+    EFS_NEEDLE_CALIBRATED,
   };
 
   class EstimatorFileWidget : public RPFileWidget
@@ -31,6 +32,10 @@ namespace Nf
   protected:
     EstimatorFileState m_state;
     std::tr1::shared_ptr < PointCloudVisualizer > m_calibrationPoints;
+    std::tr1::shared_ptr < SphereVisualizer > m_calibTip;
+    arma::mat m_R;
+    arma::vec m_yx;
+    arma::vec m_tipCalibSoln;
 
   public:
     EstimatorFileWidget(QWidget *parent);
@@ -40,7 +45,13 @@ namespace Nf
     void onNeedleCalibrationPushed();
     CLASS_CALLBACK(onNeedleCalibrationPushed, EstimatorFileWidget);
 
+    std::tr1::shared_ptr < Nf::BoolParameter > m_doNeedleCalib;
+    void onDoNeedleCalibrationPushed();
+    CLASS_CALLBACK(onDoNeedleCalibrationPushed, EstimatorFileWidget);
+
     virtual void onUpdateFile();
+    virtual void onUpdateFrame();
+    virtual void UpdateCalibTipVis();
 
     virtual void onPointPushed(Vec2d point);
   };

@@ -90,6 +90,12 @@ namespace Nf
       return Vec2<T>(this->x/mag, this->y/mag);
     }
 
+    arma::vec2 ToArmaVec()
+    {
+      arma::vec2 res; res << this->x << arma::endr << this->y;
+      return res;
+    }
+
 #ifdef VNL_INCLUDE
     operator vnl_vector < T > ()
     {
@@ -173,6 +179,13 @@ namespace Nf
       T mag = this->magnitude();
 
       return Vec4<T>(this->x/mag, this->y/mag, this->z/mag, this->w/mag);
+    }
+
+    arma::vec4 ToArmaVec()
+    {
+      arma::vec4 res;
+      res << this->x << arma::endr << this->y << arma::endr << this->z << arma::endr << this->w;
+      return res;
     }
   };
 
@@ -273,6 +286,13 @@ namespace Nf
     {
       Vec3<T> delta = *this-b;
       return delta.magnitudeSquared();
+    }
+
+    arma::vec3 ToArmaVec()
+    {
+      arma::vec3 res;
+      res << this->x << arma::endr << this->y << arma::endr << this->z;
+      return res;
     }
 
 #ifdef VNL_INCLUDE
@@ -739,6 +759,15 @@ namespace Nf
     T Determinant() const
     {
       return vtkMath::Determinant3x3(&m_data[0][0], &m_data[1][0], &m_data[2][0]);
+    }
+
+    arma::mat33 ToArmaMat()
+    {
+      arma::mat33 res;
+      res << m_data[0][0] << m_data[0][1] << m_data[0][2] << arma::endr << 
+             m_data[1][0] << m_data[1][1] << m_data[1][2] << arma::endr <<
+             m_data[2][0] << m_data[2][1] << m_data[2][2] << arma::endr;
+      return res;
     }
   };
 
