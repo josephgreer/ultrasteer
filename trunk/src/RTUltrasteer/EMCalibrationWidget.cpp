@@ -7,6 +7,7 @@ namespace Nf
     : Nf::ParameterCollection("EM Calibration")
     , ResizableQVTKWidget(parent, QSize(VIS_WIDTH, VIS_HEIGHT))
     , m_viewportInit(false)
+    , m_robotCalibrationComplete(false)
   {
     // create layout
     m_layout = new QGridLayout(parent);
@@ -25,6 +26,9 @@ namespace Nf
     m_targetGlyphFilter = vtkSmartPointer<vtkVertexGlyphFilter>::New();
     m_targetMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
     m_targetActor = vtkSmartPointer<vtkActor>::New();
+    m_robotAxes = vtkSmartPointer<vtkAxesActor>::New();
+    m_EMrobotAxes = vtkSmartPointer<vtkAxesActor>::New();
+    m_stylusAxes = vtkSmartPointer<vtkAxesActor>::New();
 
     // initialize robot calibration matrices
     m_fiducialMeasurements = arma::zeros<arma::mat>(3,4);
@@ -95,6 +99,14 @@ namespace Nf
       m_targetActor->GetProperty()->SetColor(0,1,0);
       m_targetActor->GetProperty()->SetPointSize(10);
 
+      // coordinate frame actors      
+      m_robotAxes->SetTotalLength(10.0,10.0,10.0);
+      m_EMrobotAxes->SetTotalLength(5.0,5.0,5.0);
+      m_stylusAxes->SetTotalLength(7.0,7.0,7.0);
+      m_robotAxes->VisibilityOff();
+      m_EMrobotAxes->VisibilityOff();
+      m_stylusAxes->VisibilityOff();
+
       // interactor and renderer
       vtkSmartPointer<vtkInteractorStyleTrackballCamera> style = 
         vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
@@ -102,6 +114,9 @@ namespace Nf
       this->GetRenderWindow()->AddRenderer(m_renderer);
       m_renderer->AddActor(m_actor);
       m_renderer->AddActor(m_targetActor);
+      m_renderer->AddActor(m_robotAxes);
+      m_renderer->AddActor(m_EMrobotAxes);
+      m_renderer->AddActor(m_stylusAxes);
       m_renderer->SetBackground(.3, .3, .6); // Background color blue
 
       // render and start interaction
@@ -135,6 +150,7 @@ namespace Nf
         RenderTargetPoints(false);
         RenderMeasuredPoints(false);
         m_currentFiducialMeasurements.reset();
+        m_robotCalibrationComplete = false;
       }else{ // If finished collecting data, solve the robot calibration
         arma::mat mu = mean(m_currentFiducialMeasurements,1);
         m_fiducialMeasurements.col(m_robotFiducialNumber->GetValue()-1) = mu;
@@ -197,8 +213,15 @@ namespace Nf
       for(int i = 0; i < m_fiducialCoordinates.n_cols; i++)
         transformedPoints.col(i) = R*m_fiducialMeasurements.col(i) + t;
 
+      // Render the transformed points
       RenderTargetPoints(true, m_fiducialCoordinates);
       RenderMeasuredPoints(true, transformedPoints);
+
+      // Render the sensor and robot frames
+      m_robotCalibrationComplete = true;
+      m_robotAxes->VisibilityOn();
+      m_EMrobotAxes->VisibilityOn();
+      m_stylusAxes->VisibilityOn();
     }
   }
 
@@ -250,57 +273,45 @@ namespace Nf
   {
     using namespace arma;
 
+    // get relative position and orientation of the stylus
+    mat33 R_i;
+    vec3 p_i;
+    rp.GetGPS1Relative(R_i,p_i);
+
     if( m_inStylusCalibration->GetValue() ) // if we are in stylus calibration mode
     {
-      // directly add point position to visualization
-      Vec3d p = rp.gps.pos;
-      m_stylusPoints->InsertNextPoint(p.x,p.y,p.z);
+      // pass relative position and orientation to the stylus calibration object
+      m_stylusCalibration->addMeasurement(R_i,p_i);
+            
+      // add the point position to visualization
+      m_stylusPoints->InsertNextPoint(p_i(0), p_i(1), p_i(2));
       m_stylusPoints->Modified();
       m_glyphFilter->Update();
       resetView();
-
-      //// print positions for debugging
-      //int N = m_stylusPoints->GetNumberOfPoints();
-      //double x[3];
-      //for( int i = 0; i<N; i++ ){
-      //  m_stylusPoints->GetPoint(i,x);
-      //  NTrace("pt[%d] = {%.2f, %.2f, %.2f}\n",i,x[0],x[1],x[2]);
-      //}
-
-      // extract current position and orientation, pass them to the stylus calibration object
-      Matrix44d pose = Matrix44d::FromCvMat(rp.gps.pose);
-      pose.SetPosition(p); // current implementation of rp.gps.pose does not include position in 4x4
-      mat T = pose.ToArmaMatrix4x4();
-      mat R_i = T.submat(0,0,2,2);
-      mat p_i = T.submat(0,3,2,3);
-      m_stylusCalibration->addMeasurement(R_i,p_i);
-
-      //// Print the combined matrix for debugging
-      //NTrace("m_A = {\n");
-      //for( int i = 0; i<m_A.n_rows; i++){
-      //  NTrace("%.2f, %.2f, %.2f %.2f, %.2f, %.2f\n",m_A.at(i,0),m_A.at(i,1),m_A.at(i,2),m_A.at(i,3),m_A.at(i,4),m_A.at(i,5));
-      //}
-      //NTrace("}\n");
       QVTKWidget::update();
     }
 
     if( m_inRobotCalibration->GetValue() && m_stylusCalibration->isComplete() ) // if we are in robot calibration mode
     {
-      Vec3d p = rp.gps.pos;
-      Matrix44d pose = Matrix44d::FromCvMat(rp.gps.pose);
-      pose.SetPosition(p); // current implementation of rp.gps.pose does not include position in 4x4
-      mat T = pose.ToArmaMatrix4x4();
-      mat R_i = T.submat(0,0,2,2);
-      mat p_i = T.submat(0,3,2,3);
-
-      // calculate the position of the stylus tip at the current time
+    
+      // calculate the relative position of the stylus tip at the current time
       mat p_tip = R_i*m_stylusCalibration->getCalibrationVector() + p_i;
 
       // add the current frame to a matrix of measurements
       m_currentFiducialMeasurements.insert_cols(m_currentFiducialMeasurements.n_cols,p_tip);
-
-      NTrace("Adding {%.2f, %.2f, %.2f} \n",p_tip(0,0), p_tip(1,0), p_tip(2,0));
       RenderMeasuredPoints(true, m_currentFiducialMeasurements);
+    }
+
+    if( m_robotCalibrationComplete )
+    {
+      Matrix44d Eye;
+      Eye.I();
+      m_robotAxes->PokeMatrix(Eye.GetVTKMatrix());
+
+      // keep going here...
+      // add the correct matrices to the other two axes
+      m_EMrobotAxes->PokeMatrix(Eye.GetVTKMatrix());
+      m_stylusAxes->PokeMatrix(Eye.GetVTKMatrix());
     }
   }
 

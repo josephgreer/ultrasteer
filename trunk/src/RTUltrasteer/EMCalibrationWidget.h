@@ -16,6 +16,7 @@
 #include "vtkVertexGlyphFilter.h"
 #include <vtkProperty.h>
 #include <QtGui/QFileDialog>
+#include <vtkAxesActor.h>
 
 namespace Nf
 {
@@ -43,6 +44,7 @@ namespace Nf
     RPData m_data;
     QGridLayout *m_layout;
     bool m_viewportInit;
+    bool m_robotCalibrationComplete;
     vtkSmartPointer < vtkPoints > m_targetPoints;
     vtkSmartPointer < vtkPolyData > m_targetPolyData;
     vtkSmartPointer<vtkVertexGlyphFilter> m_targetGlyphFilter;
@@ -55,6 +57,10 @@ namespace Nf
     vtkSmartPointer < vtkPolyDataMapper > m_mapper;
     vtkSmartPointer < vtkActor > m_actor;
     
+    vtkSmartPointer < vtkAxesActor > m_robotAxes;
+    vtkSmartPointer < vtkAxesActor > m_EMrobotAxes;
+    vtkSmartPointer < vtkAxesActor > m_stylusAxes;
+
     vtkSmartPointer < vtkRenderer > m_renderer;
     vtkSmartPointer < vtkImageFlip > m_flip;
     vtkSmartPointer < vtkRenderWindowInteractor > m_interactor;
