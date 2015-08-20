@@ -196,9 +196,9 @@ namespace Nf
       vec t = -R*c_a + c_b;
 
       // Combine into a 4x4 transform
-      mat T(4,4,fill::eye);
-      T.submat(0,0,2,2) = R;
-      T.submat(0,3,2,3) = t;
+      m_T_em2robot = mat(4,4,fill::eye);
+      m_T_em2robot.submat(0,0,2,2) = R;
+      m_T_em2robot.submat(0,3,2,3) = t;
 
       // Save rotation and translation
       QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), QString("F:/ultrasteer/EMCal"), "*.m");
@@ -206,7 +206,7 @@ namespace Nf
         return;
       }
       std::string fname = fileName.toStdString();
-      T.save(fname);
+      m_T_em2robot.save(fname);
 
       // Visualize the fiducial targets and registered measurements
       mat transformedPoints(3,m_fiducialCoordinates.n_cols,fill::zeros);
@@ -308,10 +308,18 @@ namespace Nf
       Eye.I();
       m_robotAxes->PokeMatrix(Eye.GetVTKMatrix());
 
-      // keep going here...
-      // add the correct matrices to the other two axes
-      m_EMrobotAxes->PokeMatrix(Eye.GetVTKMatrix());
-      m_stylusAxes->PokeMatrix(Eye.GetVTKMatrix());
+      Matrix44d T1 = Matrix44d::FromArmaMatrix4x4(m_T_em2robot);
+      m_EMrobotAxes->PokeMatrix(T1.GetVTKMatrix());
+
+      mat33 Rs;
+      vec3 ts;
+      rp.GetGPS1Relative(Rs,ts);
+      mat44 Ts;
+      Ts.i();
+      Ts.submat(0,0,2,2) = Rs;
+      Ts.submat(0,3,2,3) = ts;
+      Matrix44d T2 = Matrix44d::FromArmaMatrix4x4(m_T_em2robot*Ts);
+      m_stylusAxes->PokeMatrix(T2.GetVTKMatrix());
     }
   }
 
