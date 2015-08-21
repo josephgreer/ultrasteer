@@ -1,4 +1,5 @@
 #include "EMCalibrationWidget.h"
+#include <vtkCamera.h>
 
 
 namespace Nf
@@ -107,6 +108,11 @@ namespace Nf
       m_EMrobotAxes->VisibilityOff();
       m_stylusAxes->VisibilityOff();
 
+      // Pass the identity matrix to the robot coordinate frame 
+      Matrix44d I;
+      I = Matrix44d::I();
+      m_robotAxes->PokeMatrix(I.GetVTKMatrix());
+
       // interactor and renderer
       vtkSmartPointer<vtkInteractorStyleTrackballCamera> style = 
         vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
@@ -196,9 +202,9 @@ namespace Nf
       vec t = -R*c_a + c_b;
 
       // Combine into a 4x4 transform
-      m_T_em2robot = mat(4,4,fill::eye);
-      m_T_em2robot.submat(0,0,2,2) = R;
-      m_T_em2robot.submat(0,3,2,3) = t;
+      m_T_emref2robot = mat(4,4,fill::eye);
+      m_T_emref2robot.submat(0,0,2,2) = R;
+      m_T_emref2robot.submat(0,3,2,3) = t;
 
       // Save rotation and translation
       QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), QString("F:/ultrasteer/EMCal"), "*.m");
@@ -206,7 +212,7 @@ namespace Nf
         return;
       }
       std::string fname = fileName.toStdString();
-      m_T_em2robot.save(fname);
+      m_T_emref2robot.save(fname);
 
       // Visualize the fiducial targets and registered measurements
       mat transformedPoints(3,m_fiducialCoordinates.n_cols,fill::zeros);
@@ -222,6 +228,21 @@ namespace Nf
       m_robotAxes->VisibilityOn();
       m_EMrobotAxes->VisibilityOn();
       m_stylusAxes->VisibilityOn();
+
+      // Align camera view with robot frame
+      vtkSmartPointer <vtkCamera> camera = vtkSmartPointer<vtkCamera>::New();
+      Vec3d up(-1,0,0);
+      Vec3d focal(0,0,1);
+      camera->SetPosition(0,0,0);
+      camera->SetFocalPoint(focal.x, focal.y, focal.z);
+      camera->SetViewUp(up.x, up.y, up.z);
+      m_renderer->SetActiveCamera(camera);
+
+      // Set the view bounds
+      f64 *bounds = m_targetActor->GetBounds();
+      m_renderer->ResetCamera(bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], 
+        bounds[5]);
+      m_renderer->GetActiveCamera()->Zoom(1.3);
     }
   }
 
@@ -302,24 +323,22 @@ namespace Nf
       RenderMeasuredPoints(true, m_currentFiducialMeasurements);
     }
 
-    if( m_robotCalibrationComplete )
+    if( m_robotCalibrationComplete ) // if the robot is calibrated
     {
-      Matrix44d Eye;
-      Eye.I();
-      m_robotAxes->PokeMatrix(Eye.GetVTKMatrix());
+      // get the em reference sensor frame relative to the robot frame
+      Matrix44d T_emref2robot = Matrix44d::FromArmaMatrix4x4(m_T_emref2robot);
+      m_EMrobotAxes->PokeMatrix(T_emref2robot.GetVTKMatrix());
 
-      Matrix44d T1 = Matrix44d::FromArmaMatrix4x4(m_T_em2robot);
-      m_EMrobotAxes->PokeMatrix(T1.GetVTKMatrix());
-
-      mat33 Rs;
-      vec3 ts;
-      rp.GetGPS1Relative(Rs,ts);
-      mat44 Ts;
-      Ts.i();
-      Ts.submat(0,0,2,2) = Rs;
-      Ts.submat(0,3,2,3) = ts;
-      Matrix44d T2 = Matrix44d::FromArmaMatrix4x4(m_T_em2robot*Ts);
-      m_stylusAxes->PokeMatrix(T2.GetVTKMatrix());
+      // get the stylus tip frame relative to the robot frame
+      mat44 T_emstylus;
+      rp.GetGPS1RelativeT(T_emstylus);    
+      mat44 T_stylus = eye<mat>(4,4);
+      T_stylus.submat(0,3,2,3) = m_stylusCalibration->getCalibrationVector();
+      Matrix44d Tstylustip2robot = Matrix44d::FromArmaMatrix4x4(m_T_emref2robot*T_emstylus*T_stylus);
+      m_stylusAxes->PokeMatrix(Tstylustip2robot.GetVTKMatrix());
+      
+      // update the display
+      QVTKWidget::update();
     }
   }
 
@@ -417,7 +436,7 @@ namespace Nf
       Vec2d mpp(m_mpp->GetValue(), m_mpp->GetValue());
       m_rpReaders = std::tr1::shared_ptr < RPUlteriusReaderCollectionPush >(new RPUlteriusReaderCollectionPush(m_rpIp->GetValue().c_str(), mpp, m_origin->GetValue()));
       m_rpReaders->SetRPCallbackReceiver(this);
-      u32 mask = RPF_GPS|RPF_BPOST8;
+      u32 mask = RPF_GPS|RPF_BPOST8|RPF_GPS2;
       m_rpReaders->EnableMask(mask);
       Sleep(30);
     }
