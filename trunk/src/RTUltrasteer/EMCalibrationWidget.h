@@ -72,7 +72,7 @@ namespace Nf
     arma::mat m_fiducialMeasurements;
     arma::mat m_fiducialCoordinates;
     arma::mat m_currentFiducialMeasurements;
-    arma::mat m_T_em2robot;
+    arma::mat m_T_emref2robot;
 
   public:
     EMCalibrationWidget(QWidget *parent);

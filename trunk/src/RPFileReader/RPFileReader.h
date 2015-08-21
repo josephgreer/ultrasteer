@@ -215,6 +215,17 @@ namespace Nf
       p1_rel = T_rel.submat(0,3,2,3);
     }
 
+    void GetGPS1RelativeT(arma::mat44 &T1_rel)
+    {
+      using namespace arma;
+      mat33 R1_rel;
+      vec3 t1_rel;
+      this->GetGPS1Relative(R1_rel,t1_rel);
+      T1_rel.eye();
+      T1_rel.submat(0,0,2,2) = R1_rel;
+      T1_rel.submat(0,3,2,3) = t1_rel;
+    }
+
     RPData Clone() const
     {
       RPData rv;
