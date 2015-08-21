@@ -90,10 +90,15 @@ namespace Nf
       return Vec2<T>(this->x/mag, this->y/mag);
     }
 
-    arma::vec2 ToArmaVec()
+    arma::vec2 ToArmaVec() const
     {
       arma::vec2 res; res << this->x << arma::endr << this->y;
       return res;
+    }
+
+    static Vec2<T> FromArmaVec(arma::vec rhs)
+    {
+      return Vec2(rhs(0), rhs(1));
     }
 
 #ifdef VNL_INCLUDE
@@ -181,11 +186,16 @@ namespace Nf
       return Vec4<T>(this->x/mag, this->y/mag, this->z/mag, this->w/mag);
     }
 
-    arma::vec4 ToArmaVec()
+    arma::vec4 ToArmaVec() const
     {
       arma::vec4 res;
       res << this->x << arma::endr << this->y << arma::endr << this->z << arma::endr << this->w;
       return res;
+    }
+
+    static Vec4<T> FromArmaVec(arma::vec rhs)
+    {
+      return Vec4(rhs(0), rhs(1), rhs(2), rhs(3));
     }
   };
 
@@ -288,11 +298,16 @@ namespace Nf
       return delta.magnitudeSquared();
     }
 
-    arma::vec3 ToArmaVec()
+    arma::vec3 ToArmaVec() const
     {
       arma::vec3 res;
       res << this->x << arma::endr << this->y << arma::endr << this->z;
       return res;
+    }
+
+    static Vec3<T> FromArmaVec(arma::vec rhs)
+    {
+      return Vec3(rhs(0), rhs(1), rhs(2));
     }
 
 #ifdef VNL_INCLUDE
@@ -604,6 +619,20 @@ namespace Nf
       return Matrix33<T>(data);
     }
 
+    
+    static Matrix33<T> FromArmaMatrix3x3(const arma::mat rhs)
+    {
+      f64 data[3][3];
+
+      for(s32 r=0; r<3; r++) {
+        for(s32 c=0; c<3; c++) {
+          data[r][c] = rhs(r,c);
+        }
+      }
+
+      return Matrix33d(data);
+    }
+
     T Trace() const
     {
       T res = this->m_data[0][0] + this->m_data[1][1] + this->m_data[2][2]; 
@@ -761,7 +790,7 @@ namespace Nf
       return vtkMath::Determinant3x3(&m_data[0][0], &m_data[1][0], &m_data[2][0]);
     }
 
-    arma::mat33 ToArmaMat()
+    arma::mat33 ToArmaMat() const
     {
       arma::mat33 res;
       res << m_data[0][0] << m_data[0][1] << m_data[0][2] << arma::endr << 
@@ -908,7 +937,7 @@ namespace Nf
       return Matrix44d(data);
     }
 
-    arma::mat ToArmaMatrix4x4()
+    arma::mat ToArmaMatrix4x4() const
     {
       using namespace arma;
       mat A(4, 4);

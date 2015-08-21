@@ -17,6 +17,9 @@ namespace Nf
     m_calibTip = std::tr1::shared_ptr < SphereVisualizer > (new SphereVisualizer(Vec3d(0,0,0), 1));
     m_calibTip->SetColor(Vec3d(1,0,0));
 
+    m_calibTipFrame = vtkSmartPointer <vtkAxesActor>::New();
+    m_calibTipFrame->SetTotalLength(5,5,5);
+
     m_planeVis->GetRenderer()->AddActor(m_calibrationPoints->GetActor());
     onUpdateFile();
   }
@@ -84,15 +87,14 @@ namespace Nf
         interactor->SetPicker(picker);
         interactor->SetInteractorStyle(style);
 
-        m_R.clear();
-        m_yx.clear();
+        m_ntCalibrator.ClearPoints();
         break;
       }
     case EFS_NEEDLE_CALIB: 
     case EFS_NEEDLE_CALIBRATED: 
       {
         m_state = EFS_PRIMED;
-        m_calibrationPoints->ClearPoints();
+        m_ntCalibrator.ClearPoints();
         m_planeVis->repaint();
         break;
       }
@@ -116,7 +118,8 @@ namespace Nf
     case EFS_NEEDLE_CALIB: 
     case EFS_NEEDLE_CALIBRATED: 
       {
-        m_tipCalibSoln = arma::solve(m_R, m_yx);
+        m_calibrationPoints->ClearPoints();
+        m_ntCalibrator.DoCalibration();
         m_state = EFS_NEEDLE_CALIBRATED;
         UpdateCalibTipVis();
         break;
@@ -149,9 +152,7 @@ namespace Nf
         Vec3d y = rpImageCoordToWorldCoord3(point, posePos, m_cal, m_data.origin, mppScale);
         m_calibrationPoints->AddPoint(y);
         m_planeVis->repaint();
-
-        m_R = arma::join_vert(m_R,posePos.GetOrientation().ToArmaMat());
-        m_yx = arma::join_vert(m_yx, (y-m_data.gps2.pos).ToArmaVec());
+        m_ntCalibrator.AddPoint(m_data.gps2.pos, Matrix44d::FromCvMat(m_data.gps2.pose).GetOrientation(), y);
       }
       break;
     default: 
@@ -173,15 +174,21 @@ namespace Nf
       {
         if(m_planeVis->GetRenderer()->HasViewProp(m_calibTip->GetActor()))
           m_planeVis->GetRenderer()->RemoveActor(m_calibTip->GetActor());
+        if(m_planeVis->GetRenderer()->HasViewProp(m_calibTipFrame))
+          m_planeVis->GetRenderer()->RemoveActor(m_calibTipFrame);
       }
       break;
     case EFS_NEEDLE_CALIBRATED:
       {
         if(!m_planeVis->GetRenderer()->HasViewProp(m_calibTip->GetActor()))
           m_planeVis->GetRenderer()->AddActor(m_calibTip->GetActor());
+        if(!m_planeVis->GetRenderer()->HasViewProp(m_calibTipFrame))
+          m_planeVis->GetRenderer()->AddActor(m_calibTipFrame);
 
         Matrix33d tipFrame = Matrix44d::FromCvMat(m_data.gps2.pose).GetOrientation();
-        m_calibTip->SetCenter(m_data.gps2.pos+tipFrame.Col(0)*m_tipCalibSoln.at(0,0)+tipFrame.Col(1)*m_tipCalibSoln.at(1,0)+tipFrame.Col(2)*m_tipCalibSoln.at(2,0));
+        Vec3d tipPosCalib; Matrix33d tipFrameCalib; m_ntCalibrator.GetSolution(tipPosCalib, tipFrameCalib, m_data.gps2.pos, tipFrame);
+        m_calibTip->SetCenter(tipPosCalib);
+        m_calibTipFrame->PokeMatrix(Matrix44d::FromOrientationAndTranslation(tipFrameCalib, tipPosCalib).GetVTKMatrix());
         m_planeVis->repaint();
       }
       break;

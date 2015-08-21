@@ -480,7 +480,7 @@ namespace Nf
     else 
       rv.gps = GPS_Data();
     if(m_gps2)
-      rv.gps2 = m_gps2->GetNextGPSDatum();
+      rv.gps2 = m_gps2->GetGPSDatum(frame);
     else 
 	    rv.gps2 = GPS_Data();
 
