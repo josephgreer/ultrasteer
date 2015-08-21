@@ -33,5 +33,7 @@ ADD_LIBRARY(Segment STATIC
 	RTMatrixMath.h
 	RTUtil.h
 	RTUtil.cpp
+	Calibration.h
+	Calibration.cpp
 	)
 

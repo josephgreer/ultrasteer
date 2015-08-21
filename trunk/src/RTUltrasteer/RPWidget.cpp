@@ -67,7 +67,7 @@ namespace Nf
     , m_rpReaders(NULL)
   {
 
-    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, RPFileWidget), this, "C:/Joey/Data/8_16_15/TipCalibration/data.b8", "Any File (*.*)");
+    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, RPFileWidget), this, "C:/Users/Joey/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Data/NeedleScan/8_16_15/TipCalibration/scan.b8", "Any File (*.*)");
     ADD_INT_PARAMETER(m_frame, "Frame Index", CALLBACK_POINTER(onUpdateFrame, RPFileWidget), this, 1, 1, 100, 1);
 
     onUpdateFile();

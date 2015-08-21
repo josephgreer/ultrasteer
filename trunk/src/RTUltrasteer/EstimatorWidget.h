@@ -14,6 +14,8 @@
 #include "SaveDataWidget.h"
 #include "RPWidget.h"
 #include "CubeVisualizer.h"
+#include "Calibration.h"
+#include <vtkAxesActor.h>
 
 namespace Nf
 {
@@ -33,9 +35,8 @@ namespace Nf
     EstimatorFileState m_state;
     std::tr1::shared_ptr < PointCloudVisualizer > m_calibrationPoints;
     std::tr1::shared_ptr < SphereVisualizer > m_calibTip;
-    arma::mat m_R;
-    arma::vec m_yx;
-    arma::vec m_tipCalibSoln;
+    vtkSmartPointer < vtkAxesActor > m_calibTipFrame;
+    EMNeedleTipCalibrator m_ntCalibrator;
 
   public:
     EstimatorFileWidget(QWidget *parent);
