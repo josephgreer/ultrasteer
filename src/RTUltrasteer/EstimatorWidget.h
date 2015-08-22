@@ -50,6 +50,8 @@ namespace Nf
     void onDoNeedleCalibrationPushed();
     CLASS_CALLBACK(onDoNeedleCalibrationPushed, EstimatorFileWidget);
 
+    std::tr1::shared_ptr < Nf::FileParameter > m_tipCalibPath;
+
     virtual void onUpdateFile();
     virtual void onUpdateFrame();
     virtual void UpdateCalibTipVis();
@@ -78,7 +80,7 @@ namespace Nf
     NSCommand m_u; 
     bool m_executeCommand;
     virtual void ExecuteCommand();
-    Vec3d m_tipOffset;
+    EMNeedleTipCalibrator m_ntCalibrator;
 
   public:
     EstimatorStreamingWidget(QWidget *parent);
@@ -100,6 +102,10 @@ namespace Nf
     std::tr1::shared_ptr < Nf::BoolParameter > m_saveGPS;
     void onSaveGPS();
     CLASS_CALLBACK(onSaveGPS, EstimatorStreamingWidget);
+
+    std::tr1::shared_ptr < Nf::FileParameter > m_tipCalibPath;
+    void onTipCalibPathChanged();
+    CLASS_CALLBACK(onTipCalibPathChanged, EstimatorStreamingWidget);
 
 public slots:
     void onSaveDataClicked();

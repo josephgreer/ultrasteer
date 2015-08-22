@@ -72,6 +72,13 @@ namespace Nf
     return true;
   }
 
+  void ImageViewerWidget::ResetView()
+  {
+    f64 *bounds = m_imageActor->GetBounds();
+    m_renderer->ResetCamera(bounds);
+
+  }
+
   void ImageViewerWidget::SetImage(const RPData *rp, RP_TYPE type)
   {
     if(rp->GetType(type) != NULL) {
