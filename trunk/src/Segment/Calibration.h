@@ -22,5 +22,6 @@ namespace Nf
     void DoCalibration();
     void GetSolution(Vec3d &tipOffset, Matrix33d &tipFrame);
     void GetSolution(Vec3d &tipOffset, Matrix33d &tipFrame, const Vec3d &emPos, const Matrix33d &emFrame);
+    void SetSolution(const arma::mat &solution);
   };
 }

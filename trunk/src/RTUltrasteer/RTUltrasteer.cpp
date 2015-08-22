@@ -227,7 +227,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
       sfiles[i]->GetFilename().c_str(), sfiles[i]->GetExtensionWildcard().c_str(), m_params);
     std::tr1::shared_ptr < Nf::FileSlotForwarder > uiElem (new Nf::FileSlotForwarder(sfiles[i]->GetCallback(), sfiles[i]->GetContext(), (QObject *)fw, repainters, NULL));
     m_params->setItemWidget(child, 1, fw); 
-    ofiles[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< std::string > >(uiElem));
+    sfiles[i]->SetUIElement(std::tr1::shared_ptr<Nf::UIElement< std::string > >(uiElem));
     QObject::connect((QObject *)fw, SIGNAL(FileChanged()), (QObject *)&(*uiElem), SLOT(changeForward()));
   }
 

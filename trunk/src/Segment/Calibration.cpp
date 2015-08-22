@@ -13,6 +13,10 @@ namespace Nf
     m_R.clear();
     m_yx.clear();
     m_c.clear();
+    m_tipFrame.clear();
+
+    m_c << 0 << endr << 0 << endr << 1;
+    m_tipFrame = eye(3,3);
   }
 
   void EMNeedleTipCalibrator::ClearPoints()
@@ -34,10 +38,10 @@ namespace Nf
 
     m_tipFrame = eye<mat>(3,3);
 
-    vec xaxis; xaxis << 1 << endr << 0 << endr << 0;
+    vec zaxis; zaxis << 1 << endr << 0 << endr << 0;
     vec yaxis = m_c; yaxis(0) = 0;
     yaxis = yaxis/norm(yaxis);
-    vec zaxis = cross(xaxis,yaxis);
+    vec xaxis = cross(yaxis,zaxis);
     m_tipFrame.submat(span(0,2), span(0,0)) = xaxis;
     m_tipFrame.submat(span(0,2), span(1,1)) = yaxis;
     m_tipFrame.submat(span(0,2), span(2,2)) = zaxis;
@@ -56,5 +60,11 @@ namespace Nf
     tipOffset = emPos+emFrame.Col(0)*m_c(0,0)+emFrame.Col(1)*m_c(1,0)+emFrame.Col(2)*m_c(2,0);
 
     tipFrame = emFrame*Matrix33d::FromArmaMatrix3x3(m_tipFrame);
+  }
+
+  void EMNeedleTipCalibrator::SetSolution(const arma::mat &solution)
+  {
+    m_tipFrame = solution.submat(span(0,2), span(0,2));
+    m_c = (vec)(solution.submat(span(3,3), span(0,2)).t());
   }
 }

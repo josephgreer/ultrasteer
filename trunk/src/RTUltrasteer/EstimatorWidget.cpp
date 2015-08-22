@@ -12,6 +12,7 @@ namespace Nf
   {
     ADD_ACTION_PARAMETER(m_needleCalib, "Needle Calibration Mode", CALLBACK_POINTER(onNeedleCalibrationPushed, EstimatorFileWidget), this, false);
     ADD_ACTION_PARAMETER(m_doNeedleCalib, "Do Needle Calibration", CALLBACK_POINTER(onDoNeedleCalibrationPushed, EstimatorFileWidget), this, false);
+    ADD_SAVE_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Path", NULL, this, "C:/Joey/Data/8_16_15/TipCalibration/tipCalib.mat", "(*.mat)");
 
     m_calibrationPoints = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(0, 1, 0)));
     m_calibTip = std::tr1::shared_ptr < SphereVisualizer > (new SphereVisualizer(Vec3d(0,0,0), 1));
@@ -122,6 +123,14 @@ namespace Nf
         m_ntCalibrator.DoCalibration();
         m_state = EFS_NEEDLE_CALIBRATED;
         UpdateCalibTipVis();
+
+        Vec3d tipOffset; Matrix33d tipFrame;
+        m_ntCalibrator.GetSolution(tipOffset, tipFrame);
+
+        arma::mat total = tipFrame.ToArmaMat();
+        total = arma::join_vert(total, tipOffset.ToArmaVec().t());
+        total.save(m_tipCalibPath->GetValue(), arma::raw_ascii);
+
         break;
       }
     default: 
@@ -176,6 +185,13 @@ namespace Nf
           m_planeVis->GetRenderer()->RemoveActor(m_calibTip->GetActor());
         if(m_planeVis->GetRenderer()->HasViewProp(m_calibTipFrame))
           m_planeVis->GetRenderer()->RemoveActor(m_calibTipFrame);
+        vtkSmartPointer < vtkRenderer > renderer = m_usVis->GetRenderer();
+        if(renderer != NULL) {
+          if(m_usVis->GetRenderer()->HasViewProp(m_calibTip->GetActor()))
+            m_usVis->GetRenderer()->RemoveActor(m_calibTip->GetActor());
+          if(m_usVis->GetRenderer()->HasViewProp(m_calibTipFrame))
+            m_usVis->GetRenderer()->RemoveActor(m_calibTipFrame);
+        }
       }
       break;
     case EFS_NEEDLE_CALIBRATED:
@@ -184,6 +200,13 @@ namespace Nf
           m_planeVis->GetRenderer()->AddActor(m_calibTip->GetActor());
         if(!m_planeVis->GetRenderer()->HasViewProp(m_calibTipFrame))
           m_planeVis->GetRenderer()->AddActor(m_calibTipFrame);
+        vtkSmartPointer < vtkRenderer > renderer = m_usVis->GetRenderer();
+        if(renderer != NULL) {
+          if(!m_usVis->GetRenderer()->HasViewProp(m_calibTip->GetActor()))
+            m_usVis->GetRenderer()->AddActor(m_calibTip->GetActor());
+          if(!m_usVis->GetRenderer()->HasViewProp(m_calibTipFrame))
+            m_usVis->GetRenderer()->AddActor(m_calibTipFrame);
+        }
 
         Matrix33d tipFrame = Matrix44d::FromCvMat(m_data.gps2.pose).GetOrientation();
         Vec3d tipPosCalib; Matrix33d tipFrameCalib; m_ntCalibrator.GetSolution(tipPosCalib, tipFrameCalib, m_data.gps2.pos, tipFrame);
@@ -210,8 +233,6 @@ namespace Nf
     m_bottomRow->addWidget(m_hwWidget.get(), 0, 0);
     m_bottomRow->addWidget(m_saveDataWidget.get(), 0, 1, Qt::Alignment(Qt::AlignTop));
     m_layout->addLayout(m_bottomRow.get(), 1, 0, 1, 2);
-
-    m_tipOffset = Vec3d(0, 0, 0);
     
     m_u.v = 0;
     m_u.tick = 0;
@@ -221,6 +242,8 @@ namespace Nf
     ADD_ACTION_PARAMETER(m_insertion, "[Stop] Insert", CALLBACK_POINTER(onInsertionPushed, EstimatorStreamingWidget), this, false);
     ADD_ACTION_PARAMETER(m_pauseInsertion, "[Un]Pause Insert", CALLBACK_POINTER(onPauseInsertionPushed, EstimatorStreamingWidget), this, false);
     ADD_ACTION_PARAMETER(m_saveGPS, "Save GPS", CALLBACK_POINTER(onSaveGPS, EstimatorStreamingWidget), this, false);
+    ADD_OPEN_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Path", CALLBACK_POINTER(onTipCalibPathChanged, EstimatorStreamingWidget), this, "C:/Joey/Data/8_16_15/TipCalibration/tipCalib.mat", "(*.mat)");
+
     ADD_CHILD_COLLECTION(m_hwWidget.get());
 
     Connect(m_saveDataWidget->ui.saveDataButton, SIGNAL(clicked()), SLOT(onSaveDataClicked()));
@@ -253,6 +276,14 @@ namespace Nf
     default:
       break;
     }
+  }
+
+  void EstimatorStreamingWidget::onTipCalibPathChanged()
+  {
+    arma::mat soln;
+    soln.load(m_tipCalibPath->GetValue());
+
+    m_ntCalibrator.SetSolution(soln);
   }
 
   static RPFileHeader RPFileHeader_uDataDesc(const uDataDesc &desc)
@@ -339,10 +370,13 @@ namespace Nf
         break;
       }
     }
-    
-    cv::Mat pose = rp.gps2.pose.t();
-    rp.gps2.pos = rp.gps2.pos+Vec3d(pose.at<f64>(0, 0), pose.at<f64>(0, 1), pose.at<f64>(0, 2))*m_tipOffset.x
-      +Vec3d(pose.at<f64>(1, 0), pose.at<f64>(1, 1), pose.at<f64>(1, 2))*m_tipOffset.y+Vec3d(pose.at<f64>(2, 0), pose.at<f64>(2, 1), pose.at<f64>(2, 2))*m_tipOffset.z;
+
+    Vec3d tipOffset; Matrix33d tipFrame;
+    m_ntCalibrator.GetSolution(tipOffset, tipFrame, rp.gps2.pos, Matrix44d::FromCvMat(rp.gps2.pose).GetOrientation());
+    rp.gps2.pos = tipOffset;
+    Vec3d gps2Offset = Matrix44d::FromCvMat(rp.gps2.pose).GetPosition();
+    rp.gps2.pose = Matrix44d::FromOrientationAndTranslation(tipFrame, gps2Offset).ToCvMat();
+
     HandleFrame(rp);
     rp.Release();
 

@@ -33,13 +33,14 @@ namespace Nf
 
   void FileWidget::FileDlgPushed()
   {
-    if(m_fm == FM_OPEN) {
-      QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), m_dir.c_str(), m_extWC.c_str());
-      if(fileName.length() > 0) {
-        SetFilename(fileName.toStdString().c_str());
-        emit FileChanged();
-      }
-    } else {
+    QString fileName;
+    if(m_fm == FM_OPEN)
+      fileName = QFileDialog::getOpenFileName(this, tr("Open File"), m_dir.c_str(), m_extWC.c_str());
+    else
+      fileName = QFileDialog::getSaveFileName(this, tr("Save File"), m_dir.c_str(), m_extWC.c_str());
+    if(fileName.length() > 0) {
+      SetFilename(fileName.toStdString().c_str());
+      emit FileChanged();
     }
   }
 }

@@ -937,6 +937,17 @@ namespace Nf
       return Matrix44d(data);
     }
 
+    cv::Mat ToCvMat() const
+    {
+      cv::Mat res(4,4,CV_64F);
+      for(s32 r=0; r<4; r++)  {
+        for(s32 c=0; c<4; c++) {
+          res.at<f64>(r,c) = this->m_data[r][c];
+        }
+      }
+      return res;
+    }
+
     arma::mat ToArmaMatrix4x4() const
     {
       using namespace arma;

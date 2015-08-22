@@ -23,6 +23,8 @@ public:
   virtual void Initialize(Nf::RPData rp, vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf);
   virtual void Initialize(vtkSmartPointer<vtkColorTransferFunction> ctf, vtkSmartPointer<vtkPiecewiseFunction> otf);
 
+  virtual vtkSmartPointer < vtkRenderer > GetRenderer() { return m_renderer; }
+
   // helper function for setViewXY
   virtual void SetUSVisView(s32 axis1, s32 axis2);
 
@@ -137,6 +139,7 @@ public:
   virtual void UpdatePos(Nf::RPData rp);
   virtual void Initialize(Nf::RPData rp);
   virtual void Reinitialize();
+  virtual vtkSmartPointer < vtkRenderer > GetRenderer() { return m_usVis->GetRenderer(); }
   CLASS_CALLBACK(Reinitialize, USVisualizer);
 
   std::tr1::shared_ptr < Nf::BoolParameter > m_clear;
