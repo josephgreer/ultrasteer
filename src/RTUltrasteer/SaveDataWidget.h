@@ -44,6 +44,7 @@ namespace Nf
     void DoneRecording();
     void StartRecording();
     void StopRecording();
+    void ResumeRecording();
     void SaveData(RPFileHeader header);
     void FreeData();
 

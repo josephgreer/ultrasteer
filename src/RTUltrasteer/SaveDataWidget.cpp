@@ -79,6 +79,12 @@ namespace Nf
     ui.startRecordingButton->setText("Start Recording");
   }
 
+  void SaveDataWidget::ResumeRecording()
+  {
+    m_isRecording = false;
+    ui.startRecordingButton->setText("Stop Recording");
+  }
+
   void SaveDataWidget::SaveDataFrame(DataFrame &data)
   {
     if(!m_isRecording)

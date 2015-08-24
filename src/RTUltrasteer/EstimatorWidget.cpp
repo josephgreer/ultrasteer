@@ -344,17 +344,17 @@ namespace Nf
       {
         if(m_executeCommand)
           ExecuteCommand();
-        break;
         d.u.v = 0;
         m_saveDataWidget->SaveDataFrame(d);
         m_state = ES_RECORDING2;
+        break;
       }
     case ES_RECORDING2: 
       {
         if(m_executeCommand)
           ExecuteCommand();
-        break;
         m_saveDataWidget->SaveDataFrame(d);
+        break;
       }
     case ES_PAUSED:
       {
@@ -363,6 +363,7 @@ namespace Nf
         d.rp.gps2.offset[0] = 12345.0;
         m_saveDataWidget->SaveDataFrame(d);
         m_saveDataWidget->StopRecording();
+        break;
       }
     default:
       {
@@ -393,6 +394,7 @@ namespace Nf
       m_u.v = INSERT_VEL;
       m_saveDataWidget->StartRecording();
       m_state = ES_RECORDING1;
+      break;
     case ES_RECORDING1:
     case ES_RECORDING2:
     case ES_PAUSED:
@@ -400,6 +402,7 @@ namespace Nf
       m_u.v = 0;
       m_state = ES_PRIMED;
       m_saveDataWidget->StopRecording();
+      break;
     default:
       break;
     }
@@ -422,7 +425,7 @@ namespace Nf
       m_executeCommand = true;
       m_u.v = INSERT_VEL;
       m_state = ES_RECORDING1;
-      m_saveDataWidget->StartRecording();
+      m_saveDataWidget->ResumeRecording();
       break;
     default:
       break;
@@ -441,7 +444,7 @@ namespace Nf
     case ES_PAUSED:
       //if we're paused and saveGPS is called, then we want to save a dataframe worth of GPS then stop recording.
       //stop recording is set after a frame's worth of data is received
-      m_saveDataWidget->StartRecording();
+      m_saveDataWidget->ResumeRecording();
       break;
     default:
       break;
