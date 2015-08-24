@@ -39,6 +39,7 @@ namespace Nf
       void InsertPosInc(void);
       void InsertNegInc(void);
       void InsertPosVel(void);
+      void InsertPosVel(double vel);
       void InsertNegVel(void);
       void StopInsertion(void);
       void HomeInsertion(void);
