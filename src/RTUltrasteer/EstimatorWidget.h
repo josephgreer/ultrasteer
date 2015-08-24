@@ -23,8 +23,16 @@ namespace Nf
   enum EstimatorFileState {
     EFS_READY = 0,
     EFS_PRIMED,
-    EFS_NEEDLE_CALIB,
-    EFS_NEEDLE_CALIBRATED,
+    EFS_NEEDLE_TIP_CALIB,
+    EFS_NEEDLE_CURVATURE_CALIB_GPS,
+    EFS_NEEDLE_CURVATURE_CALIB_US,
+  };
+
+  enum EstimatorResultsAvailable
+  {
+    ERA_NONE = 0,
+    ERA_NEEDLE_TIP_CALIB = 0x1,
+    ERA_NEEDLE_CURVATURE_CALIB = 0x2
   };
 
   class EstimatorFileWidget : public RPFileWidget
@@ -33,6 +41,7 @@ namespace Nf
 
   protected:
     EstimatorFileState m_state;
+    u32 m_resultsAvailable;
     std::tr1::shared_ptr < PointCloudVisualizer > m_calibrationPoints;
     std::tr1::shared_ptr < SphereVisualizer > m_calibTip;
     vtkSmartPointer < vtkAxesActor > m_calibTipFrame;

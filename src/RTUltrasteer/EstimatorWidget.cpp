@@ -4,11 +4,12 @@
 
 namespace Nf
 {
-#define INSERT_VEL 2 //mm/s
+#define INSERT_VEL 1 //mm/s
 
   EstimatorFileWidget::EstimatorFileWidget(QWidget *parent)
     : RPFileWidget(parent, (USVisualizer *)new PFVisualizer(parent))
     , m_state(EFS_READY)
+    , m_resultsAvailable(ERA_NONE)
   {
     ADD_ACTION_PARAMETER(m_needleCalib, "Needle Calibration Mode", CALLBACK_POINTER(onNeedleCalibrationPushed, EstimatorFileWidget), this, false);
     ADD_ACTION_PARAMETER(m_doNeedleCalib, "Do Needle Calibration", CALLBACK_POINTER(onDoNeedleCalibrationPushed, EstimatorFileWidget), this, false);
@@ -43,21 +44,18 @@ namespace Nf
     bool validFile = m_frame->GetMax() > 0;
     switch(m_state) {
     case EFS_READY: 
+    case EFS_NEEDLE_CURVATURE_CALIB_GPS:
+    case EFS_NEEDLE_CURVATURE_CALIB_US:
       {
         if(validFile)
           m_state = EFS_PRIMED;
-        break;
-      }
-    case EFS_PRIMED: 
-      {
-        break;
-      }
-    case EFS_NEEDLE_CALIB:
-      {
-        break;
-      }
-    case EFS_NEEDLE_CALIBRATED:
-      {
+        else
+          m_state = EFS_READY;
+
+        m_calibrationPoints->ClearPoints();
+        m_ntCalibrator.ClearPoints();
+        m_resultsAvailable = ERA_NONE;
+        m_planeVis->repaint();
         break;
       }
     default: 
@@ -78,7 +76,7 @@ namespace Nf
       }
     case EFS_PRIMED:
       {
-        m_state = EFS_NEEDLE_CALIB;
+        m_state = EFS_NEEDLE_TIP_CALIB;
 
         vtkSmartPointer < vtkRenderWindowInteractor > interactor = m_imageViewer->GetWindowInteractor();
         vtkSmartPointer < vtkPointPicker > picker = vtkPointPicker::New();
@@ -89,14 +87,23 @@ namespace Nf
         interactor->SetInteractorStyle(style);
 
         m_ntCalibrator.ClearPoints();
+        m_calibrationPoints->ClearPoints();
+        m_resultsAvailable = (m_resultsAvailable&~ERA_NEEDLE_TIP_CALIB);
         break;
       }
-    case EFS_NEEDLE_CALIB: 
-    case EFS_NEEDLE_CALIBRATED: 
+    case EFS_NEEDLE_TIP_CALIB: 
       {
         m_state = EFS_PRIMED;
         m_ntCalibrator.ClearPoints();
+        m_calibrationPoints->ClearPoints();
         m_planeVis->repaint();
+        m_resultsAvailable = (m_resultsAvailable&~ERA_NEEDLE_TIP_CALIB);
+        break;
+      }
+    case EFS_NEEDLE_CURVATURE_CALIB_GPS:
+    case EFS_NEEDLE_CURVATURE_CALIB_US:
+      {
+        m_resultsAvailable = (m_resultsAvailable&~ERA_NEEDLE_CURVATURE_CALIB);
         break;
       }
     default: 
@@ -116,12 +123,11 @@ namespace Nf
       {
         break;
       }
-    case EFS_NEEDLE_CALIB: 
-    case EFS_NEEDLE_CALIBRATED: 
+    case EFS_NEEDLE_TIP_CALIB: 
       {
         m_calibrationPoints->ClearPoints();
         m_ntCalibrator.DoCalibration();
-        m_state = EFS_NEEDLE_CALIBRATED;
+        m_resultsAvailable = m_resultsAvailable|ERA_NEEDLE_TIP_CALIBRATED;
         UpdateCalibTipVis();
 
         Vec3d tipOffset; Matrix33d tipFrame;
@@ -131,6 +137,11 @@ namespace Nf
         total = arma::join_vert(total, tipOffset.ToArmaVec().t());
         total.save(m_tipCalibPath->GetValue(), arma::raw_ascii);
 
+        break;
+      }
+    case EFS_NEEDLE_CURVATURE_CALIB_GPS:
+    case EFS_NEEDLE_CURVATURE_CALIB_US:
+      {
         break;
       }
     default: 
@@ -154,8 +165,7 @@ namespace Nf
       {
         break;
       }
-    case EFS_NEEDLE_CALIB:
-    case EFS_NEEDLE_CALIBRATED:
+    case EFS_NEEDLE_TIP_CALIB:
       {
         Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(m_data.gps.pose).GetOrientation(), m_data.gps.pos);
         Vec3d y = rpImageCoordToWorldCoord3(point, posePos, m_cal, m_data.origin, mppScale);
@@ -164,6 +174,18 @@ namespace Nf
         m_ntCalibrator.AddPoint(m_data.gps2.pos, Matrix44d::FromCvMat(m_data.gps2.pose).GetOrientation(), y);
       }
       break;
+    case EFS_NEEDLE_CURVATURE_CALIB_GPS:
+      {
+        break;
+      }
+    case EFS_NEEDLE_CURVATURE_CALIB_US:
+      {
+        Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(m_data.gps.pose).GetOrientation(), m_data.gps.pos);
+        Vec3d y = rpImageCoordToWorldCoord3(point, posePos, m_cal, m_data.origin, mppScale);
+        m_calibrationPoints->AddPoint(y);
+        m_planeVis->repaint();
+        break;
+      }
     default: 
       {
         throw std::runtime_error("EstimatorFileWidget: unknown state\n");
@@ -175,27 +197,8 @@ namespace Nf
   void EstimatorFileWidget::UpdateCalibTipVis()
   {
     Vec2d mppScale(m_data.mpp.x/1000.0, m_data.mpp.y/1000.0);
-    switch(m_state)
-    {
-    case EFS_READY:
-    case EFS_PRIMED:
-    case EFS_NEEDLE_CALIB:
-      {
-        if(m_planeVis->GetRenderer()->HasViewProp(m_calibTip->GetActor()))
-          m_planeVis->GetRenderer()->RemoveActor(m_calibTip->GetActor());
-        if(m_planeVis->GetRenderer()->HasViewProp(m_calibTipFrame))
-          m_planeVis->GetRenderer()->RemoveActor(m_calibTipFrame);
-        vtkSmartPointer < vtkRenderer > renderer = m_usVis->GetRenderer();
-        if(renderer != NULL) {
-          if(m_usVis->GetRenderer()->HasViewProp(m_calibTip->GetActor()))
-            m_usVis->GetRenderer()->RemoveActor(m_calibTip->GetActor());
-          if(m_usVis->GetRenderer()->HasViewProp(m_calibTipFrame))
-            m_usVis->GetRenderer()->RemoveActor(m_calibTipFrame);
-        }
-      }
-      break;
-    case EFS_NEEDLE_CALIBRATED:
-      {
+
+    if(m_resultsAvailable&ERA_NEEDLE_TIP_CALIB) {
         if(!m_planeVis->GetRenderer()->HasViewProp(m_calibTip->GetActor()))
           m_planeVis->GetRenderer()->AddActor(m_calibTip->GetActor());
         if(!m_planeVis->GetRenderer()->HasViewProp(m_calibTipFrame))
@@ -213,13 +216,22 @@ namespace Nf
         m_calibTip->SetCenter(tipPosCalib);
         m_calibTipFrame->PokeMatrix(Matrix44d::FromOrientationAndTranslation(tipFrameCalib, tipPosCalib).GetVTKMatrix());
         m_planeVis->repaint();
+    } else {
+      if(m_planeVis->GetRenderer()->HasViewProp(m_calibTip->GetActor()))
+        m_planeVis->GetRenderer()->RemoveActor(m_calibTip->GetActor());
+      if(m_planeVis->GetRenderer()->HasViewProp(m_calibTipFrame))
+        m_planeVis->GetRenderer()->RemoveActor(m_calibTipFrame);
+      vtkSmartPointer < vtkRenderer > renderer = m_usVis->GetRenderer();
+      if(renderer != NULL) {
+        if(m_usVis->GetRenderer()->HasViewProp(m_calibTip->GetActor()))
+          m_usVis->GetRenderer()->RemoveActor(m_calibTip->GetActor());
+        if(m_usVis->GetRenderer()->HasViewProp(m_calibTipFrame))
+          m_usVis->GetRenderer()->RemoveActor(m_calibTipFrame);
       }
-      break;
-    default: 
-      {
-        throw std::runtime_error("EstimatorFileWidget: unknown state\n");
-        break;
-      }
+    } 
+
+    if(m_resultsAvailable&ERA_NEEDLE_CURVATURE_CALIB) {
+    } else {
     }
   }
 
@@ -315,7 +327,7 @@ namespace Nf
   void EstimatorStreamingWidget::ExecuteCommand()
   {
     if(ABS(m_u.v - INSERT_VEL) < 1e-6)
-      m_hwWidget->GetRCWidget()->InsertPosVel();
+      m_hwWidget->GetRCWidget()->InsertPosVel(INSERT_VEL);
     else
       m_hwWidget->GetRCWidget()->StopInsertion();
     m_executeCommand = false;
