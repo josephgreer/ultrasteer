@@ -20,9 +20,7 @@ namespace Nf
   /// \brief		Constructor: Initializes filter	
   UnscentedKalmanFilter::UnscentedKalmanFilter(void)
   {
-    // initialize estimate and covariance matrices
-    x_hat = Matrix44d::FromOrientationAndTranslation(Matrix33d::I(),Vec3d(0.0,0.0,0.0));
-    P_hat = Matrix66d::Diagonal(P_POS_I,P_POS_I,P_POS_I,P_ROT_I,P_ROT_I,P_ROT_I);
+    m_initialized = false;
     Q = Matrix66d::Diagonal(Q_POS, Q_POS, Q_POS, Q_ROT, Q_ROT, Q_ROT);
     R = Matrix66d::Diagonal(R_POS, R_POS, R_POS, R_ROT, R_ROT, R_ROT);
   }
@@ -31,6 +29,15 @@ namespace Nf
   UnscentedKalmanFilter::~UnscentedKalmanFilter(void)
   {
 
+  }
+
+  /// Initialize the UKF based on the robot insertion l and robot rotation theta from nominal
+  void UnscentedKalmanFilter::initialize(f32 l, f32 theta)
+  {
+    // initialize estimate and covariance matrices
+    x_hat = Matrix44d::FromOrientationAndTranslation(Rz(theta),Vec3d(0.0,0.0,l));
+    P_hat = Matrix66d::Diagonal(P_POS_I,P_POS_I,P_POS_I,P_ROT_I,P_ROT_I,P_ROT_I);
+    m_initialized = true;
   }
 
   /// \brief		Update Kalman filter using measurement z
@@ -332,6 +339,12 @@ namespace Nf
   void UnscentedKalmanFilter::getCurrentStateEstimate(Matrix44d &x_out)
   {
     x_out = x_hat;
+  }
+
+  /// Return whether the UKF has been initialized
+  bool UnscentedKalmanFilter::isInitialized(void)
+  {
+    return m_initialized;
   }
 
 /*  /// \brief		Reset the Kalman filter estimate

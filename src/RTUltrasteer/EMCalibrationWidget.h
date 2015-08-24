@@ -62,7 +62,6 @@ namespace Nf
     vtkSmartPointer < vtkAxesActor > m_stylusAxes;
 
     vtkSmartPointer < vtkRenderer > m_renderer;
-    vtkSmartPointer < vtkImageFlip > m_flip;
     vtkSmartPointer < vtkRenderWindowInteractor > m_interactor;
     
     // stylus calibration object

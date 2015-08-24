@@ -50,8 +50,19 @@ namespace Nf {
       m_x = processManualScan();
       m_estimateDefined = true;
     }
+  }  
+
+  bool ControlAlgorithms::isInitialized(void)
+  {
+    // currently only the UKF needs to be initalized
+    return m_UKF.isInitialized();
   }
-  
+
+  void ControlAlgorithms::initialize(f32 l, f32 theta)
+  {
+    m_UKF.initialize(l, theta);
+  }
+
   void ControlAlgorithms::SetTarget(Vec2d t_im)
   {
     m_t = ImagePtToWorldPt(t_im);

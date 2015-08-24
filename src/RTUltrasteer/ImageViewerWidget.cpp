@@ -39,7 +39,6 @@ namespace Nf
     m_renderer = vtkSmartPointer<vtkRenderer>::New();
 
     m_interactor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
-    m_flip = vtkSmartPointer<vtkImageFlip>::New();
   }
 
   ImageViewerWidget::~ImageViewerWidget()
@@ -70,13 +69,6 @@ namespace Nf
       return false;
 
     return true;
-  }
-
-  void ImageViewerWidget::ResetView()
-  {
-    f64 *bounds = m_imageActor->GetBounds();
-    m_renderer->ResetCamera(bounds);
-
   }
 
   void ImageViewerWidget::SetImage(const RPData *rp, RP_TYPE type)
@@ -321,7 +313,6 @@ namespace Nf
     m_maskImporter = vtkSmartPointer<vtkImageImport>::New();
     m_mapTransparency = vtkSmartPointer<vtkImageMapToColors>::New();
     m_maskActor = vtkSmartPointer<vtkImageActor>::New();
-    m_maskFlip = vtkSmartPointer<vtkImageFlip>::New();
     m_lookUpTable = vtkSmartPointer<vtkLookupTable>::New();
   }
 
@@ -367,11 +358,6 @@ namespace Nf
       m_mapTransparency->SetInputData((vtkDataObject *)m_maskImporter->GetOutput());
 
       // Flip the overlay image
-      //m_maskFlip->SetFilteredAxes(1);
-      //m_maskFlip->SetInputConnection(m_mapTransparency->GetOutputPort());
-      //m_maskFlip->Update();
-      //m_maskActor->GetMapper()->SetInputConnection(m_mapTransparency->GetOutputPort());
-      //m_renderer->AddActor2D(m_maskActor);
       m_maskActor->RotateZ(180);
       m_maskActor->RotateY(180);
       m_maskActor->GetMapper()->SetInputConnection(m_mapTransparency->GetOutputPort());
@@ -427,8 +413,6 @@ namespace Nf
     // Update the VTK rendering
     m_maskImporter->Update();
     m_maskImporter->Modified();
-    m_flip->Modified();
-    m_flip->Update();
     m_renderer->Render();
     this->GetRenderWindow()->Render();
     this->repaint();

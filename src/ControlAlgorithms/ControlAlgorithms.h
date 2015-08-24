@@ -26,6 +26,8 @@ namespace Nf {
     bool startStopTeleoperation();
     bool inFollowing();
     bool inManualScanning();
+    bool isInitialized();
+    void initialize(f32 l, f32 theta);
     
     void controlHeartBeat(RPData);
     void onUpdateOverlay();

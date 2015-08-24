@@ -73,18 +73,6 @@ namespace Nf
     return res;
   }
 
-  //void Teleoperation2DWidget::setRobot(NeedleSteeringRobot* robot)
-  //{
-  //  m_robot = robot;
-  //}
-
-  //void Teleoperation2DWidget::setControl(ControlAlgorithms* control)
-  //{
-  //  m_control = control;
-  //  m_imageViewer->setControl(m_control);
-  //  m_controlInit = true;
-  //}
-
   void Teleoperation2DWidget::onStartStopTeleoperation()
   {
     if( m_control->startStopTeleoperation() ){

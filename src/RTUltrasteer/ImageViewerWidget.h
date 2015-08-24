@@ -11,7 +11,6 @@
 #include <vtkImageMapper.h>
 #include <vtkActor2D.h>
 #include <vtkImageActor.h>
-#include <vtkImageFlip.h>
 #include <vtkRenderWindowInteractor.h>
 #include <vtkInteractorStyleImage.h>
 #include <vtkRenderer.h>
@@ -41,7 +40,6 @@ namespace Nf
     vtkSmartPointer < vtkImageMapper > m_mapper;
     vtkSmartPointer < vtkImageActor > m_imageActor;
     vtkSmartPointer < vtkRenderer > m_renderer;
-    vtkSmartPointer < vtkImageFlip > m_flip;
     vtkSmartPointer < vtkRenderWindowInteractor > m_interactor;
     RPData m_rp;
     IplImage *m_temp;
@@ -54,7 +52,6 @@ namespace Nf
     virtual ~ImageViewerWidget();
     virtual void SetImage(const RPData *rp, RP_TYPE type);
     virtual void SetDataSpacing(const RPData *rp);
-    virtual void ResetView();
     virtual vtkSmartPointer < vtkRenderWindowInteractor > GetWindowInteractor() { return m_interactor; }
     virtual vtkSmartPointer < vtkRenderer > GetRenderer() { return m_renderer; }
     vtkSmartPointer <vtkImageData> GetImageData() { return m_importer->GetOutput(); }
@@ -110,7 +107,6 @@ namespace Nf
     vtkSmartPointer < vtkImageMapToColors > m_mapTransparency;
     vtkSmartPointer < vtkImageImport > m_maskImporter;
     vtkSmartPointer < vtkImageActor > m_maskActor;
-    vtkSmartPointer < vtkImageFlip > m_maskFlip;
     vtkSmartPointer < vtkLookupTable > m_lookUpTable;
     IplImage *m_mask;
     

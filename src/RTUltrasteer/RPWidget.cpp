@@ -285,7 +285,6 @@ namespace Nf
   {
     Vec2d mpp(m_mpp->GetValue(), m_mpp->GetValue()*m_sos->GetValue()/NOMINAL_SOS);
     m_rpReaders->SetFrameInformation(mpp, m_origin->GetValue());
-    m_imageViewer->ResetView();
   }
 
   RPStreamingWidget::~RPStreamingWidget()

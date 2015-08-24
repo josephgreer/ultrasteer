@@ -34,8 +34,6 @@ namespace Nf
     ControlAlgorithms* m_control;
     std::tr1::shared_ptr < QTimer > m_preScanTimer;
     QElapsedTimer m_scanTimer;
-    bool m_controlInit;
-    //f32 m_scanTime;
 
   public:
     Teleoperation2DWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control);
