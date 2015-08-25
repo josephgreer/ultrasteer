@@ -78,6 +78,7 @@ namespace Nf
     std::tr1::shared_ptr < Nf::CubeVisualizer > m_frameBoundaries;
 
     void SetUSVisView(s32 axis1, s32 axis2);
+    void SetGPS2VisView(s32 axis1, s32 axis2);
 
     //setViewXY
     std::tr1::shared_ptr < Nf::BoolParameter > m_setViewXY;
@@ -93,6 +94,21 @@ namespace Nf
     std::tr1::shared_ptr < Nf::BoolParameter > m_setViewYZ;
     void onSetViewYZ();
     CLASS_CALLBACK(onSetViewYZ, Image3DImagePlaneWidget);
+
+    //setViewXY
+    std::tr1::shared_ptr < Nf::BoolParameter > m_setViewXYGPS2;
+    void onSetViewXYGPS2();
+    CLASS_CALLBACK(onSetViewXYGPS2, Image3DImagePlaneWidget);
+
+    //setViewXZ
+    std::tr1::shared_ptr < Nf::BoolParameter > m_setViewXZGPS2;
+    void onSetViewXZGPS2();
+    CLASS_CALLBACK(onSetViewXZGPS2, Image3DImagePlaneWidget);
+
+    //setViewYZ
+    std::tr1::shared_ptr < Nf::BoolParameter > m_setViewYZGPS2;
+    void onSetViewYZGPS2();
+    CLASS_CALLBACK(onSetViewYZGPS2, Image3DImagePlaneWidget);
   };
 
 

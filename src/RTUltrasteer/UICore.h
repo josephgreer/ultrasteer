@@ -246,6 +246,7 @@ namespace Nf
     Q_ENUMS(VOLUME_ORIGIN_LOCATION)
     Q_ENUMS(ComPorts)
     Q_ENUMS(DisplayModality)
+    Q_ENUMS(EstimatorCalibrationModes)
 #else
   class QtEnums
   {
@@ -274,6 +275,14 @@ namespace Nf
     DM_NULL_TYPE = -1,
     DM_BPOST8 = 4,
     DM_BPOST32 = 8
+  };
+
+  enum EstimatorCalibrationModes
+  {
+    ECM_NONE = 0,
+    ECM_NEEDLE_TIP = 1,
+    ECM_CURVATURE_GPS = 2,
+    ECM_CURVATURE_US = 3
   };
 
   };

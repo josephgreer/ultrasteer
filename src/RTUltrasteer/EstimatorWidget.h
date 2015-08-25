@@ -42,24 +42,34 @@ namespace Nf
   protected:
     EstimatorFileState m_state;
     u32 m_resultsAvailable;
-    std::tr1::shared_ptr < PointCloudVisualizer > m_calibrationPoints;
+    std::tr1::shared_ptr < PointCloudVisualizer > m_calibrationPointsTip;
+    std::tr1::shared_ptr < PointCloudVisualizer > m_calibrationPointsCurvature;
+    
+    EMNeedleTipCalibrator m_ntCalibrator;
+    NeedleCurvatureCalibrator m_ncCalibrator;
+
     std::tr1::shared_ptr < SphereVisualizer > m_calibTip;
     vtkSmartPointer < vtkAxesActor > m_calibTipFrame;
-    EMNeedleTipCalibrator m_ntCalibrator;
 
   public:
     EstimatorFileWidget(QWidget *parent);
     virtual ~EstimatorFileWidget();
 
-    std::tr1::shared_ptr < Nf::BoolParameter > m_needleCalib;
-    void onNeedleCalibrationPushed();
-    CLASS_CALLBACK(onNeedleCalibrationPushed, EstimatorFileWidget);
+    std::tr1::shared_ptr < Nf::FileParameter > m_tipCalibPath;
+    
+    std::tr1::shared_ptr < Nf::FileParameter > m_tipCalibPathLoad;
+    virtual void onTipCalibPathChanged();
+    CLASS_CALLBACK(onTipCalibPathChanged, EstimatorFileWidget);
+    
+    //CalibrationMode
+    std::tr1::shared_ptr < Nf::EnumParameter > m_calibMode;
+    virtual void onSetCalibMode();
+    CLASS_CALLBACK(onSetCalibMode, EstimatorFileWidget);
 
+    //Do Calibration
     std::tr1::shared_ptr < Nf::BoolParameter > m_doNeedleCalib;
     void onDoNeedleCalibrationPushed();
     CLASS_CALLBACK(onDoNeedleCalibrationPushed, EstimatorFileWidget);
-
-    std::tr1::shared_ptr < Nf::FileParameter > m_tipCalibPath;
 
     virtual void onUpdateFile();
     virtual void onUpdateFrame();

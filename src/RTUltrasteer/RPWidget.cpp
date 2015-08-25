@@ -120,10 +120,9 @@ namespace Nf
 
     //If we have a valid frame, set it
     m_frame->SetValue(1);
+    m_frame->SetMin(1);
 
     m_usVis->Reinitialize();
-    
-    onUpdateFrame();
 
     if(m_visTab->currentIndex() == 1)
       m_planeVis->onSetViewXY();

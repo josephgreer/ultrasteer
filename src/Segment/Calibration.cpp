@@ -8,6 +8,9 @@ namespace Nf
   using ::s32;
   using namespace arma;
 
+  ////////////////////////////////////////////////////////////////
+  //// BEGIN EMNeedleTipCalibrator
+  ////////////////////////////////////////////////////////////////
   EMNeedleTipCalibrator::EMNeedleTipCalibrator()
   {
     m_R.clear();
@@ -48,15 +51,25 @@ namespace Nf
 
   }
 
-  void EMNeedleTipCalibrator::GetSolution(Vec3d &tipOffset, Matrix33d &tipFrame)
+  void EMNeedleTipCalibrator::GetSolution(Vec3d &tipOffset, Matrix33d &tipFrame) const
   {
+    if(m_c.n_rows == 0 || m_c.n_cols == 0) {
+      tipOffset = Vec3d(0,0,0);
+      tipFrame = Matrix33d::I();
+      return;
+    } 
     tipOffset = Vec3d::FromArmaVec(m_c);
     tipFrame = Matrix33d::FromArmaMatrix3x3(m_tipFrame);
   }
 
 
-  void EMNeedleTipCalibrator::GetSolution(Vec3d &tipOffset, Matrix33d &tipFrame, const Vec3d &emPos, const Matrix33d &emFrame)
+  void EMNeedleTipCalibrator::GetSolution(Vec3d &tipOffset, Matrix33d &tipFrame, const Vec3d &emPos, const Matrix33d &emFrame) const
   {
+    if(m_c.n_rows == 0 || m_c.n_cols == 0) {
+      tipOffset = emPos;
+      tipFrame = emFrame;
+      return;
+    } 
     tipOffset = emPos+emFrame.Col(0)*m_c(0,0)+emFrame.Col(1)*m_c(1,0)+emFrame.Col(2)*m_c(2,0);
 
     tipFrame = emFrame*Matrix33d::FromArmaMatrix3x3(m_tipFrame);
@@ -67,4 +80,31 @@ namespace Nf
     m_tipFrame = solution.submat(span(0,2), span(0,2));
     m_c = (vec)(solution.submat(span(3,3), span(0,2)).t());
   }
+  ////////////////////////////////////////////////////////////////
+  //// END EMNeedleTipCalibrator
+  ////////////////////////////////////////////////////////////////
+
+  
+  ////////////////////////////////////////////////////////////////
+  //// BEGIN NeedleCurvatureCalibrator
+  ////////////////////////////////////////////////////////////////
+  NeedleCurvatureCalibrator::NeedleCurvatureCalibrator()
+  {
+    m_pts.clear();
+  }
+  void NeedleCurvatureCalibrator::AddPoint(const Vec3d &point)
+  {
+  }
+
+  void NeedleCurvatureCalibrator::ClearPoints()
+  {
+    m_pts.clear();
+  }
+
+  void NeedleCurvatureCalibrator::DoCalibration()
+  {
+  }
+  ////////////////////////////////////////////////////////////////
+  //// END NeedleCurvatureCalibrator
+  ////////////////////////////////////////////////////////////////
 }
