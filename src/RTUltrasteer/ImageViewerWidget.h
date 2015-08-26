@@ -31,7 +31,6 @@
 namespace Nf
 {
   class Teleoperation2DWidget; // Empty to avoid circular dependency
-  //class ControlAlgorithms;    // Empty to avoid circular dependency
 
   class ImageViewerWidget : public ResizableQVTKWidget, public ParameterCollection
   {

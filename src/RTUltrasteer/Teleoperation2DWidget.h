@@ -24,6 +24,7 @@ namespace Nf
 
   protected:
     std::tr1::shared_ptr <ImageViewer2DTeleoperationWidget> m_imageViewer;
+    std::tr1::shared_ptr < Nf::EnumParameter > m_transducerType;
     RPData m_data;
     QGridLayout *m_layout;
     QVBoxLayout *m_rightSubLayout;
@@ -35,15 +36,15 @@ namespace Nf
     std::tr1::shared_ptr < QTimer > m_preScanTimer;
     QElapsedTimer m_scanTimer;
 
+
   public:
     Teleoperation2DWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control);
     virtual ~Teleoperation2DWidget();
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
-    //void setRobot(NeedleSteeringRobot* robot);
-    //void setControl(ControlAlgorithms* control);
     std::vector < QVTKWidget * > GetChildWidgets();
     void displayScanTimeRemaining();
+    Matrix44d loadRobotEmCalibration();
 
   public slots:
     void onStartManualNeedleScan();

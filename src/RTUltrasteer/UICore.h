@@ -242,49 +242,55 @@ namespace Nf
   {
     Q_OBJECT
 
-    Q_ENUMS(VisRenderMethod)
-    Q_ENUMS(VOLUME_ORIGIN_LOCATION)
-    Q_ENUMS(ComPorts)
-    Q_ENUMS(DisplayModality)
-    Q_ENUMS(EstimatorCalibrationModes)
+      Q_ENUMS(VisRenderMethod)
+      Q_ENUMS(VOLUME_ORIGIN_LOCATION)
+      Q_ENUMS(ComPorts)
+      Q_ENUMS(DisplayModality)
+      Q_ENUMS(Transducer)
+      Q_ENUMS(EstimatorCalibrationModes)
 #else
   class QtEnums
   {
 #endif
   public:
-  enum VisRenderMethod 
-  {
-    Texture_2D = 0,
-    Texture_3D,
-    RayCastingMIP,
-    GPURayCasting,
-  };
+    enum VisRenderMethod 
+    {
+      Texture_2D = 0,
+      Texture_3D,
+      RayCastingMIP,
+      GPURayCasting,
+    };
 
-  //used for specifying origin location when setting a volume from a base frame
-  enum VOLUME_ORIGIN_LOCATION
-  {
-    VOL_LEFT = 0,
-    VOL_RIGHT,
-    VOL_QUARTER_LEFT,
-    VOL_QUARTER_RIGHT,
-    VOL_MIDDLE,
-  };
+    //used for specifying origin location when setting a volume from a base frame
+    enum VOLUME_ORIGIN_LOCATION
+    {
+      VOL_LEFT = 0,
+      VOL_RIGHT,
+      VOL_QUARTER_LEFT,
+      VOL_QUARTER_RIGHT,
+      VOL_MIDDLE,
+    };
 
-  enum DisplayModality
-  {
-    DM_NULL_TYPE = -1,
-    DM_BPOST8 = 4,
-    DM_BPOST32 = 8
-  };
+    enum DisplayModality
+    {
+      DM_NULL_TYPE = -1,
+      DM_BPOST8 = 4,
+      DM_BPOST32 = 8
+    };
 
-  enum EstimatorCalibrationModes
-  {
-    ECM_NONE = 0,
-    ECM_NEEDLE_TIP = 1,
-    ECM_CURVATURE_GPS = 2,
-    ECM_CURVATURE_US = 3
-  };
+    enum Transducer
+    {
+      CONVEX = 0,
+      LINEAR = 1
+    };
 
+    enum EstimatorCalibrationModes
+    {
+      ECM_NONE = 0,
+      ECM_NEEDLE_TIP = 1,
+      ECM_CURVATURE_GPS = 2,
+      ECM_CURVATURE_US = 3
+    };
   };
 
   //################################END ENUM DEFINITIONS###############################################

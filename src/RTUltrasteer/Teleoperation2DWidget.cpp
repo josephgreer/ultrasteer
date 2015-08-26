@@ -12,7 +12,6 @@ namespace Nf
     m_control = control;
 
     m_imageViewer = std::tr1::shared_ptr<ImageViewer2DTeleoperationWidget>(new ImageViewer2DTeleoperationWidget(parent, control));
-    //m_imageViewer->SetTeleoperation2DWidget(this);
 
     m_scanButton = new QPushButton("Scan Needle", parent);
     QFont font = m_scanButton->font();
@@ -45,6 +44,8 @@ namespace Nf
 
     m_preScanTimer = std::tr1::shared_ptr<QTimer>((QTimer *)NULL);
     
+    // add framework params
+    ADD_ENUM_PARAMETER(m_transducerType, "Transducer", NULL, this, QtEnums::Transducer::CONVEX, "Transducer");
     ADD_CHILD_COLLECTION(m_imageViewer.get());
 
   }
@@ -75,11 +76,45 @@ namespace Nf
 
   void Teleoperation2DWidget::onStartStopTeleoperation()
   {
+    if( !m_control->isCalibrationSet() ){
+      Matrix44d transducerCalibration;
+      switch ( m_transducerType->GetValue() ){
+      case QtEnums::Transducer::LINEAR :
+        transducerCalibration = Matrix44d(14.8449, 0.9477, -0.0018, 0.0, 
+                                          15.0061, 0.0016, 1.00, 0.0, 
+                                          0.1638, 0.0166, 0.0052, 0.0, 
+                                          0.0, 0.0, 0.0, 1.0);
+        break;
+      case QtEnums::Transducer::CONVEX :
+        transducerCalibration = Matrix44d(-29.7558, 0.9433, -0.0034, 0.0, 
+                                          -0.087, 0.0033, 1.00, 0.0, 
+                                          -0.7053, 0.0132, -0.0087, 0.0, 
+                                          0.0, 0.0, 0.0, 1.0);
+        //
+        break;
+      }
+      m_control->setCalibration( loadRobotEmCalibration(), transducerCalibration);      
+    }
+
     if( m_control->startStopTeleoperation() ){
       m_teleoperateButton->setText("Stop Teleoperation");
     }else{
       m_teleoperateButton->setText("Start Teleoperation");
     }
+  }
+
+
+  Matrix44d Teleoperation2DWidget::loadRobotEmCalibration()
+  {
+    // Save rotation and translation
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Robot Calibration File"), QString("F:/ultrasteer/EMCal"), "*.m");
+    if(fileName.length() <= 0) {
+      return Matrix44d::I();
+    }
+    std::string fname = fileName.toStdString();
+    arma::mat Tref2robot;
+    Tref2robot.load(fname);
+    return Matrix44d::FromArmaMatrix4x4(Tref2robot);
   }
 
   void Teleoperation2DWidget::onStartManualNeedleScan()
@@ -127,7 +162,7 @@ namespace Nf
   {
 
     //ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, Teleoperation2DFileWidget), this, "F:/TargetScans/TargetDataSet.b8", "Any File (*.*)");
-    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, Teleoperation2DFileWidget), this, "F:/NeedleScan/6_12_15/Scan1/scan.b8", "Any File (*.*)");
+    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, Teleoperation2DFileWidget), this, "F:/NeedleScan/8_25_15/TroyData/scan.b8", "Any File (*.*)");
     ADD_INT_PARAMETER(m_frame, "Frame Index", CALLBACK_POINTER(onUpdateFrame, Teleoperation2DFileWidget), this, 1, 1, 100, 1);
 
     onUpdateFile();

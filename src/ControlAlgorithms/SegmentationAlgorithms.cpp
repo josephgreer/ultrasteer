@@ -12,6 +12,8 @@ namespace Nf {
   {
     m_tipPt = arma::zeros<arma::vec>(3);
     m_tipFrame = Matrix44d::I();
+    m_usCalibrationMatrix = Matrix44d::I();
+    m_Tref2robot = Matrix44d::I();
   }
 
   InPlaneSegmentation::~InPlaneSegmentation()
@@ -166,10 +168,10 @@ namespace Nf {
     largestBlob(binary, gray_mat);
 
     // define values to convert 2D image points to 3D using GPS data
-    Matrix44d cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0);
-    Matrix44d tPose = Matrix44d::FromCvMat(data.gps.pose);
-    Matrix33d pose = tPose.GetOrientation();
-    Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, data.gps.pos);
+    Matrix44d Ttrans2em = Matrix44d::FromCvMat(data.gps.pose);
+    Ttrans2em.SetPosition(data.gps.pos);
+    Matrix44d Tref2em = Matrix44d::FromCvMat(data.gps2.pose);
+    Tref2em.SetPosition(data.gps2.pos);
     Vec2d scale(data.mpp.x/1000.0, data.mpp.y/1000.0);
 
     //BEGIN_TIMING(DopplerPointSaving,10);
@@ -178,7 +180,7 @@ namespace Nf {
       for (int j = 0; j < gray_mat.rows; j++) {
         if (gray_mat.at<uchar>(j, i) > 0) {   
           //NTrace("x= %d, y=%d\n", i, j);
-          Vec3d pt = rpImageCoordToWorldCoord3(Vec2d(i,j), posePos, cal, data.origin, scale);
+          Vec3d pt = rpImageCoordToRobotCoord3(Vec2d(i,j), Ttrans2em, Tref2em, m_Tref2robot, m_usCalibrationMatrix, data.origin, scale);
           m_dopplerPoints(m_NdopplerPoints,0) = pt.x;
           m_dopplerPoints(m_NdopplerPoints,1) = pt.y;
           m_dopplerPoints(m_NdopplerPoints,2) = pt.z;
@@ -316,4 +318,11 @@ namespace Nf {
     return Matrix44d::FromArmaMatrix4x4(T);
 
   }
+
+  void InPlaneSegmentation::setCalibration(Matrix44d Tref2robot, Matrix44d usCal)
+  {
+    m_Tref2robot = Tref2robot;
+    m_usCalibrationMatrix = usCal;
+  }
+
   }
