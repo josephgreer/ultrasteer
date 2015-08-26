@@ -81,6 +81,10 @@ namespace Nf
     void onClearCalibrationData();
     CLASS_CALLBACK(onClearCalibrationData, EstimatorFileWidget);
 
+    std::tr1::shared_ptr < Nf::BoolParameter > m_clearTipCalibration;
+    void onClearTipCalibration();
+    CLASS_CALLBACK(onClearTipCalibration, EstimatorFileWidget);
+
     virtual void onUpdateFile();
     virtual void onUpdateFrame();
     virtual void UpdateCalibTipVis();

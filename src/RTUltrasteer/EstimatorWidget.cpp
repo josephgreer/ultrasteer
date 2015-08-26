@@ -27,6 +27,7 @@ namespace Nf
     ADD_SAVE_FILE_PARAMETER(m_pointsDataPath, "Point History Save Path", NULL, this, "C:/Joey/Data/TipCalibration/tipHistory.mat", "(*.mat)");
     ADD_OPEN_FILE_PARAMETER(m_pointsDataPathLoad, "Presaved Point History", CALLBACK_POINTER(onPointsDataPathChanged, EstimatorFileWidget), this, "C:/Joey/Data/TipCalibration/tipHistory.mat", "(*.mat)");
     ADD_ACTION_PARAMETER(m_clearCalibrationData, "Clear Calibration Data", CALLBACK_POINTER(onClearCalibrationData, EstimatorFileWidget), this, false);
+    ADD_ACTION_PARAMETER(m_clearTipCalibration, "Clear Tip Calibration", CALLBACK_POINTER(onClearTipCalibration, EstimatorFileWidget), this, false);
 
     m_calibrationPointsTip = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(0, 1, 0)));
     m_calibrationPointsCurvature = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 1, 0)));
@@ -133,8 +134,20 @@ namespace Nf
     m_calibrationPointsTip->ClearPoints();
     m_ntCalibrator.ResetSolution();
 
+    onUpdateFrame();
+
     m_resultsAvailable = m_resultsAvailable&~ERA_NEEDLE_TIP_CALIB;
     m_resultsAvailable = m_resultsAvailable&~ERA_NEEDLE_CURVATURE_CALIB;
+
+    m_planeVis->repaint();
+    m_usVis->repaint();
+  }
+  
+  void EstimatorFileWidget::onClearTipCalibration()
+  {
+    m_ntCalibrator.ResetSolution();
+    m_resultsAvailable = m_resultsAvailable&~ERA_NEEDLE_TIP_CALIB;
+    onUpdateFrame();
 
     m_planeVis->repaint();
     m_usVis->repaint();
@@ -154,14 +167,6 @@ namespace Nf
       {
         m_state = EFS_NEEDLE_TIP_CALIB;
 
-        vtkSmartPointer < vtkRenderWindowInteractor > interactor = m_imageViewer->GetWindowInteractor();
-        vtkSmartPointer < vtkPointPicker > picker = vtkPointPicker::New();
-        vtkSmartPointer < NeedleTipCalibrationPP > style = NeedleTipCalibrationPP::New();
-        style->SetImageData(m_imageViewer->GetImageData());
-        style->SetEstimatorWidget(this);
-        interactor->SetPicker(picker);
-        interactor->SetInteractorStyle(style);
-
         m_planeVis->repaint();
 
         switch(m_calibMode->GetValue()) 
@@ -173,6 +178,14 @@ namespace Nf
           }
         case QtEnums::EstimatorCalibrationModes::ECM_NEEDLE_TIP:
           {
+            vtkSmartPointer < vtkRenderWindowInteractor > interactor = m_imageViewer->GetWindowInteractor();
+            vtkSmartPointer < vtkPointPicker > picker = vtkPointPicker::New();
+            vtkSmartPointer < NeedleTipCalibrationPP > style = NeedleTipCalibrationPP::New();
+            style->SetImageData(m_imageViewer->GetImageData());
+            style->SetEstimatorWidget(this);
+            interactor->SetPicker(picker);
+            interactor->SetInteractorStyle(style);
+
             m_state = EFS_NEEDLE_TIP_CALIB;
             break;
           }
@@ -183,6 +196,14 @@ namespace Nf
           }
         case QtEnums::EstimatorCalibrationModes::ECM_CURVATURE_US:
           {
+            vtkSmartPointer < vtkRenderWindowInteractor > interactor = m_imageViewer->GetWindowInteractor();
+            vtkSmartPointer < vtkPointPicker > picker = vtkPointPicker::New();
+            vtkSmartPointer < NeedleTipCalibrationPP > style = NeedleTipCalibrationPP::New();
+            style->SetImageData(m_imageViewer->GetImageData());
+            style->SetEstimatorWidget(this);
+            interactor->SetPicker(picker);
+            interactor->SetInteractorStyle(style);
+
             m_state = EFS_NEEDLE_CURVATURE_CALIB_US;
             break;
           }
@@ -251,7 +272,7 @@ namespace Nf
     m_ntCalibrator.SetSolution(soln);
 
     m_resultsAvailable = m_resultsAvailable|ERA_NEEDLE_TIP_CALIB;
-    UpdateCalibTipVis();
+    onUpdateFrame();
     m_planeVis->repaint();
   }
 
@@ -266,7 +287,7 @@ namespace Nf
       m_calibrationPointsCurvature->AddPoint(thisOne);
       m_ncCalibrator.AddPoint(thisOne);
     }
-    UpdateCalibTipVis();
+    onUpdateFrame();
   }
 
   void EstimatorFileWidget::onPointPushed(Vec2d point)

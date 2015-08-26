@@ -109,8 +109,11 @@ namespace Nf
 
     // Initialize
     if(!m_init) {
-      m_imageActor->RotateZ(180);
-      m_imageActor->RotateY(180);
+      vtkMatrix4x4 *mat = m_imageActor->GetMatrix();
+      if(mat == NULL || arma::norm(arma::eye(4,4)-Matrix44d::FromVtkMatrix4x4(mat).ToArmaMatrix4x4()) < 1e-3) {
+        m_imageActor->RotateZ(180);
+        //m_imageActor->RotateY(180);
+      }
       m_imageActor->SetInputData(m_importer->GetOutput());
       m_renderer->AddActor(m_imageActor);
 
