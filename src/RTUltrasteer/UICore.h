@@ -246,7 +246,11 @@ namespace Nf
     Q_ENUMS(VOLUME_ORIGIN_LOCATION)
     Q_ENUMS(ComPorts)
     Q_ENUMS(DisplayModality)
+<<<<<<< HEAD
     Q_ENUMS(Transducer)
+=======
+    Q_ENUMS(EstimatorCalibrationModes)
+>>>>>>> 34807fb04547c9b3160dfd9aa2e186df7c51c0dd
 #else
   class QtEnums
   {
@@ -283,6 +287,12 @@ namespace Nf
     LINEAR = 1
   };
 
+  enum EstimatorCalibrationModes
+  {
+    ECM_NONE = 0,
+    ECM_NEEDLE_TIP = 1,
+    ECM_CURVATURE_GPS = 2,
+    ECM_CURVATURE_US = 3
   };
 
   //################################END ENUM DEFINITIONS###############################################

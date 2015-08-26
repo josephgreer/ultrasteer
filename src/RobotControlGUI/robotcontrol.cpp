@@ -158,6 +158,11 @@ void RobotControl::InsertPosVel(void)
 	m_robot.SetInsertionVelocity(2);
 }
 
+void RobotControl::InsertPosVel(double vel)
+{
+  m_robot.SetInsertionVelocity((float)vel);
+}
+
 void RobotControl::InsertNegVel(void)
 {
 	m_robot.SetInsertionVelocity(-2);

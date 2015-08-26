@@ -126,6 +126,11 @@ namespace Nf
     m_robot->SetInsertionVelocity(2);
   }
 
+  void RobotControlsWidget::InsertPosVel(double vel)
+  {
+    m_robot->SetInsertionVelocity((float)vel);
+  }
+
   void RobotControlsWidget::InsertNegVel(void)
   {
     m_robot->SetInsertionVelocity(-2);

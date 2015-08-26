@@ -173,6 +173,11 @@ namespace Nf
     ADD_ACTION_PARAMETER(m_setViewXY, "Set View XY", CALLBACK_POINTER(onSetViewXY, Image3DImagePlaneWidget), this, true); 
     ADD_ACTION_PARAMETER(m_setViewXZ, "Set View XZ", CALLBACK_POINTER(onSetViewXZ, Image3DImagePlaneWidget), this, true); 
     ADD_ACTION_PARAMETER(m_setViewYZ, "Set View YZ", CALLBACK_POINTER(onSetViewYZ, Image3DImagePlaneWidget), this, true); 
+
+    ADD_ACTION_PARAMETER(m_setViewXYGPS2, "Set View XY GPS2", CALLBACK_POINTER(onSetViewXYGPS2, Image3DImagePlaneWidget), this, true); 
+    ADD_ACTION_PARAMETER(m_setViewXZGPS2, "Set View XZ GPS2", CALLBACK_POINTER(onSetViewXZGPS2, Image3DImagePlaneWidget), this, true); 
+    ADD_ACTION_PARAMETER(m_setViewYZGPS2, "Set View YZ GPS2", CALLBACK_POINTER(onSetViewYZGPS2, Image3DImagePlaneWidget), this, true); 
+
     ADD_BOOL_PARAMETER(m_showFrameBoundaries, "Show Frame Boundary", CALLBACK_POINTER(onShowExtrasChanged, Image3DImagePlaneWidget), this, false);
   }
 
@@ -289,6 +294,41 @@ namespace Nf
   void Image3DImagePlaneWidget::onSetViewYZ()
   {
     SetUSVisView(1,0);
+  }
+
+  void Image3DImagePlaneWidget::SetGPS2VisView(s32 axis1, s32 axis2)
+  {
+    vtkSmartPointer <vtkCamera> camera = vtkSmartPointer<vtkCamera>::New();
+
+    Matrix33d pose = Matrix44d::FromCvMat(m_rp.gps2.pose).GetOrientation();
+
+    Vec3d up = pose.Col(axis1)*-1.0;
+    Vec3d focal = pose.Col(axis2)*-1.0;
+    camera->SetPosition(0,0,0);
+    camera->SetFocalPoint(focal.x, focal.y, focal.z);
+    camera->SetViewUp(up.x, up.y, up.z);
+    
+    m_renderer->SetActiveCamera(camera);
+    f64 bounds[] = {m_rp.gps2.pos.x-50, m_rp.gps2.pos.x+50, m_rp.gps2.pos.y-50, m_rp.gps2.pos.y+50, m_rp.gps2.pos.z-50, m_rp.gps2.pos.z+50};
+    m_renderer->ResetCamera(bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], 
+      bounds[5]);
+    m_renderer->GetActiveCamera()->Zoom(0.8);
+    this->update();
+  }
+
+  void Image3DImagePlaneWidget::onSetViewXYGPS2()
+  {
+    SetGPS2VisView(1,2);
+  }
+
+  void Image3DImagePlaneWidget::onSetViewXZGPS2()
+  {
+    SetGPS2VisView(0,1);
+  }
+
+  void Image3DImagePlaneWidget::onSetViewYZGPS2()
+  {
+    SetGPS2VisView(1,0);
   }
   ////////////////////////////////////////////////////////
   // End Image3DImagePlaneWidget
