@@ -28,7 +28,7 @@ namespace Nf {
     }
   };
 
-  class Volume : public Nf::ParameterCollection, public Reinitializer
+  class Volume : public ParameterCollection, public Reinitializer
   {
   protected:
     u16 *m_data;
