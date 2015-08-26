@@ -80,6 +80,12 @@ namespace Nf
     m_tipFrame = solution.submat(span(0,2), span(0,2));
     m_c = (vec)(solution.submat(span(3,3), span(0,2)).t());
   }
+
+  void EMNeedleTipCalibrator::ResetSolution()
+  {
+    m_c.clear();
+    m_tipFrame.clear();
+  }
   ////////////////////////////////////////////////////////////////
   //// END EMNeedleTipCalibrator
   ////////////////////////////////////////////////////////////////
@@ -103,6 +109,11 @@ namespace Nf
 
   void NeedleCurvatureCalibrator::DoCalibration()
   {
+  }
+
+  void NeedleCurvatureCalibrator::ResetSolution()
+  {
+    m_pts.clear();
   }
   ////////////////////////////////////////////////////////////////
   //// END NeedleCurvatureCalibrator

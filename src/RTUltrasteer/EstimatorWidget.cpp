@@ -22,8 +22,11 @@ namespace Nf
   {
     ADD_ACTION_PARAMETER(m_doNeedleCalib, "Do Needle Calibration", CALLBACK_POINTER(onDoNeedleCalibrationPushed, EstimatorFileWidget), this, false);
     ADD_ENUM_PARAMETER(m_calibMode, "Calibration Mode", CALLBACK_POINTER(onSetCalibMode, EstimatorFileWidget), this, QtEnums::EstimatorCalibrationModes::ECM_NONE, "EstimatorCalibrationModes");
-    ADD_SAVE_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Path", NULL, this, "C:/Joey/Data/8_16_15/TipCalibration/tipCalib.mat", "(*.mat)");
-    ADD_OPEN_FILE_PARAMETER(m_tipCalibPathLoad, "Presaved Tip Calibration",CALLBACK_POINTER(onTipCalibPathChanged, EstimatorFileWidget), this, "C:/Joey/Data/8_16_15/TipCalibration/tipCalib.mat", "(*.mat)");
+    ADD_SAVE_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Save Path", NULL, this, "C:/Joey/Data/TipCalibration/tipCalib.mat", "(*.mat)");
+    ADD_OPEN_FILE_PARAMETER(m_tipCalibPathLoad, "Presaved Tip Calibration",CALLBACK_POINTER(onTipCalibPathChanged, EstimatorFileWidget), this, "C:/Joey/Data/TipCalibration/tipCalib.mat", "(*.mat)");
+    ADD_SAVE_FILE_PARAMETER(m_pointsDataPath, "Point History Save Path", NULL, this, "C:/Joey/Data/TipCalibration/tipHistory.mat", "(*.mat)");
+    ADD_OPEN_FILE_PARAMETER(m_pointsDataPathLoad, "Presaved Point History", CALLBACK_POINTER(onPointsDataPathChanged, EstimatorFileWidget), this, "C:/Joey/Data/TipCalibration/tipHistory.mat", "(*.mat)");
+    ADD_ACTION_PARAMETER(m_clearCalibrationData, "Clear Calibration Data", CALLBACK_POINTER(onClearCalibrationData, EstimatorFileWidget), this, false);
 
     m_calibrationPointsTip = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(0, 1, 0)));
     m_calibrationPointsCurvature = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 1, 0)));
@@ -51,11 +54,8 @@ namespace Nf
     if(m_rpReaders)
       m_data = m_rpReaders->GetRPData(m_frame->GetValue());
 
-    m_imageViewer->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
-    if(m_visTab->currentIndex() == 0)
-      m_usVis->AddRPData(m_data);
-    else
-      m_planeVis->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
+    if(m_resultsAvailable&ERA_NEEDLE_TIP_CALIB)
+      SpoofRPDataWithNeedleTipCalibration(m_data, &m_ntCalibrator);
     
     switch(m_state) {
     case EFS_READY: 
@@ -69,10 +69,8 @@ namespace Nf
       }
     case EFS_NEEDLE_CURVATURE_CALIB_GPS:
       {
-        Vec3d tipPos; Matrix33d tipFrame;
-        m_ntCalibrator.GetSolution(tipPos, tipFrame, m_data.gps2.pos, Matrix44d::FromCvMat(m_data.gps2.pose).GetOrientation());
-        m_ncCalibrator.AddPoint(tipPos);
-        m_calibrationPointsCurvature->AddPoint(tipPos);
+        m_ncCalibrator.AddPoint(m_data.gps2.pos);
+        m_calibrationPointsCurvature->AddPoint(m_data.gps2.pos);
         break;
       }
     case EFS_NEEDLE_CURVATURE_CALIB_US:
@@ -85,8 +83,14 @@ namespace Nf
         break;
       }
     }
-
+    
     UpdateCalibTipVis();
+
+    m_imageViewer->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
+    if(m_visTab->currentIndex() == 0)
+      m_usVis->AddRPData(m_data);
+    else
+      m_planeVis->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
   }
 
   void EstimatorFileWidget::onUpdateFile()
@@ -105,10 +109,7 @@ namespace Nf
         else
           m_state = EFS_READY;
 
-        m_calibrationPointsTip->ClearPoints();
-        m_calibrationPointsCurvature->ClearPoints();
-        m_ntCalibrator.ClearPoints();
-        m_ncCalibrator.ClearPoints();
+        onClearCalibrationData();
 
         m_resultsAvailable = ERA_NONE;
         m_planeVis->repaint();
@@ -120,6 +121,22 @@ namespace Nf
         break;
       }
     }
+  }
+
+  void EstimatorFileWidget::onClearCalibrationData()
+  {
+    m_ncCalibrator.ClearPoints();
+    m_calibrationPointsCurvature->ClearPoints();
+    m_ncCalibrator.ResetSolution();
+    m_ntCalibrator.ClearPoints();
+    m_calibrationPointsTip->ClearPoints();
+    m_ntCalibrator.ResetSolution();
+
+    m_resultsAvailable = m_resultsAvailable&~ERA_NEEDLE_TIP_CALIB;
+    m_resultsAvailable = m_resultsAvailable&~ERA_NEEDLE_CURVATURE_CALIB;
+
+    m_planeVis->repaint();
+    m_usVis->repaint();
   }
 
   void EstimatorFileWidget::onSetCalibMode()
@@ -144,12 +161,6 @@ namespace Nf
         interactor->SetPicker(picker);
         interactor->SetInteractorStyle(style);
 
-        m_ntCalibrator.ClearPoints();
-        m_ncCalibrator.ClearPoints();
-        m_calibrationPointsTip->ClearPoints();
-        m_calibrationPointsCurvature->ClearPoints();
-        m_resultsAvailable = (m_resultsAvailable&~ERA_NEEDLE_TIP_CALIB);
-        m_resultsAvailable = (m_resultsAvailable&~ERA_NEEDLE_CURVATURE_CALIB);
         m_planeVis->repaint();
 
         switch(m_calibMode->GetValue()) 
@@ -217,7 +228,7 @@ namespace Nf
     case EFS_NEEDLE_CURVATURE_CALIB_GPS:
     case EFS_NEEDLE_CURVATURE_CALIB_US:
       {
-        m_calibrationPointsCurvature->ClearPoints();
+        m_calibrationPointsCurvature->SavePoints(m_pointsDataPath->GetValue().c_str());
         m_ncCalibrator.DoCalibration();
         m_resultsAvailable = m_resultsAvailable|ERA_NEEDLE_CURVATURE_CALIB;
         UpdateCalibTipVis();
@@ -234,13 +245,27 @@ namespace Nf
   void EstimatorFileWidget::onTipCalibPathChanged()
   {
     arma::mat soln;
-    soln.load(m_tipCalibPath->GetValue());
+    soln.load(m_tipCalibPathLoad->GetValue());
 
     m_ntCalibrator.SetSolution(soln);
 
     m_resultsAvailable = m_resultsAvailable|ERA_NEEDLE_TIP_CALIB;
     UpdateCalibTipVis();
     m_planeVis->repaint();
+  }
+
+  void EstimatorFileWidget::onPointsDataPathChanged()
+  {
+    arma::mat points;
+    points.load(m_pointsDataPathLoad->GetValue());
+
+    arma::rowvec curr(3);
+    for(s32 i=0; i<points.n_rows; i++) {
+      Vec3d thisOne(points(i,0), points(i,1), points(i,2));
+      m_calibrationPointsCurvature->AddPoint(thisOne);
+      m_ncCalibrator.AddPoint(thisOne);
+    }
+    UpdateCalibTipVis();
   }
 
   void EstimatorFileWidget::onPointPushed(Vec2d point)
@@ -290,7 +315,7 @@ namespace Nf
   {
     Vec2d mppScale(m_data.mpp.x/1000.0, m_data.mpp.y/1000.0);
 
-    if(m_resultsAvailable&ERA_NEEDLE_TIP_CALIB) {
+    if(false) { //m_resultsAvailable&ERA_NEEDLE_TIP_CALIB) {
         if(!m_planeVis->GetRenderer()->HasViewProp(m_calibTip->GetActor()))
           m_planeVis->GetRenderer()->AddActor(m_calibTip->GetActor());
         if(!m_planeVis->GetRenderer()->HasViewProp(m_calibTipFrame))
@@ -354,7 +379,8 @@ namespace Nf
     ADD_ACTION_PARAMETER(m_insertion, "[Stop] Insert", CALLBACK_POINTER(onInsertionPushed, EstimatorStreamingWidget), this, false);
     ADD_ACTION_PARAMETER(m_pauseInsertion, "[Un]Pause Insert", CALLBACK_POINTER(onPauseInsertionPushed, EstimatorStreamingWidget), this, false);
     ADD_ACTION_PARAMETER(m_saveGPS, "Save GPS", CALLBACK_POINTER(onSaveGPS, EstimatorStreamingWidget), this, false);
-    ADD_OPEN_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Path", CALLBACK_POINTER(onTipCalibPathChanged, EstimatorStreamingWidget), this, "C:/Joey/Data/8_16_15/TipCalibration/tipCalib.mat", "(*.mat)");
+    ADD_OPEN_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Path", CALLBACK_POINTER(onTipCalibPathChanged, EstimatorStreamingWidget), this, "C:/Joey/Data/TipCalibration/tipCalib.mat", "(*.mat)");
+    ADD_BOOL_PARAMETER(m_showPastTipPoints, "Show Past Tip Points", NULL, this, false);
 
     ADD_CHILD_COLLECTION(m_hwWidget.get());
 
@@ -459,6 +485,7 @@ namespace Nf
         d.u.v = 0;
         m_saveDataWidget->SaveDataFrame(d);
         m_state = ES_RECORDING2;
+        m_pastTipPoints.push_back(m_data.gps2.pos);
         break;
       }
     case ES_RECORDING2: 
@@ -466,6 +493,7 @@ namespace Nf
         if(m_executeCommand)
           ExecuteCommand();
         m_saveDataWidget->SaveDataFrame(d);
+        m_pastTipPoints.push_back(m_data.gps2.pos);
         break;
       }
     case ES_PAUSED:
@@ -487,7 +515,24 @@ namespace Nf
     SpoofRPDataWithNeedleTipCalibration(rp, &m_ntCalibrator);
 
     HandleFrame(rp);
+    //HandleExtras();
     rp.Release();
+
+  }
+
+  void EstimatorStreamingWidget::HandleExtras()
+  {
+    bool planeHasTipHistoryPointCloud = m_planeVis->GetRenderer()->HasViewProp(m_tpHistory->GetActor());
+    bool volHasTipHistoryPointCloud = m_planeVis->GetRenderer()->HasViewProp(m_tpHistory->GetActor());
+
+    if(m_showPastTipPoints->GetValue() && !planeHasTipHistoryPointCloud)
+      m_planeVis->GetRenderer()->AddActor(m_tpHistory->GetActor());
+    if(m_showPastTipPoints->GetValue() && !volHasTipHistoryPointCloud)
+      m_usVis->GetRenderer()->AddActor(m_tpHistory->GetActor());
+    if(!m_showPastTipPoints->GetValue() && planeHasTipHistoryPointCloud)
+      m_planeVis->GetRenderer()->RemoveActor(m_tpHistory->GetActor());
+    if(!m_showPastTipPoints->GetValue() && volHasTipHistoryPointCloud)
+      m_usVis->GetRenderer()->RemoveActor(m_tpHistory->GetActor());
 
   }
 

@@ -55,6 +55,7 @@ namespace Nf
     virtual vtkSmartPointer < vtkRenderWindowInteractor > GetWindowInteractor() { return m_interactor; }
     virtual vtkSmartPointer < vtkRenderer > GetRenderer() { return m_renderer; }
     vtkSmartPointer <vtkImageData> GetImageData() { return m_importer->GetOutput(); }
+    virtual void ResetView();
   };
 
   

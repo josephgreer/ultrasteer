@@ -155,6 +155,14 @@ namespace Nf
     m_importer->SetDataSpacing(rp->mpp.x/1000.0,spacingy,1);
   }
 
+  
+ 
+  void ImageViewerWidget::ResetView()
+  {
+    f64 *bounds = m_imageActor->GetBounds();
+    m_renderer->ResetCamera(bounds);
+
+  }
   ////////////////////////////////////////////////////////
   // End ImageViwerWidget
   ////////////////////////////////////////////////////////

@@ -277,6 +277,30 @@ namespace Nf {
     m_polyData->Modified();
   }
 
+  void PointCloudVisualizer::SavePoints(const char *path)
+  {
+    vtkPoints *points = m_polyData->GetPoints();
+
+    arma::mat res;
+    for(s32 i=0; i<points->GetNumberOfPoints(); i++) {
+      f64 *pt = points->GetPoint(i);
+      res = arma::join_vert(res, arma::vec(pt, 3, true).t());
+    }
+
+    res.save(path, arma::raw_ascii);
+  }
+
+  void PointCloudVisualizer::SetPoints(const std::vector < Vec3d > &points)
+  {
+    m_points = vtkSmartPointer<vtkPoints>::New();
+
+    for(s32 i=0; i<points.size(); i++) 
+      m_points->InsertNextPoint(points[i].x, points[i].y, points[i].z);
+
+    m_polyData->SetPoints(m_points);
+    m_polyData->Modified();
+  }
+
   void PointCloudVisualizer::SetRadius(f64 rad)
   {
     m_sphereSource->SetRadius(rad);

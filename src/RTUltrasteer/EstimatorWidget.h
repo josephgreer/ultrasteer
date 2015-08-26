@@ -56,10 +56,16 @@ namespace Nf
     virtual ~EstimatorFileWidget();
 
     std::tr1::shared_ptr < Nf::FileParameter > m_tipCalibPath;
+
+    std::tr1::shared_ptr < Nf::FileParameter > m_pointsDataPath;
     
     std::tr1::shared_ptr < Nf::FileParameter > m_tipCalibPathLoad;
     virtual void onTipCalibPathChanged();
     CLASS_CALLBACK(onTipCalibPathChanged, EstimatorFileWidget);
+    
+    std::tr1::shared_ptr < Nf::FileParameter > m_pointsDataPathLoad;
+    virtual void onPointsDataPathChanged();
+    CLASS_CALLBACK(onPointsDataPathChanged, EstimatorFileWidget);
     
     //CalibrationMode
     std::tr1::shared_ptr < Nf::EnumParameter > m_calibMode;
@@ -70,6 +76,10 @@ namespace Nf
     std::tr1::shared_ptr < Nf::BoolParameter > m_doNeedleCalib;
     void onDoNeedleCalibrationPushed();
     CLASS_CALLBACK(onDoNeedleCalibrationPushed, EstimatorFileWidget);
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_clearCalibrationData;
+    void onClearCalibrationData();
+    CLASS_CALLBACK(onClearCalibrationData, EstimatorFileWidget);
 
     virtual void onUpdateFile();
     virtual void onUpdateFrame();
@@ -94,12 +104,16 @@ namespace Nf
     std::tr1::shared_ptr < RobotHardwareWidget > m_hwWidget;
     std::tr1::shared_ptr < SaveDataWidget > m_saveDataWidget;
     std::tr1::shared_ptr < QGridLayout > m_bottomRow;
+    std::tr1::shared_ptr < PointCloudVisualizer > m_tpHistory;
+
     NeedleSteeringRobot *m_robot;
     EstimatorState m_state;      
     NSCommand m_u; 
     bool m_executeCommand;
     virtual void ExecuteCommand();
     EMNeedleTipCalibrator m_ntCalibrator;
+
+    std::vector < Vec3d > m_pastTipPoints;
 
   public:
     EstimatorStreamingWidget(QWidget *parent);
@@ -125,6 +139,10 @@ namespace Nf
     std::tr1::shared_ptr < Nf::FileParameter > m_tipCalibPath;
     void onTipCalibPathChanged();
     CLASS_CALLBACK(onTipCalibPathChanged, EstimatorStreamingWidget);
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_showPastTipPoints;
+
+    virtual void HandleExtras();
 
 public slots:
     void onSaveDataClicked();
