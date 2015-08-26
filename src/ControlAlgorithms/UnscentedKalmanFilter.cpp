@@ -12,6 +12,8 @@
 #define		R_POS				    1.0				// measurement covariance of position
 #define		R_ROT				    1.0				// measurement covariance of orientation
 
+#define   PI              3.141     // pi
+
 
 
 
@@ -35,7 +37,7 @@ namespace Nf
   void UnscentedKalmanFilter::initialize(f32 l, f32 theta)
   {
     // initialize estimate and covariance matrices
-    x_hat = Matrix44d::FromOrientationAndTranslation(Rz(theta),Vec3d(0.0,0.0,l));
+    x_hat = Matrix44d::FromOrientationAndTranslation(Rz(theta*PI/180.0),Vec3d(0.0,0.0,l));
     P_hat = Matrix66d::Diagonal(P_POS_I,P_POS_I,P_POS_I,P_ROT_I,P_ROT_I,P_ROT_I);
     m_initialized = true;
   }

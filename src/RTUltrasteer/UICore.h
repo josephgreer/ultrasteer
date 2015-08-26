@@ -246,6 +246,7 @@ namespace Nf
     Q_ENUMS(VOLUME_ORIGIN_LOCATION)
     Q_ENUMS(ComPorts)
     Q_ENUMS(DisplayModality)
+    Q_ENUMS(Transducer)
 #else
   class QtEnums
   {
@@ -274,6 +275,12 @@ namespace Nf
     DM_NULL_TYPE = -1,
     DM_BPOST8 = 4,
     DM_BPOST32 = 8
+  };
+
+  enum Transducer
+  {
+    CONVEX = 0,
+    LINEAR = 1
   };
 
   };

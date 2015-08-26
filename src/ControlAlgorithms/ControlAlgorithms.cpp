@@ -2,18 +2,18 @@
 #include "math.h"
 #include <time.h>
 
-#define   RHO     60.0    // radius of curvature for needle in mm
+#define   RHO         60.0    // radius of curvature for needle in mm
+#define   INS_SPEED   10.0    // insertion speed during teleoperation 
 
 namespace Nf {
 
-  ControlAlgorithms::ControlAlgorithms()
+  ControlAlgorithms::ControlAlgorithms():    
+      m_targetDefined(false)
+    , m_inFollowing(false)
+    , m_inManualScanning(false)
+    , m_estimateDefined(false)
   {
-    m_targetDefined = false;
-    m_inFollowing = false;
-    m_inManualScanning = false;
-    m_estimateDefined = false;
-
-    m_cal = Matrix44d(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0);
+    m_Tref2robot = Matrix44d::I();
   }
 
   ControlAlgorithms::~ControlAlgorithms()
@@ -35,11 +35,13 @@ namespace Nf {
   // toggle the teleoperation state, and return inFollowing()
   bool ControlAlgorithms::startStopTeleoperation()
   {
+    if(!m_UKF.isInitialized()) // initialize the UKF based on robot joint variables if necessary
+      m_UKF.initialize(m_robot->getInsMM(), m_robot->getRollAngle());
+
     m_inFollowing = !m_inFollowing;
     return inFollowing();
   }
 
-  // keep going HERE
   void ControlAlgorithms::startStopManualScanning(bool start)
   {
     if( start ){
@@ -52,46 +54,50 @@ namespace Nf {
     }
   }  
 
-  bool ControlAlgorithms::isInitialized(void)
+  bool ControlAlgorithms::isCalibrationSet()
   {
-    // currently only the UKF needs to be initalized
-    return m_UKF.isInitialized();
+    return m_calibrationSet; 
   }
 
-  void ControlAlgorithms::initialize(f32 l, f32 theta)
+  void ControlAlgorithms::setCalibration(Matrix44d Tref2robot, Matrix44d usCal)
   {
-    m_UKF.initialize(l, theta);
+    m_Tref2robot = Tref2robot;
+    m_usCalibrationMatrix = usCal;
+    m_segmentation.setCalibration(Tref2robot,usCal);
+    m_calibrationSet = true;
   }
 
   void ControlAlgorithms::SetTarget(Vec2d t_im)
   {
-    m_t = ImagePtToWorldPt(t_im);
+    m_t = ImagePtToRobotPt(t_im);
     m_targetDefined = true;
   }
 
-  Vec3d ControlAlgorithms::ImagePtToWorldPt(Vec2d p_im)
+  Vec3d ControlAlgorithms::ImagePtToRobotPt(Vec2d p_im)
   {
     if(m_data.gps.valid)
     { 
-      Matrix44d tPose = Matrix44d::FromCvMat(m_data.gps.pose);
-      Matrix33d pose = tPose.GetOrientation();
-      Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, m_data.gps.pos);
+      Matrix44d Ttrans2em = Matrix44d::FromCvMat(m_data.gps.pose);
+      Ttrans2em.SetPosition(m_data.gps.pos);
+      Matrix44d Tref2em = Matrix44d::FromCvMat(m_data.gps2.pose);
+      Tref2em.SetPosition(m_data.gps2.pos);
       Vec2d scale(m_data.mpp.x/1000.0, m_data.mpp.y/1000.0);
-      return rpImageCoordToWorldCoord3(p_im, posePos, m_cal, m_data.origin, scale);
+      return rpImageCoordToRobotCoord3(p_im, Ttrans2em, Tref2em, m_Tref2robot, m_usCalibrationMatrix, m_data.origin, scale);
     }else{
       return Vec3d(999.9,999.9,999.9);
     }
   }
 
-  Vec3d ControlAlgorithms::WorldPtToImagePt(Vec3d p_world)
+  Vec3d ControlAlgorithms::RobotPtToImagePt(Vec3d p_robot)
   {
     if(m_data.gps.valid)
     { 
-      Matrix44d tPose = Matrix44d::FromCvMat(m_data.gps.pose);
-      Matrix33d pose = tPose.GetOrientation();
-      Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, m_data.gps.pos);
+      Matrix44d Ttrans2em = Matrix44d::FromCvMat(m_data.gps.pose);
+      Ttrans2em.SetPosition(m_data.gps.pos);
+      Matrix44d Tref2em = Matrix44d::FromCvMat(m_data.gps2.pose);
+      Tref2em.SetPosition(m_data.gps2.pos);
       Vec2d scale(m_data.mpp.x/1000.0, m_data.mpp.y/1000.0);
-      return rpWorldCoord3ToImageCoord(p_world, posePos, m_cal, m_data.origin, scale);
+      return rpRobotCoord3ToImageCoord(p_robot, Ttrans2em, Tref2em, m_Tref2robot.Inverse(), m_usCalibrationMatrix, m_data.origin, scale);
     }else{
       return Vec3d(999.9,999.9,999.9);
     }
@@ -106,11 +112,31 @@ namespace Nf {
     
     m_data = data.Clone();
 
-    if( m_inManualScanning ) // if manually scanning
+    if( inManualScanning() ) // if manually scanning
+    {
       m_segmentation.addManualScanFrame(data);
-      
-    if( true) // if in following
-      int i = 1; // do controlly stuff
+    }
+
+    if( inFollowing() ) // if in following
+    {
+      GetPoseEstimate(m_x); // update the UKF estimate      
+      ControlCorrection();  // execute control correction
+      if( CheckCompletion() ){  // if we've reached the target
+        m_robot->SetInsertionVelocity(0.0);
+        m_inFollowing = false;
+      }
+    }
+  }
+
+  bool ControlAlgorithms::CheckCompletion(void)
+  {
+    Vec3d p = m_x.GetPosition();
+    if( p.z > m_t.z )
+    {
+      return true;
+    }else{
+      return false;
+    }
   }
 
 
@@ -164,6 +190,8 @@ namespace Nf {
   void ControlAlgorithms::setRobot(NeedleSteeringRobot* robot)
   {
     m_robot = robot;
+    m_lastInsMM = m_robot->getInsMM();
+    m_lastRollDeg = m_robot->getRollAngle();
   }
 
   void ControlAlgorithms::ControlCorrection()
@@ -171,20 +199,19 @@ namespace Nf {
     if(m_targetDefined)
     {
       // Get current tip frame estimate
-      Matrix44d T = m_UKF.getCurrentEstimate();
-      Vec3d p = T.GetPosition();
-      Matrix33d R = T.GetOrientation();
+      Vec3d p = m_x.GetPosition();
+      Matrix33d R = m_x.GetOrientation();
 
-    // Get relative error in the current tip frame
-    Vec3d e = R.Inverse()*(m_t-p);
-    f32 d_th = atan2(-e.x,e.y);
-    
-    // Check if needle tip is past target
-    if( e.z < 0 )
-      int i = 1;// Do end of steering tasks
+      // Get relative error in the current tip frame
+      Vec3d e = R.Inverse()*(m_t-p);
+      f32 d_th = atan2(-e.x,e.y);
 
-    // Correct needle rotation
-    m_robot->RotateIncremental(d_th);
+      // Check if needle tip is past target
+      if( e.z < 0 )
+        int i = 1;// Do end of steering tasks
+
+      // Correct needle rotation
+      m_robot->RotateIncremental(d_th*180.0/PI);
 
     }else{
       NTrace("No target defined; skipping correction\n");
@@ -201,7 +228,7 @@ namespace Nf {
     show_S = false;
 
     if( m_targetDefined ){ // if we have defined the target
-      t_img = WorldPtToImagePt(m_t);
+      t_img = RobotPtToImagePt(m_t);
 
       if( fabs(t_img.z) < 10.0 ){ // if the target is within 5 mm of the image plane
         show_t = true;
@@ -212,10 +239,9 @@ namespace Nf {
     if( m_estimateDefined ){ // if we have defined the estimate
       Matrix44d T;
       T = m_x;
-      //GetPoseEstimate(T);
       p = T.GetPosition();
       R = T.GetOrientation();
-      p_img = WorldPtToImagePt(p);
+      p_img = RobotPtToImagePt(p);
 
       if( fabs(p_img.z) < 10.0 ){ // if the tip estimate is within 5 mm of the image plane
         show_S = true;
@@ -225,11 +251,15 @@ namespace Nf {
         Matrix33d R = T.GetOrientation();
         Vec3d pz_world = p + R*Vec3d(0.0,0.0,10.0);
         Vec3d py_world = p + R*Vec3d(0.0,5.0,0.0);
-        pz_img = WorldPtToImagePt(pz_world);
-        py_img = WorldPtToImagePt(py_world);
+        pz_img = RobotPtToImagePt(pz_world);
+        py_img = RobotPtToImagePt(py_world);
       }
     }
   }
+
+  /// ----------------------------------------------------
+  /// Stylus Calibration Class
+  /// ----------------------------------------------------
 
   StylusCalibration::StylusCalibration()
   {

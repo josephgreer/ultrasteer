@@ -119,6 +119,25 @@ namespace Nf
     return Vec3d( (pt3_im.x/scale.x) + start.x, (pt3_im.y/scale.y) + start.y, pt3_im.z/scale.y);
   }
 
+  inline Vec3d rpImageCoordToRobotCoord3(const Vec2d &pt2_image, const Matrix44d &Ttrans2em, const Matrix44d &Tref2em, const Matrix44d &Tref2robot, const Matrix44d &calibration, const Vec2d &start, const Vec2d &scale)
+  {
+    Vec4d p4_em = Ttrans2em*calibration*Vec4d(1, (pt2_image.y-start.y)*scale.y, (pt2_image.x-start.x)*scale.x, 1.0);
+    Vec4d p4_robot = Tref2robot*Tref2em.Inverse()*p4_em;
+    return Vec3d(p4_robot.x, p4_robot.y, p4_robot.z);
+  }
+
+  inline Vec3d rpRobotCoord3ToImageCoord(const Vec3d &p3_robot, const Matrix44d &Ttrans2em, const Matrix44d &Tref2em, const Matrix44d &Trobot2ref, const Matrix44d &calibration, const Vec2d &start, const Vec2d &scale)
+  {
+    Vec4d p4_robot( p3_robot.x, p3_robot.y, p3_robot.z, 1.0 );        // point in the robot frame
+    Vec4d p4_em = Tref2em*Trobot2ref*p4_robot;                        // point in EM tracker frame
+    Vec4d p4_us = Ttrans2em.Inverse()*p4_em;                          // Transducer frame point
+    Matrix33d cal_part(calibration.m_data[0][2], calibration.m_data[0][1], 0, 1.00, calibration.m_data[1][1], 0, 0, 0, 1); // values taken from Sonix calibration 
+    // Invert a square portion of the calibration matrix, scale and shift image point to VTK origin
+    Vec3d p3_im = cal_part.Inverse()* ( Vec3d(p4_us.x,p4_us.y,0) - Vec3d(calibration.m_data[0][0],calibration.m_data[1][0],0) );
+    p3_im.z = p4_us.z;
+    return Vec3d( (p3_im.x/scale.x) + start.x, (p3_im.y/scale.y) + start.y, p3_im.z/scale.y);
+  }
+
   inline Vec4d rpImageCoordToWorldCoord4(const Vec2d &image, const Matrix44d &posePos, const Matrix44d &calibration, Vec2d &start, const Vec2d &scale)
   {
     return posePos*calibration*Vec4d(1, (image.y-start.y)*scale.y, (image.x-start.x)*scale.x, 1.0);

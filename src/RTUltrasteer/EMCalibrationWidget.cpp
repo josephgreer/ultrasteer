@@ -32,17 +32,17 @@ namespace Nf
     m_stylusAxes = vtkSmartPointer<vtkAxesActor>::New();
 
     // initialize robot calibration matrices
-    m_fiducialMeasurements = arma::zeros<arma::mat>(3,4);
-    m_fiducialCoordinates = arma::zeros<arma::mat>(3,4);
+    m_fiducialMeasurementsInFref = arma::zeros<arma::mat>(3,4);
+    m_fiducialsInFrobot = arma::zeros<arma::mat>(3,4);
     arma::vec3 p1, p2, p3, p4;
     p1 << -27.05 << -82.10 << -6.19;
     p2 << -9.52 << -117.72 << -3.02;
     p3 << 0.00 << -119.31 << -11.75;
     p4 << 9.53 << -16.31 << -11.75;
-    m_fiducialCoordinates.col(0) = p1;
-    m_fiducialCoordinates.col(1) = p2;
-    m_fiducialCoordinates.col(2) = p3;
-    m_fiducialCoordinates.col(3) = p4;
+    m_fiducialsInFrobot.col(0) = p1;
+    m_fiducialsInFrobot.col(1) = p2;
+    m_fiducialsInFrobot.col(2) = p3;
+    m_fiducialsInFrobot.col(3) = p4;
 
     // initialize viewport
     initViewport();
@@ -159,7 +159,7 @@ namespace Nf
         m_robotCalibrationComplete = false;
       }else{ // If finished collecting data, solve the robot calibration
         arma::mat mu = mean(m_currentFiducialMeasurements,1);
-        m_fiducialMeasurements.col(m_robotFiducialNumber->GetValue()-1) = mu;
+        m_fiducialMeasurementsInFref.col(m_robotFiducialNumber->GetValue()-1) = mu;
         RenderTargetPoints(true,mu);
         solveRobotRegistration();
       }
@@ -176,11 +176,11 @@ namespace Nf
     using namespace arma;
 
     // check that we have recorded a point for all four robot fiducials
-    if( all(vectorise(m_fiducialMeasurements)) )
+    if( all(vectorise(m_fiducialMeasurementsInFref)) )
     {
       // copy the datasets 
-      mat A = m_fiducialMeasurements;
-      mat B = m_fiducialCoordinates;
+      mat A = m_fiducialMeasurementsInFref;
+      mat B = m_fiducialsInFrobot;
 
       // find the centroids of both datasets
       mat c_a = mean(A,1);
@@ -202,9 +202,9 @@ namespace Nf
       vec t = -R*c_a + c_b;
 
       // Combine into a 4x4 transform
-      m_T_emref2robot = mat(4,4,fill::eye);
-      m_T_emref2robot.submat(0,0,2,2) = R;
-      m_T_emref2robot.submat(0,3,2,3) = t;
+      m_Tref2robot = mat(4,4,fill::eye);
+      m_Tref2robot.submat(0,0,2,2) = R;
+      m_Tref2robot.submat(0,3,2,3) = t;
 
       // Save rotation and translation
       QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), QString("F:/ultrasteer/EMCal"), "*.m");
@@ -212,16 +212,16 @@ namespace Nf
         return;
       }
       std::string fname = fileName.toStdString();
-      m_T_emref2robot.save(fname);
+      m_Tref2robot.save(fname);
 
       // Visualize the fiducial targets and registered measurements
-      mat transformedPoints(3,m_fiducialCoordinates.n_cols,fill::zeros);
-      for(int i = 0; i < m_fiducialCoordinates.n_cols; i++)
-        transformedPoints.col(i) = R*m_fiducialMeasurements.col(i) + t;
+      mat fiducialMeasurementsRegistered(3,m_fiducialsInFrobot.n_cols,fill::zeros);
+      for(int i = 0; i < m_fiducialsInFrobot.n_cols; i++)
+        fiducialMeasurementsRegistered.col(i) = R*m_fiducialMeasurementsInFref.col(i) + t;
 
       // Render the transformed points
-      RenderTargetPoints(true, m_fiducialCoordinates);
-      RenderMeasuredPoints(true, transformedPoints);
+      RenderTargetPoints(true, m_fiducialsInFrobot);
+      RenderMeasuredPoints(true, fiducialMeasurementsRegistered);
 
       // Render the sensor and robot frames
       m_robotCalibrationComplete = true;
@@ -326,15 +326,15 @@ namespace Nf
     if( m_robotCalibrationComplete ) // if the robot is calibrated
     {
       // get the em reference sensor frame relative to the robot frame
-      Matrix44d T_emref2robot = Matrix44d::FromArmaMatrix4x4(m_T_emref2robot);
+      Matrix44d T_emref2robot = Matrix44d::FromArmaMatrix4x4(m_Tref2robot);
       m_EMrobotAxes->PokeMatrix(T_emref2robot.GetVTKMatrix());
 
       // get the stylus tip frame relative to the robot frame
-      mat44 T_emstylus;
-      rp.GetGPS1RelativeT(T_emstylus);    
-      mat44 T_stylus = eye<mat>(4,4);
-      T_stylus.submat(0,3,2,3) = m_stylusCalibration->getCalibrationVector();
-      Matrix44d Tstylustip2robot = Matrix44d::FromArmaMatrix4x4(m_T_emref2robot*T_emstylus*T_stylus);
+      mat44 T_stylus2robot;
+      rp.GetGPS1RelativeT(T_stylus2robot);    
+      mat44 T_stylusTip2stylusRef = eye<mat>(4,4);
+      T_stylusTip2stylusRef.submat(0,3,2,3) = m_stylusCalibration->getCalibrationVector();
+      Matrix44d Tstylustip2robot = Matrix44d::FromArmaMatrix4x4(m_Tref2robot*T_stylus2robot*T_stylusTip2stylusRef);
       m_stylusAxes->PokeMatrix(Tstylustip2robot.GetVTKMatrix());
       
       // update the display

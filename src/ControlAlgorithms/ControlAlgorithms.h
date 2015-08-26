@@ -12,7 +12,7 @@
 #include "SegmentationAlgorithms.h"
 #include "UnscentedKalmanFilter.h"
 #include "NeedleSteeringRobot.h"
-//#include "Teleoperation2DWidget.h"
+#include <QtGui/QFileDialog>
 
 namespace Nf {
   
@@ -26,32 +26,37 @@ namespace Nf {
     bool startStopTeleoperation();
     bool inFollowing();
     bool inManualScanning();
-    bool isInitialized();
-    void initialize(f32 l, f32 theta);
     
     void controlHeartBeat(RPData);
     void onUpdateOverlay();
 
     void SetTarget(Vec2d t_im);
     void GetTarget(Vec3d &t);
-    void GetPoseEstimate(Matrix44d &x);
     bool isTargetDefined();
     void resetManualScan();
     Matrix44d processManualScan();
     void setRobot(NeedleSteeringRobot* robot);
     void GetIncrementalInputVector(Vec3d &u);
     void ControlCorrection();
-    Vec3d ImagePtToWorldPt(Vec2d p_im);
-    Vec3d WorldPtToImagePt(Vec3d p_world);
+    Vec3d ImagePtToRobotPt(Vec2d p_im);
+    Vec3d RobotPtToImagePt(Vec3d p_robot);
+    bool isCalibrationSet();
+    void setCalibration(Matrix44d, Matrix44d);
 
     void getOverlayValues(bool &show_p, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Vec3d &p, Matrix33d &R,
                           bool &show_t, Vec3d &t_img, Vec3d &t,
                           bool &show_S, Vec3d &Sxyz);
 
   private:
+    void GetPoseEstimate(Matrix44d &x);
+    bool CheckCompletion();
+
+  private:
     Vec3d m_t;
     Matrix44d m_x;
     Matrix44d m_measurement;
+    Matrix44d m_usCalibrationMatrix;
+    Matrix44d m_Tref2robot;
     bool m_targetDefined;
     bool m_estimateDefined;
     bool m_inManualScanning;
@@ -65,7 +70,7 @@ namespace Nf {
 
     RPData m_data;
 
-    Matrix44d m_cal;
+    bool m_calibrationSet;
 
   };
 

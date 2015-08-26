@@ -17,7 +17,7 @@ namespace Nf
   class InPlaneSegmentation
   {
   public: //Methods
-    InPlaneSegmentation(void);
+    InPlaneSegmentation();
     ~InPlaneSegmentation(void);
     void addManualScanFrame(RPData);
     void resetManualScan();
@@ -26,6 +26,7 @@ namespace Nf
     void fitPolynomialandLineToDoppler();
     void findExtents();
     Matrix44d measureTipFrame();
+    void setCalibration(Matrix44d, Matrix44d);
 
   private:
     std::vector <RPData> m_scanFrames;
@@ -37,6 +38,8 @@ namespace Nf
     arma::vec m_c1lin, m_c2lin, m_c1poly, m_c2poly;
     arma::mat m_dopplerPoints;
     int m_NdopplerPoints;
+    Matrix44d m_usCalibrationMatrix;
+    Matrix44d m_Tref2robot;
   };
 }
 

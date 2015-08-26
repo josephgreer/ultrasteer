@@ -68,10 +68,10 @@ namespace Nf
     StylusCalibration *m_stylusCalibration;
 
     // robot calibration variables
-    arma::mat m_fiducialMeasurements;
-    arma::mat m_fiducialCoordinates;
+    arma::mat m_fiducialMeasurementsInFref;
+    arma::mat m_fiducialsInFrobot;
     arma::mat m_currentFiducialMeasurements;
-    arma::mat m_T_emref2robot;
+    arma::mat m_Tref2robot;
 
   public:
     EMCalibrationWidget(QWidget *parent);
