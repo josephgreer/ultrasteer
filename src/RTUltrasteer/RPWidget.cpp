@@ -122,6 +122,10 @@ namespace Nf
     m_frame->SetValue(1);
     m_frame->SetMin(1);
 
+    onUpdateFrame();
+
+    m_imageViewer->ResetView();
+
     m_usVis->Reinitialize();
 
     if(m_visTab->currentIndex() == 1)

@@ -100,6 +100,7 @@ namespace Nf
     bool validFile = m_frame->GetMax() > 0;
     switch(m_state) {
     case EFS_READY: 
+    case EFS_PRIMED:
     case EFS_NEEDLE_TIP_CALIB:
     case EFS_NEEDLE_CURVATURE_CALIB_GPS:
     case EFS_NEEDLE_CURVATURE_CALIB_US:
