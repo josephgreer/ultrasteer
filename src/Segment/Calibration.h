@@ -12,6 +12,7 @@ namespace Nf
   public:
     virtual void ClearPoints() = 0;
     virtual void DoCalibration() = 0;
+    virtual void ResetSolution() = 0;
   };
 
   class EMNeedleTipCalibrator : public Calibrator
@@ -30,6 +31,7 @@ namespace Nf
     void GetSolution(Vec3d &tipOffset, Matrix33d &tipFrame) const;
     void GetSolution(Vec3d &tipOffset, Matrix33d &tipFrame, const Vec3d &emPos, const Matrix33d &emFrame) const;
     void SetSolution(const arma::mat &solution);
+    virtual void ResetSolution();
   };
 
   class NeedleCurvatureCalibrator : public Calibrator
@@ -42,5 +44,6 @@ namespace Nf
     virtual void AddPoint(const Vec3d &point);
     virtual void ClearPoints();
     virtual void DoCalibration();
+    virtual void ResetSolution();
   };
 }

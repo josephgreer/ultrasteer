@@ -122,6 +122,10 @@ namespace Nf
     m_frame->SetValue(1);
     m_frame->SetMin(1);
 
+    onUpdateFrame();
+
+    m_imageViewer->ResetView();
+
     m_usVis->Reinitialize();
 
     if(m_visTab->currentIndex() == 1)
@@ -284,6 +288,7 @@ namespace Nf
   {
     Vec2d mpp(m_mpp->GetValue(), m_mpp->GetValue()*m_sos->GetValue()/NOMINAL_SOS);
     m_rpReaders->SetFrameInformation(mpp, m_origin->GetValue());
+    m_imageViewer->ResetView();
   }
 
   RPStreamingWidget::~RPStreamingWidget()
