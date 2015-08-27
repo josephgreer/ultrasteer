@@ -388,6 +388,7 @@ namespace Nf
     , m_hwWidget(new RobotHardwareWidget(parent))
     , m_saveDataWidget(new SaveDataWidget(parent))
     , m_bottomRow(new QGridLayout(parent))
+    , m_tpHistory(std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 1, 0))))
   {
     m_bottomRow->addWidget(m_hwWidget.get(), 0, 0);
     m_bottomRow->addWidget(m_saveDataWidget.get(), 0, 1, Qt::Alignment(Qt::AlignTop));
@@ -402,7 +403,11 @@ namespace Nf
     ADD_ACTION_PARAMETER(m_pauseInsertion, "[Un]Pause Insert", CALLBACK_POINTER(onPauseInsertionPushed, EstimatorStreamingWidget), this, false);
     ADD_ACTION_PARAMETER(m_saveGPS, "Save GPS", CALLBACK_POINTER(onSaveGPS, EstimatorStreamingWidget), this, false);
     ADD_OPEN_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Path", CALLBACK_POINTER(onTipCalibPathChanged, EstimatorStreamingWidget), this, "C:/Joey/Data/TipCalibration/tipCalib.mat", "(*.mat)");
+    ADD_OPEN_FILE_PARAMETER(m_tipHistoryPathLoad, "Presaved Tip History Path", CALLBACK_POINTER(onTipHistoryPathLoadChanged, EstimatorStreamingWidget), this, "C:/Joey/Data/TipCalibration/tipHistory.mat", "(*.mat)");
+    ADD_SAVE_FILE_PARAMETER(m_tipHistoryPathSave, "Tip History Path", CALLBACK_POINTER(onTipHistoryPathSavedChanged, EstimatorStreamingWidget), this, "C:/Joey/Data/TipCalibration/tipHistory.mat", "(*.mat)");
     ADD_BOOL_PARAMETER(m_showPastTipPoints, "Show Past Tip Points", NULL, this, false);
+    ADD_BOOL_PARAMETER(m_collectPastTipPoints, "Collect Past Tip Points", NULL, this, false);
+    ADD_ACTION_PARAMETER(m_clearPastPoints, "Clear Past Tip Points", CALLBACK_POINTER(onClearPastPoints, EstimatorStreamingWidget), this, false);
 
     ADD_CHILD_COLLECTION(m_hwWidget.get());
 
@@ -444,6 +449,29 @@ namespace Nf
     soln.load(m_tipCalibPath->GetValue());
 
     m_ntCalibrator.SetSolution(soln);
+  }
+
+  void EstimatorStreamingWidget::onTipHistoryPathLoadChanged()
+  {
+    arma::mat points;
+    points.load(m_tipHistoryPathLoad->GetValue());
+
+    arma::rowvec curr(3);
+    for(s32 i=0; i<points.n_rows; i++) {
+      Vec3d thisOne(points(i,0), points(i,1), points(i,2));
+      m_pastTipPoints.push_back(thisOne);
+    }
+  }
+
+  void EstimatorStreamingWidget::onTipHistoryPathSavedChanged()
+  {
+    m_tpHistory->SetPoints(m_pastTipPoints);
+    m_tpHistory->SavePoints(m_tipHistoryPathSave->GetValue().c_str());
+  }
+
+  void EstimatorStreamingWidget::onClearPastPoints()
+  {
+    m_pastTipPoints.clear();
   }
 
   static RPFileHeader RPFileHeader_uDataDesc(const uDataDesc &desc)
@@ -507,7 +535,6 @@ namespace Nf
         d.u.v = 0;
         m_saveDataWidget->SaveDataFrame(d);
         m_state = ES_RECORDING2;
-        m_pastTipPoints.push_back(m_data.gps2.pos);
         break;
       }
     case ES_RECORDING2: 
@@ -515,7 +542,6 @@ namespace Nf
         if(m_executeCommand)
           ExecuteCommand();
         m_saveDataWidget->SaveDataFrame(d);
-        m_pastTipPoints.push_back(m_data.gps2.pos);
         break;
       }
     case ES_PAUSED:
@@ -536,16 +562,22 @@ namespace Nf
 
     SpoofRPDataWithNeedleTipCalibration(rp, &m_ntCalibrator);
 
+    if(m_collectPastTipPoints->GetValue())
+      m_pastTipPoints.push_back(rp.gps2.pos);
+
     HandleFrame(rp);
-    //HandleExtras();
+    HandleExtras();
     rp.Release();
 
   }
 
   void EstimatorStreamingWidget::HandleExtras()
   {
+    if(!m_planeVis->GetRenderer() || !m_usVis->GetRenderer())
+      return;
+    m_tpHistory->SetPoints(m_pastTipPoints);
     bool planeHasTipHistoryPointCloud = m_planeVis->GetRenderer()->HasViewProp(m_tpHistory->GetActor());
-    bool volHasTipHistoryPointCloud = m_planeVis->GetRenderer()->HasViewProp(m_tpHistory->GetActor());
+    bool volHasTipHistoryPointCloud = m_usVis->GetRenderer()->HasViewProp(m_tpHistory->GetActor());
 
     if(m_showPastTipPoints->GetValue() && !planeHasTipHistoryPointCloud)
       m_planeVis->GetRenderer()->AddActor(m_tpHistory->GetActor());

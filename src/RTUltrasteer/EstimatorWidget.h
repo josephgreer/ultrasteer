@@ -144,7 +144,20 @@ namespace Nf
     void onTipCalibPathChanged();
     CLASS_CALLBACK(onTipCalibPathChanged, EstimatorStreamingWidget);
 
+    std::tr1::shared_ptr < Nf::FileParameter > m_tipHistoryPathLoad;
+    void onTipHistoryPathLoadChanged();
+    CLASS_CALLBACK(onTipHistoryPathLoadChanged, EstimatorStreamingWidget);
+
+    std::tr1::shared_ptr < Nf::FileParameter > m_tipHistoryPathSave;
+    void onTipHistoryPathSavedChanged();
+    CLASS_CALLBACK(onTipHistoryPathSavedChanged, EstimatorStreamingWidget);
+
     std::tr1::shared_ptr < Nf::BoolParameter > m_showPastTipPoints;
+    std::tr1::shared_ptr < Nf::BoolParameter > m_collectPastTipPoints;
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_clearPastPoints;
+    void onClearPastPoints();
+    CLASS_CALLBACK(onClearPastPoints, EstimatorStreamingWidget);
 
     virtual void HandleExtras();
 
