@@ -56,6 +56,9 @@ namespace Nf
       // play a sound effect
       QSound::play("C:/Windows/Media/Windows Default.wav");
 
+      // Check that the robot calibration has been loaded
+      m_TeleoperationWidget->checkCalibrations();
+
       // find coordinates in viewer pixels
       Vec2d vw;
       vw.x = this->Interactor->GetEventPosition()[0];
@@ -77,7 +80,7 @@ namespace Nf
       // Update the target control point
       Vec2d im2D( im.x, im.y );
       m_control->SetTarget(im2D);
-      m_imageViewerWidget->onUpdateOverlay();
+      m_TeleoperationWidget->updateTeleoperationVisualization();
 
       // Forward events if functionality is desired
       //vtkInteractorStyleImage::OnLeftButtonDown();

@@ -14,7 +14,7 @@
 #include <QtDebug>
 #include "NeedleSteeringRobot.h"
 #include "ControlAlgorithms.h"
-
+#include "TeleoperationVisualizationWidget.h"
 
 namespace Nf
 {
@@ -24,18 +24,20 @@ namespace Nf
 
   protected:
     std::tr1::shared_ptr <ImageViewer2DTeleoperationWidget> m_imageViewer;
+    std::tr1::shared_ptr <TeleoperationVisualizationWidget> m_teleoperationVisualizer;
     std::tr1::shared_ptr < Nf::EnumParameter > m_transducerType;
     RPData m_data;
     QGridLayout *m_layout;
     QVBoxLayout *m_rightSubLayout;
-    QVBoxLayout *m_leftSubLayout;
+    QHBoxLayout *m_leftSubLayout;
     QPushButton *m_scanButton;
     QPushButton *m_teleoperateButton;
     NeedleSteeringRobot* m_robot;
     ControlAlgorithms* m_control;
     std::tr1::shared_ptr < QTimer > m_preScanTimer;
     QElapsedTimer m_scanTimer;
-
+    bool m_robotCalibrationLoaded;
+    Matrix44d m_Tref2robot;
 
   public:
     Teleoperation2DWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control);
@@ -45,6 +47,8 @@ namespace Nf
     std::vector < QVTKWidget * > GetChildWidgets();
     void displayScanTimeRemaining();
     Matrix44d loadRobotEmCalibration();
+    void checkCalibrations();
+    void updateTeleoperationVisualization();
 
   public slots:
     void onStartManualNeedleScan();
