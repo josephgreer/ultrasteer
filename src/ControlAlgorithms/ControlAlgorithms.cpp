@@ -12,8 +12,13 @@ namespace Nf {
     , m_inFollowing(false)
     , m_inManualScanning(false)
     , m_estimateDefined(false)
+    , m_calibrationSet(false)
+    , m_Ttrans2robotDefined(false)
+    , m_zDefined(false)
   {
     m_Tref2robot = Matrix44d::I();
+
+    m_t = Vec3d(999.0,999.0,999.0);
   }
 
   ControlAlgorithms::~ControlAlgorithms()
@@ -111,6 +116,7 @@ namespace Nf {
     }
     
     m_data = data.Clone();
+    updateTransducerPose();
 
     if( inManualScanning() ) // if manually scanning
     {
@@ -125,6 +131,24 @@ namespace Nf {
         m_robot->SetInsertionVelocity(0.0);
         m_inFollowing = false;
       }
+    }
+  }
+
+  void ControlAlgorithms::updateTransducerPose()
+  {
+    if(m_data.gps.valid)
+    {
+      Matrix44d Ttrans2em = Matrix44d::FromCvMat(m_data.gps.pose);
+      Ttrans2em.SetPosition(m_data.gps.pos);
+      Matrix44d Tref2em = Matrix44d::FromCvMat(m_data.gps2.pose);
+      Tref2em.SetPosition(m_data.gps2.pos);
+
+      m_Ttrans2robot = m_Tref2robot*Tref2em.Inverse()*Ttrans2em;
+      m_Trobot2em = (m_Tref2robot*Tref2em).Inverse();
+      m_Ttrans2robotDefined = true;
+
+
+
     }
   }
 
@@ -183,6 +207,8 @@ namespace Nf {
     Vec3d u;
     GetIncrementalInputVector(u);
     Matrix44d T = m_segmentation.processManualScan();
+    m_zDefined = true;
+    m_z = T;
     m_UKF.fullUpdateUKF(u, T);
     return T;
   }
@@ -255,6 +281,50 @@ namespace Nf {
         py_img = RobotPtToImagePt(py_world);
       }
     }
+  }
+
+  void ControlAlgorithms::getVisualizerValues(bool &show_t, Vec3d &t,
+                                              bool &show_x, Matrix44d &x,
+                                              bool &show_z, Matrix44d &z,
+                                              bool &show_ref, Matrix44d &Tref2robot,
+                                              bool &show_trans, Matrix44d &Ttrans2robot,
+                                              bool &show_em, Matrix44d &Tem2robot)
+  {
+    // default to not showing anything
+    show_t = false;
+    show_x = false;
+    show_z = false;
+    show_ref = false;
+    show_trans = false;
+    show_em = false;
+
+    if( m_targetDefined ){ // if we have defined the target
+      show_t = true;
+      t = m_t;
+    }
+
+    if( m_estimateDefined ){ // if we have defined the estimate
+      show_x = true;
+      x = m_x;
+    }
+
+    if( m_zDefined ){ // if we have defined a measurement
+      show_z = true;
+      z = m_z;
+    }
+
+    if( m_calibrationSet ){ // if we have defined the robot calibration
+      show_ref = true;
+      Tref2robot = m_Tref2robot;
+    }
+
+    if( m_Ttrans2robotDefined){ // if we have the current pose of the transducer and base station
+      show_trans = true;
+      Ttrans2robot = m_Ttrans2robot;
+      show_em = true;
+      Tem2robot = m_Trobot2em;
+    }
+
   }
 
   /// ----------------------------------------------------

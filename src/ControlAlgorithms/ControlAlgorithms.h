@@ -42,10 +42,18 @@ namespace Nf {
     Vec3d RobotPtToImagePt(Vec3d p_robot);
     bool isCalibrationSet();
     void setCalibration(Matrix44d, Matrix44d);
+    void updateTransducerPose();
 
     void getOverlayValues(bool &show_p, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Vec3d &p, Matrix33d &R,
                           bool &show_t, Vec3d &t_img, Vec3d &t,
                           bool &show_S, Vec3d &Sxyz);
+    
+    void getVisualizerValues(bool &show_t, Vec3d &t,
+                             bool &show_x, Matrix44d &x,
+                             bool &show_z, Matrix44d &z,
+                             bool &show_ref, Matrix44d &Tref2robot,
+                             bool &show_trans, Matrix44d &Ttrans2robot,
+                             bool &show_em, Matrix44d &Tem2robot);
 
   private:
     void GetPoseEstimate(Matrix44d &x);
@@ -54,9 +62,18 @@ namespace Nf {
   private:
     Vec3d m_t;
     Matrix44d m_x;
+    Matrix44d m_z;
     Matrix44d m_measurement;
     Matrix44d m_usCalibrationMatrix;
     Matrix44d m_Tref2robot;
+    Matrix44d m_Trobot2em;
+
+    bool m_Ttrans2robotDefined;
+    Matrix44d m_Ttrans2robot;
+
+    bool m_zDefined;
+
+
     bool m_targetDefined;
     bool m_estimateDefined;
     bool m_inManualScanning;

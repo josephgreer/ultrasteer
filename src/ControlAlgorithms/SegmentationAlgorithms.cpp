@@ -130,17 +130,19 @@ namespace Nf {
     Mat temp_image;
     tempMask.copyTo(temp_image);
     findContours(temp_image, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
-    Mat b(contours[0]);
-    for( int i = 0; i< contours.size(); i++ ) // iterate through each contour. 
-    {
-      double a=contourArea(Mat(contours[i]),false);  //  Find the area of contour
-      if(a>largest_area){
-        largest_area=a;
-        largest_contour_index=i;                //Store the index of largest contour
-        bounding_rect=boundingRect(Mat(contours[i])); // Find the bounding rectangle for biggest contour
+    if(contours.size()){
+      Mat b(contours[0]);
+      for( int i = 0; i< contours.size(); i++ ) // iterate through each contour. 
+      {
+        double a=contourArea(Mat(contours[i]),false);  //  Find the area of contour
+        if(a>largest_area){
+          largest_area=a;
+          largest_contour_index=i;                //Store the index of largest contour
+          bounding_rect=boundingRect(Mat(contours[i])); // Find the bounding rectangle for biggest contour
+        }
+        tempMask.setTo(Scalar(0));
+        drawContours( tempMask, contours, largest_contour_index, Scalar(255), CV_FILLED, 8, hierarchy ); // Draw the largest contour using previously stored index.
       }
-      tempMask.setTo(Scalar(0));
-      drawContours( tempMask, contours, largest_contour_index, Scalar(255), CV_FILLED, 8, hierarchy ); // Draw the largest contour using previously stored index.
     }
 
     // erode the image

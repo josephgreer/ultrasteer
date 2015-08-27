@@ -7,11 +7,13 @@ namespace Nf
   Teleoperation2DWidget::Teleoperation2DWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control)
     : Nf::ParameterCollection("Teleoperation 2D")
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
+    , m_robotCalibrationLoaded(false)
   {
     m_robot = robot;
     m_control = control;
 
-    m_imageViewer = std::tr1::shared_ptr<ImageViewer2DTeleoperationWidget>(new ImageViewer2DTeleoperationWidget(parent, control));
+    m_imageViewer = std::tr1::shared_ptr<ImageViewer2DTeleoperationWidget>(new ImageViewer2DTeleoperationWidget(parent, control, this));
+    m_teleoperationVisualizer = std::tr1::shared_ptr<TeleoperationVisualizationWidget>(new TeleoperationVisualizationWidget(parent, control));
 
     m_scanButton = new QPushButton("Scan Needle", parent);
     QFont font = m_scanButton->font();
@@ -27,7 +29,8 @@ namespace Nf
     m_teleoperateButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
     connect(m_teleoperateButton, SIGNAL(clicked()), this, SLOT(onStartStopTeleoperation()));
 
-    m_leftSubLayout = new QVBoxLayout(parent);
+    m_leftSubLayout = new QHBoxLayout(parent);
+    m_leftSubLayout->addWidget((QWidget *)(m_teleoperationVisualizer.get()));
     m_leftSubLayout->addWidget((QWidget *)(m_imageViewer.get()));
 
     m_rightSubLayout = new QVBoxLayout(parent); 
@@ -47,6 +50,7 @@ namespace Nf
     // add framework params
     ADD_ENUM_PARAMETER(m_transducerType, "Transducer", NULL, this, QtEnums::Transducer::CONVEX, "Transducer");
     ADD_CHILD_COLLECTION(m_imageViewer.get());
+    ADD_CHILD_COLLECTION(m_teleoperationVisualizer.get());
 
   }
 
@@ -74,27 +78,34 @@ namespace Nf
     return res;
   }
 
+  void Teleoperation2DWidget::checkCalibrations()
+  {
+    if(! m_robotCalibrationLoaded ){
+      m_Tref2robot = loadRobotEmCalibration();
+      m_robotCalibrationLoaded = true;
+    }
+
+    Matrix44d transducerCalibration;
+    switch ( m_transducerType->GetValue() ){
+    case QtEnums::Transducer::LINEAR :
+      transducerCalibration = Matrix44d(14.8449, 0.9477, -0.0018, 0.0, 
+        15.0061, 0.0016, 1.00, 0.0, 
+        0.1638, 0.0166, 0.0052, 0.0, 
+        0.0, 0.0, 0.0, 1.0);
+      break;
+    case QtEnums::Transducer::CONVEX :
+      transducerCalibration = Matrix44d(-29.7558, 0.9433, -0.0034, 0.0, 
+        -0.087, 0.0033, 1.00, 0.0, 
+        -0.7053, 0.0132, -0.0087, 0.0, 
+        0.0, 0.0, 0.0, 1.0);
+      break;
+    }
+    m_control->setCalibration( m_Tref2robot, transducerCalibration);      
+  }
+
   void Teleoperation2DWidget::onStartStopTeleoperation()
   {
-    if( !m_control->isCalibrationSet() ){
-      Matrix44d transducerCalibration;
-      switch ( m_transducerType->GetValue() ){
-      case QtEnums::Transducer::LINEAR :
-        transducerCalibration = Matrix44d(14.8449, 0.9477, -0.0018, 0.0, 
-                                          15.0061, 0.0016, 1.00, 0.0, 
-                                          0.1638, 0.0166, 0.0052, 0.0, 
-                                          0.0, 0.0, 0.0, 1.0);
-        break;
-      case QtEnums::Transducer::CONVEX :
-        transducerCalibration = Matrix44d(-29.7558, 0.9433, -0.0034, 0.0, 
-                                          -0.087, 0.0033, 1.00, 0.0, 
-                                          -0.7053, 0.0132, -0.0087, 0.0, 
-                                          0.0, 0.0, 0.0, 1.0);
-        //
-        break;
-      }
-      m_control->setCalibration( loadRobotEmCalibration(), transducerCalibration);      
-    }
+    checkCalibrations(); 
 
     if( m_control->startStopTeleoperation() ){
       m_teleoperateButton->setText("Stop Teleoperation");
@@ -119,6 +130,7 @@ namespace Nf
 
   void Teleoperation2DWidget::onStartManualNeedleScan()
   {
+    checkCalibrations();
     //m_scanButton->setDisabled(true);
     //
     if(!m_preScanTimer) {
@@ -156,6 +168,12 @@ namespace Nf
     }
   }
 
+  void Teleoperation2DWidget::updateTeleoperationVisualization()
+  {
+    m_imageViewer->onUpdateOverlay();
+    m_teleoperationVisualizer->onUpdateVisualization();
+  }
+
   Teleoperation2DFileWidget::Teleoperation2DFileWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control)
     : Teleoperation2DWidget(parent, robot, control) 
     , m_rpReaders(NULL)
@@ -189,7 +207,9 @@ namespace Nf
     tempReader = new RPFileReader(temp);
     m_rpReaders->AddReader(RPF_BPOST32, (RPReader *)tempReader);
     sprintf(temp,"%s.gps1",fname.c_str());
-    m_rpReaders->AddGPSReader((RPGPSReaderBasic *)new RPGPSReader(temp));  
+    m_rpReaders->AddGPSReader((RPGPSReaderBasic *)new RPGPSReader(temp));
+    sprintf(temp,"%s.gps2",fname.c_str());
+    m_rpReaders->AddGPSReader2((RPGPSReaderBasic *)new RPGPSReader(temp)); 
 
     if(nframes <= 0) {
       delete m_rpReaders;
@@ -213,7 +233,7 @@ namespace Nf
     m_imageViewer->SetImage(&m_data, RPF_BPOST32);
 
     m_control->controlHeartBeat(m_data);
-    m_imageViewer->onUpdateOverlay();
+    updateTeleoperationVisualization();
 
     if( m_control->inManualScanning() )
       displayScanTimeRemaining();
