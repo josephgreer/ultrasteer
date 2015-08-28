@@ -155,6 +155,40 @@ namespace Nf
   {
   }
 
+  //////////////////////////////////////////////////////////////////
+  // BEGIN RPPushReceiver
+  //////////////////////////////////////////////////////////////////
+  RPPushReceiver::RPPushReceiver(RPFrameHandler *frameHandler)
+    : m_frameHandler(frameHandler)
+  {
+    connect(this, SIGNAL(frameSignal()), SLOT(onFrame()), Qt::QueuedConnection);
+  }
+
+  void RPPushReceiver::Callback(const RPData *rp)
+  {
+    if(rp && m_lock.tryLock(30)) {
+      m_data.Release();
+      m_data = *rp;
+      m_lock.unlock();
+      emit frameSignal();
+    }
+  }
+  
+  void RPPushReceiver::onFrame()
+  {
+    if(!m_lock.tryLock(30))
+      return;
+    
+    RPData rp = m_data.Clone();
+    m_lock.unlock();
+    m_frameHandler->HandleFrame(rp);
+  }
+
+
+  //////////////////////////////////////////////////////////////////
+  // END RPPushReceiver
+  //////////////////////////////////////////////////////////////////
+
   
   RPStreamingWidget::RPStreamingWidget(QWidget *parent, USVisualizer *vis)
     : RPWidget(parent, vis) 
@@ -170,12 +204,12 @@ namespace Nf
     ADD_BOOL_PARAMETER(m_rcvDoppler, "Receive Doppler", CALLBACK_POINTER(onDataToAcquireChanged, RPStreamingWidget), this, false);
     ADD_BOOL_PARAMETER(m_rcvGps2, "Receive GPS2", CALLBACK_POINTER(onDataToAcquireChanged, RPStreamingWidget), this, true);
 
+    m_receiver = new RPPushReceiver((RPFrameHandler *)this);
+
     onInitializeToggle();
     onAddFramesToggle();
     
     m_rpReaders = std::tr1::shared_ptr<RPUlteriusReaderCollectionPush>((RPUlteriusReaderCollectionPush *)NULL);
-
-    connect(this, SIGNAL(frameSignal()), SLOT(onFrame()), Qt::QueuedConnection);
   }
 
   void RPStreamingWidget::onInitializeToggle()
@@ -183,7 +217,7 @@ namespace Nf
     if(m_init->GetValue()) {
       Vec2d mpp(m_mpp->GetValue(), m_mpp->GetValue()*m_sos->GetValue()/NOMINAL_SOS);
       m_rpReaders = std::tr1::shared_ptr < RPUlteriusReaderCollectionPush >(new RPUlteriusReaderCollectionPush(m_rpIp->GetValue().c_str(), mpp, m_origin->GetValue()));
-      m_rpReaders->SetRPCallbackReceiver(this);
+      m_rpReaders->SetRPCallbackReceiver(m_receiver);
       m_rpReaders->EnableType(RPF_BPOST8, 1);
       m_rpReaders->EnableType(RPF_GPS,1);
       if(m_rcvGps2->GetValue())
@@ -208,18 +242,12 @@ namespace Nf
 
   void RPStreamingWidget::InitializeAssets()
   {
-    if(!(m_lock.tryLock(30) && m_data.b8 && m_data.gps.valid)) 
+    if(!(m_data.b8 && m_data.gps.valid)) 
       return;
-
-    RPData rp = m_data.Clone();
-
-    m_lock.unlock();
 
     m_usVis->Initialize(m_data);
     m_imageViewer->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
     m_isInit = true;
-
-    rp.Release();
   }
 
   void RPStreamingWidget::onAddFramesToggle()
@@ -233,46 +261,27 @@ namespace Nf
     }
   }
 
-  void RPStreamingWidget::onFrame()
-  {
-    if(!m_init->GetValue() || !m_lock.tryLock(30))
-      return;
-    
-    RPData rp = m_data.Clone();
-    HandleFrame(rp);
-    rp.Release();
-  }
-
   void RPStreamingWidget::HandleFrame(RPData &rp)
   {
-    m_lock.unlock();
     if(rp.b8 == NULL || !rp.gps.valid)
       return;
+
+    m_data.Release();
+    m_data = rp;
 
     if(!m_isInit)
       InitializeAssets();
       
 
     if(!m_addFrames->GetValue()) {
-      m_usVis->UpdatePos(rp);
-      m_imageViewer->SetImage(&rp, (RP_TYPE)m_displayMode->GetValue());
+      m_usVis->UpdatePos(m_data);
+      m_imageViewer->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
     } else {
-      m_imageViewer->SetImage(&rp, (RP_TYPE)m_displayMode->GetValue());
+      m_imageViewer->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
       if(m_visTab->currentIndex() == 0)
-        m_usVis->AddRPData(rp);
+        m_usVis->AddRPData(m_data);
       else
-        m_planeVis->SetImage(&rp, (RP_TYPE)m_displayMode->GetValue());
-    }
-  }
-
-  void RPStreamingWidget::Callback(const RPData *rp)
-  {
-    if(rp && m_lock.tryLock(30)) {
-      m_data.Release();
-      m_data = *rp;
-      m_lock.unlock();
-      emit frameSignal();
-      //QMetaObject::invokeMethod(this, "onFrame", Qt::QueuedConnection);
+        m_planeVis->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
     }
   }
 

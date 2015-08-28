@@ -9,7 +9,8 @@
 #include "Resizable.h"
 #include "ImageViewerWidget.h"
 #include "RPFileReader.h"
-#include "RPProcess.h"
+#include "RPUlterius.h"
+#include "RPWidget.h"
 #include "ImageViewerWidget.h"
 #include <QtDebug>
 #include "NeedleSteeringRobot.h"
@@ -66,6 +67,7 @@ namespace Nf
 
   protected:
     RPFileReaderCollection *m_rpReaders;
+    QMutex m_lock;
 
   public:
     Teleoperation2DFileWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control);
@@ -83,13 +85,13 @@ namespace Nf
 
   };
 
-  class Teleoperation2DStreamingWidget : public Teleoperation2DWidget
+  class Teleoperation2DStreamingWidget : public Teleoperation2DWidget, public RPFrameHandler
   {
     Q_OBJECT 
 
   protected:
-    std::tr1::shared_ptr < RPUlteriusProcessManager > m_rpReaders;
-    std::tr1::shared_ptr < QTimer > m_tick;
+    std::tr1::shared_ptr < RPUlteriusReaderCollectionPush > m_rpReaders;
+    RPPushReceiver *m_receiver;
 
   public:
     Teleoperation2DStreamingWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control);
@@ -108,19 +110,13 @@ namespace Nf
     void onAddFramesToggle();
     CLASS_CALLBACK(onAddFramesToggle, Teleoperation2DStreamingWidget);
 
-    //Framerate
-    std::tr1::shared_ptr < Nf::IntParameter > m_framerate;
-    void onFramerateChanged();
-    CLASS_CALLBACK(onFramerateChanged, Teleoperation2DStreamingWidget);
-
     //MPP
     std::tr1::shared_ptr < Nf::FloatParameter > m_mpp;
 
     //Origin
     std::tr1::shared_ptr < Nf::Vec2dParameter > m_origin;
 
-  public slots:
-    void onTick();
+    virtual void HandleFrame(RPData &rp);
 
   };
 }
