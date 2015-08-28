@@ -12,6 +12,7 @@ end
 imshow(im);
 
 load(pathpoints, '-ascii')
+%tipHistoryUS = tipHistoryGPS;
 tipHistoryUS = tipHistoryUS-repmat(mean(tipHistoryUS,1),size(tipHistoryUS,1),1);
 tipHistoryUS = tipHistoryUS';
 

@@ -285,7 +285,7 @@ namespace Nf {
     : m_index(-1)
     , VolumeCreator()
     , m_newData(false)
-    , m_cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0)
+    , m_cal(TRANSDUCER_CALIBRATION_COEFFICIENTS)
     //, m_cal(12.4790, 0.9476, -0.0022, 0.0, 15.1253, 0.0019, 1.00, 0.0, 0.0213, 0.0202, 0.0064, 0.0, 0.0, 0.0, 0.0, 1.0)
     , m_init(false)
     , m_importer(NULL)

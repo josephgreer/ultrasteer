@@ -31,7 +31,7 @@ namespace Nf
     , m_init(false)
     , m_useTrackball(false)
     , m_temp(NULL)
-    , m_cal(14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0)
+    , m_cal(TRANSDUCER_CALIBRATION_COEFFICIENTS)
   {
     m_mapper = vtkSmartPointer<vtkImageMapper>::New();
     m_importer = vtkSmartPointer<vtkImageImport>::New();
