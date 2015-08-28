@@ -19,6 +19,10 @@
 #include <vtkAxesActor.h>
 #include <vtkCamera.h>
 #include <vtkSTLReader.h>
+#include <vtkPoints.h>
+#include <vtkPolyLine.h>
+#include <vtkPolyData.h>
+#include <vtkPolyDataMapper.h>
 
 namespace Nf
 {
@@ -69,6 +73,8 @@ namespace Nf
     vtkSmartPointer < vtkSphereSource > m_targetSource;
     vtkSmartPointer < vtkPolyDataMapper > m_targetMapper;
     vtkSmartPointer < vtkActor > m_targetActor;
+
+    CubeVisualizer *m_frameBoundaries;
 
     vtkSmartPointer < vtkAxesActor > m_robotAxes;
     vtkSmartPointer < vtkAxesActor > m_referenceAxes;

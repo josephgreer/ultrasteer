@@ -23,9 +23,12 @@ namespace Nf
     Q_OBJECT 
 
   protected:
+    std::tr1::shared_ptr < Nf::EnumParameter > m_transducerType;
+    void onSetTransducerType();
+    CLASS_CALLBACK(onSetTransducerType, Teleoperation2DWidget);
+
     std::tr1::shared_ptr <ImageViewer2DTeleoperationWidget> m_imageViewer;
     std::tr1::shared_ptr <TeleoperationVisualizationWidget> m_teleoperationVisualizer;
-    std::tr1::shared_ptr < Nf::EnumParameter > m_transducerType;
     RPData m_data;
     QGridLayout *m_layout;
     QVBoxLayout *m_rightSubLayout;
@@ -36,7 +39,6 @@ namespace Nf
     ControlAlgorithms* m_control;
     std::tr1::shared_ptr < QTimer > m_preScanTimer;
     QElapsedTimer m_scanTimer;
-    bool m_robotCalibrationLoaded;
     Matrix44d m_Tref2robot;
 
   public:
@@ -45,9 +47,10 @@ namespace Nf
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
     std::vector < QVTKWidget * > GetChildWidgets();
+    
     void displayScanTimeRemaining();
-    Matrix44d loadRobotEmCalibration();
     void checkCalibrations();
+    Matrix44d loadRobotEmCalibration();
     void updateTeleoperationVisualization();
 
   public slots:

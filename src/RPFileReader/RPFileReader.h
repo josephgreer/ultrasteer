@@ -210,6 +210,26 @@ namespace Nf
       return Cubed(ul, Matrix33d::FromCols(xaxis, yaxis, zaxis));
     }
 
+    Cubed GetFrameBoundariesInRobotFrame(Matrix44d usCal, Matrix44d Tref2robot) const
+    {
+
+      //Matrix44d tPose = Matrix44d::FromCvMat(this->gps.pose);
+      //Matrix33d pose = tPose.GetOrientation();
+      //Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, this->gps.pos);
+      Matrix44d Ttrans2em = Matrix44d::FromCvMat(this->gps.pose);
+      Ttrans2em.SetPosition(this->gps.pos);
+      Matrix44d Tref2em = Matrix44d::FromCvMat(this->gps2.pose);
+      Tref2em.SetPosition(this->gps2.pos);
+      Vec2d scale(this->mpp.x/1000.0, this->mpp.y/1000.0);
+      Vec3d ul = rpImageCoordToRobotCoord3(Vec2d(0,0), Ttrans2em, Tref2em, Tref2robot, usCal, this->origin, scale);
+      Vec3d ur = rpImageCoordToRobotCoord3(Vec2d(this->b8->width,0), Ttrans2em, Tref2em, Tref2robot, usCal, this->origin, scale);
+      Vec3d bl = rpImageCoordToRobotCoord3(Vec2d(0,this->b8->height), Ttrans2em,Tref2em, Tref2robot, usCal, this->origin, scale);
+      Vec3d xaxis = (ur-ul);
+      Vec3d yaxis = (bl-ul);
+      Vec3d zaxis = Vec3d(0,0,0);
+      return Cubed(ul, Matrix33d::FromCols(xaxis, yaxis, zaxis));
+    }
+
     void GetGPS1Relative(arma::mat33 &R1_rel, arma::vec3 &p1_rel) const
     {
       using namespace arma;

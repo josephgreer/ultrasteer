@@ -8,17 +8,16 @@
 namespace Nf {
 
   ControlAlgorithms::ControlAlgorithms():    
-      m_targetDefined(false)
-    , m_inFollowing(false)
+      m_inFollowing(false)
     , m_inManualScanning(false)
-    , m_estimateDefined(false)
-    , m_calibrationSet(false)
-    , m_Ttrans2robotDefined(false)
-    , m_zDefined(false)
+    , m_t(0.0, 0.0, 0.0)
+    , m_x(Matrix44d::Zero())
+    , m_z(Matrix44d::Zero())
+    , m_usCalibrationMatrix(Matrix44d::Zero())
+    , m_Tref2robot(Matrix44d::Zero())
+    , m_Tem2robot(Matrix44d::Zero())
+    , m_transducerType(0)
   {
-    m_Tref2robot = Matrix44d::I();
-
-    m_t = Vec3d(999.0,999.0,999.0);
   }
 
   ControlAlgorithms::~ControlAlgorithms()
@@ -55,32 +54,30 @@ namespace Nf {
     }else{
       m_inManualScanning = false;
       m_x = processManualScan();
-      m_estimateDefined = true;
     }
   }  
 
   bool ControlAlgorithms::isCalibrationSet()
   {
-    return m_calibrationSet; 
+    return !m_usCalibrationMatrix.isZero();
   }
 
-  void ControlAlgorithms::setCalibration(Matrix44d Tref2robot, Matrix44d usCal)
+  void ControlAlgorithms::setCalibration(Matrix44d Tref2robot, Matrix44d usCal, s32 transducerType)
   {
     m_Tref2robot = Tref2robot;
     m_usCalibrationMatrix = usCal;
     m_segmentation.setCalibration(Tref2robot,usCal);
-    m_calibrationSet = true;
+    m_transducerType =  transducerType;
   }
 
   void ControlAlgorithms::SetTarget(Vec2d t_im)
   {
     m_t = ImagePtToRobotPt(t_im);
-    m_targetDefined = true;
   }
 
   Vec3d ControlAlgorithms::ImagePtToRobotPt(Vec2d p_im)
   {
-    if(m_data.gps.valid)
+    if(m_data.gps.valid && !m_usCalibrationMatrix.isZero() && !m_Tref2robot.isZero())
     { 
       Matrix44d Ttrans2em = Matrix44d::FromCvMat(m_data.gps.pose);
       Ttrans2em.SetPosition(m_data.gps.pos);
@@ -89,13 +86,13 @@ namespace Nf {
       Vec2d scale(m_data.mpp.x/1000.0, m_data.mpp.y/1000.0);
       return rpImageCoordToRobotCoord3(p_im, Ttrans2em, Tref2em, m_Tref2robot, m_usCalibrationMatrix, m_data.origin, scale);
     }else{
-      return Vec3d(999.9,999.9,999.9);
+      return Vec3d(0.0, 0.0, 0.0);
     }
   }
 
   Vec3d ControlAlgorithms::RobotPtToImagePt(Vec3d p_robot)
   {
-    if(m_data.gps.valid)
+    if(m_data.gps.valid && !m_usCalibrationMatrix.isZero() && !m_Tref2robot.isZero())
     { 
       Matrix44d Ttrans2em = Matrix44d::FromCvMat(m_data.gps.pose);
       Ttrans2em.SetPosition(m_data.gps.pos);
@@ -104,7 +101,7 @@ namespace Nf {
       Vec2d scale(m_data.mpp.x/1000.0, m_data.mpp.y/1000.0);
       return rpRobotCoord3ToImageCoord(p_robot, Ttrans2em, Tref2em, m_Tref2robot.Inverse(), m_usCalibrationMatrix, m_data.origin, scale);
     }else{
-      return Vec3d(999.9,999.9,999.9);
+      return Vec3d(0.0, 0.0, 0.0);
     }
   }
 
@@ -114,7 +111,6 @@ namespace Nf {
     {
       m_data.Release();
     }
-    
     m_data = data.Clone();
     updateTransducerPose();
 
@@ -144,11 +140,9 @@ namespace Nf {
       Tref2em.SetPosition(m_data.gps2.pos);
 
       m_Ttrans2robot = m_Tref2robot*Tref2em.Inverse()*Ttrans2em;
-      m_Trobot2em = (m_Tref2robot*Tref2em).Inverse();
-      m_Ttrans2robotDefined = true;
+      m_Tem2robot = m_Ttrans2robot*Ttrans2em.Inverse();
 
-
-
+      m_frameBoundaries = m_data.GetFrameBoundariesInRobotFrame(m_usCalibrationMatrix, m_Tref2robot);
     }
   }
 
@@ -162,7 +156,6 @@ namespace Nf {
       return false;
     }
   }
-
 
   void ControlAlgorithms::GetTarget(Vec3d &t)
   {
@@ -194,7 +187,7 @@ namespace Nf {
 
   bool ControlAlgorithms::isTargetDefined()
   {
-    return m_targetDefined;
+    return !m_t.isZero();
   } 
 
   void ControlAlgorithms::resetManualScan()
@@ -207,7 +200,6 @@ namespace Nf {
     Vec3d u;
     GetIncrementalInputVector(u);
     Matrix44d T = m_segmentation.processManualScan();
-    m_zDefined = true;
     m_z = T;
     m_UKF.fullUpdateUKF(u, T);
     return T;
@@ -222,7 +214,7 @@ namespace Nf {
 
   void ControlAlgorithms::ControlCorrection()
   {
-    if(m_targetDefined)
+    if(m_t.magnitude() > 1e-3) // if the target is defined
     {
       // Get current tip frame estimate
       Vec3d p = m_x.GetPosition();
@@ -253,7 +245,7 @@ namespace Nf {
     show_t = false;
     show_S = false;
 
-    if( m_targetDefined ){ // if we have defined the target
+    if( !m_t.isZero() ){ // if we have defined the target
       t_img = RobotPtToImagePt(m_t);
 
       if( fabs(t_img.z) < 10.0 ){ // if the target is within 5 mm of the image plane
@@ -262,7 +254,7 @@ namespace Nf {
       }
     }
 
-    if( m_estimateDefined ){ // if we have defined the estimate
+    if( !m_x.isZero() ){ // if we have defined the estimate
       Matrix44d T;
       T = m_x;
       p = T.GetPosition();
@@ -283,48 +275,17 @@ namespace Nf {
     }
   }
 
-  void ControlAlgorithms::getVisualizerValues(bool &show_t, Vec3d &t,
-                                              bool &show_x, Matrix44d &x,
-                                              bool &show_z, Matrix44d &z,
-                                              bool &show_ref, Matrix44d &Tref2robot,
-                                              bool &show_trans, Matrix44d &Ttrans2robot,
-                                              bool &show_em, Matrix44d &Tem2robot)
+  void ControlAlgorithms::getVisualizerValues(Vec3d &t, Matrix44d &x, Matrix44d &z, Matrix44d &Tref2robot,
+    Matrix44d &Ttrans2robot, s32 &transducerType, Cubed &frameBoundaries, Matrix44d &Tem2robot)
   {
-    // default to not showing anything
-    show_t = false;
-    show_x = false;
-    show_z = false;
-    show_ref = false;
-    show_trans = false;
-    show_em = false;
-
-    if( m_targetDefined ){ // if we have defined the target
-      show_t = true;
-      t = m_t;
-    }
-
-    if( m_estimateDefined ){ // if we have defined the estimate
-      show_x = true;
-      x = m_x;
-    }
-
-    if( m_zDefined ){ // if we have defined a measurement
-      show_z = true;
-      z = m_z;
-    }
-
-    if( m_calibrationSet ){ // if we have defined the robot calibration
-      show_ref = true;
-      Tref2robot = m_Tref2robot;
-    }
-
-    if( m_Ttrans2robotDefined){ // if we have the current pose of the transducer and base station
-      show_trans = true;
-      Ttrans2robot = m_Ttrans2robot;
-      show_em = true;
-      Tem2robot = m_Trobot2em;
-    }
-
+    t = m_t;
+    x = m_x;
+    z = m_z;
+    Tref2robot = m_Tref2robot;
+    Ttrans2robot = m_Ttrans2robot;
+    frameBoundaries = m_frameBoundaries;
+    Tem2robot = m_Tem2robot;
+    transducerType = m_transducerType;
   }
 
   /// ----------------------------------------------------

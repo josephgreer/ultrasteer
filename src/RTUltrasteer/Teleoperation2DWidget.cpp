@@ -7,7 +7,7 @@ namespace Nf
   Teleoperation2DWidget::Teleoperation2DWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control)
     : Nf::ParameterCollection("Teleoperation 2D")
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
-    , m_robotCalibrationLoaded(false)
+    , m_Tref2robot(Matrix44d::Zeros())
   {
     m_robot = robot;
     m_control = control;
@@ -39,19 +39,18 @@ namespace Nf
     m_rightSubLayout->setMargin(0);
     m_rightSubLayout->setContentsMargins(QMargins(0,0,0,0));
     m_rightSubLayout->setSpacing(0);
-    
+
     m_layout = new QGridLayout(parent);
     m_layout->addLayout(m_leftSubLayout,0,0);    
     m_layout->addLayout(m_rightSubLayout,0,1);
     this->setLayout(m_layout);
 
     m_preScanTimer = std::tr1::shared_ptr<QTimer>((QTimer *)NULL);
-    
+
     // add framework params
-    ADD_ENUM_PARAMETER(m_transducerType, "Transducer", NULL, this, QtEnums::Transducer::CONVEX, "Transducer");
+    ADD_ENUM_PARAMETER(m_transducerType, "Transducer", CALLBACK_POINTER(onSetTransducerType, Teleoperation2DWidget), this, QtEnums::Transducer::LINEAR, "Transducer");
     ADD_CHILD_COLLECTION(m_imageViewer.get());
     ADD_CHILD_COLLECTION(m_teleoperationVisualizer.get());
-
   }
 
   Teleoperation2DWidget::~Teleoperation2DWidget()
@@ -78,11 +77,60 @@ namespace Nf
     return res;
   }
 
+  void Teleoperation2DWidget::onStartStopTeleoperation()
+  {
+    checkCalibrations(); 
+
+    if( m_control->startStopTeleoperation() ){
+      m_teleoperateButton->setText("Stop Teleoperation");
+    }else{
+      m_teleoperateButton->setText("Start Teleoperation");
+    }
+  }
+
+  void Teleoperation2DWidget::onStartManualNeedleScan()
+  {
+    checkCalibrations();
+
+    if(!m_preScanTimer) {
+      m_preScanTimer = std::tr1::shared_ptr<QTimer>(new QTimer());
+      connect(m_preScanTimer.get(), SIGNAL(timeout()), this, SLOT(onManualTimeout()));
+      m_preScanTimer->setInterval(2000); }
+    m_preScanTimer->start();
+
+    // print prepare for scan message
+    char str [100];
+    int n = sprintf(str, "Prepare for needle scan");
+    m_imageViewer->SetInstructionText(str);
+  }
+
+  void Teleoperation2DWidget::onManualTimeout()
+  {
+    // stop the preparation timer and begin the manual scan
+    m_preScanTimer->stop();
+    m_scanTimer.start();
+    displayScanTimeRemaining();
+    m_control->startStopManualScanning(true);
+  }
+
+  void Teleoperation2DWidget::displayScanTimeRemaining()
+  {
+    qint64 nsecs = m_scanTimer.nsecsElapsed();
+    double secs = double(nsecs/1e9);
+    char str [100];
+    int n = sprintf(str, "%.2f seconds remaining...",TSCAN-secs);
+    m_imageViewer->SetInstructionText(str);
+
+    if( secs > TSCAN ){
+      m_control->startStopManualScanning( false );
+      m_imageViewer->SetInstructionText(" ");
+    }
+  }
+
   void Teleoperation2DWidget::checkCalibrations()
   {
-    if(! m_robotCalibrationLoaded ){
+    if(! m_Tref2robot.isZero() ){
       m_Tref2robot = loadRobotEmCalibration();
-      m_robotCalibrationLoaded = true;
     }
 
     Matrix44d transducerCalibration;
@@ -100,20 +148,8 @@ namespace Nf
         0.0, 0.0, 0.0, 1.0);
       break;
     }
-    m_control->setCalibration( m_Tref2robot, transducerCalibration);      
+    m_control->setCalibration( m_Tref2robot, transducerCalibration, m_transducerType->GetValue() );      
   }
-
-  void Teleoperation2DWidget::onStartStopTeleoperation()
-  {
-    checkCalibrations(); 
-
-    if( m_control->startStopTeleoperation() ){
-      m_teleoperateButton->setText("Stop Teleoperation");
-    }else{
-      m_teleoperateButton->setText("Start Teleoperation");
-    }
-  }
-
 
   Matrix44d Teleoperation2DWidget::loadRobotEmCalibration()
   {
@@ -128,44 +164,9 @@ namespace Nf
     return Matrix44d::FromArmaMatrix4x4(Tref2robot);
   }
 
-  void Teleoperation2DWidget::onStartManualNeedleScan()
+  void Teleoperation2DWidget::onSetTransducerType()
   {
     checkCalibrations();
-    //m_scanButton->setDisabled(true);
-    //
-    if(!m_preScanTimer) {
-        m_preScanTimer = std::tr1::shared_ptr<QTimer>(new QTimer());
-        connect(m_preScanTimer.get(), SIGNAL(timeout()), this, SLOT(onManualTimeout()));
-        m_preScanTimer->setInterval(2000); }
-    m_preScanTimer->start();
-
-    // print prepare for scan message
-    char str [100];
-    int n = sprintf(str, "Prepare for needle scan");
-    m_imageViewer->SetInstructionText(str);
-  }
-
-  void Teleoperation2DWidget::onManualTimeout()
-  {
-      // stop the preparation timer and begin the manual scan
-      m_preScanTimer->stop();
-      m_scanTimer.start();
-      displayScanTimeRemaining();
-      m_control->startStopManualScanning(true);
-  }
-
-  void Teleoperation2DWidget::displayScanTimeRemaining()
-  {
-    qint64 nsecs = m_scanTimer.nsecsElapsed();
-    double secs = double(nsecs/1e9);
-    char str [100];
-    int n = sprintf(str, "%.2f seconds remaining...",TSCAN-secs);
-    m_imageViewer->SetInstructionText(str);
-
-    if( secs > TSCAN ){
-      m_control->startStopManualScanning( false );
-      m_imageViewer->SetInstructionText(" ");
-    }
   }
 
   void Teleoperation2DWidget::updateTeleoperationVisualization()
@@ -243,7 +244,7 @@ namespace Nf
   {
 
   }
-  
+
   Teleoperation2DStreamingWidget::Teleoperation2DStreamingWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control)
     : Teleoperation2DWidget(parent, robot, control) 
   {

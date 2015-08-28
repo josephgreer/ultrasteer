@@ -310,6 +310,11 @@ namespace Nf
       return Vec3(rhs(0), rhs(1), rhs(2));
     }
 
+    bool isZero() const
+    {
+      return this->magnitude() < 1e-3;
+    }
+
 #ifdef VNL_INCLUDE
     operator vnl_vector < T > ()
     {
@@ -758,7 +763,7 @@ namespace Nf
     {
       return Vec3<T>(m_data[row][0], m_data[row][1], m_data[row][2]);
     }
-
+    
     Matrix33<T> operator*(const Matrix33<T> &b) const
     {
       T res[3][3];
@@ -856,6 +861,12 @@ namespace Nf
       return Matrix44d(data);
     }
 
+    static Matrix44d Zero()
+    {
+      f64 data[4][4] = {0};
+      return Matrix44d(data);
+    }
+
     static Matrix44d Diagonal(f64 a, f64 b, f64 c, f64 d)
     {
       f64 data[4][4] = {0};
@@ -899,6 +910,16 @@ namespace Nf
       memcpy(&res.m_data[1][0], &this->m_data[1][0], sizeof(f64)*3);
       memcpy(&res.m_data[2][0], &this->m_data[2][0], sizeof(f64)*3);
       return res;
+    }
+
+    bool isIdentity()
+    {
+      return arma::norm(arma::eye(4,4)-this->ToArmaMatrix4x4()) < 1e-3;
+    }
+
+    bool isZero()
+    {
+      return arma::norm(arma::zeros(4,4)-this->ToArmaMatrix4x4()) < 1e-3;
     }
 
     Vec3d GetPosition()

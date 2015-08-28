@@ -26,10 +26,8 @@ namespace Nf {
     bool startStopTeleoperation();
     bool inFollowing();
     bool inManualScanning();
-    
     void controlHeartBeat(RPData);
     void onUpdateOverlay();
-
     void SetTarget(Vec2d t_im);
     void GetTarget(Vec3d &t);
     bool isTargetDefined();
@@ -41,19 +39,16 @@ namespace Nf {
     Vec3d ImagePtToRobotPt(Vec2d p_im);
     Vec3d RobotPtToImagePt(Vec3d p_robot);
     bool isCalibrationSet();
-    void setCalibration(Matrix44d, Matrix44d);
+    void setCalibration(Matrix44d, Matrix44d, s32);
     void updateTransducerPose();
 
     void getOverlayValues(bool &show_p, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Vec3d &p, Matrix33d &R,
                           bool &show_t, Vec3d &t_img, Vec3d &t,
                           bool &show_S, Vec3d &Sxyz);
     
-    void getVisualizerValues(bool &show_t, Vec3d &t,
-                             bool &show_x, Matrix44d &x,
-                             bool &show_z, Matrix44d &z,
-                             bool &show_ref, Matrix44d &Tref2robot,
-                             bool &show_trans, Matrix44d &Ttrans2robot,
-                             bool &show_em, Matrix44d &Tem2robot);
+    void getVisualizerValues(Vec3d &t, Matrix44d &x, Matrix44d &z, Matrix44d &Tref2robot,
+                                              Matrix44d &Ttrans2robot, s32 &transducerType, Cubed &frameBoundaries, Matrix44d &Tem2robot);
+
 
   private:
     void GetPoseEstimate(Matrix44d &x);
@@ -63,32 +58,22 @@ namespace Nf {
     Vec3d m_t;
     Matrix44d m_x;
     Matrix44d m_z;
-    Matrix44d m_measurement;
     Matrix44d m_usCalibrationMatrix;
     Matrix44d m_Tref2robot;
-    Matrix44d m_Trobot2em;
+    Matrix44d m_Tem2robot;
+    Cubed m_frameBoundaries;
+    s32 m_transducerType;
 
-    bool m_Ttrans2robotDefined;
+    //Matrix44d m_measurement;
     Matrix44d m_Ttrans2robot;
-
-    bool m_zDefined;
-
-
-    bool m_targetDefined;
-    bool m_estimateDefined;
     bool m_inManualScanning;
     bool m_inFollowing;
     InPlaneSegmentation m_segmentation; 
     UnscentedKalmanFilter m_UKF;
     NeedleSteeringRobot* m_robot;
-    
     double m_lastInsMM;
     double m_lastRollDeg;
-
-    RPData m_data;
-
-    bool m_calibrationSet;
-
+    RPData m_data;    
   };
 
   class StylusCalibration
