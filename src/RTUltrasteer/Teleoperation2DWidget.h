@@ -9,7 +9,8 @@
 #include "Resizable.h"
 #include "ImageViewerWidget.h"
 #include "RPFileReader.h"
-#include "RPProcess.h"
+#include "RPUlterius.h"
+#include "RPWidget.h"
 #include "ImageViewerWidget.h"
 #include <QtDebug>
 #include "NeedleSteeringRobot.h"
@@ -23,20 +24,23 @@ namespace Nf
     Q_OBJECT 
 
   protected:
+    std::tr1::shared_ptr < Nf::EnumParameter > m_transducerType;
+    void onSetTransducerType();
+    CLASS_CALLBACK(onSetTransducerType, Teleoperation2DWidget);
+
     std::tr1::shared_ptr <ImageViewer2DTeleoperationWidget> m_imageViewer;
     std::tr1::shared_ptr <TeleoperationVisualizationWidget> m_teleoperationVisualizer;
-    std::tr1::shared_ptr < Nf::EnumParameter > m_transducerType;
-    RPData m_data;
     QGridLayout *m_layout;
     QVBoxLayout *m_rightSubLayout;
     QHBoxLayout *m_leftSubLayout;
     QPushButton *m_scanButton;
     QPushButton *m_teleoperateButton;
-    NeedleSteeringRobot* m_robot;
-    ControlAlgorithms* m_control;
     std::tr1::shared_ptr < QTimer > m_preScanTimer;
     QElapsedTimer m_scanTimer;
-    bool m_robotCalibrationLoaded;
+    
+    NeedleSteeringRobot* m_robot;
+    ControlAlgorithms* m_control;
+    RPData m_data;
     Matrix44d m_Tref2robot;
 
   public:
@@ -45,9 +49,10 @@ namespace Nf
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
     std::vector < QVTKWidget * > GetChildWidgets();
+    
     void displayScanTimeRemaining();
-    Matrix44d loadRobotEmCalibration();
     void checkCalibrations();
+    Matrix44d loadRobotEmCalibration();
     void updateTeleoperationVisualization();
 
   public slots:
@@ -62,6 +67,7 @@ namespace Nf
 
   protected:
     RPFileReaderCollection *m_rpReaders;
+    QMutex m_lock;
 
   public:
     Teleoperation2DFileWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control);
@@ -79,13 +85,13 @@ namespace Nf
 
   };
 
-  class Teleoperation2DStreamingWidget : public Teleoperation2DWidget
+  class Teleoperation2DStreamingWidget : public Teleoperation2DWidget, public RPFrameHandler
   {
     Q_OBJECT 
 
   protected:
-    std::tr1::shared_ptr < RPUlteriusProcessManager > m_rpReaders;
-    std::tr1::shared_ptr < QTimer > m_tick;
+    std::tr1::shared_ptr < RPUlteriusReaderCollectionPush > m_rpReaders;
+    RPPushReceiver *m_receiver;
 
   public:
     Teleoperation2DStreamingWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control);
@@ -104,19 +110,13 @@ namespace Nf
     void onAddFramesToggle();
     CLASS_CALLBACK(onAddFramesToggle, Teleoperation2DStreamingWidget);
 
-    //Framerate
-    std::tr1::shared_ptr < Nf::IntParameter > m_framerate;
-    void onFramerateChanged();
-    CLASS_CALLBACK(onFramerateChanged, Teleoperation2DStreamingWidget);
-
     //MPP
     std::tr1::shared_ptr < Nf::FloatParameter > m_mpp;
 
     //Origin
     std::tr1::shared_ptr < Nf::Vec2dParameter > m_origin;
 
-  public slots:
-    void onTick();
+    virtual void HandleFrame(RPData &rp);
 
   };
 }

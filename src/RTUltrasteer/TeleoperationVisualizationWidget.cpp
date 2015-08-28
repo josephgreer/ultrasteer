@@ -7,6 +7,7 @@ namespace Nf
     : Nf::ParameterCollection("Teleoperation Visualization Widget")
     , ResizableQVTKWidget(parent, QSize(VIS_WIDTH, VIS_HEIGHT))
     , m_viewportInit(false)
+    , m_frameBoundaries((CubeVisualizer *)NULL)
   {
     // set the control pointer
     m_control = control;
@@ -83,12 +84,12 @@ namespace Nf
       m_robotSTLReader->Update();
       m_robotSTLMapper->SetInputConnection(m_robotSTLReader->GetOutputPort());
       m_robotSTLActor->SetMapper(m_robotSTLMapper);
+      m_robotSTLActor->GetProperty()->SetColor(0.8, 0.8, 0.8);
 
       // transducer model
-      m_transducerSTLReader->SetFileName("F:/ultrasteer/models/LinearTransducer.STL");
-      m_transducerSTLReader->Update();
       m_transducerSTLMapper->SetInputConnection(m_transducerSTLReader->GetOutputPort());
       m_transducerSTLActor->SetMapper(m_transducerSTLMapper);
+      m_transducerSTLActor->GetProperty()->SetColor(0.8, 0.8, 0.8);
       m_transducerSTLActor->VisibilityOff();
 
       // estimate tip model
@@ -111,6 +112,7 @@ namespace Nf
       m_targetActor->SetVisibility(false);
       m_targetMapper->SetInputConnection(m_targetSource->GetOutputPort());
       m_targetActor->SetMapper(m_targetMapper);
+      m_targetActor->GetProperty()->SetColor(0.0, 0.0, 1.0);
 
       // coordinate frame actors           
       m_robotAxes->SetTotalLength(20.0,20.0,20.0);
@@ -149,7 +151,7 @@ namespace Nf
       m_renderer->AddActor(m_transducerSTLActor);
       m_renderer->AddActor(m_measurementSTLActor);
       m_renderer->AddActor(m_estimateSTLActor);
-      m_renderer->SetBackground(.3, .3, .6); // Background color blue
+      m_renderer->SetBackground(.3, .3, .3); // Background color blue
 
       // render and start interaction
       m_interactor->SetRenderWindow(this->GetRenderWindow());
@@ -165,18 +167,16 @@ namespace Nf
 
   void TeleoperationVisualizationWidget::onUpdateVisualization(void)
   {
-    // define boolean values that control what is shown
-    bool show_t, show_x, show_z, show_ref, show_trans, show_em;
-
     // define matrices and vectors for target and axes
     Vec3d t;
     Matrix44d x, z, Tref2robot, Ttrans2robot, Tem2robot;
+    Cubed framePoints;
+    s32 transducerType;
 
     // get values and update display
-    m_control->getVisualizerValues(show_t, t, show_x, x, show_z, z, 
-      show_ref, Tref2robot, show_trans, Ttrans2robot, show_em, Tem2robot);
+    m_control->getVisualizerValues(t, x, z, Tref2robot, Ttrans2robot, transducerType, framePoints, Tem2robot);
 
-    if( show_t ){
+    if( !t.isZero() ){
       m_targetSource->SetCenter(t.x,t.y,t.z);
       m_targetSource->Modified();
       m_targetActor->VisibilityOn();
@@ -184,7 +184,7 @@ namespace Nf
       m_targetActor->VisibilityOff();
     }
 
-    if( show_x ){
+    if( !x.isZero() ){
       m_estimateAxes->PokeMatrix(x.GetVTKMatrix());
       m_estimateSTLActor->PokeMatrix(x.GetVTKMatrix());
       m_estimateAxes->VisibilityOn();
@@ -194,7 +194,7 @@ namespace Nf
       m_estimateSTLActor->VisibilityOff();
     }
 
-    if( show_z ){
+    if( !z.isZero() ){
       m_measurementAxes->PokeMatrix(z.GetVTKMatrix());
       m_measurementSTLActor->PokeMatrix(z.GetVTKMatrix());
       m_measurementAxes->VisibilityOn();
@@ -204,24 +204,44 @@ namespace Nf
       m_measurementSTLActor->VisibilityOff();
     }
 
-    if( show_ref ){
+    if( !Tref2robot.isZero() ){
       m_referenceAxes->PokeMatrix(Tref2robot.GetVTKMatrix());
       m_referenceAxes->VisibilityOn();
     }else{
       m_referenceAxes->VisibilityOff();
     }
 
-    if( show_trans ){
+    if( !Ttrans2robot.isZero() ){
       m_transducerAxes->PokeMatrix(Ttrans2robot.GetVTKMatrix());
       m_transducerSTLActor->PokeMatrix(Ttrans2robot.GetVTKMatrix());
       m_transducerAxes->VisibilityOn();
       m_transducerSTLActor->VisibilityOn();
+      
+      if( m_frameBoundaries ){
+        m_renderer->RemoveActor(m_frameBoundaries->GetActor());
+        delete m_frameBoundaries;
+      }
+      u8 cubeColor[3] = {200, 200, 200};
+      m_frameBoundaries = new CubeVisualizer(framePoints, cubeColor);
+      m_renderer->AddActor(m_frameBoundaries->GetActor());
+
+      switch ( transducerType ){
+      case QtEnums::Transducer::LINEAR :
+        m_transducerSTLReader->SetFileName("F:/ultrasteer/models/L14-5GPS.STL");
+        break;
+      case QtEnums::Transducer::CONVEX :
+        m_transducerSTLReader->SetFileName("F:/ultrasteer/models/C-52GPS.STL");
+        break;
+      }
+      m_transducerSTLReader->Update();
     }else{
       m_transducerAxes->VisibilityOff();
       m_transducerSTLActor->VisibilityOff();
+      if( m_frameBoundaries )
+        m_renderer->RemoveActor(m_frameBoundaries->GetActor());
     }
 
-    if( show_em ){
+    if( !Tem2robot.isZero() ){
       m_emAxes->PokeMatrix(Tem2robot.GetVTKMatrix());
       m_emAxes->VisibilityOn();
     }else{
@@ -236,7 +256,7 @@ namespace Nf
   {
     Matrix33d I = Matrix33d::I();
     vtkSmartPointer <vtkCamera> camera = vtkSmartPointer<vtkCamera>::New();
-    Vec3d up = I.Col(axis1)*-1.0;
+    Vec3d up = I.Col(axis1);
     Vec3d focal = I.Col(axis2)*-1.0;
     camera->SetPosition(0,0,0);
     camera->SetFocalPoint(focal.x, focal.y, focal.z);
@@ -260,7 +280,7 @@ namespace Nf
 
   void TeleoperationVisualizationWidget::onSetViewXY()
   {
-    SetVisView(1,2);
+    SetVisView(0,2);
   }
 
   void TeleoperationVisualizationWidget::onSetViewXZ()
@@ -270,6 +290,6 @@ namespace Nf
 
   void TeleoperationVisualizationWidget::onSetViewYZ()
   {
-    SetVisView(1,0);
+    SetVisView(2,0);
   }
 }

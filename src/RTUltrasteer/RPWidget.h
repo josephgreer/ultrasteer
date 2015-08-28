@@ -63,15 +63,42 @@ namespace Nf
 
     virtual void onSetDisplayMode();
   };
+  
+  class RPFrameHandler
+  {
+  public:
+    virtual void HandleFrame(RPData &rp) = 0;
+  };
 
-  class RPStreamingWidget : public RPWidget, public RPCallbackReceiver
+  class RPPushReceiver : public QObject, public RPCallbackReceiver
+  {
+    Q_OBJECT
+
+  protected:
+    QMutex m_lock;
+    RPFrameHandler *m_frameHandler;
+    RPData m_data;
+
+  public:
+    RPPushReceiver(RPFrameHandler *frameHandler);
+    virtual void Callback(const RPData *rp);
+
+  public slots:
+    virtual void onFrame();
+
+  signals:
+    void frameSignal();
+
+  };
+
+  class RPStreamingWidget : public RPWidget, public RPFrameHandler
   {
     Q_OBJECT 
 
   protected:
-    std::tr1::shared_ptr < RPUlteriusReaderCollectionPush > m_rpReaders;
     bool m_isInit;
-    QMutex m_lock;
+    RPPushReceiver *m_receiver;
+    std::tr1::shared_ptr < RPUlteriusReaderCollectionPush > m_rpReaders;
 
   public:
     RPStreamingWidget(QWidget *parent, USVisualizer *vis = NULL);
@@ -116,15 +143,7 @@ namespace Nf
     //GPS2
     std::tr1::shared_ptr < Nf::BoolParameter > m_rcvGps2;
 
-    virtual void Callback(const RPData *rp);
-    void HandleFrame(RPData &rp);
-
-
-  public slots:
-    virtual void onFrame();
-
-  signals:
-    void frameSignal();
+    virtual void HandleFrame(RPData &rp);
   };
 }
 

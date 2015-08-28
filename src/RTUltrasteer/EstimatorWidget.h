@@ -160,6 +160,7 @@ namespace Nf
     CLASS_CALLBACK(onClearPastPoints, EstimatorStreamingWidget);
 
     virtual void HandleExtras();
+    virtual void HandleFrame(RPData &rp);
 
 public slots:
     void onSaveDataClicked();

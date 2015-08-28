@@ -511,10 +511,13 @@ namespace Nf
 
   void EstimatorStreamingWidget::onFrame()
   {
-    if(!m_init->GetValue() || !m_lock.tryLock(30))
+
+  }
+
+  void EstimatorStreamingWidget::HandleFrame(RPData &rp)
+  {
+    if(!m_init->GetValue())
       return;
-    
-    RPData rp = m_data.Clone();
     
     DataFrame d;
     d.rp = rp;
@@ -565,10 +568,8 @@ namespace Nf
     if(m_collectPastTipPoints->GetValue())
       m_pastTipPoints.push_back(rp.gps2.pos);
 
-    HandleFrame(rp);
+    RPStreamingWidget::HandleFrame(rp);
     HandleExtras();
-    rp.Release();
-
   }
 
   void EstimatorStreamingWidget::HandleExtras()

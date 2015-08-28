@@ -7,7 +7,7 @@ namespace Nf
   Teleoperation2DWidget::Teleoperation2DWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control)
     : Nf::ParameterCollection("Teleoperation 2D")
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
-    , m_robotCalibrationLoaded(false)
+    , m_Tref2robot(Matrix44d::Zero())
   {
     m_robot = robot;
     m_control = control;
@@ -39,19 +39,18 @@ namespace Nf
     m_rightSubLayout->setMargin(0);
     m_rightSubLayout->setContentsMargins(QMargins(0,0,0,0));
     m_rightSubLayout->setSpacing(0);
-    
+
     m_layout = new QGridLayout(parent);
     m_layout->addLayout(m_leftSubLayout,0,0);    
     m_layout->addLayout(m_rightSubLayout,0,1);
     this->setLayout(m_layout);
 
     m_preScanTimer = std::tr1::shared_ptr<QTimer>((QTimer *)NULL);
-    
+
     // add framework params
-    ADD_ENUM_PARAMETER(m_transducerType, "Transducer", NULL, this, QtEnums::Transducer::CONVEX, "Transducer");
+    ADD_ENUM_PARAMETER(m_transducerType, "Transducer", CALLBACK_POINTER(onSetTransducerType, Teleoperation2DWidget), this, QtEnums::Transducer::LINEAR, "Transducer");
     ADD_CHILD_COLLECTION(m_imageViewer.get());
     ADD_CHILD_COLLECTION(m_teleoperationVisualizer.get());
-
   }
 
   Teleoperation2DWidget::~Teleoperation2DWidget()
@@ -78,11 +77,60 @@ namespace Nf
     return res;
   }
 
+  void Teleoperation2DWidget::onStartStopTeleoperation()
+  {
+    checkCalibrations(); 
+
+    if( m_control->startStopTeleoperation() ){
+      m_teleoperateButton->setText("Stop Teleoperation");
+    }else{
+      m_teleoperateButton->setText("Start Teleoperation");
+    }
+  }
+
+  void Teleoperation2DWidget::onStartManualNeedleScan()
+  {
+    checkCalibrations();
+
+    if(!m_preScanTimer) {
+      m_preScanTimer = std::tr1::shared_ptr<QTimer>(new QTimer());
+      connect(m_preScanTimer.get(), SIGNAL(timeout()), this, SLOT(onManualTimeout()));
+      m_preScanTimer->setInterval(2000); }
+    m_preScanTimer->start();
+
+    // print prepare for scan message
+    char str [100];
+    int n = sprintf(str, "Prepare for needle scan");
+    m_imageViewer->SetInstructionText(str);
+  }
+
+  void Teleoperation2DWidget::onManualTimeout()
+  {
+    // stop the preparation timer and begin the manual scan
+    m_preScanTimer->stop();
+    m_scanTimer.start();
+    displayScanTimeRemaining();
+    m_control->startStopManualScanning(true);
+  }
+
+  void Teleoperation2DWidget::displayScanTimeRemaining()
+  {
+    qint64 nsecs = m_scanTimer.nsecsElapsed();
+    double secs = double(nsecs/1e9);
+    char str [100];
+    int n = sprintf(str, "%.2f seconds remaining...",TSCAN-secs);
+    m_imageViewer->SetInstructionText(str);
+
+    if( secs > TSCAN ){
+      m_control->startStopManualScanning( false );
+      m_imageViewer->SetInstructionText(" ");
+    }
+  }
+
   void Teleoperation2DWidget::checkCalibrations()
   {
-    if(! m_robotCalibrationLoaded ){
+    if( m_Tref2robot.isZero() ){
       m_Tref2robot = loadRobotEmCalibration();
-      m_robotCalibrationLoaded = true;
     }
 
     Matrix44d transducerCalibration;
@@ -100,20 +148,8 @@ namespace Nf
         0.0, 0.0, 0.0, 1.0);
       break;
     }
-    m_control->setCalibration( m_Tref2robot, transducerCalibration);      
+    m_control->setCalibration( m_Tref2robot, transducerCalibration, m_transducerType->GetValue() );      
   }
-
-  void Teleoperation2DWidget::onStartStopTeleoperation()
-  {
-    checkCalibrations(); 
-
-    if( m_control->startStopTeleoperation() ){
-      m_teleoperateButton->setText("Stop Teleoperation");
-    }else{
-      m_teleoperateButton->setText("Start Teleoperation");
-    }
-  }
-
 
   Matrix44d Teleoperation2DWidget::loadRobotEmCalibration()
   {
@@ -128,44 +164,9 @@ namespace Nf
     return Matrix44d::FromArmaMatrix4x4(Tref2robot);
   }
 
-  void Teleoperation2DWidget::onStartManualNeedleScan()
+  void Teleoperation2DWidget::onSetTransducerType()
   {
     checkCalibrations();
-    //m_scanButton->setDisabled(true);
-    //
-    if(!m_preScanTimer) {
-        m_preScanTimer = std::tr1::shared_ptr<QTimer>(new QTimer());
-        connect(m_preScanTimer.get(), SIGNAL(timeout()), this, SLOT(onManualTimeout()));
-        m_preScanTimer->setInterval(2000); }
-    m_preScanTimer->start();
-
-    // print prepare for scan message
-    char str [100];
-    int n = sprintf(str, "Prepare for needle scan");
-    m_imageViewer->SetInstructionText(str);
-  }
-
-  void Teleoperation2DWidget::onManualTimeout()
-  {
-      // stop the preparation timer and begin the manual scan
-      m_preScanTimer->stop();
-      m_scanTimer.start();
-      displayScanTimeRemaining();
-      m_control->startStopManualScanning(true);
-  }
-
-  void Teleoperation2DWidget::displayScanTimeRemaining()
-  {
-    qint64 nsecs = m_scanTimer.nsecsElapsed();
-    double secs = double(nsecs/1e9);
-    char str [100];
-    int n = sprintf(str, "%.2f seconds remaining...",TSCAN-secs);
-    m_imageViewer->SetInstructionText(str);
-
-    if( secs > TSCAN ){
-      m_control->startStopManualScanning( false );
-      m_imageViewer->SetInstructionText(" ");
-    }
   }
 
   void Teleoperation2DWidget::updateTeleoperationVisualization()
@@ -243,43 +244,29 @@ namespace Nf
   {
 
   }
-  
+
   Teleoperation2DStreamingWidget::Teleoperation2DStreamingWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control)
     : Teleoperation2DWidget(parent, robot, control) 
   {
     ADD_STRING_PARAMETER(m_rpIp, "Ulterius IP", NULL, this, "192.168.1.64");
     ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, Teleoperation2DStreamingWidget), this, false);
     ADD_BOOL_PARAMETER(m_addFrames, "Add Frames", CALLBACK_POINTER(onAddFramesToggle, Teleoperation2DStreamingWidget), this, false);
-    ADD_INT_PARAMETER(m_framerate, "Ulterius Framerate", CALLBACK_POINTER(onFramerateChanged, Teleoperation2DStreamingWidget), this, 11, 1, 30, 1);
     ADD_FLOAT_PARAMETER(m_mpp, "MPP", CALLBACK_POINTER(onInitializeToggle, Teleoperation2DStreamingWidget), this, 60, 20, 150, 1.0);
     ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onInitializeToggle, Teleoperation2DStreamingWidget), this, Vec2d(330, 42), Vec2d(0,0), Vec2d(10000, 10000), Vec2d(1,1));
 
     onInitializeToggle();
     onAddFramesToggle();
 
-    m_tick = std::tr1::shared_ptr<QTimer>((QTimer *)NULL);
-    m_rpReaders = std::tr1::shared_ptr<RPUlteriusProcessManager>((RPUlteriusProcessManager *)NULL);
+    m_rpReaders = std::tr1::shared_ptr<RPUlteriusReaderCollectionPush>((RPUlteriusReaderCollectionPush *)NULL);
   }
 
   void Teleoperation2DStreamingWidget::onInitializeToggle()
   {
     if(m_init->GetValue()) {
-      Vec2d mpp(m_mpp->GetValue(), m_mpp->GetValue());
-      m_rpReaders = std::tr1::shared_ptr < RPUlteriusProcessManager >(new RPUlteriusProcessManager(m_rpIp->GetValue().c_str(), mpp, m_origin->GetValue(), m_framerate->GetValue()));
-      Sleep(30);  //Wait for old processes to die
-      m_rpReaders->EnableType(RPF_BPOST8, 1);
-      m_rpReaders->EnableType(RPF_GPS,1);
-      Sleep(300);
-
-      m_data = m_rpReaders->GetNextRPData();
-      m_imageViewer->SetImage(&m_data, RPF_BPOST32);
-
-      if(!m_tick) {
-        m_tick = std::tr1::shared_ptr<QTimer>(new QTimer());
-        connect(m_tick.get(), SIGNAL(timeout()), this, SLOT(onTick()));
-        m_tick->setInterval(90);
-        m_tick->start();
-      }
+      Vec2d mpp(m_mpp->GetValue(), m_mpp->GetValue());// TODO ADD SOS *m_sos->GetValue()/NOMINAL_SOS);
+      m_rpReaders = std::tr1::shared_ptr < RPUlteriusReaderCollectionPush >(new RPUlteriusReaderCollectionPush(m_rpIp->GetValue().c_str(), mpp, m_origin->GetValue()));
+      m_rpReaders->SetRPCallbackReceiver(m_receiver);
+      m_rpReaders->EnableMask(RPF_BPOST8|RPF_BPOST32|RPF_GPS|RPF_GPS2);
     }
   }
 
@@ -288,20 +275,16 @@ namespace Nf
     //Don't do anything if we're not initialized
     if(!m_init->GetValue())
       return;
-
-    if(m_addFrames->GetValue()) {
-      m_data = m_rpReaders->GetNextRPData();
-    }
   }
 
-  void Teleoperation2DStreamingWidget::onTick()
+  void Teleoperation2DStreamingWidget::HandleFrame(RPData &rp)
   {
     if(!m_init->GetValue())
       return;
 
-    if(m_data.gps.valid)
-      m_data.Release();
-    m_data = m_rpReaders->GetNextRPData();
+    m_data.Release();
+    m_data = rp;
+
     if(m_data.b8 == NULL || !m_data.gps.valid)
       return;
 
@@ -310,14 +293,6 @@ namespace Nf
       m_imageViewer->onUpdateOverlay();
       // add control heartbeat
     }
-  }
-
-  void Teleoperation2DStreamingWidget::onFramerateChanged()
-  {
-    if(!m_init->GetValue())
-      return;
-
-    m_rpReaders->SetFrameRate(m_framerate->GetValue());
   }
 
   Teleoperation2DStreamingWidget::~Teleoperation2DStreamingWidget()
