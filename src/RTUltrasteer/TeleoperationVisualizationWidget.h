@@ -23,6 +23,7 @@
 #include <vtkPolyLine.h>
 #include <vtkPolyData.h>
 #include <vtkPolyDataMapper.h>
+#include <vtkCaptionActor2D.h>
 
 namespace Nf
 {
@@ -89,6 +90,7 @@ namespace Nf
 
   private:
     void initViewport();
+    void setAxesLabelColor(vtkSmartPointer<vtkAxesActor> ax);
     void SetVisView(s32 axis1, s32 axis2);
   };
 

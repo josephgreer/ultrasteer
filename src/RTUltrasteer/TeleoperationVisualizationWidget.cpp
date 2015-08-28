@@ -84,12 +84,12 @@ namespace Nf
       m_robotSTLReader->Update();
       m_robotSTLMapper->SetInputConnection(m_robotSTLReader->GetOutputPort());
       m_robotSTLActor->SetMapper(m_robotSTLMapper);
-      m_robotSTLActor->GetProperty()->SetColor(0.6, 0.6, 0.6);
+      m_robotSTLActor->GetProperty()->SetColor(0.8, 0.8, 0.8);
 
       // transducer model
       m_transducerSTLMapper->SetInputConnection(m_transducerSTLReader->GetOutputPort());
       m_transducerSTLActor->SetMapper(m_transducerSTLMapper);
-      m_transducerSTLActor->GetProperty()->SetColor(0.7, 0.1, 0.1);
+      m_transducerSTLActor->GetProperty()->SetColor(0.8, 0.8, 0.8);
       m_transducerSTLActor->VisibilityOff();
 
       // estimate tip model
@@ -112,7 +112,7 @@ namespace Nf
       m_targetActor->SetVisibility(false);
       m_targetMapper->SetInputConnection(m_targetSource->GetOutputPort());
       m_targetActor->SetMapper(m_targetMapper);
-      m_targetActor->GetProperty()->SetColor(0.1, 0.7, 0.1);
+      m_targetActor->GetProperty()->SetColor(0.0, 0.0, 1.0);
 
       // coordinate frame actors           
       m_robotAxes->SetTotalLength(20.0,20.0,20.0);
@@ -151,7 +151,7 @@ namespace Nf
       m_renderer->AddActor(m_transducerSTLActor);
       m_renderer->AddActor(m_measurementSTLActor);
       m_renderer->AddActor(m_estimateSTLActor);
-      m_renderer->SetBackground(.3, .3, .6); // Background color blue
+      m_renderer->SetBackground(.3, .3, .3); // Background color blue
 
       // render and start interaction
       m_interactor->SetRenderWindow(this->GetRenderWindow());
@@ -221,7 +221,7 @@ namespace Nf
         m_renderer->RemoveActor(m_frameBoundaries->GetActor());
         delete m_frameBoundaries;
       }
-      u8 cubeColor[3] = {128, 0, 0};
+      u8 cubeColor[3] = {200, 200, 200};
       m_frameBoundaries = new CubeVisualizer(framePoints, cubeColor);
       m_renderer->AddActor(m_frameBoundaries->GetActor());
 

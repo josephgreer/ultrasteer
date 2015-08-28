@@ -1,7 +1,7 @@
 #define I_IND   2    // z is independent
 #define I_DEP1  0    // x is dependent
 #define I_DEP2  1    // y is dependent
-#define DIR     -1.0 // insertion is along the -ve z direction
+#define DIR     1.0 // insertion is along the -ve z direction
 
 #include "SegmentationAlgorithms.h"
 
