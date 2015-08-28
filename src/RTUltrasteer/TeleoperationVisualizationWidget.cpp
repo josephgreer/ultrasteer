@@ -256,7 +256,7 @@ namespace Nf
   {
     Matrix33d I = Matrix33d::I();
     vtkSmartPointer <vtkCamera> camera = vtkSmartPointer<vtkCamera>::New();
-    Vec3d up = I.Col(axis1)*-1.0;
+    Vec3d up = I.Col(axis1);
     Vec3d focal = I.Col(axis2)*-1.0;
     camera->SetPosition(0,0,0);
     camera->SetFocalPoint(focal.x, focal.y, focal.z);
@@ -280,7 +280,7 @@ namespace Nf
 
   void TeleoperationVisualizationWidget::onSetViewXY()
   {
-    SetVisView(1,2);
+    SetVisView(0,2);
   }
 
   void TeleoperationVisualizationWidget::onSetViewXZ()
@@ -290,6 +290,6 @@ namespace Nf
 
   void TeleoperationVisualizationWidget::onSetViewYZ()
   {
-    SetVisView(1,0);
+    SetVisView(2,0);
   }
 }

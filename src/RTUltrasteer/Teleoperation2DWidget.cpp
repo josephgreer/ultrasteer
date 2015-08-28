@@ -7,7 +7,7 @@ namespace Nf
   Teleoperation2DWidget::Teleoperation2DWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control)
     : Nf::ParameterCollection("Teleoperation 2D")
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
-    , m_Tref2robot(Matrix44d::Zeros())
+    , m_Tref2robot(Matrix44d::Zero())
   {
     m_robot = robot;
     m_control = control;
@@ -129,7 +129,7 @@ namespace Nf
 
   void Teleoperation2DWidget::checkCalibrations()
   {
-    if(! m_Tref2robot.isZero() ){
+    if( m_Tref2robot.isZero() ){
       m_Tref2robot = loadRobotEmCalibration();
     }
 

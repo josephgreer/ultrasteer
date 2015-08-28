@@ -29,16 +29,17 @@ namespace Nf
 
     std::tr1::shared_ptr <ImageViewer2DTeleoperationWidget> m_imageViewer;
     std::tr1::shared_ptr <TeleoperationVisualizationWidget> m_teleoperationVisualizer;
-    RPData m_data;
     QGridLayout *m_layout;
     QVBoxLayout *m_rightSubLayout;
     QHBoxLayout *m_leftSubLayout;
     QPushButton *m_scanButton;
     QPushButton *m_teleoperateButton;
-    NeedleSteeringRobot* m_robot;
-    ControlAlgorithms* m_control;
     std::tr1::shared_ptr < QTimer > m_preScanTimer;
     QElapsedTimer m_scanTimer;
+    
+    NeedleSteeringRobot* m_robot;
+    ControlAlgorithms* m_control;
+    RPData m_data;
     Matrix44d m_Tref2robot;
 
   public:
