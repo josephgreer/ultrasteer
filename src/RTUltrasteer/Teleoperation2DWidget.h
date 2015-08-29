@@ -105,11 +105,6 @@ namespace Nf
     void onInitializeToggle();
     CLASS_CALLBACK(onInitializeToggle, Teleoperation2DStreamingWidget);
 
-    //Add Frames
-    std::tr1::shared_ptr < Nf::BoolParameter > m_addFrames;
-    void onAddFramesToggle();
-    CLASS_CALLBACK(onAddFramesToggle, Teleoperation2DStreamingWidget);
-
     //MPP
     std::tr1::shared_ptr < Nf::FloatParameter > m_mpp;
 

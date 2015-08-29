@@ -198,7 +198,7 @@ namespace Nf
     ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, RPStreamingWidget), this, false);
     ADD_BOOL_PARAMETER(m_addFrames, "Add Frames", CALLBACK_POINTER(onAddFramesToggle, RPStreamingWidget), this, false);
     ADD_INT_PARAMETER(m_framerate, "Ulterius Framerate", CALLBACK_POINTER(onFramerateChanged, RPStreamingWidget), this, 15, 1, 30, 1);
-    ADD_FLOAT_PARAMETER(m_mpp, "Microns Per Pixel", CALLBACK_POINTER(onFrameInfoChanged, RPStreamingWidget), this, 255, 20, 400, 1.0);
+    ADD_FLOAT_PARAMETER(m_mpp, "Microns Per Pixel", CALLBACK_POINTER(onFrameInfoChanged, RPStreamingWidget), this, 255, 20, 500, 1.0);
     ADD_FLOAT_PARAMETER(m_sos, "Speed of Sound", CALLBACK_POINTER(onFrameInfoChanged, RPStreamingWidget), this, 1540, 1300, 1800, 1.0);
     ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onFrameInfoChanged, RPStreamingWidget), this, Vec2d(330, -134), Vec2d(-500,-500), Vec2d(10000, 10000), Vec2d(1,1));
     ADD_BOOL_PARAMETER(m_rcvDoppler, "Receive Doppler", CALLBACK_POINTER(onDataToAcquireChanged, RPStreamingWidget), this, false);

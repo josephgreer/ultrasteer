@@ -248,16 +248,16 @@ namespace Nf
   Teleoperation2DStreamingWidget::Teleoperation2DStreamingWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control)
     : Teleoperation2DWidget(parent, robot, control) 
   {
-    ADD_STRING_PARAMETER(m_rpIp, "Ulterius IP", NULL, this, "192.168.1.64");
+    ADD_STRING_PARAMETER(m_rpIp, "Ulterius IP", NULL, this, "192.168.1.129");
     ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, Teleoperation2DStreamingWidget), this, false);
-    ADD_BOOL_PARAMETER(m_addFrames, "Add Frames", CALLBACK_POINTER(onAddFramesToggle, Teleoperation2DStreamingWidget), this, false);
-    ADD_FLOAT_PARAMETER(m_mpp, "MPP", CALLBACK_POINTER(onInitializeToggle, Teleoperation2DStreamingWidget), this, 60, 20, 150, 1.0);
-    ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onInitializeToggle, Teleoperation2DStreamingWidget), this, Vec2d(330, 42), Vec2d(0,0), Vec2d(10000, 10000), Vec2d(1,1));
+    ADD_FLOAT_PARAMETER(m_mpp, "MPP", CALLBACK_POINTER(onInitializeToggle, Teleoperation2DStreamingWidget), this, 405, 20, 1000, 1.0);
+    ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onInitializeToggle, Teleoperation2DStreamingWidget), this, Vec2d(330, -56), Vec2d(-500,-500), Vec2d(10000, 10000), Vec2d(1,1));
 
     onInitializeToggle();
-    onAddFramesToggle();
 
     m_rpReaders = std::tr1::shared_ptr<RPUlteriusReaderCollectionPush>((RPUlteriusReaderCollectionPush *)NULL);
+    
+    m_receiver = new RPPushReceiver((RPFrameHandler *)this);
   }
 
   void Teleoperation2DStreamingWidget::onInitializeToggle()
@@ -266,15 +266,9 @@ namespace Nf
       Vec2d mpp(m_mpp->GetValue(), m_mpp->GetValue());// TODO ADD SOS *m_sos->GetValue()/NOMINAL_SOS);
       m_rpReaders = std::tr1::shared_ptr < RPUlteriusReaderCollectionPush >(new RPUlteriusReaderCollectionPush(m_rpIp->GetValue().c_str(), mpp, m_origin->GetValue()));
       m_rpReaders->SetRPCallbackReceiver(m_receiver);
+      Sleep(20);
       m_rpReaders->EnableMask(RPF_BPOST8|RPF_BPOST32|RPF_GPS|RPF_GPS2);
     }
-  }
-
-  void Teleoperation2DStreamingWidget::onAddFramesToggle()
-  {
-    //Don't do anything if we're not initialized
-    if(!m_init->GetValue())
-      return;
   }
 
   void Teleoperation2DStreamingWidget::HandleFrame(RPData &rp)
@@ -285,14 +279,13 @@ namespace Nf
     m_data.Release();
     m_data = rp;
 
-    if(m_data.b8 == NULL || !m_data.gps.valid)
-      return;
+    m_imageViewer->SetImage(&m_data, RPF_BPOST32);
 
-    if(m_addFrames->GetValue()) {
-      m_imageViewer->SetImage(&m_data, RPF_BPOST32);
-      m_imageViewer->onUpdateOverlay();
-      // add control heartbeat
-    }
+    m_control->controlHeartBeat(m_data);
+    updateTeleoperationVisualization();
+
+    if( m_control->inManualScanning() )
+      displayScanTimeRemaining();
   }
 
   Teleoperation2DStreamingWidget::~Teleoperation2DStreamingWidget()
