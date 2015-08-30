@@ -31,9 +31,11 @@ elseif(header.filetype == 4) %postscan B .b8
 
 elseif(header.filetype == 8) %postscan B .b32
      %tag = fread(fid,1,'int32');
-     [v,count] = fread(fid,header.w*header.h,'int32'); 
-     temp = reshape(v,header.w,header.h);
-     Im = imrotate(temp, -90); 
+     [v,count] = fread(fid,header.w*header.h*4,'uint8'); 
+     temp = reshape(v,4,header.w,header.h);
+     temp = permute(temp, [2 3 1]);
+     temp2 = imrotate(temp, -90); 
+     Im = mirror(temp2,header.w);
 
 elseif(header.filetype == 16) %rf
     %tag = fread(fid,1,'int32');

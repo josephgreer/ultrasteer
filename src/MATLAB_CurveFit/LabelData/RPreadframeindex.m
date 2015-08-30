@@ -16,11 +16,15 @@ function [Im] = RPreadframeindex(fid, header, index)
 Im =[];
 v = [];
 
-if(header.filetype ~= 4)
+if(header.filetype ~= 4 && header.filetype ~= 8)
     error('wrong file type');
 end
-    
-if(fseek(fid, 76+(index-1)*header.w*header.h, 'bof') == -1)
+
+mul = 1;
+if(header.filetype == 8)
+    mul = 4;
+end
+if(fseek(fid, 76+(index-1)*header.w*header.h*mul, 'bof') == -1)
     error('could not seek file'); 
 end
 
@@ -39,9 +43,17 @@ elseif(header.filetype == 4) %postscan B .b8
 
 elseif(header.filetype == 8) %postscan B .b32
      %tag = fread(fid,1,'int32');
-     [v,count] = fread(fid,header.w*header.h,'int8'); 
-     temp = reshape(v,header.w,header.h);
-     Im = imrotate(temp, -90); 
+     [v,count] = fread(fid,header.w*header.h*4,'uint8');  
+     temp = reshape(v,4,header.w,header.h);
+     temp = permute(temp, [2 3 1]);
+     b = temp(:,:,1);
+     g = temp(:,:,2);
+     r = temp(:,:,3);
+     temp(:,:,1) = r;
+     temp(:,:,3) = b;
+     temp2 = imrotate(temp, -90); 
+     Im = temp2;
+     %Im = mirror(temp2,header.w);
 
 elseif(header.filetype == 16) %rf
     %tag = fread(fid,1,'int32');
