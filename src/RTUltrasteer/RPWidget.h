@@ -68,9 +68,11 @@ namespace Nf
   {
   public:
     virtual void HandleFrame(RPData &rp) = 0;
+    virtual void FrameinfoChanged() { return; }
+    virtual void Initialize(bool init) { return; }
   };
 
-  class RPPushReceiver : public QObject, public RPCallbackReceiver
+  class RPPushReceiver : public QObject, public RPCallbackReceiver, public ParameterCollection
   {
     Q_OBJECT
 
@@ -78,10 +80,40 @@ namespace Nf
     QMutex m_lock;
     RPFrameHandler *m_frameHandler;
     RPData m_data;
+    std::tr1::shared_ptr < RPUlteriusReaderCollectionPush > m_rpReaders;
 
   public:
     RPPushReceiver(RPFrameHandler *frameHandler);
     virtual void Callback(const RPData *rp);
+
+    std::tr1::shared_ptr < RPUlteriusReaderCollectionPush > GetReaders() { return m_rpReaders; }
+
+    //IP
+    std::tr1::shared_ptr < Nf::StringParameter > m_rpIp;
+
+    //Stream
+    std::tr1::shared_ptr < Nf::BoolParameter > m_init;
+    virtual void onInitializeToggle();
+    CLASS_CALLBACK(onInitializeToggle, RPPushReceiver);
+
+    //MPP
+    std::tr1::shared_ptr < Nf::FloatParameter > m_mpp;
+
+    //SOS
+    std::tr1::shared_ptr < Nf::FloatParameter > m_sos;
+
+    //Origin
+    std::tr1::shared_ptr < Nf::Vec2dParameter > m_origin;
+    void onFrameInfoChanged();
+    CLASS_CALLBACK(onFrameInfoChanged, RPPushReceiver);
+
+    //Doppler
+    std::tr1::shared_ptr < Nf::BoolParameter > m_rcvDoppler;
+    void onDataToAcquireChanged();
+    CLASS_CALLBACK(onDataToAcquireChanged, RPPushReceiver);
+
+    //GPS2
+    std::tr1::shared_ptr < Nf::BoolParameter > m_rcvGps2;
 
   public slots:
     virtual void onFrame();
@@ -98,7 +130,6 @@ namespace Nf
   protected:
     bool m_isInit;
     RPPushReceiver *m_receiver;
-    std::tr1::shared_ptr < RPUlteriusReaderCollectionPush > m_rpReaders;
 
   public:
     RPStreamingWidget(QWidget *parent, USVisualizer *vis = NULL);
@@ -106,43 +137,12 @@ namespace Nf
 
     void InitializeAssets();
 
-    //IP
-    std::tr1::shared_ptr < Nf::StringParameter > m_rpIp;
-
-    //Stream
-    std::tr1::shared_ptr < Nf::BoolParameter > m_init;
-    virtual void onInitializeToggle();
-    CLASS_CALLBACK(onInitializeToggle, RPStreamingWidget);
-
     //Add Frames
     std::tr1::shared_ptr < Nf::BoolParameter > m_addFrames;
     void onAddFramesToggle();
     CLASS_CALLBACK(onAddFramesToggle, RPStreamingWidget);
 
-    //Framerate
-    std::tr1::shared_ptr < Nf::IntParameter > m_framerate;
-    void onFramerateChanged();
-    CLASS_CALLBACK(onFramerateChanged, RPStreamingWidget);
-
-    //MPP
-    std::tr1::shared_ptr < Nf::FloatParameter > m_mpp;
-
-    //SOS
-    std::tr1::shared_ptr < Nf::FloatParameter > m_sos;
-
-    //Origin
-    std::tr1::shared_ptr < Nf::Vec2dParameter > m_origin;
-    void onFrameInfoChanged();
-    CLASS_CALLBACK(onFrameInfoChanged, RPStreamingWidget);
-
-    //Doppler
-    std::tr1::shared_ptr < Nf::BoolParameter > m_rcvDoppler;
-    void onDataToAcquireChanged();
-    CLASS_CALLBACK(onDataToAcquireChanged, RPStreamingWidget);
-
-    //GPS2
-    std::tr1::shared_ptr < Nf::BoolParameter > m_rcvGps2;
-
+    virtual void FrameinfoChanged();
     virtual void HandleFrame(RPData &rp);
   };
 }

@@ -122,7 +122,7 @@ namespace Nf
   public:
     EstimatorStreamingWidget(QWidget *parent);
     virtual ~EstimatorStreamingWidget();
-    virtual void onInitializeToggle();
+    virtual void Initialize(bool init);
     virtual void SetRobot(NeedleSteeringRobot *robot);
 
     

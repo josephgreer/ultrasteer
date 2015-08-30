@@ -426,10 +426,10 @@ namespace Nf
     m_saveDataWidget->UpdateSize(QSize(sz.width()/4-10, (sz.height())/4));
   }
 
-  void EstimatorStreamingWidget::onInitializeToggle()
+  void EstimatorStreamingWidget::Initialize(bool init)
   {
-    RPStreamingWidget::onInitializeToggle();
-    m_saveDataWidget->SetEnabled(m_init->GetValue());
+    RPStreamingWidget::Initialize(init);
+    m_saveDataWidget->SetEnabled(init);
     switch(m_state) {
     case ES_READY:
     case ES_PRIMED:
@@ -495,7 +495,7 @@ namespace Nf
   {
     //TODO CHANGE THSI
 
-    RPFileHeader header = RPFileHeader_uDataDesc(m_rpReaders->GetImageDesc(RPF_COLOR));
+    RPFileHeader header = RPFileHeader_uDataDesc(m_receiver->GetReaders()->GetImageDesc(RPF_COLOR));
     m_saveDataWidget->SaveData(header);
 
   }
@@ -515,10 +515,7 @@ namespace Nf
   }
 
   void EstimatorStreamingWidget::HandleFrame(RPData &rp)
-  {
-    if(!m_init->GetValue())
-      return;
-    
+  { 
     DataFrame d;
     d.rp = rp;
     if(d.rp.b8 != NULL)

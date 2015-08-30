@@ -160,8 +160,56 @@ namespace Nf
   //////////////////////////////////////////////////////////////////
   RPPushReceiver::RPPushReceiver(RPFrameHandler *frameHandler)
     : m_frameHandler(frameHandler)
+    , ParameterCollection("RP Streaming")
   {
+    ADD_STRING_PARAMETER(m_rpIp, "Ulterius IP", NULL, this, "192.168.1.129");
+    ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, RPPushReceiver), this, false);
+    ADD_FLOAT_PARAMETER(m_mpp, "Microns Per Pixel", CALLBACK_POINTER(onFrameInfoChanged, RPPushReceiver), this, 255, 20, 500, 1.0);
+    ADD_FLOAT_PARAMETER(m_sos, "Speed of Sound", CALLBACK_POINTER(onFrameInfoChanged, RPPushReceiver), this, 1540, 1300, 1800, 1.0);
+    ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onFrameInfoChanged, RPPushReceiver), this, Vec2d(330, -134), Vec2d(-500,-500), Vec2d(10000, 10000), Vec2d(1,1));
+    ADD_BOOL_PARAMETER(m_rcvDoppler, "Receive Doppler", CALLBACK_POINTER(onDataToAcquireChanged, RPPushReceiver), this, false);
+    ADD_BOOL_PARAMETER(m_rcvGps2, "Receive GPS2", CALLBACK_POINTER(onDataToAcquireChanged, RPPushReceiver), this, true);
+    
+    m_rpReaders = std::tr1::shared_ptr<RPUlteriusReaderCollectionPush>((RPUlteriusReaderCollectionPush *)NULL);
+    
     connect(this, SIGNAL(frameSignal()), SLOT(onFrame()), Qt::QueuedConnection);
+  }
+
+  void RPPushReceiver::onInitializeToggle()
+  {
+    if(m_init->GetValue()) {
+      Vec2d mpp(m_mpp->GetValue(), m_mpp->GetValue()*m_sos->GetValue()/NOMINAL_SOS);
+      m_rpReaders = std::tr1::shared_ptr < RPUlteriusReaderCollectionPush >(new RPUlteriusReaderCollectionPush(m_rpIp->GetValue().c_str(), mpp, m_origin->GetValue()));
+      m_rpReaders->SetRPCallbackReceiver(this);
+      m_rpReaders->EnableType(RPF_BPOST8, 1);
+      m_rpReaders->EnableType(RPF_GPS,1);
+      if(m_rcvGps2->GetValue())
+        m_rpReaders->EnableType(RPF_GPS2, 1);
+      if(m_rcvDoppler->GetValue())
+        m_rpReaders->EnableType(RPF_BPOST32, 1);
+      Sleep(200);
+
+      m_frameHandler->Initialize(m_init->GetValue());
+    }
+  }
+
+  void RPPushReceiver::onDataToAcquireChanged()
+  {
+    if(m_init->GetValue()) {
+      u32 mask = RPF_GPS|RPF_BPOST8;
+      if(m_rcvDoppler->GetValue() == true)
+        mask = mask|RPF_BPOST32;
+      if(m_rcvGps2->GetValue() == true)
+        mask = mask|RPF_GPS2;
+      m_rpReaders->EnableMask(mask);
+    }
+  }
+
+  void RPPushReceiver::onFrameInfoChanged()
+  {
+    Vec2d mpp(m_mpp->GetValue(), m_mpp->GetValue()*m_sos->GetValue()/NOMINAL_SOS);
+    m_rpReaders->SetFrameInformation(mpp, m_origin->GetValue());
+    m_frameHandler->FrameinfoChanged();
   }
 
   void RPPushReceiver::Callback(const RPData *rp)
@@ -193,51 +241,10 @@ namespace Nf
   RPStreamingWidget::RPStreamingWidget(QWidget *parent, USVisualizer *vis)
     : RPWidget(parent, vis) 
     , m_isInit(false)
+    , m_receiver(new RPPushReceiver((RPFrameHandler *)this))
   {
-    ADD_STRING_PARAMETER(m_rpIp, "Ulterius IP", NULL, this, "192.168.1.129");
-    ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, RPStreamingWidget), this, false);
     ADD_BOOL_PARAMETER(m_addFrames, "Add Frames", CALLBACK_POINTER(onAddFramesToggle, RPStreamingWidget), this, false);
-    ADD_INT_PARAMETER(m_framerate, "Ulterius Framerate", CALLBACK_POINTER(onFramerateChanged, RPStreamingWidget), this, 15, 1, 30, 1);
-    ADD_FLOAT_PARAMETER(m_mpp, "Microns Per Pixel", CALLBACK_POINTER(onFrameInfoChanged, RPStreamingWidget), this, 255, 20, 500, 1.0);
-    ADD_FLOAT_PARAMETER(m_sos, "Speed of Sound", CALLBACK_POINTER(onFrameInfoChanged, RPStreamingWidget), this, 1540, 1300, 1800, 1.0);
-    ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onFrameInfoChanged, RPStreamingWidget), this, Vec2d(330, -134), Vec2d(-500,-500), Vec2d(10000, 10000), Vec2d(1,1));
-    ADD_BOOL_PARAMETER(m_rcvDoppler, "Receive Doppler", CALLBACK_POINTER(onDataToAcquireChanged, RPStreamingWidget), this, false);
-    ADD_BOOL_PARAMETER(m_rcvGps2, "Receive GPS2", CALLBACK_POINTER(onDataToAcquireChanged, RPStreamingWidget), this, true);
-
-    m_receiver = new RPPushReceiver((RPFrameHandler *)this);
-
-    onInitializeToggle();
-    onAddFramesToggle();
-    
-    m_rpReaders = std::tr1::shared_ptr<RPUlteriusReaderCollectionPush>((RPUlteriusReaderCollectionPush *)NULL);
-  }
-
-  void RPStreamingWidget::onInitializeToggle()
-  {
-    if(m_init->GetValue()) {
-      Vec2d mpp(m_mpp->GetValue(), m_mpp->GetValue()*m_sos->GetValue()/NOMINAL_SOS);
-      m_rpReaders = std::tr1::shared_ptr < RPUlteriusReaderCollectionPush >(new RPUlteriusReaderCollectionPush(m_rpIp->GetValue().c_str(), mpp, m_origin->GetValue()));
-      m_rpReaders->SetRPCallbackReceiver(m_receiver);
-      m_rpReaders->EnableType(RPF_BPOST8, 1);
-      m_rpReaders->EnableType(RPF_GPS,1);
-      if(m_rcvGps2->GetValue())
-        m_rpReaders->EnableType(RPF_GPS2, 1);
-      if(m_rcvDoppler->GetValue())
-        m_rpReaders->EnableType(RPF_BPOST32, 1);
-      Sleep(200);
-    }
-  }
-
-  void RPStreamingWidget::onDataToAcquireChanged()
-  {
-    if(m_init->GetValue()) {
-      u32 mask = RPF_GPS|RPF_BPOST8;
-      if(m_rcvDoppler->GetValue() == true)
-        mask = mask|RPF_BPOST32;
-      if(m_rcvGps2->GetValue() == true)
-        mask = mask|RPF_GPS2;
-      m_rpReaders->EnableMask(mask);
-    }
+    ADD_CHILD_COLLECTION((ParameterCollection *)m_receiver);
   }
 
   void RPStreamingWidget::InitializeAssets()
@@ -252,10 +259,6 @@ namespace Nf
 
   void RPStreamingWidget::onAddFramesToggle()
   {
-    //Don't do anything if we're not initialized
-    if(!m_init->GetValue())
-      return;
-
     if(m_addFrames->GetValue()) {
       m_usVis->Reinitialize();
     }
@@ -285,18 +288,8 @@ namespace Nf
     }
   }
 
-  void RPStreamingWidget::onFramerateChanged()
+  void RPStreamingWidget::FrameinfoChanged()
   {
-    if(!m_init->GetValue())
-      return;
-
-    //m_rpReaders->SetFrameRate(m_framerate->GetValue());
-  }
-
-  void RPStreamingWidget::onFrameInfoChanged()
-  {
-    Vec2d mpp(m_mpp->GetValue(), m_mpp->GetValue()*m_sos->GetValue()/NOMINAL_SOS);
-    m_rpReaders->SetFrameInformation(mpp, m_origin->GetValue());
     m_imageViewer->ResetView();
   }
 
