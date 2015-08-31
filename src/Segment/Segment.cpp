@@ -702,6 +702,7 @@ namespace Nf
   ////////////////////////////////////////////////////////////////////////
   NeedleSegmenter::NeedleSegmenter(s32 width, s32 height)
     : m_mainModelInit(false)
+    , ParameterCollection("2D US Segmentation")
     , m_model(3, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1.5f)
     , m_initialModel(2, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000000.0f)
     , m_showColorMask(false)
@@ -717,7 +718,7 @@ namespace Nf
 
     InitZeroLut();
 
-    m_type = NDT_COLOR;
+    m_type = QtEnums::DisplayModality::DM_BPOST32;
   }
 
   NeedleSegmenter::~NeedleSegmenter()
@@ -797,9 +798,9 @@ namespace Nf
     //Filter out noise less than 7
     cvInRangeS(m_colorMask[0], cvScalar(7), cvScalar(255), m_colorMask[1]);
 
-    if(m_type == NDT_BMODE && !m_showColorMask)
+    if(m_type == QtEnums::DM_BPOST8 && !m_showColorMask)
       B82BGRA(bmode, m_disImage);
-    else if(m_type == NDT_COLOR && !m_showColorMask)
+    else if(m_type == QtEnums::DM_BPOST32 && !m_showColorMask)
       cvCopyImage(color, m_disImage);
     else
       B82BGRA(m_colorMask[0], m_disImage);

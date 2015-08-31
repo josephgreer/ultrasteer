@@ -23,6 +23,7 @@ INCLUDE_DIRECTORIES(
 )
 
 ADD_LIBRARY(Segment STATIC
+	UICore.cpp
 	Segment.h
 	Segment.cpp
 	ParticleFilter.h

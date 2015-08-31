@@ -12,6 +12,7 @@
 #include <highgui.h>
 
 #include "RTCore.h"
+#include "UICore.h"
 
 #define INITIAL_MODEL_POINTS 30
 
@@ -134,13 +135,7 @@ namespace Nf
     }
   };
 
-  typedef enum
-  {
-    NDT_BMODE = 0,
-    NDT_COLOR = 1,
-  } NEEDLE_DISPLAY_TYPE;
-
-  class NeedleSegmenter
+  class NeedleSegmenter : public ParameterCollection
   {
   protected:
     bool m_mainModelInit;
@@ -149,7 +144,7 @@ namespace Nf
     IplImage *m_colorMask[2];
     IplImage *m_disImage; //Doppler Display Image
 
-    NEEDLE_DISPLAY_TYPE m_type;
+    QtEnums::DisplayModality m_type;
 
     u8 m_zeroLut[512];
     u8 *m_zeroLutBase;
