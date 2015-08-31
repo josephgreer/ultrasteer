@@ -700,25 +700,34 @@ namespace Nf
   ////////////////////////////////////////////////////////////////////////
   //Begin Needle Estimator
   ////////////////////////////////////////////////////////////////////////
-  NeedleSegmenter::NeedleSegmenter(s32 width, s32 height)
+  NeedleSegmenter::NeedleSegmenter(s32 width, s32 height, Updateable *update)
     : m_mainModelInit(false)
+    , m_update(update)
     , ParameterCollection("2D US Segmentation")
     , m_model(3, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1.5f)
     , m_initialModel(2, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000000.0f)
-    , m_showColorMask(false)
-    , m_threshFrac(.02f)
-    , m_dopplerClusterExpand(2.0f)
-    , m_bmodeClusterExpand(1.1f)
-    , m_initialModelPoints(30)
   {
-    for(s32 i=0; i<2; i++) 
-      m_colorMask[i] = cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, 1);
+    ADD_BOOL_PARAMETER(m_showColorMask, "Show Mask", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, false);
+    ADD_FLOAT_PARAMETER(m_threshFrac, "Threshold Fraction", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, .02, 0.0, 1.0, 0.01);
+    ADD_FLOAT_PARAMETER(m_dopplerClusterExpand, "Doppler Cluster Expansion", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 2.0f, 0.0f, 100.0f, 0.1f);
+    ADD_FLOAT_PARAMETER(m_bmodeClusterExpand, "Bmode Cluster Expansion", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 1.1f, 0.0f, 100.0f, 0.1f);
+    ADD_INT_PARAMETER(m_initialModelPoints, "Initial Model Points", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 30, 1, 100, 1);
+    ADD_ENUM_PARAMETER(m_displayMode, "Display Type", CALLBACK_POINTER(onSetDisplayMode, NeedleSegmenter), this, QtEnums::DisplayModality::DM_BPOST32, "DisplayModality");
 
-    m_disImage = cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, 4);
+    if(width > 0 && height > 0) {
+      for(s32 i=0; i<2; i++) 
+        m_colorMask[i] = cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, 1);
+
+      m_disImage = cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, 4);
+    } else {
+      for(s32 i=0; i<2; i++) 
+        m_colorMask[i] = NULL;
+
+      m_disImage = NULL;
+    }
+
 
     InitZeroLut();
-
-    m_type = QtEnums::DisplayModality::DM_BPOST32;
   }
 
   NeedleSegmenter::~NeedleSegmenter()
@@ -729,6 +738,39 @@ namespace Nf
       cvReleaseImage(&m_colorMask[1]);
     if(m_disImage)
       cvReleaseImage(&m_disImage);
+  }
+
+  void NeedleSegmenter::Initialize(s32 width, s32 height)
+  {
+    for(s32 i=0; i<2; i++) {
+      if(m_colorMask[i] != NULL)
+        cvReleaseImage(&m_colorMask[i]);
+      m_colorMask[i] = cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, 1);
+    }
+
+    if(m_disImage != NULL)
+      cvReleaseImage(&m_disImage);
+    m_disImage = cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, 4);
+
+  }
+
+  void NeedleSegmenter::onSetDisplayMode()
+  {
+    if(m_displayMode->GetValue() != QtEnums::DM_BPOST8 && m_displayMode->GetValue() != QtEnums::DM_BPOST32)
+      m_displayMode->SetValue(QtEnums::DM_BPOST32);
+
+    onParamChange();
+  }
+
+  void NeedleSegmenter::onParamChange()
+  {
+    if(m_update)
+      m_update->onUpdate();
+  }
+
+  bool NeedleSegmenter::IsInit()
+  {
+    return m_colorMask[0] != NULL && m_colorMask[1] != NULL && m_disImage != NULL;
   }
 
 
@@ -772,13 +814,13 @@ namespace Nf
       cvSetImageROI(colorMask, SquareiToCvRect(rects[0][i]));
       cvSetImageROI(bmode, SquareiToCvRect(rects[0][i]));
       cvCalcHist(&bmode, hist, 0);
-      thresholds[i] = calcThresh(hist, m_threshFrac);
+      thresholds[i] = calcThresh(hist, m_threshFrac->GetValue());
       cvInRangeS(bmode, cvScalar(thresholds[i]), cvScalar(255), colorMask);
       cvResetImageROI(colorMask);
       cvResetImageROI(bmode);
     }
     cvReleaseHist(&hist);
-    if(m_showColorMask)
+    if(m_showColorMask->GetValue())
       B82BGRA(colorMask, m_disImage);
   }
 
@@ -791,6 +833,8 @@ namespace Nf
 
   void NeedleSegmenter::ProcessColor(const IplImage *color, IplImage *bmode, const ImageCoordTransform *transform)
   {
+    m_dopplerCentroid.segments.clear();
+    m_frame.segments.clear();
 
     //Mask color
     MaskColor(m_colorMask[0], color);
@@ -798,20 +842,24 @@ namespace Nf
     //Filter out noise less than 7
     cvInRangeS(m_colorMask[0], cvScalar(7), cvScalar(255), m_colorMask[1]);
 
-    if(m_type == QtEnums::DM_BPOST8 && !m_showColorMask)
+    if(m_displayMode->GetValue() == QtEnums::DM_BPOST8 && !m_showColorMask->GetValue())
       B82BGRA(bmode, m_disImage);
-    else if(m_type == QtEnums::DM_BPOST32 && !m_showColorMask)
+    else if(m_displayMode->GetValue() == QtEnums::DM_BPOST32 && !m_showColorMask->GetValue())
       cvCopyImage(color, m_disImage);
     else
       B82BGRA(m_colorMask[0], m_disImage);
+
+    if(false) {
+      cvSaveImage("C:/Joey/test.bmp", m_disImage);
+    }
 
     //Compute Doppler Centroid.  We need this for:
     // 1) Initial model
     // 2) Scoring of b-mode candidates
     CvMoments moment;
     cvMoments(m_colorMask[0], &moment);
-	if(moment.m00 == 0)
-		return;
+    if(moment.m00 == 0)
+      return;
 
     Vec2f centroidComp = Vec2f((f32)(moment.m10/moment.m00), (f32)(moment.m01/moment.m00));
     Vec2f centroid = dopplerCentroid(m_colorMask[0]);//Vec2f((f32)(moment.m10/moment.m00), (f32)(moment.m01/moment.m00));
@@ -835,7 +883,7 @@ namespace Nf
     //find Expand and Cluster Contour Rects based on Color Doppler
     // this gives a first stage idea of where the needle is
     std::vector < Squarei > rects[2];
-    rects[0] = findExpandAndClusterContours(m_colorMask[1], m_dopplerClusterExpand, true, false);
+    rects[0] = findExpandAndClusterContours(m_colorMask[1], m_dopplerClusterExpand->GetValue(), true, false);
 
     //big rect is used for later scoring
     Squarei bigRect(Vec2i(0,0), Vec2i(0,0), 0);
@@ -871,7 +919,7 @@ namespace Nf
       }
 
       //Now find, expand, and cluster contours in bmode thresholded image
-      rects[1] = findExpandAndClusterContours(m_colorMask[1], m_bmodeClusterExpand, false, true);
+      rects[1] = findExpandAndClusterContours(m_colorMask[1], m_bmodeClusterExpand->GetValue(), false, true);
 
       analyzeImage = bmode;
 
@@ -885,6 +933,8 @@ namespace Nf
     } else {
       analyzeImage = m_colorMask[1];
     }
+
+    cvDrawCircle(m_disImage, cvPoint(npt.imagePoint.x, npt.imagePoint.y), 5, cvScalar(255, 255, 0), 2);
 
     CvRect rect;
 
@@ -955,10 +1005,21 @@ namespace Nf
     }
 
     if(false) {
-      cvSaveImage("C:/test.bmp", m_disImage);
+      cvSaveImage("C:/Joey/test.bmp", m_disImage);
     }
 
     m_frame.used = 0;
+  }
+
+  void NeedleSegmenter::GetSegmentationResults(NeedleFrame &bmode, NeedleFrame &doppler)
+  {
+    bmode = m_frame;
+    doppler = m_dopplerCentroid;
+  }
+
+  IplImage *NeedleSegmenter::GetDisplayImage() const
+  {
+    return cvCloneImage(m_disImage);
   }
 
   IplImage * NeedleSegmenter::UpdateModel(PolyCurve *model, IplImage *doppler, IplImage *bmode, 
@@ -972,7 +1033,7 @@ namespace Nf
     if(!m_mainModelInit) {
       m_initialModel.AddNeedleFrame(m_dopplerCentroid);
     }
-    if(initSize >= m_initialModelPoints && !m_mainModelInit) {
+    if(initSize >= m_initialModelPoints->GetValue() && !m_mainModelInit) {
       m_model.SetInitialModel(&m_initialModel.GetModel());
       m_mainModelInit = true;
     }

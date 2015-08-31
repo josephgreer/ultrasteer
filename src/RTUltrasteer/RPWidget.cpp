@@ -57,6 +57,7 @@ namespace Nf
   std::vector < QVTKWidget * > RPWidget::GetChildWidgets()
   {
     std::vector < QVTKWidget * > res = m_usVis->GetRepaintList();
+    res.push_back(m_planeVis.get());
     res.push_back(m_imageViewer.get());
     return res;
   }

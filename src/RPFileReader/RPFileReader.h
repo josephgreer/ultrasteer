@@ -21,6 +21,7 @@ namespace Nf
     RPF_COLOR_CVV_VAR = 2049,
     RPF_GPS = 131072,
     RPF_GPS2 = 262144,
+    RPF_DIS = 16777216,
   } RP_TYPE;
 
   static const std::string RP_FILE_TYPES[] = {
@@ -150,6 +151,7 @@ namespace Nf
     IplImage *color;
     IplImage *sig;
     IplImage *var;
+    IplImage *dis;
     GPS_Data gps;
     GPS_Data gps2;
     Vec2d mpp;
@@ -162,6 +164,7 @@ namespace Nf
       color = NULL;
       sig = NULL;
       var = NULL;
+      dis = NULL;
       mpp = Vec2d(0,0);
       gps.valid = 0;
       gps2.valid = 0;
@@ -174,6 +177,7 @@ namespace Nf
       this->color = rp.color;
       this->sig = rp.sig;
       this->var = rp.var;
+      this->dis = rp.dis;
       this->mpp = rp.mpp;
       this->gps = rp.gps;
       this->gps2 = rp.gps2;
@@ -186,6 +190,7 @@ namespace Nf
       this->color = rhs.color;
       this->sig = rhs.sig;
       this->var = rhs.var;
+      this->dis = rhs.dis;
       this->mpp = rhs.mpp;
       this->gps = rhs.gps;
       this->gps2 = rhs.gps2;
@@ -276,6 +281,8 @@ namespace Nf
         rv.sig = cvCloneImage(this->sig);
       if(this->var)
         rv.var = cvCloneImage(this->var);
+      if(this->dis)
+        rv.dis = cvCloneImage(this->dis);
 
       rv.gps = this->gps;
       rv.gps2 = this->gps2;
@@ -308,6 +315,8 @@ namespace Nf
         return this->b8;
       else if(type == RPF_BPOST32 || type == RPF_COLOR)
         return this->color;
+      else if(type == RPF_DIS)
+        return this->dis;
       return NULL;
     }
 
@@ -317,6 +326,8 @@ namespace Nf
         return this->b8;
       else if(type == RPF_BPOST32 || type == RPF_COLOR)
         return this->color;
+      else if(type == RPF_DIS)
+        return this->dis;
       return NULL;
     }
 
@@ -330,6 +341,8 @@ namespace Nf
         cvReleaseImage(&this->sig);
       if(this->var)
         cvReleaseImage(&this->var);
+      if(this->dis)
+        cvReleaseImage(&this->dis);
     }
   };
 

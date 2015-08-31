@@ -247,7 +247,7 @@ namespace Nf
       Q_ENUMS(ComPorts)
       Q_ENUMS(DisplayModality)
       Q_ENUMS(Transducer)
-      Q_ENUMS(EstimatorCalibrationModes)
+      Q_ENUMS(EstimatorOperationMode)
 #else
   class QtEnums
   {
@@ -275,7 +275,8 @@ namespace Nf
     {
       DM_NULL_TYPE = -1,
       DM_BPOST8 = 4,
-      DM_BPOST32 = 8
+      DM_BPOST32 = 8,
+      DM_DIS = 16777216,
     };
 
     enum Transducer
@@ -284,12 +285,13 @@ namespace Nf
       LINEAR = 1
     };
 
-    enum EstimatorCalibrationModes
+    enum EstimatorOperationMode
     {
-      ECM_NONE = 0,
-      ECM_NEEDLE_TIP = 1,
-      ECM_CURVATURE_GPS = 2,
-      ECM_CURVATURE_US = 3
+      EOM_NONE = 0,
+      EOM_CALIB_NEEDLE_TIP = 1,
+      EOM_CALIB_CURVATURE_GPS = 2,
+      EOM_CALIB_CURVATURE_US = 3,
+      EOM_ESTIMATE = 4,
     };
   };
 

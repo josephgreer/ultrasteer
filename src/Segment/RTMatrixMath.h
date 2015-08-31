@@ -265,6 +265,11 @@ namespace Nf
       return Vec3<T>(this->x/b, this->y/b, this->z/b);
     }
 
+    template < class U >
+    operator Vec3<U>() const 
+    {
+      return Vec3<U>((U)this->x, (U)this->y, (U)this->z);
+    }
 
     Vec3<T> cross(const Vec3<T> &b) const
     {

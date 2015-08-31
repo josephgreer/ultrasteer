@@ -15,22 +15,55 @@ namespace Nf
     rp.gps2.pose = Matrix44d::FromOrientationAndTranslation(tipFrame, gps2Offset).ToCvMat();
   }
 
+
+  class RPCoordTransform : public ImageCoordTransform
+  {
+  protected:
+    Vec2d m_mpp;
+    Vec2d m_origin;
+    Matrix44d m_cal;
+    GPS_Data m_gps;
+
+  public:
+    RPCoordTransform(const Vec2d &mpp, const Vec2d &origin, const Matrix44d &cal, const GPS_Data &gps)
+      : m_mpp(mpp)
+      , m_origin(origin)
+      , m_gps(gps)
+      , m_cal(cal)
+    {
+    }
+
+    Vec3d Transform(const Vec2d &image) const
+    {
+      Vec2d scale(m_mpp.x/1000.0, m_mpp.y/1000.0);
+
+      Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(m_gps.pose).GetOrientation(), m_gps.pos);
+      return rpImageCoordToWorldCoord3(image, posePos, m_cal, m_origin, scale);
+    }
+  };
+
   EstimatorFileWidget::EstimatorFileWidget(QWidget *parent)
     : RPFileWidget(parent, (USVisualizer *)new PFVisualizer(parent))
     , m_state(EFS_READY)
     , m_resultsAvailable(ERA_NONE)
+    , m_segmenter(new Nf::NeedleSegmenter(0,0,this))
   {
     ADD_ACTION_PARAMETER(m_doNeedleCalib, "Do Needle Calibration", CALLBACK_POINTER(onDoNeedleCalibrationPushed, EstimatorFileWidget), this, false);
-    ADD_ENUM_PARAMETER(m_calibMode, "Calibration Mode", CALLBACK_POINTER(onSetCalibMode, EstimatorFileWidget), this, QtEnums::EstimatorCalibrationModes::ECM_NONE, "EstimatorCalibrationModes");
+    ADD_ENUM_PARAMETER(m_operationMode, "Operation Mode", CALLBACK_POINTER(onSetOperationMode, EstimatorFileWidget), this, QtEnums::EstimatorOperationMode::EOM_NONE, "EstimatorOperationMode");
     ADD_SAVE_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Save Path", NULL, this, "C:/Joey/Data/TipCalibration/tipCalib.mat", "(*.mat)");
     ADD_OPEN_FILE_PARAMETER(m_tipCalibPathLoad, "Presaved Tip Calibration",CALLBACK_POINTER(onTipCalibPathChanged, EstimatorFileWidget), this, "C:/Joey/Data/TipCalibration/tipCalib.mat", "(*.mat)");
     ADD_SAVE_FILE_PARAMETER(m_pointsDataPath, "Point History Save Path", NULL, this, "C:/Joey/Data/TipCalibration/tipHistory.mat", "(*.mat)");
     ADD_OPEN_FILE_PARAMETER(m_pointsDataPathLoad, "Presaved Point History", CALLBACK_POINTER(onPointsDataPathChanged, EstimatorFileWidget), this, "C:/Joey/Data/TipCalibration/tipHistory.mat", "(*.mat)");
     ADD_ACTION_PARAMETER(m_clearCalibrationData, "Clear Calibration Data", CALLBACK_POINTER(onClearCalibrationData, EstimatorFileWidget), this, false);
+    ADD_ACTION_PARAMETER(m_clearEstimatorData, "Clear Estimator Data", CALLBACK_POINTER(onClearEstimatorData, EstimatorFileWidget), this, false);
     ADD_ACTION_PARAMETER(m_clearTipCalibration, "Clear Tip Calibration", CALLBACK_POINTER(onClearTipCalibration, EstimatorFileWidget), this, false);
+    ADD_BOOL_PARAMETER(m_collectMeasurements, "Collect US Measurements", NULL, this, false);
+    ADD_CHILD_COLLECTION(m_segmenter.get());
 
     m_calibrationPointsTip = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(0, 1, 0)));
     m_calibrationPointsCurvature = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 1, 0)));
+
+    m_measurementPoints = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 0, 1)));
 
     m_calibTip = std::tr1::shared_ptr < SphereVisualizer > (new SphereVisualizer(Vec3d(0,0,0), 1));
     m_calibTip->SetColor(Vec3d(1,0,0));
@@ -40,6 +73,7 @@ namespace Nf
 
     m_planeVis->GetRenderer()->AddActor(m_calibrationPointsTip->GetActor());
     m_planeVis->GetRenderer()->AddActor(m_calibrationPointsCurvature->GetActor());
+    m_planeVis->GetRenderer()->AddActor(m_measurementPoints->GetActor());
     onUpdateFile();
   }
 
@@ -78,6 +112,24 @@ namespace Nf
       {
         break;
       }
+    case EFS_ESTIMATE:
+      {
+        if(!m_segmenter->IsInit())
+          m_segmenter->Initialize(m_data.b8->width, m_data.b8->height);
+
+        RPCoordTransform transform(m_data.mpp, m_data.origin, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), m_data.gps);
+        m_segmenter->ProcessColor(m_data.color, m_data.b8, &transform);
+        m_data.dis = m_segmenter->GetDisplayImage();
+
+        if(m_collectMeasurements->GetValue()) {
+          NeedleFrame doppler, bmode;
+          m_segmenter->GetSegmentationResults(bmode, doppler);
+          if(doppler.segments.size() > 0)
+            m_measurementPoints->AddPoint(doppler.segments[0].pts[0].point);
+
+        }
+        break;
+      }
     default: 
       {
         throw std::runtime_error("EstimatorFileWidget: unknown state\n");
@@ -105,6 +157,7 @@ namespace Nf
     case EFS_NEEDLE_TIP_CALIB:
     case EFS_NEEDLE_CURVATURE_CALIB_GPS:
     case EFS_NEEDLE_CURVATURE_CALIB_US:
+    case EFS_ESTIMATE:
       {
         if(validFile)
           m_state = EFS_PRIMED;
@@ -125,6 +178,11 @@ namespace Nf
     }
   }
 
+  void EstimatorFileWidget::onUpdate()
+  {
+    onUpdateFrame();
+  }
+
   void EstimatorFileWidget::onClearCalibrationData()
   {
     m_ncCalibrator.ClearPoints();
@@ -142,6 +200,14 @@ namespace Nf
     m_planeVis->repaint();
     m_usVis->repaint();
   }
+
+  void EstimatorFileWidget::onClearEstimatorData()
+  {
+    m_measurementPoints->ClearPoints();
+
+    m_planeVis->repaint();
+    m_usVis->repaint();
+  }
   
   void EstimatorFileWidget::onClearTipCalibration()
   {
@@ -153,7 +219,7 @@ namespace Nf
     m_usVis->repaint();
   }
 
-  void EstimatorFileWidget::onSetCalibMode()
+  void EstimatorFileWidget::onSetOperationMode()
   {
     switch(m_state)
     {
@@ -164,19 +230,20 @@ namespace Nf
     case EFS_PRIMED:
     case EFS_NEEDLE_CURVATURE_CALIB_GPS:
     case EFS_NEEDLE_CURVATURE_CALIB_US:
+    case EFS_ESTIMATE:
       {
         m_state = EFS_NEEDLE_TIP_CALIB;
 
         m_planeVis->repaint();
 
-        switch(m_calibMode->GetValue()) 
+        switch(m_operationMode->GetValue()) 
         {
-        case QtEnums::EstimatorCalibrationModes::ECM_NONE: 
+        case QtEnums::EstimatorOperationMode::EOM_NONE: 
           {
             m_state = EFS_PRIMED;
             break;
           }
-        case QtEnums::EstimatorCalibrationModes::ECM_NEEDLE_TIP:
+        case QtEnums::EstimatorOperationMode::EOM_CALIB_NEEDLE_TIP:
           {
             vtkSmartPointer < vtkRenderWindowInteractor > interactor = m_imageViewer->GetWindowInteractor();
             vtkSmartPointer < vtkPointPicker > picker = vtkPointPicker::New();
@@ -189,12 +256,12 @@ namespace Nf
             m_state = EFS_NEEDLE_TIP_CALIB;
             break;
           }
-        case QtEnums::EstimatorCalibrationModes::ECM_CURVATURE_GPS:
+        case QtEnums::EstimatorOperationMode::EOM_CALIB_CURVATURE_GPS:
           {
             m_state = EFS_NEEDLE_CURVATURE_CALIB_GPS;
             break;
           }
-        case QtEnums::EstimatorCalibrationModes::ECM_CURVATURE_US:
+        case QtEnums::EstimatorOperationMode::EOM_CALIB_CURVATURE_US:
           {
             vtkSmartPointer < vtkRenderWindowInteractor > interactor = m_imageViewer->GetWindowInteractor();
             vtkSmartPointer < vtkPointPicker > picker = vtkPointPicker::New();
@@ -205,6 +272,11 @@ namespace Nf
             interactor->SetInteractorStyle(style);
 
             m_state = EFS_NEEDLE_CURVATURE_CALIB_US;
+            break;
+          }
+        case QtEnums::EstimatorOperationMode::EOM_ESTIMATE: 
+          {
+            m_state = EFS_ESTIMATE;
             break;
           }
         default:
@@ -256,6 +328,8 @@ namespace Nf
         UpdateCalibTipVis();
         break;
       }
+    case EFS_ESTIMATE:
+      break;
     default: 
       {
         throw std::runtime_error("EstimatorFileWidget: unknown state\n");
@@ -325,6 +399,10 @@ namespace Nf
         m_planeVis->repaint();
         break;
       }
+    case EFS_ESTIMATE:
+      {
+        break;
+      }
     default: 
       {
         throw std::runtime_error("EstimatorFileWidget: unknown state\n");
@@ -389,6 +467,7 @@ namespace Nf
     , m_saveDataWidget(new SaveDataWidget(parent))
     , m_bottomRow(new QGridLayout(parent))
     , m_tpHistory(std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 1, 0))))
+    , m_segmenter(new NeedleSegmenter())
   {
     m_bottomRow->addWidget(m_hwWidget.get(), 0, 0);
     m_bottomRow->addWidget(m_saveDataWidget.get(), 0, 1, Qt::Alignment(Qt::AlignTop));
@@ -410,6 +489,7 @@ namespace Nf
     ADD_ACTION_PARAMETER(m_clearPastPoints, "Clear Past Tip Points", CALLBACK_POINTER(onClearPastPoints, EstimatorStreamingWidget), this, false);
 
     ADD_CHILD_COLLECTION(m_hwWidget.get());
+    ADD_CHILD_COLLECTION(m_segmenter.get());
 
     Connect(m_saveDataWidget->ui.saveDataButton, SIGNAL(clicked()), SLOT(onSaveDataClicked()));
   }
@@ -432,8 +512,8 @@ namespace Nf
     m_saveDataWidget->SetEnabled(init);
     switch(m_state) {
     case ES_READY:
+      break;
     case ES_PRIMED:
-      m_state = ES_PRIMED;
       break;
     case ES_RECORDING1:
     case ES_RECORDING2:
@@ -523,6 +603,12 @@ namespace Nf
     d.u = m_u;
     switch(m_state) {
     case ES_READY:
+      {
+        m_segmenter->Initialize(rp.b8->width, rp.b8->height);
+        m_state = ES_PRIMED;
+        m_saveDataWidget->SaveDataFrame(d);
+        break;
+      }
     case ES_PRIMED: 
       {
         m_saveDataWidget->SaveDataFrame(d);

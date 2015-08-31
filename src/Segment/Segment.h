@@ -135,6 +135,12 @@ namespace Nf
     }
   };
 
+  class Updateable
+  {
+    public:
+      virtual void onUpdate() { return; }
+  };
+
   class NeedleSegmenter : public ParameterCollection
   {
   protected:
@@ -143,8 +149,7 @@ namespace Nf
     CurveFitter m_model;
     IplImage *m_colorMask[2];
     IplImage *m_disImage; //Doppler Display Image
-
-    QtEnums::DisplayModality m_type;
+    Updateable *m_update;
 
     u8 m_zeroLut[512];
     u8 *m_zeroLutBase;
@@ -153,19 +158,34 @@ namespace Nf
     NeedleFrame m_frame;
 
     //parameters
-    bool m_showColorMask;
-    f32 m_dopplerClusterExpand;
-    f32 m_bmodeClusterExpand;
-    f32 m_threshFrac;
-    s32 m_initialModelPoints;
+    
+    //displayMode
+    std::tr1::shared_ptr < Nf::EnumParameter > m_displayMode;
+    virtual void onSetDisplayMode();
+    CLASS_CALLBACK(onSetDisplayMode, NeedleSegmenter);
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_showColorMask;
+    std::tr1::shared_ptr < Nf::FloatParameter > m_dopplerClusterExpand;
+    std::tr1::shared_ptr < Nf::FloatParameter > m_bmodeClusterExpand;
+    std::tr1::shared_ptr < Nf::FloatParameter > m_threshFrac;
+    std::tr1::shared_ptr < Nf::IntParameter > m_initialModelPoints;
+    virtual void onParamChange();
+    CLASS_CALLBACK(onParamChange, NeedleSegmenter);
 
   public:
-    NeedleSegmenter(s32 width, s32 height);
+    NeedleSegmenter(s32 width = 0, s32 height = 0, Updateable *m_update = NULL);
     ~NeedleSegmenter();
-    void ProcessColor(const IplImage *color, IplImage *bmode, const ImageCoordTransform *transform);
-	//Returned IplImage is an image meant for display.
-	//Caller is not responsible for freeing the returned image.
+    void Initialize(s32 width, s32 height);
+    bool IsInit();
+    void ProcessColor(const IplImage *color, IplImage *bmode, const ImageCoordTransform *transform); 
+
+    void GetSegmentationResults(NeedleFrame &bmode, NeedleFrame &doppler);
+       
+    //Returned IplImage is an image meant for display.
+    //Caller is not responsible for freeing the returned image.
     IplImage * UpdateModel(PolyCurve *model, IplImage *doppler, IplImage *bmode, const ImageCoordTransform *transform);
+
+    IplImage *GetDisplayImage() const;
     void InitZeroLut();
     void MaskColor(IplImage *dst, const IplImage *src);
     void ThresholdBmodeROIs(const std::vector < Squarei > rects[], IplImage *colorMask, IplImage *bmode);
