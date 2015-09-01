@@ -2,6 +2,7 @@
 #include "RTCore.h"
 #include "RPFileReader.h"
 #include "RPUlterius.h"
+#include "ParticleFilter.h"
 
 #include <iostream>
 #include <cv.h>
@@ -406,4 +407,23 @@ TEST(Math, SO3Distance)
 
  f64 dist = SO3Distance(R1,R2);
  NTrace("Dist %f\n", dist);
+}
+
+TEST(Math, LUTDist)
+{
+  using ::s32;
+  LUTDist pDopOverNeedle(PDOPOVERNEEDLEPATH);
+  LUTDist pDopNotOverNeedle(PDOPNOTOVERNEEDLEPATH);
+
+  vec xs = linspace(-200, 1000, 10000);
+  vec poverneedle = zeros(xs.n_elem);
+  vec pnotoverneedle = zeros(xs.n_elem);
+  for(s32 i=0; i<xs.n_elem; i++) {
+    poverneedle(i) = pDopOverNeedle.P(xs(i));
+    pnotoverneedle(i) = pDopNotOverNeedle.P(xs(i));
+  }
+
+  xs.save("C:/Joey/Data/probDist/testXs.mat", raw_ascii);
+  poverneedle.save("C:/Joey/Data/probDist/testPOverNeedle.mat", raw_ascii);
+  pnotoverneedle.save("C:/Joey/Data/probDist/testPNotOverNeedle.mat", raw_ascii);
 }

@@ -10,6 +10,8 @@
 
 namespace Nf
 {
+#define PDOPOVERNEEDLEPATH "C:/Joey/Data/probDist/pdopoverneedle.dat"
+#define PDOPNOTOVERNEEDLEPATH "C:/Joey/Data/probDist/pdopnotoverneedle.dat"
 
   struct Measurement
   {
@@ -50,12 +52,26 @@ namespace Nf
     f64 particleMuRho;                        //  mu rho for particle propagation
     f64 usw;                                  //  width of ultrasound frame in mm
     f64 ush;                                  //  height of ultraosund frame in mm
-    f64 sigA;                                 //  for outlier smooth step sigmoid 1/(1+exp(-A*(t-c))
-    f64 sigC;                                 //  for outlier smooth step sigmoid 1/(1+exp(-A*(t-c))
+    f64 sigB0;                                 //  for outlier smooth step sigmoid 1/(1+exp(-B0 - B1*x)
+    f64 sigB1;                                 //  for outlier smooth step sigmoid 1/(1+exp(-B0 - B1*x)
     s32 n;                                    //  how many points do we use for creating needle "flagella"
     f64 neff;                                 //  resample if the number of effective particles drops below this fraction
  
     PFParams();
+  };
+
+  // Implements distribution from lookup table specified by path
+  class LUTDist
+  {
+  protected:
+    arma::vec m_p;
+    arma::vec m_x;
+    f64 max_x;
+    f64 min_x;
+
+  public:
+    LUTDist(const char *path);
+    f64 P(f64 x);
   };
 
   class PFFullStateParams : public PFParams
@@ -123,6 +139,8 @@ namespace Nf
   protected:
     s32 m_nParticles;
     arma::mat m_w;                          //weights [w1 ... wn] wi \in R, m_w \in R^(1xn)
+    LUTDist m_pDopOverNeedle;
+    LUTDist m_pDopNotOverNeedle;
 
   public:
     //Constructor

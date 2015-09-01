@@ -10,7 +10,7 @@ params.doParticleFilter = 1;
 params.doMeasurement = 1;
 params.np = 500;
 params.n = 15;
-params.simulationTime = 20;
+params.simulationTime = 12;
 params.particleInitTime = 2;
 params.drawParticlePos = 1;
 params.drawParticleOrientation = 0;
@@ -41,7 +41,7 @@ params.measurementOffsetSigma = diag([params.mpp*5*1e-3 params.mpp*5*1e-3])
 %params.sigmaVelocity = 50;
 %params.sigmaRho = 0;
 %params.doMeasurement = 0;
-nTrials = 1;
+nTrials = 5;
 
 posErrors = [];
 orErrors = [];

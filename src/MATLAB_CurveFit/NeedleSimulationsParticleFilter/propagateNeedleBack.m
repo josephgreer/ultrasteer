@@ -39,6 +39,7 @@ for i=2:length(u)
     
     xs{i}.q = quatmult(xs{i}.q, AxisAngleToQuat(pi*[0; 1; 0]));
     xs{i}.w = x.w;
-    uc = u{i-1};
+    uc = u{i};
+    uc.dtheta = u{i-1}.dtheta;
 end
 end

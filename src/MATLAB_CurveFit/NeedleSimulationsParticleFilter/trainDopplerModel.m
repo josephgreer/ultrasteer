@@ -7,7 +7,7 @@ end
 
 addpath('../LabelData/');
 
-basePath = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\8_24_15\Trial3\Insertion\';
+basePath = 'C:\Joey\Data\8_24_15\Trial3\Insertion\';
 dop = fopen(strcat(basePath,'scan.b32'));
 dopHeader = ReadHeader(dop);
 
@@ -54,25 +54,60 @@ for i=1:nBagging
     cOffNeedles = offNeedles;
     
     X = vertcat(data(cOnNeedles,1), data(cOffNeedles,1));
-    Y = vertcat(2*ones(numObs, 1), ones(numObs,1));
+    Y = vertcat(ones(size(cOnNeedles)), 2*ones(size(cOffNeedles)));
     B = mnrfit(X,Y);
     Bs = horzcat(Bs,B);
 end
 B = mean(Bs,2)
 figure;
 vals = mnrval(B,[-10:.1:100]');
-plot([-10:.1:100],vals);
+plot([-10:.1:100],vals);%/sum(vals(:,1)));
+
+%fsolve(@(x)(log((1-x)/x)+B(1)), 0.5)
+
+%data(offNeedles,1) = 1;
 
 figure;
-[Fpos Xipos] = ksdensity(data(onNeedles,1),'function','cdf');%,'support', 'positive');
+[Fpos Xipos] = ksdensity(data(onNeedles,1),'bandwidth',70);
 plot(Xipos, Fpos)
 title('p(d | on needle)');
-figure;
-[Fneg Xineg] = ksdensity(data(offNeedles,1),'function','cdf');
-plot(Xineg, 1-Fneg)
+hold on;
+[Fneg Xineg] = ksdensity(data(offNeedles,1), 'bandwidth',20);
+plot(Xineg, Fneg, 'r');
 title('p(d | off needle)');
 
+load('C:/Joey/Data/probDist/testXs.mat', '-ascii');
+load('C:/Joey/Data/probDist/testPOverNeedle.mat', '-ascii');
+load('C:/Joey/Data/probDist/testPNotOverNeedle.mat', '-ascii');
 figure;
-parmhat = lognfit(data(onNeedles,1))
-xvals = [0:.1:1000];
-plot(xvals, lognpdf(xvals, parmhat(1),parmhat(2)));
+plot(testXs, testPOverNeedle);
+hold on;
+plot(testXs, testPNotOverNeedle,'r');
+
+% 
+% bernoulliParam = 0.5;
+% 
+% Fneg = zeros(size(Fpos));
+% %calculate P(dop|not over)/P(dop|over)
+% for i=1:length(Xipos)
+%     expVal = -B'*[1; Xipos(i)];
+%     expVal = expVal-log((1-bernoulliParam)/bernoulliParam);
+%     ratio = fsolve(@(x)(expVal-log(x)),0.1);
+%     Fneg(i) = ratio*Fpos(i);
+%     yep = 0;
+% end
+% 
+% figure;
+% plot(Xipos, Fpos);
+% hold on;
+% Fneg = Fneg/sum(Fneg);
+% plot(Xipos, Fneg, 'r');
+% % 
+% figure;
+% parmhat = lognfit(data(onNeedles,1))
+% xvals = [0:.1:1000];
+% plot(xvals, lognpdf(xvals, parmhat(1),parmhat(2)));
+% parmhat = lognfit(data(offNeedles,1))
+% hold on;
+% xvals = [0:.1:1000];
+% plot(xvals, lognpdf(xvals, parmhat(1),parmhat(2)),'r');

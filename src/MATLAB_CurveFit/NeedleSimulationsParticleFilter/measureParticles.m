@@ -125,7 +125,7 @@ for i=1:length(xp)
                 
                 duv = suv-measurement.uv;
                 
-                pin = sigmf(measurement.doppler, [params.sigA, params.sigC]);
+                pin = sigmf(measurement.doppler, [params.sigB0, params.sigB1]);
                 p_uvx = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.p1.uvOffsetSigma),...,
                     a,b) + ...
                     (1-pin)*(1/(params.ush*params.usw));
@@ -220,7 +220,7 @@ for i=1:length(xp)
                 
                 duv = suv-measurement.uv;
                 
-                pin = sigmf(measurement.doppler, [params.sigA, params.sigC]);
+                pin = sigmf(measurement.doppler, [params.sigB0, params.sigB1]);
                 p_uvx = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.measurementOffsetSigma),...,
                     a,b) + ...
                     (1-pin)*(1/(params.ush*params.usw));
@@ -370,7 +370,7 @@ for i=1:params.np
                 
                 duv = suv-measurement.uv;
                 
-                pin = sigmf(measurement.doppler, [params.sigA, params.sigC]);
+                pin = sigmf(measurement.doppler, [params.sigB0, params.sigB1]);
                 p_uvx = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.measurementOffsetSigma),...,
                     a,b) + ...
                     (1-pin)*(1/(params.ush*params.usw));
@@ -466,7 +466,7 @@ for i=1:params.np
                 a = suv-[params.usw;params.ush]; % if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
                 b = suv; % if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0)
                 
-                pin = sigmf(measurement.doppler, [params.sigA, params.sigC]);
+                pin = sigmf(measurement.doppler, [params.sigB0, params.sigB1]);
                 p_uvx = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.measurementOffsetSigma),...,
                     a,b) + ...
                     (1-pin)*(1/(params.ush*params.usw));

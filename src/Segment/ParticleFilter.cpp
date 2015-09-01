@@ -49,8 +49,8 @@ namespace Nf
     usw = mpp*630*1e-3;
     ush = mpp*480*1e-3;
 
-    sigA = 1;
-    sigC = 6;
+    sigB0 = -2.37901785297659;
+    sigB1 = 0.0534736687985484;
 
     n = 50;
     neff = 0.5;
@@ -131,7 +131,9 @@ namespace Nf
 
       xc.R = (mat33)(xc.R*Ry(PI));
       res.push_back(xc);
-      uc = u[i-1];
+      uc = u[i];
+      uc.dtheta = u[i-1].dtheta;
+      dt = dts(i);
     }
 
     return res;
@@ -171,9 +173,9 @@ namespace Nf
     return res;
   }
 
-  static f64 sigmoid(f64 x, f64 a, f64 c)
+  static f64 sigmoid(f64 x, f64 b0, f64 b1)
   {
-    return 1/(1+exp(-a*(x-c)));
+    return 1/(1+exp(-b0-x*b1));
   }
 
   //X = [x1 x2 ... xn] x_i \in R^3
@@ -280,12 +282,38 @@ namespace Nf
   //////////////////////////////////////////////////////////////////////////////////////////
   /// End Helper Functions
   //////////////////////////////////////////////////////////////////////////////////////////
+  
+  //////////////////////////////////////////////////////////////////////////////////////////
+  /// Begin LUT Distribution function
+  //////////////////////////////////////////////////////////////////////////////////////////
+  LUTDist::LUTDist(const char *path)
+  {
+    arma::mat temp;
+    temp.load(path);
+
+    m_x = (vec)temp.row(0).t();
+    m_p = (vec)temp.row(1).t();
+  }
+
+  f64 LUTDist::P(f64 x)
+  {
+    vec dist = abs(m_x-ones(m_x.n_elem)*x);
+    u32 minIdx = 0;
+    dist.min(minIdx);
+    return m_p(minIdx);
+  }
+  //////////////////////////////////////////////////////////////////////////////////////////
+  /// End LUT Distribution function
+  //////////////////////////////////////////////////////////////////////////////////////////
+
 
   //////////////////////////////////////////////////////////////////////////////////////////
   /// Begin Basic Particle Filter
   //////////////////////////////////////////////////////////////////////////////////////////
   ParticleFilter::ParticleFilter(s32 nParticles, const char *name, const PFParams *p)
     : m_nParticles(nParticles)
+    , m_pDopOverNeedle(PDOPOVERNEEDLEPATH)
+    , m_pDopNotOverNeedle(PDOPNOTOVERNEEDLEPATH)
   {
     m_w = ones(1,m_nParticles)/(f64)m_nParticles;
   }
@@ -485,12 +513,12 @@ namespace Nf
             duv = suv-m[0].uv.col(0);
 
             // calculate p(frame interesects with flagella|doppler)
-            pin = sigmoid(m[0].doppler(0,0), params->sigA, params->sigC);
+            pin = sigmoid(m[0].doppler(0,0), params->sigB0, params->sigB1);
             p_uvx = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), params->measurementOffsetSigma, a, b)+
               (1-pin)*(1/(params->ush*params->usw));
 
-            //TODO change this to sigmoid
-            p_dx = lognpdf(dop, params->onNeedleDopplerMu, params->onNeedleDopplerSigma);
+            //p(doppler | over needle)
+            p_dx = m_pDopOverNeedle.P(dop);
             offFrame = 0;
             break;
           }
@@ -500,7 +528,7 @@ namespace Nf
       // particle doesn't intersect image frame
       if(offFrame) {
         p_uvx = 1/(params->ush*params->usw);
-        p_dx = lognpdf(dop, params->offNeedleDopplerMu, params->offNeedleDopplerSigma);
+        p_dx = m_pDopNotOverNeedle.P(dop);
       }
 
       pw(0,i) = p_uvx*p_dx;
@@ -755,12 +783,12 @@ namespace Nf
             duv = suv-m[0].uv.col(0);
 
             // calculate p(frame interesects with flagella|doppler)
-            pin = sigmoid(m[0].doppler(0,0), params->sigA, params->sigC);
+            pin = sigmoid(m[0].doppler(0,0), params->sigB0, params->sigB1);
             p_uvx = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), params->measurementOffsetSigma, a, b)+
               (1-pin)*(1/(params->ush*params->usw));
 
             //TODO change this to sigmoid
-            p_dx = lognpdf(dop, params->onNeedleDopplerMu, params->onNeedleDopplerSigma);
+            p_dx = m_pDopOverNeedle.P(dop);
             offFrame = 0;
             break;
           }
@@ -770,7 +798,7 @@ namespace Nf
       // particle doesn't intersect image frame
       if(offFrame) {
         p_uvx = 1/(params->ush*params->usw);
-        p_dx = lognpdf(dop, params->offNeedleDopplerMu, params->offNeedleDopplerSigma);
+        p_dx = m_pDopNotOverNeedle.P(dop);
       }
 
       pw(0,i) = p_uvx*p_dx;
