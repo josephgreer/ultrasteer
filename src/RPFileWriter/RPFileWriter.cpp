@@ -87,6 +87,48 @@ namespace Nf
     return writeGPSDatum(m_file, &m_header, gps);
   }
 
+  static int writeNSCommand(FILE *f, const NSCommand *u)
+  {
+    assert(f != NULL);
+
+    if(fwrite(u, 1, sizeof(NSCommand), f) != sizeof(NSCommand)) 
+      printf("writeNSCommand, Failed to write command correctly\n");
+
+    return 0;
+  }
+
+
+  NSCommandWriter::NSCommandWriter(const char *path)
+  {
+    m_bytesPerDatum = sizeof(NSCommand);
+    m_file = fopen(path, "wb");
+    if(m_file == NULL)
+      throw std::runtime_error("NSCommandWriter::NSCommandWriter(): Error opening file.\n");
+  }
+    
+  NSCommandWriter::~NSCommandWriter()
+  {
+    if(m_file != NULL)
+      fclose(m_file);
+  }
+
+  s32 NSCommandWriter::Cleanup()
+  {
+    if(m_file != NULL)
+      fclose(m_file);
+    return 0;
+  }
+
+  s32 NSCommandWriter::WriteNextNSCommand(const NSCommand *u)
+  {
+    if(m_file == NULL)
+      throw std::runtime_error("NSCommandWriter::WriteNextNSCommand(): Invalid file.\n");
+
+    writeNSCommand(m_file, u);
+
+    return 0;
+  }
+
   RPFileWriter::RPFileWriter(const char *path, const RPFileHeader *header, int type)
   {
     if(type != RPF_BPOST8 && type != RPF_BPOST32 && type != RPF_COLOR) {
@@ -343,6 +385,54 @@ namespace Nf
     return 0;
   }
 
+  
+  s32 RPFileWriterCollection::AddNSCommandWriter()
+  {
+    char filename[100];
+    sprintf(filename, "%s.%s", m_path, "u");
+    
+
+    FILE *temp = fopen(filename, "rb");
+    if(temp && !m_writeOver) {
+      printf("File %s already exists.  Do you want to open? (Y/N)\n", filename);
+
+
+      bool writeOver = false;
+      bool run = true;
+      while(run) {
+        if(kbhit()) {
+          char input = getch();
+          switch(input) {
+        case 'y':
+        case 'Y':
+          writeOver = true;
+          break;
+        case 'n':
+        case 'N':
+          writeOver = false;
+          break;
+        default:
+          break;
+          }
+          run = false;
+        }
+      }
+      if(!writeOver) {
+        return  -1;
+      } else {
+        m_writeOver = true;
+      }
+    }
+    if(temp)
+      fclose(temp);
+
+
+    m_u = new NSCommandWriter(filename);
+    if(m_u == NULL)
+      throw std::runtime_error("RPFileWriterCollection::AddNSCommandWriter():  Error opening file for writing\n");
+    return 0;
+  }
+
 
   s32 RPFileWriterCollection::WriteNextRPData(const RPData *data)
   {
@@ -364,6 +454,8 @@ namespace Nf
       m_gps->WriteNextGPSDatum(&data->gps);
     if(m_gps2)
       m_gps2->WriteNextGPSDatum(&data->gps2);
+    if(m_u)
+      m_u->WriteNextNSCommand(&data->u);
 
     return 0;
   }
@@ -386,6 +478,9 @@ namespace Nf
     if(m_gps2) {
       temp.type = RPF_GPS2;
       m_gps2->Cleanup(&temp);
+    }
+    if(m_u) {
+      m_u->Cleanup();
     }
 
     return 0;

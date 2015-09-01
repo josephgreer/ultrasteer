@@ -18,6 +18,7 @@ ENDIF(VTK_FOUND)
 INCLUDE_DIRECTORIES(
 	${OPENCV_INCLUDE_DIRS} 
 	${CMAKE_CURRENT_SOURCE_DIR}/../RTUltrasteer
+	${CMAKE_CURRENT_SOURCE_DIR}/../RPFileReader
 	${CMAKE_CURRENT_SOURCE_DIR}/../../external/alglib/src
 	${CMAKE_CURRENT_SOURCE_DIR}/../../external/armadillo/include
 )

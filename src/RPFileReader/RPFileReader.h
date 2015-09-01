@@ -11,6 +11,21 @@
 
 namespace Nf
 {
+  struct NSCommand
+  {
+    f64 dutyCycle;            // duty cycle fraction \in [0,1]
+    f64 v;                    // velocity in mm/s
+    f64 dtheta;               // rotation about needle axis \in [0, 2*pi]
+    u32 tick;                 // tick count used for time measurement.
+
+    NSCommand()
+      : dutyCycle(0)
+      , v(0)
+      , dtheta(0)
+      , tick(0)
+    {}
+  };
+
   typedef enum {
     RPF_NULL_TYPE = -1,
     RPF_BPOST8 = 4,
@@ -157,6 +172,7 @@ namespace Nf
     Vec2d mpp;
     Vec2d origin;
     Squarei roi;
+    NSCommand u;
 
     RPData() 
     {
@@ -169,6 +185,7 @@ namespace Nf
       gps.valid = 0;
       gps2.valid = 0;
       origin = Vec2d(0,0);
+      u = NSCommand();
     }
 
     RPData(const RPData &rp)
@@ -182,6 +199,7 @@ namespace Nf
       this->gps = rp.gps;
       this->gps2 = rp.gps2;
       this->origin = rp.origin;
+      this->u = rp.u;
     }
 
     RPData operator=(const RPData &rhs)
@@ -195,6 +213,7 @@ namespace Nf
       this->gps = rhs.gps;
       this->gps2 = rhs.gps2;
       this->origin = rhs.origin;
+      this->u = rhs.u;
       return *this;
     }
 
@@ -288,6 +307,7 @@ namespace Nf
       rv.gps2 = this->gps2;
       rv.mpp = this->mpp;
       rv.origin = this->origin;
+      rv.u = this->u;
 
       return rv;
     }
@@ -374,6 +394,21 @@ namespace Nf
     virtual RP_TYPE GetType() = 0;
   }; 
 
+  class NSCommandReader 
+  {
+  private:
+    int m_idx;
+    FILE *m_file;
+    int m_bytesPerDatum;
+  public:
+    NSCommandReader(const char *path);
+    virtual ~NSCommandReader();
+
+    NSCommand GetNextNSCommand();
+    NSCommand GetPreviousNSCommand();
+    NSCommand GetNSCommand(s32 frame);
+  };
+
   class RPFileReader : RPReader {
   private:
     int m_idx;
@@ -408,6 +443,7 @@ namespace Nf
     void AddReader(RP_TYPE type, RPReader * reader);
     void AddGPSReader(RPGPSReaderBasic *gps);
     void AddGPSReader2(RPGPSReaderBasic *gps2);
+    void AddNSCommandReader(NSCommandReader *u);
 
     RPData GetNextRPData();
     RPData GetPreviousRPData();
@@ -423,6 +459,7 @@ namespace Nf
     std::map < RP_TYPE, RPFileReader * > m_readers;
     RPGPSReader *m_gps;
     RPGPSReader *m_gps2;
+    NSCommandReader *m_u;
   };
 
 };

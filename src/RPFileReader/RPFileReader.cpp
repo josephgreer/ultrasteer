@@ -114,14 +114,14 @@ namespace Nf
     //  m[0*3+1], m[1*3+1], m[2*3+1], 0,
     //  m[0*3+2], m[1*3+2], m[2*3+2], 0,
     //  0,        0,        0,        1);
-	double me[16] = {m[0], m[1], m[2], 0, 
-					 m[3], m[4], m[5], 0, 
-					 m[6], m[7], m[8], 0, 
-					 0,    0,    0,    1};
+    double me[16] = {m[0], m[1], m[2], 0, 
+      m[3], m[4], m[5], 0, 
+      m[6], m[7], m[8], 0, 
+      0,    0,    0,    1};
 
 
-	cv::Mat(4,4,CV_64F,me).copyTo(data->pose);
-  data->pose = data->pose.t();
+    cv::Mat(4,4,CV_64F,me).copyTo(data->pose);
+    data->pose = data->pose.t();
 
     for(int i=0; i<5; i++) {
       data->offset[i] = *(double *)&raw[idx];  idx += sizeof(double);
@@ -132,6 +132,62 @@ namespace Nf
     //data->tick = std::time_tck
 
     return 0;
+  }
+
+  static int readNSCommandDatum(FILE *f, NSCommand *u)
+  {
+    if(f == NULL)
+      throw std::runtime_error("Bad file\n");
+
+    if(fread(u, 1, sizeof(NSCommand), f) != sizeof(NSCommand))
+      throw std::runtime_error("Error reading file\n");
+
+    return sizeof(NSCommand);
+  }
+
+  NSCommandReader::NSCommandReader(const char *path)
+    : m_idx(0)
+  {
+    m_file = fopen(path, "rb");
+    if(!m_file)
+      return;
+
+    m_bytesPerDatum = sizeof(NSCommand);
+  }
+
+  NSCommandReader::~NSCommandReader()
+  {
+    fclose(m_file);
+
+    m_file = NULL;
+  }
+
+  NSCommand NSCommandReader::GetNextNSCommand()
+  {
+    NSCommand u;
+    readNSCommandDatum(m_file, &u);
+    m_idx++;
+    return u;
+  }
+
+  NSCommand NSCommandReader::GetPreviousNSCommand()
+  {
+    NSCommand u;
+    m_idx--;
+    if(m_idx < 0)
+      throw std::runtime_error("NSCommand reader: invalid time index\n");
+    fseek(m_file, m_bytesPerDatum*m_idx, SEEK_SET);
+    readNSCommandDatum(m_file, &u);
+    return u;
+  }
+
+  NSCommand NSCommandReader::GetNSCommand(s32 frame)
+  {
+    NSCommand u;
+    m_idx = frame;
+    fseek(m_file, m_bytesPerDatum*m_idx, SEEK_SET);
+    readNSCommandDatum(m_file, &u);
+    return u;
   }
 
   RPGPSReader::RPGPSReader(const char *path)
@@ -272,6 +328,7 @@ namespace Nf
     : m_type(RPF_NULL_TYPE)
     , m_gps(NULL)
     , m_gps2(NULL)
+    , m_u(NULL)
   {
   }
 
@@ -305,6 +362,11 @@ namespace Nf
   void RPFileReaderCollection::AddGPSReader2(RPGPSReaderBasic *gps2)
   {
     m_gps2 = (RPGPSReader *)gps2;
+  }
+
+  void RPFileReaderCollection::AddNSCommandReader(NSCommandReader *u)
+  {
+    m_u = u;
   }
 
   s32 RPFileReaderCollection::GetCurrentFrame()
@@ -356,6 +418,10 @@ namespace Nf
       rv.gps2 = m_gps2->GetNextGPSDatum();
     else 
 	    rv.gps2 = GPS_Data();
+    if(m_u)
+      rv.u = m_u->GetNextNSCommand();
+    else
+      rv.u = NSCommand();
 
     RPFileHeader header;
     if(m_readers.find(RPF_BPOST8) != m_readers.end())
@@ -416,9 +482,13 @@ namespace Nf
     else 
       rv.gps = GPS_Data();
     if(m_gps2)
-      rv.gps2 = m_gps2->GetNextGPSDatum();
+      rv.gps2 = m_gps2->GetPreviousGPSDatum();
     else 
 	    rv.gps2 = GPS_Data();
+    if(m_u)
+      rv.u = m_u->GetPreviousNSCommand();
+    else
+      rv.u = NSCommand();
 
     RPFileHeader header;
     if(m_readers.find(RPF_BPOST8) != m_readers.end())
@@ -483,6 +553,10 @@ namespace Nf
       rv.gps2 = m_gps2->GetGPSDatum(frame);
     else 
 	    rv.gps2 = GPS_Data();
+    if(m_u)
+      rv.u = m_u->GetNSCommand(frame);
+    else
+      rv.u = NSCommand();
 
     RPFileHeader header;
     if(m_readers.find(RPF_BPOST8) != m_readers.end())

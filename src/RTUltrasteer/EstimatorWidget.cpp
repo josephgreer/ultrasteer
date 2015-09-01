@@ -596,30 +596,26 @@ namespace Nf
 
   void EstimatorStreamingWidget::HandleFrame(RPData &rp)
   { 
-    DataFrame d;
-    d.rp = rp;
-    if(d.rp.b8 != NULL)
-      m_u.tick = (u32)d.rp.b8->BorderMode[0];
-    d.u = m_u;
+    rp.u = m_u;
     switch(m_state) {
     case ES_READY:
       {
         m_segmenter->Initialize(rp.b8->width, rp.b8->height);
         m_state = ES_PRIMED;
-        m_saveDataWidget->SaveDataFrame(d);
+        m_saveDataWidget->SaveDataFrame(rp);
         break;
       }
     case ES_PRIMED: 
       {
-        m_saveDataWidget->SaveDataFrame(d);
+        m_saveDataWidget->SaveDataFrame(rp);
         break;
       }
     case ES_RECORDING1: 
       {
         if(m_executeCommand)
           ExecuteCommand();
-        d.u.v = 0;
-        m_saveDataWidget->SaveDataFrame(d);
+        rp.u.v = 0;
+        m_saveDataWidget->SaveDataFrame(rp);
         m_state = ES_RECORDING2;
         break;
       }
@@ -627,21 +623,21 @@ namespace Nf
       {
         if(m_executeCommand)
           ExecuteCommand();
-        m_saveDataWidget->SaveDataFrame(d);
+        m_saveDataWidget->SaveDataFrame(rp);
         break;
       }
     case ES_PAUSED:
       {
-        d.u.v = 0;
+        rp.u.v = 0;
         // how we signal that this is a valid gps reading
-        d.rp.gps2.offset[0] = 12345.0;
-        m_saveDataWidget->SaveDataFrame(d);
+        rp.gps2.offset[0] = 12345.0;
+        m_saveDataWidget->SaveDataFrame(rp);
         m_saveDataWidget->StopRecording();
         break;
       }
     default:
       {
-        m_saveDataWidget->SaveDataFrame(d);
+        m_saveDataWidget->SaveDataFrame(rp);
         break;
       }
     }

@@ -12,20 +12,6 @@
 
 namespace Nf 
 {
-  struct DataFrame
-  {
-    RPData rp;
-    NSCommand u;
-
-    DataFrame Clone() 
-    {
-      DataFrame res;
-      res.rp = this->rp.Clone();
-      res.u = this->u;
-      return res;
-    }
-  };
-
   class SaveDataWidget : public ResizableQFrame
   {
     Q_OBJECT
@@ -40,7 +26,7 @@ namespace Nf
     void SetProgressBarRange(s32 range);
 
     void BeginRecording();
-    void SaveDataFrame(DataFrame &data);
+    void SaveDataFrame(const RPData &data);
     void DoneRecording();
     void StartRecording();
     void StopRecording();
@@ -50,7 +36,7 @@ namespace Nf
 
   public:
     Ui::SaveDataWidget ui;
-    std::vector < DataFrame > m_dataToSave;
+    std::vector < RPData > m_dataToSave;
 
   public slots:
     void onStartRecordingClicked();

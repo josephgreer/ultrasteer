@@ -26,6 +26,19 @@ namespace Nf
     s32 WriteNextGPSDatum(const GPS_Data *gps);
   };
 
+  class NSCommandWriter {
+  private:
+    FILE *m_file;
+    int m_bytesPerDatum;
+
+  public:
+    NSCommandWriter(const char *path);
+    virtual ~NSCommandWriter();
+    s32 Cleanup();
+
+    s32 WriteNextNSCommand(const NSCommand *u);
+  };
+
   class RPFileWriter {
   private:
     FILE *m_file;
@@ -51,6 +64,7 @@ namespace Nf
     s32 AddWriter(RP_TYPE type);
     s32 AddGPSWriter();
     s32 AddGPSWriter2();
+    s32 AddNSCommandWriter();
 
     s32 WriteNextRPData(const RPData *data);
     s32 Cleanup(const RPFileHeader *header);
@@ -61,6 +75,7 @@ namespace Nf
     std::map < RP_TYPE, RPFileWriter * > m_writers;
     RPGPSWriter *m_gps;
     RPGPSWriter *m_gps2;
+    NSCommandWriter *m_u;
     RPFileHeader m_header;
     char m_path[100];
     bool m_writeOver;

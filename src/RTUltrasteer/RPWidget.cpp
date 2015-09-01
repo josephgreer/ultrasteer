@@ -112,6 +112,14 @@ namespace Nf
     else
       delete tempGPS;
 
+    sprintf(temp, "%s.u", fname.c_str());
+    FILE *tempf = fopen(temp, "rb");
+    if(tempf != NULL) {
+      fclose(tempf);
+      tempf = NULL;
+      m_rpReaders->AddNSCommandReader(new NSCommandReader(temp));
+    }
+
     m_frame->SetMax(nframes);
 
     if(nframes <= 0) {
