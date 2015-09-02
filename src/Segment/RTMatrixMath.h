@@ -552,6 +552,13 @@ namespace Nf
       return *this;
     }
 
+    Square & operator = (const Square & r)
+    {
+      this->ul = r.ul;
+      this->lr = r.lr;
+      return *this;
+    }
+
     bool Overlaps(const Square & r)
     {
       return (DistX(r) == 0) && (DistY(r) == 0);

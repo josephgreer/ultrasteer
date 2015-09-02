@@ -199,6 +199,7 @@ namespace Nf
       this->gps = rp.gps;
       this->gps2 = rp.gps2;
       this->origin = rp.origin;
+      this->roi = rp.roi;
       this->u = rp.u;
     }
 
@@ -214,6 +215,7 @@ namespace Nf
       this->gps2 = rhs.gps2;
       this->origin = rhs.origin;
       this->u = rhs.u;
+      this->roi = rhs.roi;
       return *this;
     }
 
@@ -308,6 +310,7 @@ namespace Nf
       rv.mpp = this->mpp;
       rv.origin = this->origin;
       rv.u = this->u;
+      rv.roi = this->roi;
 
       return rv;
     }

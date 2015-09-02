@@ -139,7 +139,8 @@ namespace Nf
   class Updateable
   {
     public:
-      virtual void onUpdate() { return; }
+      virtual void onUpdate() { return; } 
+      virtual void onRepaint() { return; }
   };
 
   class NeedleSegmenter : public ParameterCollection

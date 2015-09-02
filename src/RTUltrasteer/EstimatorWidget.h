@@ -43,8 +43,11 @@ namespace Nf
   {
     Measurement m;
     NSCommand u;
-    f64 dt;
+    TipState t;
     Vec2d mpp;
+    TipState est;
+    std::vector < arma::mat33 > particleRs;
+    arma::mat particlePos;
   };
 
   class ParticleFilterVisualizer : public ParameterCollection, public Updateable
@@ -57,19 +60,25 @@ namespace Nf
     std::tr1::shared_ptr < NeedleSegmenter > m_segmenter;
     std::map < s32, PFData > m_pfFramesProcessed;
     std::tr1::shared_ptr < PointCloudVisualizer > m_measurementPoints;
-    std::tr1::shared_ptr < Updateable > m_update;
+    Updateable *m_update;
+    s32 m_lastFrame;
     bool m_init;
 
   public:
     ParticleFilterVisualizer(Updateable *update);
+    ~ParticleFilterVisualizer();
     void AddActorsToRenderer(vtkSmartPointer < vtkRenderer > renderer);
     void SetVisiblity(bool visible);
     virtual void DoSegmentation(RPData *rp, NeedleFrame &doppler, NeedleFrame &bmode);
     virtual void Update(RPData *rp, s32 frame); 
     virtual void Initialize();
-    PFParams * GetParams(s32 frame);
-
-    std::tr1::shared_ptr < PFParams > m_pfParams;
+    virtual s32 NumberOfMeasurementsUpToAndIncludingFrame(s32 frame);
+    virtual void UpdateVisualizations(s32 frame);
+    std::tr1::shared_ptr < PFParams > GetParams(s32 frame);
+    std::vector < TipState > AssembleTipHistory(s32 frame);
+    std::vector < Measurement > AssembleMeasurements(s32 frame);
+    std::vector < NSCommand > AssembleCommands(s32 frame);
+    arma::vec AssembleDts(s32 frame);
 
     //Parameters
     std::tr1::shared_ptr < Nf::FloatParameter > m_roc;
@@ -79,14 +88,28 @@ namespace Nf
     CLASS_CALLBACK(onClearEstimatorData, ParticleFilterVisualizer);
 
     std::tr1::shared_ptr < Nf::IntParameter > m_nParticles;
+    void onNumParticlesChanged();
+    CLASS_CALLBACK(onNumParticlesChanged, ParticleFilterVisualizer);
 
     std::tr1::shared_ptr < Nf::EnumParameter > m_pfMethod;
     void onPFMethodChanged();
     CLASS_CALLBACK(onPFMethodChanged, ParticleFilterVisualizer);
 
+    std::tr1::shared_ptr < Nf::IntParameter > m_nVisSkip;
+    void onNVisSkipChanged();
+    CLASS_CALLBACK(onNVisSkipChanged, ParticleFilterVisualizer);
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_showParticlePos;
+    std::tr1::shared_ptr < Nf::BoolParameter > m_showExpectedPos;
+    std::tr1::shared_ptr < Nf::BoolParameter > m_showExpectedOrientation;
+    std::tr1::shared_ptr < Nf::BoolParameter > m_showMeasurements;
+    void onVisibilityChanged();
+    CLASS_CALLBACK(onVisibilityChanged, ParticleFilterVisualizer);
+
     std::tr1::shared_ptr < Nf::BoolParameter > m_collectMeasurements;
 
     virtual void onUpdate();
+    virtual void onRepaint();
   };
 
   class EstimatorFileWidget : public RPFileWidget, public Updateable
@@ -141,6 +164,7 @@ namespace Nf
     CLASS_CALLBACK(onClearTipCalibration, EstimatorFileWidget);
 
     virtual void onUpdate();
+    virtual void onRepaint();
 
     virtual void onUpdateFile();
     virtual void onUpdateFrame();

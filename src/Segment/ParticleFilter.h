@@ -151,6 +151,8 @@ namespace Nf
 
     virtual ~ParticleFilter();
 
+    virtual s32 GetNumberOfParticles() { return m_nParticles; }
+
     //Initialize the particle filter based on state history
     //    hist: hist[0] = current state
     //          hist[1] = state 1 timestep back
