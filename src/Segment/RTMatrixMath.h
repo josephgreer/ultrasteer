@@ -68,6 +68,12 @@ namespace Nf
       return *this;
     }
 
+    template < class U >
+    operator Vec2<U>() const 
+    {
+      return Vec2<U>((U)this->x, (U)this->y);
+    }
+
     T dot(Vec2<T> b) const
     {
       return this->x*b.x+this->y*b.y;

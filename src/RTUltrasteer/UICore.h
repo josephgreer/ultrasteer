@@ -248,6 +248,7 @@ namespace Nf
       Q_ENUMS(DisplayModality)
       Q_ENUMS(Transducer)
       Q_ENUMS(EstimatorOperationMode)
+      Q_ENUMS(ParticleFilterMethod)
 #else
   class QtEnums
   {
@@ -292,6 +293,12 @@ namespace Nf
       EOM_CALIB_CURVATURE_GPS = 2,
       EOM_CALIB_CURVATURE_US = 3,
       EOM_ESTIMATE = 4,
+    };
+
+    enum ParticleFilterMethod
+    {
+      PFM_FULL_STATE = 0,
+      PFM_MARGINALIZED_ORIENTATION = 1
     };
   };
 

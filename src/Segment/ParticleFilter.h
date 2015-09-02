@@ -40,12 +40,14 @@ namespace Nf
     arma::vec3 particleMuPos;                 //  mu pos for particle propagation (as opposed to pos mu for simulation)
     arma::mat33 particleSigmaOr;              //  sigma orientation for particle propagation
     arma::vec3 particleMuOr;                  //  mu orientation for particle propagation (as opposed to orientation mu for simulation)
-    f64 mpp;                                  //  microns per pixel
+    Vec2d mpp;                                //  microns per pixel
     arma::vec2 measurementOffsetSigma;        //  measurement noise of needle section within US frame (in mm)
+#if 0
     f64 offNeedleDopplerMu;                   //  Doppler strength of measurement off needle distributed according to lognormal dist
     f64 offNeedleDopplerSigma;                //  Doppler strength of measurement off needle distributed according to lognormal dist
     f64 onNeedleDopplerMu;                    //  Doppler strength of measurement on needle distributed according to lognormal dist
     f64 onNeedleDopplerSigma;                 //  Doppler strength of measurement on needle distributed according to lognormal dist
+#endif
     f64 particleSigmaVel;                     //  sigma velocity for particle propagation
     f64 particleMuVel;                        //  mu velocity for particle propagation (as opposed to vel mu for simulation)
     f64 particleSigmaRho;                     //  sigma rho for particle propagation
@@ -57,7 +59,7 @@ namespace Nf
     s32 n;                                    //  how many points do we use for creating needle "flagella"
     f64 neff;                                 //  resample if the number of effective particles drops below this fraction
  
-    PFParams();
+    PFParams(Vec2d mpp = Vec2d(83,83));
   };
 
   // Implements distribution from lookup table specified by path
@@ -77,7 +79,7 @@ namespace Nf
   class PFFullStateParams : public PFParams
   {
   public:
-    PFFullStateParams();
+    PFFullStateParams(Vec2d mpp = Vec2d(83,83));
   };
 
   class PFMarginalizedParams : public PFParams
@@ -88,7 +90,7 @@ namespace Nf
     s32 subsetSize;                           //  subset size for rotation measurement
     s32 procrustesIt;                         //  number of iterations to run procrustes
 
-    PFMarginalizedParams();
+    PFMarginalizedParams(Vec2d mpp = Vec2d(83,83));
   };
 
   struct TipState

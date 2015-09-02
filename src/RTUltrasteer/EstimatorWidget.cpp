@@ -15,7 +15,10 @@ namespace Nf
     rp.gps2.pose = Matrix44d::FromOrientationAndTranslation(tipFrame, gps2Offset).ToCvMat();
   }
 
-
+  
+  /////////////////////////////////////////////////////////////////////////////////
+  //BEGIN PFVisualizer
+  /////////////////////////////////////////////////////////////////////////////////
   class RPCoordTransform : public ImageCoordTransform
   {
   protected:
@@ -42,11 +45,166 @@ namespace Nf
     }
   };
 
+  ParticleFilterVisualizer::ParticleFilterVisualizer(Updateable *update)
+    : ParameterCollection("Particle Filter")
+    , m_update(update)
+    , m_pfParams(NULL)
+    , m_init(false)
+    , m_segmenter(new Nf::NeedleSegmenter(0,0,this))
+  {
+    ADD_FLOAT_PARAMETER(m_roc, "Expected ROC (mm)", NULL, this, 76.8, 20, 1000, 0.1);
+    ADD_ACTION_PARAMETER(m_clearEstimatorData, "Clear Estimator Data", CALLBACK_POINTER(onClearEstimatorData, ParticleFilterVisualizer), this, false);
+    ADD_BOOL_PARAMETER(m_collectMeasurements, "Collect US Measurements", NULL, this, false);
+    ADD_INT_PARAMETER(m_nParticles, "Number of Particles", CALLBACK_POINTER(onPFMethodChanged, ParticleFilterVisualizer), this, 200, 25, 5000, 10);
+    ADD_ENUM_PARAMETER(m_pfMethod, "Particle Filter Method", CALLBACK_POINTER(onPFMethodChanged, ParticleFilterVisualizer), this, QtEnums::ParticleFilterMethod::PFM_FULL_STATE, "ParticleFilterMethod");
+    ADD_CHILD_COLLECTION(m_segmenter.get());
+
+    m_pfExpectedOrientation = vtkSmartPointer <vtkAxesActor>::New();
+    m_pfExpectedOrientation->SetTotalLength(5,5,5);
+    m_pfExpectedOrientation->SetVisibility(false);
+
+    m_measurementPoints = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 0, 1)));
+
+    m_pfExpectedPos = std::tr1::shared_ptr < SphereVisualizer > (new SphereVisualizer(Vec3d(0,0,0), 1));
+    m_pfExpectedPos->GetActor()->SetVisibility(false);
+    m_pfExpectedPos->SetColor(Vec3d(1,0,0));
+
+    m_pfPoints = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 1, 0)));
+    m_pfPoints->GetActor()->SetVisibility(false);
+    m_pfPoints->SetColor(Vec3d(0,0,1));
+  }
+  
+  void ParticleFilterVisualizer::AddActorsToRenderer(vtkSmartPointer < vtkRenderer > renderer)
+  {
+    renderer->AddActor(m_pfExpectedOrientation);
+    renderer->AddActor(m_pfPoints->GetActor());
+    renderer->AddActor(m_pfExpectedPos->GetActor());
+  }
+
+  void ParticleFilterVisualizer::SetVisiblity(bool visible)
+  {
+    m_pfExpectedOrientation->SetVisibility(visible);
+    m_pfPoints->GetActor()->SetVisibility(visible);
+    m_pfExpectedPos->GetActor()->SetVisibility(visible);
+  }
+  
+  void ParticleFilterVisualizer::DoSegmentation(RPData *rp, NeedleFrame &doppler, NeedleFrame &bmode)
+  {
+    if(!m_segmenter->IsInit())
+      m_segmenter->Initialize(rp->b8->width, rp->b8->height);
+
+    RPCoordTransform transform(rp->mpp, rp->origin, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), rp->gps);
+    m_segmenter->ProcessColor(rp->color, rp->b8, &transform);
+    rp->dis = m_segmenter->GetDisplayImage();
+
+    if(m_collectMeasurements->GetValue()) {
+      m_segmenter->GetSegmentationResults(bmode, doppler);
+      if(doppler.segments.size() > 0)
+        m_measurementPoints->AddPoint(doppler.segments[0].pts[0].point);
+
+    }
+  }
+
+  void ParticleFilterVisualizer::onClearEstimatorData()
+  {
+    m_measurementPoints->ClearPoints();
+
+    m_pfFramesProcessed.clear();
+    m_update->onUpdate();
+    m_init = false;
+  }
+
+  void ParticleFilterVisualizer::onPFMethodChanged()
+  {
+    onClearEstimatorData();
+    Initialize();
+  }
+
+  PFParams * ParticleFilterVisualizer::GetParams(s32 frame)
+  {
+    if(frame > 0) {
+      if(m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
+        m_pfParams = std::tr1::shared_ptr < PFParams > (new PFFullStateParams());
+      } else {
+        m_pfParams = std::tr1::shared_ptr < PFParams > (new PFMarginalizedParams());
+      }
+    } else {
+      PFData pd = m_pfFramesProcessed[frame];
+      if(m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
+        m_pfParams = std::tr1::shared_ptr < PFParams > (new PFFullStateParams(pd.mpp));
+      } else {
+        m_pfParams = std::tr1::shared_ptr < PFParams > (new PFMarginalizedParams(pd.mpp));
+      }
+      m_pfParams->usw = norm(pd.m.fur-pd.m.ful);
+      m_pfParams->ush = norm(pd.m.ful-pd.m.fbl);
+    }
+
+    return m_pfParams.get();
+  }
+
+  void ParticleFilterVisualizer::Initialize()
+  {
+    if(m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
+      m_pf = std::tr1::shared_ptr < ParticleFilter > (new ParticleFilterFullState(m_nParticles->GetValue(), GetParams(-1)));
+    } else {
+      PFMarginalizedParams pfm;
+      m_pf = std::tr1::shared_ptr < ParticleFilter > (new ParticleFilterMarginalized(m_nParticles->GetValue(), GetParams(-1)));
+    }
+    m_init = false;
+  }
+
+  void ParticleFilterVisualizer::Update(RPData *rp, s32 frame)
+  {
+    Measurement m;
+
+    NeedleFrame doppler, bmode;
+    DoSegmentation(rp, doppler, bmode);
+
+    // If we've already run this data through our particle filter, bail.
+    if(m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end())
+      return;
+
+    if(doppler.segments.size() > 0) {
+      //For now use doppler centroid
+      NeedlePoint dCent = doppler.segments[0].pts[0];
+
+      Vec2d mppScale(rp->mpp.x/1000.0, rp->mpp.y/1000.0);
+      Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(rp->gps.pose).GetOrientation(), rp->gps.pos);
+      m.ful = rpImageCoordToWorldCoord3((Vec2d)rp->roi.ul, posePos, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), rp->origin, mppScale).ToArmaVec();
+      m.fbl = rpImageCoordToWorldCoord3(Vec2d(rp->roi.ul.x, rp->roi.lr.y), posePos, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), rp->origin, mppScale).ToArmaVec();
+      m.fbr = rpImageCoordToWorldCoord3((Vec2d)rp->roi.lr, posePos, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), rp->origin, mppScale).ToArmaVec();
+      m.fur = rpImageCoordToWorldCoord3(Vec2d(rp->roi.lr.x, rp->roi.ul.y), posePos, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), rp->origin, mppScale).ToArmaVec();
+      m.doppler = arma::ones(1,1)*dCent.dopplerSum;
+      m.fbx = rpImageCoordToWorldCoord3(Vec2d(1,0), posePos, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), rp->origin, mppScale).ToArmaVec()-rpImageCoordToWorldCoord3(Vec2d(0,0), posePos, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), rp->origin, mppScale).ToArmaVec();
+      m.fby = rpImageCoordToWorldCoord3(Vec2d(0,1), posePos, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), rp->origin, mppScale).ToArmaVec()-rpImageCoordToWorldCoord3(Vec2d(0,0), posePos, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), rp->origin, mppScale).ToArmaVec();
+      m.fbx = m.fbx/norm(m.fbx);
+      m.fby = m.fby/norm(m.fby);
+
+
+      //should be in R^(3xn)
+      m.pos = dCent.point.ToArmaVec();
+      //should be in R^(2xn)
+      m.uv = (dCent.imagePoint-(Vec2d)rp->roi.ul).ToArmaVec();
+
+      //TODO NOW DO SOME STUFF THAT WE HAVE A MEASUREMENT
+     
+    }
+  }
+
+  void ParticleFilterVisualizer::onUpdate()
+  {
+    m_update->onUpdate();
+  }
+
+  /////////////////////////////////////////////////////////////////////////////////
+  //END PFVisualizer
+  /////////////////////////////////////////////////////////////////////////////////
+
   EstimatorFileWidget::EstimatorFileWidget(QWidget *parent)
     : RPFileWidget(parent, (USVisualizer *)new PFVisualizer(parent))
     , m_state(EFS_READY)
     , m_resultsAvailable(ERA_NONE)
-    , m_segmenter(new Nf::NeedleSegmenter(0,0,this))
+    , m_pfVisualizer(new ParticleFilterVisualizer(this))
   {
     ADD_ACTION_PARAMETER(m_doNeedleCalib, "Do Needle Calibration", CALLBACK_POINTER(onDoNeedleCalibrationPushed, EstimatorFileWidget), this, false);
     ADD_ENUM_PARAMETER(m_operationMode, "Operation Mode", CALLBACK_POINTER(onSetOperationMode, EstimatorFileWidget), this, QtEnums::EstimatorOperationMode::EOM_NONE, "EstimatorOperationMode");
@@ -55,15 +213,11 @@ namespace Nf
     ADD_SAVE_FILE_PARAMETER(m_pointsDataPath, "Point History Save Path", NULL, this, "C:/Joey/Data/TipCalibration/tipHistory.mat", "(*.mat)");
     ADD_OPEN_FILE_PARAMETER(m_pointsDataPathLoad, "Presaved Point History", CALLBACK_POINTER(onPointsDataPathChanged, EstimatorFileWidget), this, "C:/Joey/Data/TipCalibration/tipHistory.mat", "(*.mat)");
     ADD_ACTION_PARAMETER(m_clearCalibrationData, "Clear Calibration Data", CALLBACK_POINTER(onClearCalibrationData, EstimatorFileWidget), this, false);
-    ADD_ACTION_PARAMETER(m_clearEstimatorData, "Clear Estimator Data", CALLBACK_POINTER(onClearEstimatorData, EstimatorFileWidget), this, false);
     ADD_ACTION_PARAMETER(m_clearTipCalibration, "Clear Tip Calibration", CALLBACK_POINTER(onClearTipCalibration, EstimatorFileWidget), this, false);
-    ADD_BOOL_PARAMETER(m_collectMeasurements, "Collect US Measurements", NULL, this, false);
-    ADD_CHILD_COLLECTION(m_segmenter.get());
+    ADD_CHILD_COLLECTION(m_pfVisualizer.get());
 
     m_calibrationPointsTip = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(0, 1, 0)));
     m_calibrationPointsCurvature = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 1, 0)));
-
-    m_measurementPoints = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 0, 1)));
 
     m_calibTip = std::tr1::shared_ptr < SphereVisualizer > (new SphereVisualizer(Vec3d(0,0,0), 1));
     m_calibTip->SetColor(Vec3d(1,0,0));
@@ -73,13 +227,17 @@ namespace Nf
 
     m_planeVis->GetRenderer()->AddActor(m_calibrationPointsTip->GetActor());
     m_planeVis->GetRenderer()->AddActor(m_calibrationPointsCurvature->GetActor());
-    m_planeVis->GetRenderer()->AddActor(m_measurementPoints->GetActor());
+
+    m_pfVisualizer->SetVisiblity(false);
+    m_pfVisualizer->AddActorsToRenderer(m_planeVis->GetRenderer());
+
     onUpdateFile();
   }
 
   EstimatorFileWidget::~EstimatorFileWidget()
   {
   }
+     
 
   void EstimatorFileWidget::onUpdateFrame()
   {
@@ -114,20 +272,7 @@ namespace Nf
       }
     case EFS_ESTIMATE:
       {
-        if(!m_segmenter->IsInit())
-          m_segmenter->Initialize(m_data.b8->width, m_data.b8->height);
-
-        RPCoordTransform transform(m_data.mpp, m_data.origin, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), m_data.gps);
-        m_segmenter->ProcessColor(m_data.color, m_data.b8, &transform);
-        m_data.dis = m_segmenter->GetDisplayImage();
-
-        if(m_collectMeasurements->GetValue()) {
-          NeedleFrame doppler, bmode;
-          m_segmenter->GetSegmentationResults(bmode, doppler);
-          if(doppler.segments.size() > 0)
-            m_measurementPoints->AddPoint(doppler.segments[0].pts[0].point);
-
-        }
+        m_pfVisualizer->Update(&m_data, m_frame->GetValue());
         break;
       }
     default: 
@@ -200,14 +345,6 @@ namespace Nf
     m_planeVis->repaint();
     m_usVis->repaint();
   }
-
-  void EstimatorFileWidget::onClearEstimatorData()
-  {
-    m_measurementPoints->ClearPoints();
-
-    m_planeVis->repaint();
-    m_usVis->repaint();
-  }
   
   void EstimatorFileWidget::onClearTipCalibration()
   {
@@ -276,6 +413,7 @@ namespace Nf
           }
         case QtEnums::EstimatorOperationMode::EOM_ESTIMATE: 
           {
+            m_pfVisualizer->Initialize();
             m_state = EFS_ESTIMATE;
             break;
           }
@@ -467,7 +605,6 @@ namespace Nf
     , m_saveDataWidget(new SaveDataWidget(parent))
     , m_bottomRow(new QGridLayout(parent))
     , m_tpHistory(std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 1, 0))))
-    , m_segmenter(new NeedleSegmenter())
   {
     m_bottomRow->addWidget(m_hwWidget.get(), 0, 0);
     m_bottomRow->addWidget(m_saveDataWidget.get(), 0, 1, Qt::Alignment(Qt::AlignTop));
@@ -489,7 +626,6 @@ namespace Nf
     ADD_ACTION_PARAMETER(m_clearPastPoints, "Clear Past Tip Points", CALLBACK_POINTER(onClearPastPoints, EstimatorStreamingWidget), this, false);
 
     ADD_CHILD_COLLECTION(m_hwWidget.get());
-    ADD_CHILD_COLLECTION(m_segmenter.get());
 
     Connect(m_saveDataWidget->ui.saveDataButton, SIGNAL(clicked()), SLOT(onSaveDataClicked()));
   }
@@ -600,7 +736,6 @@ namespace Nf
     switch(m_state) {
     case ES_READY:
       {
-        m_segmenter->Initialize(rp.b8->width, rp.b8->height);
         m_state = ES_PRIMED;
         m_saveDataWidget->SaveDataFrame(rp);
         break;

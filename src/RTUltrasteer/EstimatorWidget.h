@@ -10,6 +10,7 @@
 #include "RPFileReader.h"
 #include "RPProcess.h"
 #include "PFVisualizerWidget.h"
+#include "ParticleFilter.h"
 #include "RobotHardwareWidget.h"
 #include "SaveDataWidget.h"
 #include "RPWidget.h"
@@ -38,6 +39,56 @@ namespace Nf
     ERA_NEEDLE_MEASUREMENT_POINTS = 0x4,
   };
 
+  struct PFData
+  {
+    Measurement m;
+    NSCommand u;
+    f64 dt;
+    Vec2d mpp;
+  };
+
+  class ParticleFilterVisualizer : public ParameterCollection, public Updateable
+  {
+  protected:
+    std::tr1::shared_ptr < Nf::ParticleFilter > m_pf;
+    std::tr1::shared_ptr < PointCloudVisualizer > m_pfPoints;
+    vtkSmartPointer < vtkAxesActor > m_pfExpectedOrientation;
+    std::tr1::shared_ptr < SphereVisualizer > m_pfExpectedPos;
+    std::tr1::shared_ptr < NeedleSegmenter > m_segmenter;
+    std::map < s32, PFData > m_pfFramesProcessed;
+    std::tr1::shared_ptr < PointCloudVisualizer > m_measurementPoints;
+    std::tr1::shared_ptr < Updateable > m_update;
+    bool m_init;
+
+  public:
+    ParticleFilterVisualizer(Updateable *update);
+    void AddActorsToRenderer(vtkSmartPointer < vtkRenderer > renderer);
+    void SetVisiblity(bool visible);
+    virtual void DoSegmentation(RPData *rp, NeedleFrame &doppler, NeedleFrame &bmode);
+    virtual void Update(RPData *rp, s32 frame); 
+    virtual void Initialize();
+    PFParams * GetParams(s32 frame);
+
+    std::tr1::shared_ptr < PFParams > m_pfParams;
+
+    //Parameters
+    std::tr1::shared_ptr < Nf::FloatParameter > m_roc;
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_clearEstimatorData;
+    void onClearEstimatorData();
+    CLASS_CALLBACK(onClearEstimatorData, ParticleFilterVisualizer);
+
+    std::tr1::shared_ptr < Nf::IntParameter > m_nParticles;
+
+    std::tr1::shared_ptr < Nf::EnumParameter > m_pfMethod;
+    void onPFMethodChanged();
+    CLASS_CALLBACK(onPFMethodChanged, ParticleFilterVisualizer);
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_collectMeasurements;
+
+    virtual void onUpdate();
+  };
+
   class EstimatorFileWidget : public RPFileWidget, public Updateable
   {
     Q_OBJECT 
@@ -45,17 +96,15 @@ namespace Nf
   protected:
     EstimatorFileState m_state;
     u32 m_resultsAvailable;
+    std::tr1::shared_ptr < ParticleFilterVisualizer > m_pfVisualizer;
     std::tr1::shared_ptr < PointCloudVisualizer > m_calibrationPointsTip;
     std::tr1::shared_ptr < PointCloudVisualizer > m_calibrationPointsCurvature;
-    std::tr1::shared_ptr < PointCloudVisualizer > m_measurementPoints;
     
     EMNeedleTipCalibrator m_ntCalibrator;
     NeedleCurvatureCalibrator m_ncCalibrator;
 
     std::tr1::shared_ptr < SphereVisualizer > m_calibTip;
     vtkSmartPointer < vtkAxesActor > m_calibTipFrame;
-
-    std::tr1::shared_ptr < NeedleSegmenter > m_segmenter;
 
   public:
     EstimatorFileWidget(QWidget *parent);
@@ -78,8 +127,6 @@ namespace Nf
     virtual void onSetOperationMode();
     CLASS_CALLBACK(onSetOperationMode, EstimatorFileWidget);
 
-    std::tr1::shared_ptr < Nf::BoolParameter > m_collectMeasurements;
-
     //Do Calibration
     std::tr1::shared_ptr < Nf::BoolParameter > m_doNeedleCalib;
     void onDoNeedleCalibrationPushed();
@@ -88,10 +135,6 @@ namespace Nf
     std::tr1::shared_ptr < Nf::BoolParameter > m_clearCalibrationData;
     void onClearCalibrationData();
     CLASS_CALLBACK(onClearCalibrationData, EstimatorFileWidget);
-
-    std::tr1::shared_ptr < Nf::BoolParameter > m_clearEstimatorData;
-    void onClearEstimatorData();
-    CLASS_CALLBACK(onClearEstimatorData, EstimatorFileWidget);
 
     std::tr1::shared_ptr < Nf::BoolParameter > m_clearTipCalibration;
     void onClearTipCalibration();
@@ -132,8 +175,6 @@ namespace Nf
     EMNeedleTipCalibrator m_ntCalibrator;
 
     std::vector < Vec3d > m_pastTipPoints;
-
-    std::tr1::shared_ptr < NeedleSegmenter > m_segmenter;
 
   public:
     EstimatorStreamingWidget(QWidget *parent);

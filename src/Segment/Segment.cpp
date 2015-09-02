@@ -871,6 +871,7 @@ namespace Nf
     npt.imagePoint = centroid;
     npt.point = transform->Transform(centroid);
     npt.imageScore = (f32)(dopplerSum.val[0]/DOPPLER_SUM_SCALE);
+    npt.dopplerSum = (f32)dopplerSum.val[0];
     segment.pts.push_back(npt);
     m_dopplerCentroid.segments.clear();
     m_dopplerCentroid.segments.push_back(segment);
@@ -993,6 +994,7 @@ namespace Nf
           npt.imageScore = (npt.imageScore+bSums[i])/(bDists[i] > 1.0f ? bDists[i] : 1.0f);
           npt.cDist = bDists[i];
           npt.bResp = bSums[i];
+          npt.dopplerSum = (f32)dopplerSum.val[0];
           npt.dResp = (f32)dopplerSum.val[0]/(f32)((bigRect.ul.x - bigRect.lr.x + 1) * (bigRect.ul.y - bigRect.lr.y + 1));//(f32)(sum.val[0]/DOPPLER_SUM_SCALE);
           npt.dResp = npt.dResp*sqrtf((f32)((bigRect.ul.x - bigRect.lr.x + 1) * (bigRect.ul.y - bigRect.lr.y + 1)));
         }

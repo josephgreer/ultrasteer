@@ -7,7 +7,7 @@ namespace Nf
 {
   using ::s32;
 
-  PFParams::PFParams()
+  PFParams::PFParams(Vec2d mpp)
   {
     vec dd;
 
@@ -36,18 +36,21 @@ namespace Nf
     particleSigmaRho = 3;
     particleMuRho = 0;
 
-    mpp = 83;
-    measurementOffsetSigma = (vec2)(mpp*5*1e-3*ones(2,1));
+    this->mpp = mpp;
 
+    measurementOffsetSigma << mpp.x*5*1e-3 << endr << mpp.y*5*1e-3;
+
+#if 0
     offNeedleDopplerMu = 0.56;                                           
     offNeedleDopplerSigma = 0.75;                                        
     onNeedleDopplerMu = 2.33;                                            
     onNeedleDopplerSigma = 0.098;  
+#endif
 
     minimumMeasurements = 1;
 
-    usw = mpp*630*1e-3;
-    ush = mpp*480*1e-3;
+    usw = mpp.x*630*1e-3;
+    ush = mpp.y*480*1e-3;
 
     sigB0 = -2.37901785297659;
     sigB1 = 0.0534736687985484;
@@ -57,12 +60,13 @@ namespace Nf
 
   }
 
-  PFFullStateParams::PFFullStateParams()
-    : PFParams()
+  PFFullStateParams::PFFullStateParams(Vec2d mpp)
+    : PFParams(mpp)
   {
   }
 
-  PFMarginalizedParams::PFMarginalizedParams()
+  PFMarginalizedParams::PFMarginalizedParams(Vec2d mpp)
+    : PFParams(mpp)
   {
     minimumMeasurements = 15;
     vec3 dd; dd << 5e-3 << 5e-3 << 0.5 << endr;

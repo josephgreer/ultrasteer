@@ -25,6 +25,7 @@ namespace Nf
     f32 imageScore;       //image analysis score.  assumed to be roughly correlated with probability of being a needle point based on image analysis alone
     f32 dResp;            //Dopler response
     f32 bResp;            //B-mode response
+    f32 dopplerSum;       //Total Doppler response in patch
     f32 cDist;            //Distance from b-mode response to doppler centroid
     f32 modelScore;       //time history of how well point has been described by models in the past.
     f32 youth;            //for lack of a better term.  1 = brand new, 0 = infinitely old
