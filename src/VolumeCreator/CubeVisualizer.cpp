@@ -4,8 +4,11 @@
 #include <vtkLine.h>
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
+#include <vtkDoubleArray.h>
 #include <vtkPolyData.h>
 #include <vtkProperty.h>
+#include <vtkPointData.h>
+#include <vtkMath.h>
 
 namespace Nf {
 
@@ -298,6 +301,31 @@ namespace Nf {
       m_points->InsertNextPoint(points[i].x, points[i].y, points[i].z);
 
     m_polyData->SetPoints(m_points);
+    m_polyData->Modified();
+  }
+
+
+  void PointCloudVisualizer::SetPoints(const std::vector < Vec3d > & points, const std::vector < f64 > & weights)
+  {
+    m_points = vtkSmartPointer<vtkPoints>::New();
+    
+    vtkSmartPointer < vtkDoubleArray > colors = vtkSmartPointer < vtkDoubleArray >::New();
+    colors->SetNumberOfComponents(3);
+    colors->SetNumberOfTuples(weights.size());
+    colors->SetName("colors");
+    f64 rgb[3] = {0};
+    for(s32 i=0; i<points.size(); i++) {
+      m_points->InsertNextPoint(points[i].x, points[i].y, points[i].z);
+      vtkMath::HSVToRGB(weights[i], 1, 1, &rgb[0], &rgb[1], &rgb[2]);
+      rgb[0] = rgb[1] = rgb[2] = 0.5;
+      colors->InsertNextTuple(&rgb[0]);
+    }
+
+    m_polyData->SetPoints(m_points);
+    m_polyData->GetPointData()->SetScalars(colors);
+    m_glyph3D->SetColorModeToColorByScalar();
+    //m_sphereSource->SetRadius(5);
+    m_glyph3D->Modified();
     m_polyData->Modified();
   }
 

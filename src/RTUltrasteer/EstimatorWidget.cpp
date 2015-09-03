@@ -1,5 +1,6 @@
 #include "EstimatorWidget.h"
 #include "NeedleTipCalibrationPP.h"
+#include <vtkProperty.h>
 #include <QKeyEvent>
 
 namespace Nf
@@ -65,7 +66,8 @@ namespace Nf
     //should be in R^(3xn)
     m.pos = np.point.ToArmaVec();
     //should be in R^(2xn)
-    m.uv = (np.imagePoint-(Vec2d)rp.roi.ul).ToArmaVec();
+    Vec2d uv = (np.imagePoint-(Vec2d)rp.roi.ul);
+    m.uv = Vec2d(uv.x*mppScale.x, uv.y*mppScale.y).ToArmaVec();
 
     return m;
   }
@@ -106,6 +108,7 @@ namespace Nf
     ADD_BOOL_PARAMETER(m_showMeasurements, "Show Measurement Positions", CALLBACK_POINTER(onVisibilityChanged, ParticleFilterVisualizer), this, true);
     ADD_INT_PARAMETER(m_nParticles, "Number of Particles", CALLBACK_POINTER(onNumParticlesChanged, ParticleFilterVisualizer), this, 500, 25, 5000, 10);
     ADD_INT_PARAMETER(m_nVisSkip, "NVis Skip", CALLBACK_POINTER(onNVisSkipChanged, ParticleFilterVisualizer), this, 5, 1, 20, 1);
+    ADD_FLOAT_PARAMETER(m_measurementNoise, "Measurement Noise (Pixels)", NULL, this, 5, 1, 1000, 1);
     ADD_ENUM_PARAMETER(m_pfMethod, "Particle Filter Method", CALLBACK_POINTER(onPFMethodChanged, ParticleFilterVisualizer), this, QtEnums::ParticleFilterMethod::PFM_FULL_STATE, "ParticleFilterMethod");
     ADD_CHILD_COLLECTION(m_segmenter.get());
 
@@ -114,6 +117,8 @@ namespace Nf
     m_pfExpectedOrientation->SetVisibility(false);
 
     m_measurementPoints = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 0, 1)));
+    m_measurementPoints->GetActor()->SetVisibility(false);
+    m_measurementPoints->SetColor(Vec3d(1,0,1));
 
     m_pfExpectedPos = std::tr1::shared_ptr < SphereVisualizer > (new SphereVisualizer(Vec3d(0,0,0), 1));
     m_pfExpectedPos->GetActor()->SetVisibility(false);
@@ -122,6 +127,9 @@ namespace Nf
     m_pfPoints = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 1, 0)));
     m_pfPoints->GetActor()->SetVisibility(false);
     m_pfPoints->SetColor(Vec3d(0,0,1));
+    m_pfPoints->GetActor()->GetProperty()->SetOpacity(0.2);
+
+    onVisibilityChanged();
   }
 
   ParticleFilterVisualizer::~ParticleFilterVisualizer()
@@ -133,6 +141,7 @@ namespace Nf
     renderer->AddActor(m_pfExpectedOrientation);
     renderer->AddActor(m_pfPoints->GetActor());
     renderer->AddActor(m_pfExpectedPos->GetActor());
+    renderer->AddActor(m_measurementPoints->GetActor());
   }
 
   void ParticleFilterVisualizer::SetVisiblity(bool visible)
@@ -145,10 +154,17 @@ namespace Nf
 
   void ParticleFilterVisualizer::onVisibilityChanged()
   {
-    m_pfPoints->GetActor()->SetVisibility(m_showParticlePos->GetValue());
-    m_pfExpectedPos->GetActor()->SetVisibility(m_showExpectedPos->GetValue());
-    m_pfExpectedOrientation->SetVisibility(m_showExpectedOrientation->GetValue());
-    m_measurementPoints->GetActor()->SetVisibility(m_showMeasurements->GetValue());
+    if(m_init) {
+      m_pfPoints->GetActor()->SetVisibility(m_showParticlePos->GetValue());
+      m_pfExpectedPos->GetActor()->SetVisibility(m_showExpectedPos->GetValue());
+      m_pfExpectedOrientation->SetVisibility(m_showExpectedOrientation->GetValue());
+      m_measurementPoints->GetActor()->SetVisibility(m_showMeasurements->GetValue());
+    } else {
+      m_pfPoints->GetActor()->SetVisibility(false);
+      m_pfExpectedPos->GetActor()->SetVisibility(false);
+      m_pfExpectedOrientation->SetVisibility(false);
+      m_measurementPoints->GetActor()->SetVisibility(false);
+    }
   }
   
   void ParticleFilterVisualizer::DoSegmentation(RPData *rp, NeedleFrame &doppler, NeedleFrame &bmode)
@@ -175,6 +191,7 @@ namespace Nf
     m_pfFramesProcessed.clear();
     m_update->onUpdate();
     m_init = false;
+    onVisibilityChanged();
   }
 
   void ParticleFilterVisualizer::onPFMethodChanged()
@@ -211,8 +228,9 @@ namespace Nf
       }
       res->usw = norm(pd.m.fur-pd.m.ful);
       res->ush = norm(pd.m.ful-pd.m.fbl);
+      res->measurementOffsetSigma = (Vec2d(pd.mpp.x/1000.0, pd.mpp.y/1000.0)*m_measurementNoise->GetValue()).ToArmaVec();
     }
-    res->minimumMeasurements = 20;
+    res->minimumMeasurements = 10;
 
     return res;
   }
@@ -294,10 +312,14 @@ namespace Nf
   void ParticleFilterVisualizer::UpdateVisualizations(s32 frame)
   {
     arma::mat pos = m_pfFramesProcessed[frame].particlePos;
+    arma::mat w = m_pfFramesProcessed[frame].w;
     std::vector < Vec3d > particlePos;
-    for(s32 i=0; i<pos.n_cols; i+=m_nVisSkip->GetValue()) 
+    std::vector < f64 > particleWs;
+    for(s32 i=0; i<pos.n_cols; i+=m_nVisSkip->GetValue())  {
       particlePos.push_back(Vec3d(pos(0, i), pos(1, i), pos(2, i)));
-    m_pfPoints->SetPoints(particlePos);
+      particleWs.push_back(w(i));
+    }
+    m_pfPoints->SetPoints(particlePos);//, particleWs);
     m_pfExpectedPos->SetCenter(Vec3d::FromArmaVec(m_pfFramesProcessed[frame].est.pos));
 
     Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(Matrix33d::FromArmaMatrix3x3(m_pfFramesProcessed[frame].est.R), Vec3d::FromArmaVec(m_pfFramesProcessed[frame].est.pos));
@@ -335,6 +357,8 @@ namespace Nf
         rp->origin, Vec2d(rp->mpp.x/1000, rp->mpp.y/1000.0));
     }
 
+    onVisibilityChanged();
+
     m_pfFramesProcessed[frame] = AssemblePFData(np, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), *rp, m_roc->GetValue());
 
     std::tr1::shared_ptr < PFParams > params = GetParams(frame);
@@ -346,6 +370,7 @@ namespace Nf
       m_pfFramesProcessed[frame].est = m_pf->GetExpectedValue(params.get());
       m_pfFramesProcessed[frame].particleRs = m_pf->GetParticleOrientations(params.get());
       m_pfFramesProcessed[frame].particlePos = m_pf->GetParticlePositions(params.get());
+      m_pfFramesProcessed[frame].w = m_pf->GetWeights();
       UpdateVisualizations(frame);
     } else if(m_init) {
       //We're initialized
@@ -357,6 +382,7 @@ namespace Nf
       m_pfFramesProcessed[frame].est = m_pf->GetExpectedValue(params.get());
       m_pfFramesProcessed[frame].particleRs = m_pf->GetParticleOrientations(params.get());
       m_pfFramesProcessed[frame].particlePos = m_pf->GetParticlePositions(params.get());
+      m_pfFramesProcessed[frame].w = m_pf->GetWeights();
       UpdateVisualizations(frame);
 
       // Resample if effective number of particles drops below threshold

@@ -51,6 +51,7 @@ namespace Nf {
     void SetRadius(f64 rad);
     void SavePoints(const char *path);
     void SetPoints(const std::vector < Vec3d > &points);
+    void SetPoints(const std::vector < Vec3d > & points, const std::vector < f64 > & weights);
   };
 
   class AxesVisualizer : public GeometryVisualizer

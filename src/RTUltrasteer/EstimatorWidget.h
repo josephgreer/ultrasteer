@@ -48,6 +48,7 @@ namespace Nf
     TipState est;
     std::vector < arma::mat33 > particleRs;
     arma::mat particlePos;
+    arma::mat w;
   };
 
   class ParticleFilterVisualizer : public ParameterCollection, public Updateable
@@ -98,6 +99,8 @@ namespace Nf
     std::tr1::shared_ptr < Nf::IntParameter > m_nVisSkip;
     void onNVisSkipChanged();
     CLASS_CALLBACK(onNVisSkipChanged, ParticleFilterVisualizer);
+
+    std::tr1::shared_ptr < Nf::FloatParameter > m_measurementNoise;
 
     std::tr1::shared_ptr < Nf::BoolParameter > m_showParticlePos;
     std::tr1::shared_ptr < Nf::BoolParameter > m_showExpectedPos;
