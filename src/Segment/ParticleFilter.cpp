@@ -316,8 +316,8 @@ namespace Nf
   //////////////////////////////////////////////////////////////////////////////////////////
   ParticleFilter::ParticleFilter(s32 nParticles, const char *name, const PFParams *p)
     : m_nParticles(nParticles)
-    , m_pDopOverNeedle(PDOPOVERNEEDLEPATH)
-    , m_pDopNotOverNeedle(PDOPNOTOVERNEEDLEPATH)
+    , m_pDopOverNeedle(PATH_CAT("Trial3/Insertion/pdopoverneedle.dat"))
+    , m_pDopNotOverNeedle(PATH_CAT("Trial3/Insertion/pdopnotoverneedle.dat"))
   {
     m_w = ones(1,m_nParticles)/(f64)m_nParticles;
   }

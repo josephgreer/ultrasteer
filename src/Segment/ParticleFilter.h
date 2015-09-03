@@ -10,9 +10,6 @@
 
 namespace Nf
 {
-#define PDOPOVERNEEDLEPATH "C:/Joey/Data/probDist/pdopoverneedle.dat"
-#define PDOPNOTOVERNEEDLEPATH "C:/Joey/Data/probDist/pdopnotoverneedle.dat"
-
   struct Measurement
   {
     arma::mat pos;             // represents positions of points x1,x2,...,xn \in R^3. [x1 x2 ... xn] \in R^(3xn)

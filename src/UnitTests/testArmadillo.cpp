@@ -412,8 +412,8 @@ TEST(Math, SO3Distance)
 TEST(Math, LUTDist)
 {
   using ::s32;
-  LUTDist pDopOverNeedle(PDOPOVERNEEDLEPATH);
-  LUTDist pDopNotOverNeedle(PDOPNOTOVERNEEDLEPATH);
+  LUTDist pDopOverNeedle(PATH_CAT("Trial3/Insertion/pdopoverneedle.dat"));
+  LUTDist pDopNotOverNeedle(PATH_CAT("Trial3/Insertion/pdopnotoverneedle.dat"));
 
   vec xs = linspace(-200, 1000, 10000);
   vec poverneedle = zeros(xs.n_elem);

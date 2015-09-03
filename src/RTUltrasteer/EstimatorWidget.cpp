@@ -415,10 +415,10 @@ namespace Nf
   {
     ADD_ACTION_PARAMETER(m_doNeedleCalib, "Do Needle Calibration", CALLBACK_POINTER(onDoNeedleCalibrationPushed, EstimatorFileWidget), this, false);
     ADD_ENUM_PARAMETER(m_operationMode, "Operation Mode", CALLBACK_POINTER(onSetOperationMode, EstimatorFileWidget), this, QtEnums::EstimatorOperationMode::EOM_NONE, "EstimatorOperationMode");
-    ADD_SAVE_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Save Path", NULL, this, "C:/Joey/Data/TipCalibration/tipCalib.mat", "(*.mat)");
-    ADD_OPEN_FILE_PARAMETER(m_tipCalibPathLoad, "Presaved Tip Calibration",CALLBACK_POINTER(onTipCalibPathChanged, EstimatorFileWidget), this, "C:/Joey/Data/TipCalibration/tipCalib.mat", "(*.mat)");
-    ADD_SAVE_FILE_PARAMETER(m_pointsDataPath, "Point History Save Path", NULL, this, "C:/Joey/Data/TipCalibration/tipHistory.mat", "(*.mat)");
-    ADD_OPEN_FILE_PARAMETER(m_pointsDataPathLoad, "Presaved Point History", CALLBACK_POINTER(onPointsDataPathChanged, EstimatorFileWidget), this, "C:/Joey/Data/TipCalibration/tipHistory.mat", "(*.mat)");
+    ADD_SAVE_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Save Path", NULL, this, PATH_CAT("TipCalibration/ShallowInsertion/tipCalib.mat"), "(*.mat)");
+    ADD_OPEN_FILE_PARAMETER(m_tipCalibPathLoad, "Presaved Tip Calibration",CALLBACK_POINTER(onTipCalibPathChanged, EstimatorFileWidget), this, PATH_CAT("TipCalibration/ShallowInsertion/tipCalib.mat"), "(*.mat)");
+    ADD_SAVE_FILE_PARAMETER(m_pointsDataPath, "Point History Save Path", NULL, this, PATH_CAT("Trial1/PreInsertionGPS/TipHistory.mat"), "(*.mat)");
+    ADD_OPEN_FILE_PARAMETER(m_pointsDataPathLoad, "Presaved Point History", CALLBACK_POINTER(onPointsDataPathChanged, EstimatorFileWidget), this, PATH_CAT("Trial1/PreInsertionGPS/TipHistory.mat"), "(*.mat)");
     ADD_ACTION_PARAMETER(m_clearCalibrationData, "Clear Calibration Data", CALLBACK_POINTER(onClearCalibrationData, EstimatorFileWidget), this, false);
     ADD_ACTION_PARAMETER(m_clearTipCalibration, "Clear Tip Calibration", CALLBACK_POINTER(onClearTipCalibration, EstimatorFileWidget), this, false);
     ADD_CHILD_COLLECTION(m_pfVisualizer.get());
@@ -833,9 +833,9 @@ namespace Nf
     ADD_ACTION_PARAMETER(m_insertion, "[Stop] Insert", CALLBACK_POINTER(onInsertionPushed, EstimatorStreamingWidget), this, false);
     ADD_ACTION_PARAMETER(m_pauseInsertion, "[Un]Pause Insert", CALLBACK_POINTER(onPauseInsertionPushed, EstimatorStreamingWidget), this, false);
     ADD_ACTION_PARAMETER(m_saveGPS, "Save GPS", CALLBACK_POINTER(onSaveGPS, EstimatorStreamingWidget), this, false);
-    ADD_OPEN_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Path", CALLBACK_POINTER(onTipCalibPathChanged, EstimatorStreamingWidget), this, "C:/Joey/Data/TipCalibration/ShallowInsertion/tipCalib.mat", "(*.mat)");
-    ADD_OPEN_FILE_PARAMETER(m_tipHistoryPathLoad, "Presaved Tip History Path", CALLBACK_POINTER(onTipHistoryPathLoadChanged, EstimatorStreamingWidget), this, "C:/Joey/Data/TipCalibration/tipHistory.mat", "(*.mat)");
-    ADD_SAVE_FILE_PARAMETER(m_tipHistoryPathSave, "Tip History Path", CALLBACK_POINTER(onTipHistoryPathSavedChanged, EstimatorStreamingWidget), this, "C:/Joey/Data/TipCalibration/tipHistory.mat", "(*.mat)");
+    ADD_OPEN_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Path", CALLBACK_POINTER(onTipCalibPathChanged, EstimatorStreamingWidget), this, PATH_CAT("TipCalibration/ShallowInsertion/tipCalib.mat"), "(*.mat)");
+    ADD_OPEN_FILE_PARAMETER(m_tipHistoryPathLoad, "Presaved Tip History Path", CALLBACK_POINTER(onTipHistoryPathLoadChanged, EstimatorStreamingWidget), this, PATH_CAT("Trial1/PreInsertGPS/TipHistory.mat"), "(*.mat)");
+    ADD_SAVE_FILE_PARAMETER(m_tipHistoryPathSave, "Tip History Path", CALLBACK_POINTER(onTipHistoryPathSavedChanged, EstimatorStreamingWidget), this, PATH_CAT("Trial1/PreInsertGPS/TipHistory.mat"), "(*.mat)");
     ADD_BOOL_PARAMETER(m_showPastTipPoints, "Show Past Tip Points", NULL, this, false);
     ADD_BOOL_PARAMETER(m_collectPastTipPoints, "Collect Past Tip Points", NULL, this, false);
     ADD_ACTION_PARAMETER(m_clearPastPoints, "Clear Past Tip Points", CALLBACK_POINTER(onClearPastPoints, EstimatorStreamingWidget), this, false);
