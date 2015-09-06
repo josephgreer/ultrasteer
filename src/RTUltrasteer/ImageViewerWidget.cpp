@@ -38,7 +38,7 @@ namespace Nf
     m_imageActor = vtkSmartPointer<vtkImageActor>::New();
     m_renderer = vtkSmartPointer<vtkRenderer>::New();
 
-    m_interactor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
+    m_interactor = vtkSmartPointer<vtkRenderWindowInteractor>::New();    
   }
 
   ImageViewerWidget::~ImageViewerWidget()
@@ -366,6 +366,7 @@ namespace Nf
     m_mapTransparency = vtkSmartPointer<vtkImageMapToColors>::New();
     m_maskActor = vtkSmartPointer<vtkImageActor>::New();
     m_lookUpTable = vtkSmartPointer<vtkLookupTable>::New();
+
   }
 
   ImageViewer2DTeleoperationWidget::~ImageViewer2DTeleoperationWidget()
@@ -602,9 +603,9 @@ namespace Nf
   {
     m_importer->SetDataSpacing(1,1,1);
   }
+
+
   ////////////////////////////////////////////////////////
   // End ImageViewer2DTeleoperationWidget
   ////////////////////////////////////////////////////////
-
-
 }

@@ -32,6 +32,7 @@ namespace Nf
 {
   class Teleoperation2DWidget; // Empty to avoid circular dependency
 
+  
   class ImageViewerWidget : public ResizableQVTKWidget, public ParameterCollection
   {
   protected:
@@ -144,9 +145,8 @@ namespace Nf
     void getImageDim(int &w, int &h);
     void setControl(ControlAlgorithms* control);
     void onUpdateOverlay();
-    virtual void SetDataSpacing(const RPData *rp);
+    virtual void SetDataSpacing(const RPData *rp);    
   };
-
 }
 
 #endif // IMAGEVIEWERWIDGET_H

@@ -33,6 +33,7 @@ INCLUDE_DIRECTORIES(
   ../ControlAlgorithms
   ../RPFileWriter
 	${CMAKE_CURRENT_SOURCE_DIR}/../../external/alglib/src
+  ../3DMouse
   ${UlteriusDir}/inc
   ${CMAKE_CURRENT_SOURCE_DIR}/../../external/armadillo/include
 ) 
@@ -78,6 +79,7 @@ SET_TARGET_PROPERTIES(RTUltrasteer PROPERTIES LINK_FLAGS_DEBUG /SUBSYSTEM:window
 SET_TARGET_PROPERTIES(RTUltrasteer PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:windows)
  #Must be lowercase windows
 
-TARGET_LINK_LIBRARIES(RTUltrasteer Segment VolumeCreator ControlAlgorithms RPFileReader RobotHardware RPFileWriter alglib ${OpenCV_LIBS} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${UlteriusDir}/lib/ulterius_old.lib
+
+TARGET_LINK_LIBRARIES(RTUltrasteer Segment VolumeCreator ControlAlgorithms 3DMouse RPFileReader RobotHardware RPFileWriter alglib ${OpenCV_LIBS} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${UlteriusDir}/lib/ulterius_old.lib
   ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/liblapack.lib ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/libblas.lib winmm.lib)
 

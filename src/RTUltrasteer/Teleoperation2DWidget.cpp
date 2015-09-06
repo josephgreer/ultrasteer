@@ -8,6 +8,7 @@ namespace Nf
     : Nf::ParameterCollection("Teleoperation 2D")
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
     , m_Tref2robot(Matrix44d::Zero())
+    , m_mouse((QWidget *) this)
   {
     m_robot = robot;
     m_control = control;
@@ -46,6 +47,8 @@ namespace Nf
     this->setLayout(m_layout);
 
     m_preScanTimer = std::tr1::shared_ptr<QTimer>((QTimer *)NULL);
+
+    QObject::connect(&m_mouse, SIGNAL(Move3d(std::vector<float>&)), this, SLOT(OnMove(std::vector<float>&)));
 
     // add framework params
     ADD_ENUM_PARAMETER(m_transducerType, "Transducer", CALLBACK_POINTER(onSetTransducerType, Teleoperation2DWidget), this, QtEnums::Transducer::LINEAR, "Transducer");
@@ -125,6 +128,18 @@ namespace Nf
       m_control->startStopManualScanning( false );
       m_imageViewer->SetInstructionText(" ");
     }
+  }
+
+  void Teleoperation2DWidget::OnMove(std::vector<float>& motionData)
+  {
+    if (motionData.size() < 6) return;
+
+    NTrace("x = %f\n",motionData[0]);
+    NTrace("y = %f\n",motionData[1]);
+    NTrace("z = %f\n",motionData[2]);
+    NTrace("a = %f\n",motionData[3]);
+    NTrace("b = %f\n",motionData[4]);
+    NTrace("c = %f\n",motionData[5]);
   }
 
   void Teleoperation2DWidget::checkCalibrations()
@@ -291,5 +306,7 @@ namespace Nf
   Teleoperation2DStreamingWidget::~Teleoperation2DStreamingWidget()
   {
   }
+
+
 
 }

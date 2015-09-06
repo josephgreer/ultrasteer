@@ -28,6 +28,7 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_SOURCE_DIR}/../../inc/
   ${CMAKE_CURRENT_SOURCE_DIR}/../ControlAlgorithms/  
   ${CMAKE_CURRENT_SOURCE_DIR}/../Segment/
+  ${CMAKE_CURRENT_SOURCE_DIR}/../3DMouse/
   ${CMAKE_CURRENT_SOURCE_DIR}/../../external/alglib/src
 ) 
 
@@ -72,5 +73,5 @@ SET_TARGET_PROPERTIES(RealTimeUltrasteer PROPERTIES LINK_FLAGS_DEBUG /SUBSYSTEM:
 SET_TARGET_PROPERTIES(RealTimeUltrasteer PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:windows)
  #Must be lowercase windows
 
-TARGET_LINK_LIBRARIES(RealTimeUltrasteer ControlAlgorithms alglib Segment ${OpenCV_LIBS} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/porta.lib ${ITK_LIBRARIES} ${VTK_LIBRARIES})
+TARGET_LINK_LIBRARIES(RealTimeUltrasteer ControlAlgorithms alglib Segment 3DMouse ${OpenCV_LIBS} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/porta.lib ${ITK_LIBRARIES} ${VTK_LIBRARIES})
 

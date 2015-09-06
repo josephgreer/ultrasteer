@@ -16,6 +16,7 @@
 #include "NeedleSteeringRobot.h"
 #include "ControlAlgorithms.h"
 #include "TeleoperationVisualizationWidget.h"
+#include "Mouse3DInput.h"
 
 namespace Nf
 {
@@ -43,6 +44,8 @@ namespace Nf
     RPData m_data;
     Matrix44d m_Tref2robot;
 
+    Mouse3DInput m_mouse;
+
   public:
     Teleoperation2DWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control);
     virtual ~Teleoperation2DWidget();
@@ -59,6 +62,7 @@ namespace Nf
     void onStartManualNeedleScan();
     void onStartStopTeleoperation();
     void onManualTimeout();
+    void OnMove(std::vector<float>& motionData);
   };
 
   class Teleoperation2DFileWidget : public Teleoperation2DWidget
@@ -114,6 +118,17 @@ namespace Nf
     virtual void HandleFrame(RPData &rp);
 
   };
+
+  //class ManualControlWidget //: public ResizableQWidget
+  //{
+  //  Q_OBJECT 
+
+  //public:
+  //  ManualControlWidget();
+  //  ~ManualControlWidget();
+  //  void TDxMouseCallbackFunction(vtkObject*, unsigned long eid, void* clientdata, void *calldata);
+
+  //};
 }
 
 #endif //TELEOPERATION2DWIDGET_H
