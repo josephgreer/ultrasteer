@@ -72,7 +72,7 @@ figure;
 plot(Xipos, Fpos)
 title('p(d | on needle)');
 hold on;
-[Fneg Xineg] = ksdensity(data(offNeedles,1), 'bandwidth',20);
+[Fneg Xineg] = ksdensity(data(offNeedles,1), 'bandwidth',10);
 plot(Xineg, Fneg, 'r');
 title('p(d | off needle)');
 
