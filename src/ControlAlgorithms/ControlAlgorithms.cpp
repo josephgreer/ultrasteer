@@ -4,11 +4,13 @@
 
 #define   RHO         60.0    // radius of curvature for needle in mm
 #define   INS_SPEED   10.0    // insertion speed during teleoperation 
+#define   ROT_SPEED   10.0    // rotation speed during teleoperation
 
 namespace Nf {
 
   ControlAlgorithms::ControlAlgorithms():    
-      m_inFollowing(false)
+      m_inTaskSpaceControl(false)
+    , m_inJointSpaceControl(false)
     , m_inManualScanning(false)
     , m_t(0.0, 0.0, 0.0)
     , m_x(Matrix44d::Zero())
@@ -25,9 +27,15 @@ namespace Nf {
   }
 
   // return true if the robot is in following; false otherwise
-  bool ControlAlgorithms::inFollowing()
+  bool ControlAlgorithms::inTaskSpaceControl()
   {
-    return m_inFollowing;
+    return m_inTaskSpaceControl;
+  }
+
+  // return true if the robot is in following; false otherwise
+  bool ControlAlgorithms::inJointSpaceControl()
+  {
+    return m_inJointSpaceControl;
   }
 
   // return true if a manual scan is underway; false otherwise
@@ -36,14 +44,21 @@ namespace Nf {
     return m_inManualScanning;
   }
 
-  // toggle the teleoperation state, and return inFollowing()
-  bool ControlAlgorithms::startStopTeleoperation()
+  // toggle the task-space control state
+  bool ControlAlgorithms::startStopTaskSpaceControl()
   {
     if(!m_UKF.isInitialized()) // initialize the UKF based on robot joint variables if necessary
       m_UKF.initialize(m_robot->getInsMM(), m_robot->getRollAngle());
 
-    m_inFollowing = !m_inFollowing;
-    return inFollowing();
+    m_inTaskSpaceControl = !m_inTaskSpaceControl;
+    return m_inTaskSpaceControl;
+  }
+
+  // toggle the joint-space control state
+  bool ControlAlgorithms::startStopJointSpaceControl()
+  {
+    m_inJointSpaceControl = !m_inJointSpaceControl;
+    return m_inJointSpaceControl;
   }
 
   void ControlAlgorithms::startStopManualScanning(bool start)
@@ -119,14 +134,24 @@ namespace Nf {
       m_segmentation.addManualScanFrame(data);
     }
 
-    if( inFollowing() ) // if in following
+    if( m_inTaskSpaceControl ) // if in following
     {
       GetPoseEstimate(m_x); // update the UKF estimate      
       ControlCorrection();  // execute control correction
       if( CheckCompletion() ){  // if we've reached the target
         m_robot->SetInsertionVelocity(0.0);
-        m_inFollowing = false;
+        m_inTaskSpaceControl = false;
       }
+    }
+  }
+
+  // brief: set the robot velocity based on input from 3D mouse
+  //        inputs are percentage of maximum in range [0.0, ... , 1.0]
+  void ControlAlgorithms::setJointSpaceControlVelocities(f32 v_rot, f32 v_ins)
+  {
+    if( m_inJointSpaceControl ){
+     m_robot->SetInsertionVelocity(v_ins*INS_SPEED);
+     m_robot->SetRotationVelocity(v_rot*ROT_SPEED);
     }
   }
 

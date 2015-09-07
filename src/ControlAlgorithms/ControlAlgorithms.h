@@ -23,8 +23,10 @@ namespace Nf {
     ControlAlgorithms();
     ~ControlAlgorithms();
     void startStopManualScanning(bool start);
-    bool startStopTeleoperation();
-    bool inFollowing();
+    bool startStopTaskSpaceControl();
+    bool startStopJointSpaceControl();
+    bool inTaskSpaceControl();
+    bool inJointSpaceControl();
     bool inManualScanning();
     void controlHeartBeat(RPData);
     void onUpdateOverlay();
@@ -41,6 +43,7 @@ namespace Nf {
     bool isCalibrationSet();
     void setCalibration(Matrix44d, Matrix44d, s32);
     void updateTransducerPose();
+    void setJointSpaceControlVelocities(f32 v_rot, f32 v_ins);
 
     void getOverlayValues(bool &show_p, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Vec3d &p, Matrix33d &R,
                           bool &show_t, Vec3d &t_img, Vec3d &t,
@@ -67,7 +70,8 @@ namespace Nf {
     //Matrix44d m_measurement;
     Matrix44d m_Ttrans2robot;
     bool m_inManualScanning;
-    bool m_inFollowing;
+    bool m_inTaskSpaceControl;
+    bool m_inJointSpaceControl;
     InPlaneSegmentation m_segmentation; 
     UnscentedKalmanFilter m_UKF;
     NeedleSteeringRobot* m_robot;

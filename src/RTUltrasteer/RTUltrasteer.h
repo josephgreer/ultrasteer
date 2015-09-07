@@ -739,6 +739,7 @@ private:
 
     NeedleSteeringRobot m_robot;
     Nf::ControlAlgorithms m_control;
+    Mouse3DInput m_mouse;
 
     void CreateUSVisualizer();
     void CreateMenuDock();

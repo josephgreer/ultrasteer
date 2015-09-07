@@ -1,17 +1,18 @@
 #include "Teleoperation2DWidget.h"
 
-#define   TSCAN   4.0  // total manual scan time in ms
+#define   TSCAN       4.0     // total manual scan time in ms
+#define   MOUSE_MAX   0.010   // maximum reading per axis from the 3DConnexion input device 
 
 namespace Nf
 {
-  Teleoperation2DWidget::Teleoperation2DWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control)
+  Teleoperation2DWidget::Teleoperation2DWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control, Mouse3DInput* mouse)
     : Nf::ParameterCollection("Teleoperation 2D")
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
     , m_Tref2robot(Matrix44d::Zero())
-    , m_mouse((QWidget *) this)
   {
     m_robot = robot;
     m_control = control;
+    m_mouse = mouse;
 
     m_imageViewer = std::tr1::shared_ptr<ImageViewer2DTeleoperationWidget>(new ImageViewer2DTeleoperationWidget(parent, control, this));
     m_teleoperationVisualizer = std::tr1::shared_ptr<TeleoperationVisualizationWidget>(new TeleoperationVisualizationWidget(parent, control));
@@ -23,12 +24,19 @@ namespace Nf
     m_scanButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
     connect(m_scanButton, SIGNAL(clicked()), this, SLOT(onStartManualNeedleScan()));
 
-    m_teleoperateButton = new QPushButton("Start Teleoperation", parent);
-    font = m_teleoperateButton->font();
+    m_taskControlButton = new QPushButton("Start Task-Space Teleoperation", parent);
+    font = m_taskControlButton->font();
     font.setPointSize(16);
-    m_teleoperateButton->setFont(font);
-    m_teleoperateButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
-    connect(m_teleoperateButton, SIGNAL(clicked()), this, SLOT(onStartStopTeleoperation()));
+    m_taskControlButton->setFont(font);
+    m_taskControlButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    connect(m_taskControlButton, SIGNAL(clicked()), this, SLOT(onStartStopTaskSpaceControl()));
+
+    m_jointControlButton = new QPushButton("Start Joint-Space Teleoperation", parent);
+    font = m_jointControlButton->font();
+    font.setPointSize(16);
+    m_jointControlButton->setFont(font);
+    m_jointControlButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    connect(m_jointControlButton, SIGNAL(clicked()), this, SLOT(onStartStopJointSpaceControl()));
 
     m_leftSubLayout = new QHBoxLayout(parent);
     m_leftSubLayout->addWidget((QWidget *)(m_teleoperationVisualizer.get()));
@@ -36,7 +44,8 @@ namespace Nf
 
     m_rightSubLayout = new QVBoxLayout(parent); 
     m_rightSubLayout->addWidget(m_scanButton);
-    m_rightSubLayout->addWidget(m_teleoperateButton);
+    m_rightSubLayout->addWidget(m_taskControlButton);
+    m_rightSubLayout->addWidget(m_jointControlButton);
     m_rightSubLayout->setMargin(0);
     m_rightSubLayout->setContentsMargins(QMargins(0,0,0,0));
     m_rightSubLayout->setSpacing(0);
@@ -48,7 +57,7 @@ namespace Nf
 
     m_preScanTimer = std::tr1::shared_ptr<QTimer>((QTimer *)NULL);
 
-    QObject::connect(&m_mouse, SIGNAL(Move3d(std::vector<float>&)), this, SLOT(OnMove(std::vector<float>&)));
+    QObject::connect(m_mouse, SIGNAL(Move3d(std::vector<float>&)), this, SLOT(OnMove(std::vector<float>&)));
 
     // add framework params
     ADD_ENUM_PARAMETER(m_transducerType, "Transducer", CALLBACK_POINTER(onSetTransducerType, Teleoperation2DWidget), this, QtEnums::Transducer::LINEAR, "Transducer");
@@ -80,14 +89,30 @@ namespace Nf
     return res;
   }
 
-  void Teleoperation2DWidget::onStartStopTeleoperation()
+  void Teleoperation2DWidget::onStartStopTaskSpaceControl()
   {
     checkCalibrations(); 
 
-    if( m_control->startStopTeleoperation() ){
-      m_teleoperateButton->setText("Stop Teleoperation");
+    if( m_control->startStopTaskSpaceControl() ){
+      m_taskControlButton->setText("Stop Task-Space Teleoperation");
+      m_jointControlButton->setEnabled(false);
     }else{
-      m_teleoperateButton->setText("Start Teleoperation");
+      m_taskControlButton->setText("Start Task-Space Teleoperation");
+      m_jointControlButton->setEnabled(true);
+    }
+  }
+
+  void Teleoperation2DWidget::onStartStopJointSpaceControl()
+  {
+    checkCalibrations(); 
+
+    if( m_control->startStopJointSpaceControl() ){ // starting joint-space control
+      m_jointControlButton->setText("Stop Joint-Space Teleoperation");
+      m_taskControlButton->setEnabled(false);
+    }else{ // stopping joint-space control
+      m_control->setJointSpaceControlVelocities(0.0, 0.0);
+      m_jointControlButton->setText("Start Joint-Space Teleoperation");
+      m_taskControlButton->setEnabled(true);
     }
   }
 
@@ -134,12 +159,11 @@ namespace Nf
   {
     if (motionData.size() < 6) return;
 
-    NTrace("x = %f\n",motionData[0]);
-    NTrace("y = %f\n",motionData[1]);
-    NTrace("z = %f\n",motionData[2]);
-    NTrace("a = %f\n",motionData[3]);
-    NTrace("b = %f\n",motionData[4]);
-    NTrace("c = %f\n",motionData[5]);
+    if ( m_control->inJointSpaceControl() ){ // if we are using the 3D mouse to control the robot
+      float dz = motionData[2];
+      float rz = motionData[5];
+      m_control->setJointSpaceControlVelocities(rz/MOUSE_MAX, dz/MOUSE_MAX);
+    }
   }
 
   void Teleoperation2DWidget::checkCalibrations()
@@ -190,8 +214,8 @@ namespace Nf
     m_teleoperationVisualizer->onUpdateVisualization();
   }
 
-  Teleoperation2DFileWidget::Teleoperation2DFileWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control)
-    : Teleoperation2DWidget(parent, robot, control) 
+  Teleoperation2DFileWidget::Teleoperation2DFileWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control, Mouse3DInput* mouse)
+    : Teleoperation2DWidget(parent, robot, control, mouse) 
     , m_rpReaders(NULL)
   {
 
@@ -260,8 +284,8 @@ namespace Nf
 
   }
 
-  Teleoperation2DStreamingWidget::Teleoperation2DStreamingWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control)
-    : Teleoperation2DWidget(parent, robot, control) 
+  Teleoperation2DStreamingWidget::Teleoperation2DStreamingWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control, Mouse3DInput* mouse)
+    : Teleoperation2DWidget(parent, robot, control, mouse) 
   {
     ADD_STRING_PARAMETER(m_rpIp, "Ulterius IP", NULL, this, "192.168.1.129");
     ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, Teleoperation2DStreamingWidget), this, false);

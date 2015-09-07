@@ -17,13 +17,14 @@
 #include "ControlAlgorithms.h"
 #include "TeleoperationVisualizationWidget.h"
 #include "Mouse3DInput.h"
+#include <QLCDNumber>
 
 namespace Nf
 {
   class Teleoperation2DWidget : public ResizableQWidget, public ParameterCollection
   {
     Q_OBJECT 
-
+      
   protected:
     std::tr1::shared_ptr < Nf::EnumParameter > m_transducerType;
     void onSetTransducerType();
@@ -32,22 +33,25 @@ namespace Nf
     std::tr1::shared_ptr <ImageViewer2DTeleoperationWidget> m_imageViewer;
     std::tr1::shared_ptr <TeleoperationVisualizationWidget> m_teleoperationVisualizer;
     QGridLayout *m_layout;
+
     QVBoxLayout *m_rightSubLayout;
     QHBoxLayout *m_leftSubLayout;
     QPushButton *m_scanButton;
-    QPushButton *m_teleoperateButton;
+    QPushButton *m_taskControlButton;
+    QPushButton *m_jointControlButton;
     std::tr1::shared_ptr < QTimer > m_preScanTimer;
     QElapsedTimer m_scanTimer;
     
     NeedleSteeringRobot* m_robot;
     ControlAlgorithms* m_control;
+    Mouse3DInput *m_mouse;
+
     RPData m_data;
+
     Matrix44d m_Tref2robot;
 
-    Mouse3DInput m_mouse;
-
   public:
-    Teleoperation2DWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control);
+    Teleoperation2DWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control, Mouse3DInput* mouse);
     virtual ~Teleoperation2DWidget();
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
@@ -60,7 +64,8 @@ namespace Nf
 
   public slots:
     void onStartManualNeedleScan();
-    void onStartStopTeleoperation();
+    void onStartStopTaskSpaceControl();
+    void onStartStopJointSpaceControl();
     void onManualTimeout();
     void OnMove(std::vector<float>& motionData);
   };
@@ -74,7 +79,7 @@ namespace Nf
     QMutex m_lock;
 
   public:
-    Teleoperation2DFileWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control);
+    Teleoperation2DFileWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control, Mouse3DInput* mouse);
     virtual ~Teleoperation2DFileWidget();
 
     //Filename
@@ -98,7 +103,7 @@ namespace Nf
     RPPushReceiver *m_receiver;
 
   public:
-    Teleoperation2DStreamingWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control);
+    Teleoperation2DStreamingWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control, Mouse3DInput* mouse);
     virtual ~Teleoperation2DStreamingWidget();
 
     //IP
