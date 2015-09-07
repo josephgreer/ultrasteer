@@ -8,7 +8,10 @@
 #define InsRPM 10.0
 #define ONE_OUTPUT_ROTATION		511 422
 
-NeedleSteeringRobot::NeedleSteeringRobot()
+NeedleSteeringRobot::NeedleSteeringRobot() :
+      m_rollInit(false)
+    , m_insInit(false)
+    , m_artInit(false)
 {
 	connect(&polling_timer, SIGNAL(timeout()), this, SLOT(OnPollTimeout()));
 	connect(&dwell_timer, SIGNAL(timeout()), this, SLOT(OnDwellTimeout()));
@@ -23,6 +26,7 @@ void NeedleSteeringRobot::InitializeRoll(QString Com)
 {
 	m_RollDevice.Init(Com);
 	m_RollDevice.EnableDevice();
+  m_rollInit = true;
 }
 
 bool NeedleSteeringRobot::InitializeInsertion(QString Com)
@@ -32,6 +36,7 @@ bool NeedleSteeringRobot::InitializeInsertion(QString Com)
 	// Short pause to allow communication to sync up.
 	Sleep(10);
 	m_InsertionDevice.HomingSequence();
+  m_insInit = true;
 	return true;
 }
 
@@ -39,8 +44,23 @@ void NeedleSteeringRobot::InitializeArticulation(QString Com)
 {
 	m_ArticulationDevice.Init(Com);
 	m_ArticulationDevice.EnableDevice();
+  m_artInit = true;
 }
 
+bool NeedleSteeringRobot::isRollInitialized(void)
+{
+  return m_rollInit;
+}
+
+bool NeedleSteeringRobot::isInsertionInitialized(void)
+{
+  return m_insInit;
+}
+
+bool NeedleSteeringRobot::isArticulationInitialized(void)
+{
+  return m_artInit;
+}
 
 void NeedleSteeringRobot::InsertIncremental(float MM)
 {

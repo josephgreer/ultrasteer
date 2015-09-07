@@ -16,8 +16,10 @@
 #include "NeedleSteeringRobot.h"
 #include "ControlAlgorithms.h"
 #include "TeleoperationVisualizationWidget.h"
+#include "RobotStatusWidget.h"
 #include "Mouse3DInput.h"
 #include <QLCDNumber>
+#include <QMessageBox>
 
 namespace Nf
 {
@@ -34,6 +36,10 @@ namespace Nf
     std::tr1::shared_ptr <TeleoperationVisualizationWidget> m_teleoperationVisualizer;
     QGridLayout *m_layout;
 
+    
+    RobotStatusWidget *m_robotStatusWidget;
+    QLCDNumber *m_3DmouseIns;
+    QLCDNumber *m_3DmouseRot;
     QVBoxLayout *m_rightSubLayout;
     QHBoxLayout *m_leftSubLayout;
     QPushButton *m_scanButton;
@@ -58,7 +64,7 @@ namespace Nf
     std::vector < QVTKWidget * > GetChildWidgets();
     
     void displayScanTimeRemaining();
-    void checkCalibrations();
+    bool checkCalibrations();
     Matrix44d loadRobotEmCalibration();
     void updateTeleoperationVisualization();
 

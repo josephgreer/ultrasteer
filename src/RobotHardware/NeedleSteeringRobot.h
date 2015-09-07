@@ -28,7 +28,7 @@ public:
 	void InsertIncremental(float MM);
 	void RotateIncremental(float Deg);
 	void SetArticulationAngle(float Deg);
-	void SetInsertionVelocity(float RPM);
+	void SetInsertionVelocity(float MMPS);
 	void SetRotationVelocity(float RPM);
 	void DisableAll(void);
 	void HomeRoll(void);
@@ -38,6 +38,9 @@ public:
 	double getRollAngle(void);
 	double getInsMM(void);
 	double getArticulationAngle(void);
+  bool isRollInitialized(void);
+  bool isInsertionInitialized(void);
+  bool isArticulationInitialized(void);
 	//void cancelDutyCycling(void);
 	//void DutyCycleSteer(float DC, float angle, float insDist);
 
@@ -49,6 +52,7 @@ private:
 	clock_t m_roll_start, m_roll_stop;
 	double m_DC_InsTarg, m_DC_RollTarg;
 	double m_DC;
+  bool m_rollInit, m_insInit, m_artInit; 
 
 //private slots:
 		//void OnDwellTimeout(void);

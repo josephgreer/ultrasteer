@@ -21,31 +21,43 @@ namespace Nf
     QFont font = m_scanButton->font();
     font.setPointSize(16);
     m_scanButton->setFont(font);
-    m_scanButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    m_scanButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    m_scanButton->setFixedWidth(300);
     connect(m_scanButton, SIGNAL(clicked()), this, SLOT(onStartManualNeedleScan()));
 
     m_taskControlButton = new QPushButton("Start Task-Space Teleoperation", parent);
     font = m_taskControlButton->font();
     font.setPointSize(16);
     m_taskControlButton->setFont(font);
-    m_taskControlButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    m_taskControlButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    m_taskControlButton->setFixedWidth(300);
     connect(m_taskControlButton, SIGNAL(clicked()), this, SLOT(onStartStopTaskSpaceControl()));
 
     m_jointControlButton = new QPushButton("Start Joint-Space Teleoperation", parent);
     font = m_jointControlButton->font();
     font.setPointSize(16);
     m_jointControlButton->setFont(font);
-    m_jointControlButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    m_jointControlButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    m_jointControlButton->setFixedWidth(300);
     connect(m_jointControlButton, SIGNAL(clicked()), this, SLOT(onStartStopJointSpaceControl()));
+
+    m_3DmouseIns = new QLCDNumber(parent);
+    m_3DmouseRot = new QLCDNumber (parent);
+    m_3DmouseIns->setSegmentStyle(QLCDNumber::SegmentStyle::Flat);
+    m_3DmouseRot->setSegmentStyle(QLCDNumber::SegmentStyle::Flat);
+    m_robotStatusWidget = new RobotStatusWidget(parent, m_robot);
 
     m_leftSubLayout = new QHBoxLayout(parent);
     m_leftSubLayout->addWidget((QWidget *)(m_teleoperationVisualizer.get()));
     m_leftSubLayout->addWidget((QWidget *)(m_imageViewer.get()));
-
+        
     m_rightSubLayout = new QVBoxLayout(parent); 
     m_rightSubLayout->addWidget(m_scanButton);
     m_rightSubLayout->addWidget(m_taskControlButton);
     m_rightSubLayout->addWidget(m_jointControlButton);
+    m_rightSubLayout->addWidget(m_robotStatusWidget);
+    m_rightSubLayout->addWidget(m_3DmouseIns);
+    m_rightSubLayout->addWidget(m_3DmouseRot);
     m_rightSubLayout->setMargin(0);
     m_rightSubLayout->setContentsMargins(QMargins(0,0,0,0));
     m_rightSubLayout->setSpacing(0);
@@ -91,45 +103,50 @@ namespace Nf
 
   void Teleoperation2DWidget::onStartStopTaskSpaceControl()
   {
-    checkCalibrations(); 
+    if( checkCalibrations() ) 
+    {
 
-    if( m_control->startStopTaskSpaceControl() ){
-      m_taskControlButton->setText("Stop Task-Space Teleoperation");
-      m_jointControlButton->setEnabled(false);
-    }else{
-      m_taskControlButton->setText("Start Task-Space Teleoperation");
-      m_jointControlButton->setEnabled(true);
+      if( m_control->startStopTaskSpaceControl() ){
+        m_taskControlButton->setText("Stop Task-Space Teleoperation");
+        m_jointControlButton->setEnabled(false);
+      }else{
+        m_taskControlButton->setText("Start Task-Space Teleoperation");
+        m_jointControlButton->setEnabled(true);
+      }
     }
   }
 
   void Teleoperation2DWidget::onStartStopJointSpaceControl()
   {
-    checkCalibrations(); 
-
-    if( m_control->startStopJointSpaceControl() ){ // starting joint-space control
-      m_jointControlButton->setText("Stop Joint-Space Teleoperation");
-      m_taskControlButton->setEnabled(false);
-    }else{ // stopping joint-space control
-      m_control->setJointSpaceControlVelocities(0.0, 0.0);
-      m_jointControlButton->setText("Start Joint-Space Teleoperation");
-      m_taskControlButton->setEnabled(true);
+    if( checkCalibrations() )
+    {
+      if( m_control->startStopJointSpaceControl() ){ // starting joint-space control
+        m_jointControlButton->setText("Stop Joint-Space Teleoperation");
+        m_taskControlButton->setEnabled(false);
+      }else{ // stopping joint-space control
+        m_control->setJointSpaceControlVelocities(0.0, 0.0);
+        m_jointControlButton->setText("Start Joint-Space Teleoperation");
+        m_taskControlButton->setEnabled(true);
+      }
     }
   }
 
   void Teleoperation2DWidget::onStartManualNeedleScan()
   {
-    checkCalibrations();
+    if (checkCalibrations())
+    {
 
-    if(!m_preScanTimer) {
-      m_preScanTimer = std::tr1::shared_ptr<QTimer>(new QTimer());
-      connect(m_preScanTimer.get(), SIGNAL(timeout()), this, SLOT(onManualTimeout()));
-      m_preScanTimer->setInterval(2000); }
-    m_preScanTimer->start();
+      if(!m_preScanTimer) {
+        m_preScanTimer = std::tr1::shared_ptr<QTimer>(new QTimer());
+        connect(m_preScanTimer.get(), SIGNAL(timeout()), this, SLOT(onManualTimeout()));
+        m_preScanTimer->setInterval(2000); }
+      m_preScanTimer->start();
 
-    // print prepare for scan message
-    char str [100];
-    int n = sprintf(str, "Prepare for needle scan");
-    m_imageViewer->SetInstructionText(str);
+      // print prepare for scan message
+      char str [100];
+      int n = sprintf(str, "Prepare for needle scan");
+      m_imageViewer->SetInstructionText(str);
+    }
   }
 
   void Teleoperation2DWidget::onManualTimeout()
@@ -163,31 +180,48 @@ namespace Nf
       float dz = motionData[2];
       float rz = motionData[5];
       m_control->setJointSpaceControlVelocities(rz/MOUSE_MAX, dz/MOUSE_MAX);
+
+      m_3DmouseRot->display(rz/MOUSE_MAX);
+      m_3DmouseIns->display(dz/MOUSE_MAX);
+
     }
   }
 
-  void Teleoperation2DWidget::checkCalibrations()
+  bool Teleoperation2DWidget::checkCalibrations()
   {
-    if( m_Tref2robot.isZero() ){
-      m_Tref2robot = loadRobotEmCalibration();
+    if ( m_robot->isRollInitialized() && m_robot->isInsertionInitialized() )
+    { // if we have already initialized the robot DOF
+      if( m_Tref2robot.isZero() ){
+        m_Tref2robot = loadRobotEmCalibration();
+      }
+      Matrix44d transducerCalibration;
+      switch ( m_transducerType->GetValue() ){
+      case QtEnums::Transducer::LINEAR :
+        transducerCalibration = Matrix44d(14.8449, 0.9477, -0.0018, 0.0, 
+          15.0061, 0.0016, 1.00, 0.0, 
+          0.1638, 0.0166, 0.0052, 0.0, 
+          0.0, 0.0, 0.0, 1.0);
+        break;
+      case QtEnums::Transducer::CONVEX :
+        transducerCalibration = Matrix44d(-29.7558, 0.9433, -0.0034, 0.0, 
+          -0.087, 0.0033, 1.00, 0.0, 
+          -0.7053, 0.0132, -0.0087, 0.0, 
+          0.0, 0.0, 0.0, 1.0);
+        break;
+      }
+      m_control->setCalibration( m_Tref2robot, transducerCalibration, m_transducerType->GetValue() );
+      return true;
     }
-
-    Matrix44d transducerCalibration;
-    switch ( m_transducerType->GetValue() ){
-    case QtEnums::Transducer::LINEAR :
-      transducerCalibration = Matrix44d(14.8449, 0.9477, -0.0018, 0.0, 
-        15.0061, 0.0016, 1.00, 0.0, 
-        0.1638, 0.0166, 0.0052, 0.0, 
-        0.0, 0.0, 0.0, 1.0);
-      break;
-    case QtEnums::Transducer::CONVEX :
-      transducerCalibration = Matrix44d(-29.7558, 0.9433, -0.0034, 0.0, 
-        -0.087, 0.0033, 1.00, 0.0, 
-        -0.7053, 0.0132, -0.0087, 0.0, 
-        0.0, 0.0, 0.0, 1.0);
-      break;
+    else
+    {  // we haven't initialized the robot yet...
+      QString port;
+      QMessageBox msgBox;
+      msgBox.setWindowTitle("DANGER: SLEEPING ROBOT");
+      msgBox.setText("Initialize the insertion and rotation DOF with the Robot Hardware Widget.");
+      QPushButton *continueButton = msgBox.addButton("Got it!", QMessageBox::ActionRole);
+      msgBox.exec();
+      return false;
     }
-    m_control->setCalibration( m_Tref2robot, transducerCalibration, m_transducerType->GetValue() );      
   }
 
   Matrix44d Teleoperation2DWidget::loadRobotEmCalibration()
@@ -220,7 +254,8 @@ namespace Nf
   {
 
     //ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, Teleoperation2DFileWidget), this, "F:/TargetScans/TargetDataSet.b8", "Any File (*.*)");
-    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, Teleoperation2DFileWidget), this, "F:/NeedleScan/8_25_15/TroyData/scan.b8", "Any File (*.*)");
+    //ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, Teleoperation2DFileWidget), this, "F:/NeedleScan/8_25_15/TroyData/scan.b8", "Any File (*.*)");
+    ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, Teleoperation2DFileWidget), this, "D:/NeedleScan/8_25_15/TroyData/scan.b8", "Any File (*.*)");
     ADD_INT_PARAMETER(m_frame, "Frame Index", CALLBACK_POINTER(onUpdateFrame, Teleoperation2DFileWidget), this, 1, 1, 100, 1);
 
     onUpdateFile();

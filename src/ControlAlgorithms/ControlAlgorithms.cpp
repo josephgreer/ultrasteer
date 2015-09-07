@@ -3,8 +3,8 @@
 #include <time.h>
 
 #define   RHO         60.0    // radius of curvature for needle in mm
-#define   INS_SPEED   10.0    // insertion speed during teleoperation 
-#define   ROT_SPEED   10.0    // rotation speed during teleoperation
+#define   INS_SPEED   40.0    // insertion speed during teleoperation (mm/s) 
+#define   ROT_SPEED   200.0   // rotation speed during teleoperation (RPM)
 
 namespace Nf {
 
@@ -146,12 +146,26 @@ namespace Nf {
   }
 
   // brief: set the robot velocity based on input from 3D mouse
-  //        inputs are percentage of maximum in range [0.0, ... , 1.0]
+  //        inputs are percentage of maximum in range [-1.0, ... , 1.0]
   void ControlAlgorithms::setJointSpaceControlVelocities(f32 v_rot, f32 v_ins)
   {
     if( m_inJointSpaceControl ){
-     m_robot->SetInsertionVelocity(v_ins*INS_SPEED);
-     m_robot->SetRotationVelocity(v_rot*ROT_SPEED);
+      double saturation = 0.95;
+      double deadspace = 0.05;
+      if( v_ins < -saturation )
+        v_ins = -saturation;
+      if( v_ins > saturation )
+        v_ins = saturation;
+      if( v_rot < -saturation )
+        v_rot = -saturation;
+      if( v_rot > saturation )
+        v_rot = saturation;     
+      if( fabs(v_rot) < deadspace )
+        v_rot = 0.0;
+      if( fabs(v_ins) < deadspace )
+        v_ins = 0.0;
+      m_robot->SetInsertionVelocity(v_ins*INS_SPEED);
+      m_robot->SetRotationVelocity(v_rot*ROT_SPEED);
     }
   }
 
