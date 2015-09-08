@@ -9,6 +9,8 @@ namespace Nf
     : Nf::ParameterCollection("Teleoperation 2D")
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
     , m_Tref2robot(Matrix44d::Zero())
+    , m_3DmouseRot(NULL)
+    , m_3DmouseIns(NULL)
   {
     m_robot = robot;
     m_control = control;
@@ -41,26 +43,30 @@ namespace Nf
     m_jointControlButton->setFixedWidth(300);
     connect(m_jointControlButton, SIGNAL(clicked()), this, SLOT(onStartStopJointSpaceControl()));
 
-    m_3DmouseIns = new QLCDNumber(parent);
-    m_3DmouseRot = new QLCDNumber (parent);
-    m_3DmouseIns->setSegmentStyle(QLCDNumber::SegmentStyle::Flat);
-    m_3DmouseRot->setSegmentStyle(QLCDNumber::SegmentStyle::Flat);
+    //m_3DmouseIns = new QLCDNumber(parent);
+    //m_3DmouseRot = new QLCDNumber (parent);
+    //m_3DmouseIns->setSegmentStyle(QLCDNumber::SegmentStyle::Flat);
+    //m_3DmouseRot->setSegmentStyle(QLCDNumber::SegmentStyle::Flat);
+
     m_robotStatusWidget = new RobotStatusWidget(parent, m_robot);
 
     m_leftSubLayout = new QHBoxLayout(parent);
-    m_leftSubLayout->addWidget((QWidget *)(m_teleoperationVisualizer.get()));
     m_leftSubLayout->addWidget((QWidget *)(m_imageViewer.get()));
         
-    m_rightSubLayout = new QVBoxLayout(parent); 
-    m_rightSubLayout->addWidget(m_scanButton);
-    m_rightSubLayout->addWidget(m_taskControlButton);
-    m_rightSubLayout->addWidget(m_jointControlButton);
+    m_buttonLayout = new QVBoxLayout(parent);
+    m_buttonLayout->addWidget(m_scanButton);
+    m_buttonLayout->addWidget(m_taskControlButton);
+    m_buttonLayout->addWidget(m_jointControlButton);
+    //m_buttonLayout->addWidget(m_3DmouseIns);
+    //m_buttonLayout->addWidget(m_3DmouseRot);
+    m_buttonLayout->setMargin(0);
+    m_buttonLayout->setContentsMargins(QMargins(0,0,0,0));
+    m_buttonLayout->setSpacing(0);
+    
+    m_rightSubLayout = new QGridLayout(parent);
+    m_rightSubLayout->addWidget((QWidget *)(m_teleoperationVisualizer.get()), 0, 0, 1, 2);
+    m_rightSubLayout->addLayout(m_buttonLayout,1,0);
     m_rightSubLayout->addWidget(m_robotStatusWidget);
-    m_rightSubLayout->addWidget(m_3DmouseIns);
-    m_rightSubLayout->addWidget(m_3DmouseRot);
-    m_rightSubLayout->setMargin(0);
-    m_rightSubLayout->setContentsMargins(QMargins(0,0,0,0));
-    m_rightSubLayout->setSpacing(0);
 
     m_layout = new QGridLayout(parent);
     m_layout->addLayout(m_leftSubLayout,0,0);    
@@ -181,9 +187,10 @@ namespace Nf
       float rz = motionData[5];
       m_control->setJointSpaceControlVelocities(rz/MOUSE_MAX, dz/MOUSE_MAX);
 
-      m_3DmouseRot->display(rz/MOUSE_MAX);
-      m_3DmouseIns->display(dz/MOUSE_MAX);
-
+      if( m_3DmouseRot){
+        m_3DmouseRot->display(rz/MOUSE_MAX);
+        m_3DmouseIns->display(dz/MOUSE_MAX);
+      }
     }
   }
 

@@ -40,8 +40,11 @@ namespace Nf
     RobotStatusWidget *m_robotStatusWidget;
     QLCDNumber *m_3DmouseIns;
     QLCDNumber *m_3DmouseRot;
-    QVBoxLayout *m_rightSubLayout;
+
+    QGridLayout *m_rightSubLayout;
     QHBoxLayout *m_leftSubLayout;
+    QVBoxLayout *m_buttonLayout;
+    
     QPushButton *m_scanButton;
     QPushButton *m_taskControlButton;
     QPushButton *m_jointControlButton;
