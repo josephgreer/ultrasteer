@@ -151,19 +151,20 @@ namespace Nf {
   {
     if( m_inJointSpaceControl ){
       double saturation = 0.95;
-      double deadspace = 0.05;
-      if( v_ins < -saturation )
-        v_ins = -saturation;
-      if( v_ins > saturation )
-        v_ins = saturation;
+      double deadspace = 0.1;
       if( v_rot < -saturation )
         v_rot = -saturation;
       if( v_rot > saturation )
         v_rot = saturation;     
       if( fabs(v_rot) < deadspace )
         v_rot = 0.0;
-      if( fabs(v_ins) < deadspace )
-        v_ins = 0.0;
+
+      double binaryThreshold = 0.5;
+      if( v_ins < -binaryThreshold )
+        v_ins = -saturation;
+      if( v_ins > binaryThreshold )
+        v_ins = saturation;
+
       m_robot->SetInsertionVelocity(v_ins*INS_SPEED);
       m_robot->SetRotationVelocity(v_rot*ROT_SPEED);
     }

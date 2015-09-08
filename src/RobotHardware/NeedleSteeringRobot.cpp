@@ -13,8 +13,8 @@ NeedleSteeringRobot::NeedleSteeringRobot() :
     , m_insInit(false)
     , m_artInit(false)
 {
-	connect(&polling_timer, SIGNAL(timeout()), this, SLOT(OnPollTimeout()));
-	connect(&dwell_timer, SIGNAL(timeout()), this, SLOT(OnDwellTimeout()));
+	//connect(&polling_timer, SIGNAL(timeout()), this, SLOT(OnPollTimeout()));
+	//connect(&dwell_timer, SIGNAL(timeout()), this, SLOT(OnDwellTimeout()));
 }
 
 NeedleSteeringRobot::~NeedleSteeringRobot()
