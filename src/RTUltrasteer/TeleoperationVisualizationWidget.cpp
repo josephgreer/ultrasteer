@@ -289,6 +289,7 @@ namespace Nf
 
   void TeleoperationVisualizationWidget::onSetViewYZ()
   {
+    //testing
     SetVisView(2,0);
   }
 }
