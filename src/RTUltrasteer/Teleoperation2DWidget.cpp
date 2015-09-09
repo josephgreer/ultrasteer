@@ -1,7 +1,6 @@
 #include "Teleoperation2DWidget.h"
 
-#define   TSCAN       4.0     // total manual scan time in ms
-#define   MOUSE_MAX   0.010   // maximum reading per axis from the 3DConnexion input device 
+#define   TSCAN       4.0     // total manual scan time in ms 
 
 namespace Nf
 {
@@ -183,14 +182,9 @@ namespace Nf
     if (motionData.size() < 6) return;
 
     if ( m_control->inJointSpaceControl() ){ // if we are using the 3D mouse to control the robot
-      float dz = motionData[2];
-      float rz = motionData[5];
-      m_control->setJointSpaceControlVelocities(rz/MOUSE_MAX, dz/MOUSE_MAX);
-
-      if( m_3DmouseRot){
-        m_3DmouseRot->display(rz/MOUSE_MAX);
-        m_3DmouseIns->display(dz/MOUSE_MAX);
-      }
+      float dz = -motionData[1];
+      float rz = -motionData[4];
+      m_control->setJointSpaceControlVelocities(rz, dz);
     }
   }
 

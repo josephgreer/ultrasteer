@@ -13,8 +13,11 @@
 #include "UnscentedKalmanFilter.h"
 #include "NeedleSteeringRobot.h"
 #include <QtGui/QFileDialog>
+#include <cmath>
 
 namespace Nf {
+
+  class STrigger;
   
   class ControlAlgorithms 
   {
@@ -78,6 +81,8 @@ namespace Nf {
     double m_lastInsMM;
     double m_lastRollDeg;
     RPData m_data;    
+    STrigger* m_insTrigger;
+    STrigger* m_rotTrigger;
   };
 
   class StylusCalibration
@@ -98,6 +103,20 @@ namespace Nf {
     arma::mat m_vcal;
     arma::mat m_c;
     bool m_stylusCalibrationComplete;
+  };
+
+  class STrigger
+  {
+  public:
+    STrigger();
+    ~STrigger();
+    float update(float input);
+    void setThresholds(float t);
+
+  protected:
+    float m_value;
+    float m_threshold;
+    int m_count;
   };
 }
 

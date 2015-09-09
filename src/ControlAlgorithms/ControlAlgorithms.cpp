@@ -20,10 +20,17 @@ namespace Nf {
     , m_Tem2robot(Matrix44d::Zero())
     , m_transducerType(0)
   {
+    m_insTrigger = new STrigger();
+    m_rotTrigger = new STrigger();
+
+    m_insTrigger->setThresholds(0.005);
+    m_rotTrigger->setThresholds(0.005);
   }
 
   ControlAlgorithms::~ControlAlgorithms()
   {
+    delete m_insTrigger;
+    delete m_rotTrigger;
   }
 
   // return true if the robot is in following; false otherwise
@@ -146,27 +153,26 @@ namespace Nf {
   }
 
   // brief: set the robot velocity based on input from 3D mouse
-  //        inputs are percentage of maximum in range [-1.0, ... , 1.0]
   void ControlAlgorithms::setJointSpaceControlVelocities(f32 v_rot, f32 v_ins)
   {
     if( m_inJointSpaceControl ){
-      double saturation = 0.95;
-      double deadspace = 0.1;
-      if( v_rot < -saturation )
-        v_rot = -saturation;
-      if( v_rot > saturation )
-        v_rot = saturation;     
-      if( fabs(v_rot) < deadspace )
-        v_rot = 0.0;
+      //double saturation = 0.001;
+      //double deadspace = 0.0001;
+      //if( v_rot < -saturation )
+      //  v_rot = -saturation;
+      //if( v_rot > saturation )
+      //  v_rot = saturation;     
+      //if( fabs(v_rot) < deadspace )
+      //  v_rot = 0.0;
 
-      double binaryThreshold = 0.5;
-      if( v_ins < -binaryThreshold )
-        v_ins = -saturation;
-      if( v_ins > binaryThreshold )
-        v_ins = saturation;
+      //double binaryThreshold = 0.25;
+      //if( v_ins < -binaryThreshold )
+      //  v_ins = -saturation;
+      //if( v_ins > binaryThreshold )
+      //  v_ins = saturation;
 
-      m_robot->SetInsertionVelocity(v_ins*INS_SPEED);
-      m_robot->SetRotationVelocity(v_rot*ROT_SPEED);
+      m_robot->SetInsertionVelocity(m_insTrigger->update(v_ins)*INS_SPEED);
+      m_robot->SetRotationVelocity(m_rotTrigger->update(v_rot)*ROT_SPEED);
     }
   }
 
@@ -377,5 +383,50 @@ namespace Nf {
   bool StylusCalibration::isComplete(void)
   {
     return m_stylusCalibrationComplete;
+  }
+  
+  /// ----------------------------------------------------
+  /// STrigger Class
+  /// ----------------------------------
+
+  STrigger::STrigger()
+  {
+    m_value = 0.0;
+    m_threshold = 0.0;
+    m_count = 0;
+  }
+
+  STrigger::~STrigger()
+  {
+  }
+  
+  float STrigger::update(float input)
+  {
+    float correctedInput;
+    if( fabs(input) > m_threshold){
+      correctedInput = 1.0;
+      if( input < 0 )
+        correctedInput = -1.0;
+    }
+    else{
+      correctedInput = 0.0;
+    }
+
+    if( correctedInput == m_value )
+      m_count = 0;
+    else 
+      m_count++;
+
+    if( m_count > 3 ){
+      m_value = correctedInput;
+      m_count = 0;
+    }
+
+    return m_value;
+  }
+    
+  void STrigger::setThresholds(float t)
+  {
+    m_threshold= t;
   }
 };

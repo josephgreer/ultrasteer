@@ -79,7 +79,7 @@ namespace Nf
   {
     if( !m_viewportInit ){ // if not already initialized
       // robot model
-      m_robotSTLReader->SetFileName(STL_PATH_CAT("ultrasteer/models/NeedleSteeringRobot.STL"));
+      m_robotSTLReader->SetFileName(STL_PATH_CAT("NeedleSteeringRobot.STL"));
       m_robotSTLReader->Update();
       m_robotSTLMapper->SetInputConnection(m_robotSTLReader->GetOutputPort());
       m_robotSTLActor->SetMapper(m_robotSTLMapper);
@@ -92,14 +92,14 @@ namespace Nf
       m_transducerSTLActor->VisibilityOff();
 
       // estimate tip model
-      m_estimateSTLReader->SetFileName(STL_PATH_CAT("ultrasteer/models/8mmBentTip.STL"));
+      m_estimateSTLReader->SetFileName(STL_PATH_CAT("8mmBentTip.STL"));
       m_estimateSTLReader->Update();
       m_estimateSTLMapper->SetInputConnection(m_estimateSTLReader->GetOutputPort());
       m_estimateSTLActor->SetMapper(m_estimateSTLMapper);
       m_estimateSTLActor->VisibilityOff();
 
       // measurement tip model
-      m_measurementSTLReader->SetFileName(STL_PATH_CAT("ultrasteer/models/4mmBentTip.STL"));
+      m_measurementSTLReader->SetFileName(STL_PATH_CAT("4mmBentTip.STL"));
       m_measurementSTLReader->Update();
       m_measurementSTLMapper->SetInputConnection(m_measurementSTLReader->GetOutputPort());
       m_measurementSTLActor->SetMapper(m_measurementSTLMapper);
@@ -226,10 +226,10 @@ namespace Nf
 
       switch ( transducerType ){
       case QtEnums::Transducer::LINEAR :
-        m_transducerSTLReader->SetFileName(STL_PATH_CAT("ultrasteer/models/L14-5GPS.STL"));
+        m_transducerSTLReader->SetFileName(STL_PATH_CAT("L14-5GPS.STL"));
         break;
       case QtEnums::Transducer::CONVEX :
-        m_transducerSTLReader->SetFileName(STL_PATH_CAT("ultrasteer/models/C-52GPS.STL"));
+        m_transducerSTLReader->SetFileName(STL_PATH_CAT("C-52GPS.STL"));
         break;
       }
       m_transducerSTLReader->Update();
