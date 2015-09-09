@@ -108,27 +108,13 @@ namespace Nf
     Q_OBJECT 
 
   protected:
-    std::tr1::shared_ptr < RPUlteriusReaderCollectionPush > m_rpReaders;
     RPPushReceiver *m_receiver;
 
   public:
     Teleoperation2DStreamingWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control, Mouse3DInput* mouse);
     virtual ~Teleoperation2DStreamingWidget();
 
-    //IP
-    std::tr1::shared_ptr < Nf::StringParameter > m_rpIp;
-
-    //Stream
-    std::tr1::shared_ptr < Nf::BoolParameter > m_init;
-    void onInitializeToggle();
-    CLASS_CALLBACK(onInitializeToggle, Teleoperation2DStreamingWidget);
-
-    //MPP
-    std::tr1::shared_ptr < Nf::FloatParameter > m_mpp;
-
-    //Origin
-    std::tr1::shared_ptr < Nf::Vec2dParameter > m_origin;
-
+    virtual void Initialize();
     virtual void HandleFrame(RPData &rp);
 
   };

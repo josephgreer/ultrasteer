@@ -44,7 +44,7 @@ namespace Nf {
   {
 
     // Reset and preallocate points matrix
-    m_dopplerPoints.reset();
+    m_dopplerPoints.clear();
     m_dopplerPoints = arma::zeros<arma::mat>(100000,3);
     m_NdopplerPoints = 0;
 

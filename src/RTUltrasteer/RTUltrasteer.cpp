@@ -48,8 +48,8 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   ADD_BOOL_PARAMETER(m_estimatorFileWidgetVisible, "Show ParticleFilter File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_estimatorStreamingWidgetVisible, "Show ParticleFilter Streaming Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_robotHWWidgetVisible, "Show Robot HW Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
-  ADD_BOOL_PARAMETER(m_teleoperation2DFileWidgetVisible, "Show 2D Teleoperation File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
-  ADD_BOOL_PARAMETER(m_teleoperation2DStreamWidgetVisible, "Show 2D Teleoperation Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
+  ADD_BOOL_PARAMETER(m_teleoperation2DFileWidgetVisible, "Show 2D Teleoperation File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
+  ADD_BOOL_PARAMETER(m_teleoperation2DStreamWidgetVisible, "Show 2D Teleoperation Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
   ADD_BOOL_PARAMETER(m_emCalibrationFileWidgetVisible, "Show EM Calibration File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_emCalibrationStreamWidgetVisible, "Show EM Calibration Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
 

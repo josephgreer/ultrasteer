@@ -77,7 +77,7 @@ namespace Nf
     QObject::connect(m_mouse, SIGNAL(Move3d(std::vector<float>&)), this, SLOT(OnMove(std::vector<float>&)));
 
     // add framework params
-    ADD_ENUM_PARAMETER(m_transducerType, "Transducer", CALLBACK_POINTER(onSetTransducerType, Teleoperation2DWidget), this, QtEnums::Transducer::LINEAR, "Transducer");
+    ADD_ENUM_PARAMETER(m_transducerType, "Transducer", CALLBACK_POINTER(onSetTransducerType, Teleoperation2DWidget), this, QtEnums::Transducer::CONVEX, "Transducer");
     ADD_CHILD_COLLECTION(m_imageViewer.get());
     ADD_CHILD_COLLECTION(m_teleoperationVisualizer.get());
   }
@@ -322,35 +322,17 @@ namespace Nf
 
   Teleoperation2DStreamingWidget::Teleoperation2DStreamingWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control, Mouse3DInput* mouse)
     : Teleoperation2DWidget(parent, robot, control, mouse) 
+    , m_receiver(new RPPushReceiver((RPFrameHandler *)this))
   {
-    ADD_STRING_PARAMETER(m_rpIp, "Ulterius IP", NULL, this, "192.168.1.129");
-    ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, Teleoperation2DStreamingWidget), this, false);
-    ADD_FLOAT_PARAMETER(m_mpp, "MPP", CALLBACK_POINTER(onInitializeToggle, Teleoperation2DStreamingWidget), this, 405, 20, 1000, 1.0);
-    ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onInitializeToggle, Teleoperation2DStreamingWidget), this, Vec2d(330, -56), Vec2d(-500,-500), Vec2d(10000, 10000), Vec2d(1,1));
-
-    onInitializeToggle();
-
-    m_rpReaders = std::tr1::shared_ptr<RPUlteriusReaderCollectionPush>((RPUlteriusReaderCollectionPush *)NULL);
-    
-    m_receiver = new RPPushReceiver((RPFrameHandler *)this);
+    ADD_CHILD_COLLECTION((ParameterCollection *)m_receiver);
   }
 
-  void Teleoperation2DStreamingWidget::onInitializeToggle()
+  void Teleoperation2DStreamingWidget::Initialize()
   {
-    if(m_init->GetValue()) {
-      Vec2d mpp(m_mpp->GetValue(), m_mpp->GetValue());// TODO ADD SOS *m_sos->GetValue()/NOMINAL_SOS);
-      m_rpReaders = std::tr1::shared_ptr < RPUlteriusReaderCollectionPush >(new RPUlteriusReaderCollectionPush(m_rpIp->GetValue().c_str(), mpp, m_origin->GetValue()));
-      m_rpReaders->SetRPCallbackReceiver(m_receiver);
-      Sleep(20);
-      m_rpReaders->EnableMask(RPF_BPOST8|RPF_BPOST32|RPF_GPS|RPF_GPS2);
-    }
   }
 
   void Teleoperation2DStreamingWidget::HandleFrame(RPData &rp)
   {
-    if(!m_init->GetValue())
-      return;
-
     m_data.Release();
     m_data = rp;
 
