@@ -389,6 +389,9 @@ namespace Nf
       f64 nParts = m_pf->EffectiveSampleSize();
       if(nParts < params->neff*m_pf->GetNumberOfParticles())
         m_pf->Resample(m_pf->GetNumberOfParticles(), params.get());
+      
+
+      //NTrace("Frame %d, dt %f, u.v %f\n", frame, (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0, m_pfFramesProcessed[frame].u.v);
     }
 
   }

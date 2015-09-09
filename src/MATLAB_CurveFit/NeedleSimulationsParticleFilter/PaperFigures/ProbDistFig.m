@@ -1,5 +1,7 @@
 clear; clc; close all;
 
+rng(1);
+
 addpath('../');
 
 params = initParamsForSimulation;
@@ -19,12 +21,12 @@ end
 
 % gridSz = 2 cm;
 gridSz = 20;
-nParticlesPerDim = 100;
+nParticlesPerDim = 50;
 
 
 xcurr.q = RotationMatrixToQuat(Ry(pi/2));
 xcurr.pos = [0; 0; 0];
-xcurr.rho = 40;        % 10 cm roc
+xcurr.rho = 25;        % 10 cm roc
 xcurr.w = 1;           % not a particle but using the same propagation routine.
 
 xsb = propagateNeedleBack(xcurr, u, params);
@@ -64,7 +66,7 @@ positionsxx = positionsx(:);
 positionsyy = positionsy(:);
 for i=1:length(positionsxx)
     [yy xx] = ind2sub(size(positionsx), i);
-    particles{i}.q = xsl{lookupTableX(xx)}.q;
+    particles{i}.q = xcurr.q;%xsl{lookupTableX(xx)}.q;
     particles{i}.pos = [positionsxx(i); positionsyy(i); 0];
     particles{i}.rho = xs{1}.rho;
     particles{i}.w = 1/length(positionsxx);
@@ -72,16 +74,16 @@ end
 
 
 
-params.p1.uvOffsetSigma = eye(2)*params.mpp*30*1e-3
+params.p1.uvOffsetSigma = eye(2)*params.mpp*20*1e-3
 params.measurementOffsetSigma = zeros(2,2);
-% params.onNeedleDopplerMu = 2.3455942812457916254579942197096;
-% params.onNeedleDopplerSigma = 0.20738656719215432695570750167604;
-% params.offNeedleDopplerMu = 1.7734450777207952976725841602777;
-% params.offNeedleDopplerSigma = 1.3317075796588361003232373858813;
+params.onNeedleDopplerMu = 2.3455942812457916254579942197096;
+params.onNeedleDopplerSigma = 0.4;%0.20738656719215432695570750167604;
+params.offNeedleDopplerMu = 1.7734450777207952976725841602777;
+params.offNeedleDopplerSigma = 1.3317075796588361003232373858813;
 %params.usw = params.usw*100;
 %params.ush = params.ush*100;
 
-ts = [2 2.75 2.85];
+ts = [2 2.75 3];
 figHandle = figure;
 for i=1:3
     measurement = generateRandomMeasurement(xs, u, ts(i), params);
@@ -109,8 +111,8 @@ set(figHandle, 'Position', [100 100 3000 500]);
 
 basePath = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Papers\NeedleEstimationJournal\Figures\';
 
-path = strcat(basePath, 'measurement_prob1.pdf');
-export_fig('-transparent', path);
+path = strcat(basePath, 'measurement_prob2.pdf');
+%export_fig('-transparent', path);
 
 % for x=center(1)-gridSz/2:gridSz/nParticlesPerDim:center(1)+gridSz/2
 %     for y=center(2)-gridSz/2:gridSz/nParticlesPerDim:center(2)+gridSz/2

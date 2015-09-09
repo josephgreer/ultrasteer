@@ -54,8 +54,10 @@ params.np = 200;                                                            %num
 params.neff = 0.5;                                                          %if effective sample size drops below params.neff*parrams.np then resample
 params.particlesInit = 0;                                                   %are particles initialized?
 params.particleInitTime = 2;                                                %how long until the particle filter gets initialized?
-params.sigB0 = -2.37901785297659;                                           %for outlier smooth step sigmoid 1/(1+exp(-B0-B1*x))
-params.sigB1 = 0.0534736687985484;                                          %for outlier smooth step sigmoid 1/(1+exp(-B0-B1*x))
+params.sigB0 = -2;                                                          %for outlier smooth step sigmoid 1/(1+exp(-B0-B1*x))
+params.sigB1 = 0.5;                                                         %for outlier smooth step sigmoid 1/(1+exp(-B0-B1*x))
+params.offFrameB0 = -5;                                                     %p(off frame | distance projection) 1/(1+exp(-B0-B1*x))
+params.offFrameB1 = 5;                                                    %p(off frame | distance projection) 1/(1+exp(-B0-B1*x))        
 
 % particle filter method specific parameters
 
