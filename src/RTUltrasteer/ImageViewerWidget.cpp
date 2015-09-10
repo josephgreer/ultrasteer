@@ -357,9 +357,9 @@ namespace Nf
 
     m_teleoperationWidget = teleop;
 
-    m_textActor1 = vtkSmartPointer<vtkTextActor>::New();
-    m_textActor2 = vtkSmartPointer<vtkTextActor>::New();
-    m_textActor3 = vtkSmartPointer<vtkTextActor>::New();
+    m_targetTextActor = vtkSmartPointer<vtkTextActor>::New();
+    m_instructionTextActor = vtkSmartPointer<vtkTextActor>::New();
+    m_segmentationTextActor = vtkSmartPointer<vtkTextActor>::New();
     m_textActor4 = vtkSmartPointer<vtkTextActor>::New();
     m_pointPicker = vtkSmartPointer<vtkPointPicker>::New();
     m_maskImporter = vtkSmartPointer<vtkImageImport>::New();
@@ -421,33 +421,33 @@ namespace Nf
       m_renderer->AddActor2D(m_maskActor);
 
       // Add text overlay for selected target coordinates
-      m_textActor1->GetTextProperty()->SetFontSize ( 24 );
-      m_textActor1->SetPosition( 10, 10 );
-      m_renderer->AddActor2D ( m_textActor1 );
-      m_textActor1->SetInput ( "Initialized" );
-      m_textActor1->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
+      m_targetTextActor->GetTextProperty()->SetFontSize ( 24 );
+      m_targetTextActor->SetPosition( 10, 10 );
+      m_renderer->AddActor2D ( m_targetTextActor );
+      m_targetTextActor->SetInput ( "Initialized" );
+      m_targetTextActor->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
 
       // Add text overlay for user instructions
-      m_textActor2->GetTextProperty()->SetFontSize ( 24 );
+      m_instructionTextActor->GetTextProperty()->SetFontSize ( 24 );
       //int* size = m_renderer->GetSize();
-      m_textActor2->SetPosition( 10, 400 );
-      m_renderer->AddActor2D ( m_textActor2 );
-      m_textActor2->SetInput ( "" );
-      m_textActor2->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
+      m_instructionTextActor->SetPosition( 10, 400 );
+      m_renderer->AddActor2D ( m_instructionTextActor );
+      m_instructionTextActor->SetInput ( "" );
+      m_instructionTextActor->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
 
       // Add text overlay for segmentation results
-      m_textActor3->GetTextProperty()->SetFontSize ( 24 );
-      m_textActor3->SetPosition( 10, 200 );
-      m_renderer->AddActor2D ( m_textActor3 );
-      m_textActor3->SetInput ( "" );
-      m_textActor3->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
+      m_segmentationTextActor->GetTextProperty()->SetFontSize ( 24 );
+      m_segmentationTextActor->SetPosition( 10, 200 );
+      m_renderer->AddActor2D ( m_segmentationTextActor );
+      m_segmentationTextActor->SetInput ( "" );
+      m_segmentationTextActor->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
 
       // Add text overlay for estimate variance
-      m_textActor3->GetTextProperty()->SetFontSize ( 24 );
-      m_textActor3->SetPosition( 200, 200 );
-      m_renderer->AddActor2D ( m_textActor3 );
-      m_textActor3->SetInput ( "" );
-      m_textActor3->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
+      m_segmentationTextActor->GetTextProperty()->SetFontSize ( 24 );
+      m_segmentationTextActor->SetPosition( 200, 200 );
+      m_renderer->AddActor2D ( m_segmentationTextActor );
+      m_segmentationTextActor->SetInput ( "" );
+      m_segmentationTextActor->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
 
       // Set up interaction 
       vtkSmartPointer<MouseInteractorStylePP> style = 
@@ -520,7 +520,7 @@ namespace Nf
     // Format the click position and print over image
     char str [100];
     int n = sprintf(str, "t_img = {%.1f, %.1f}\nt_wld = {%.2f, %.2f, %.2f}", t_img.x, t_img.y, t_wld.x, t_wld.y, t_wld.z);
-    m_textActor1->SetInput(str);
+    m_targetTextActor->SetInput(str);
 
     // Update the VTK rendering
     this->repaint();
@@ -528,9 +528,9 @@ namespace Nf
 
   void ImageViewer2DTeleoperationWidget::SetInstructionText(char* str)
   {
-    m_textActor2->SetInput(str);
+    m_instructionTextActor->SetInput(str);
     int* size = m_renderer->GetSize();
-    m_textActor2->SetPosition( 10, size[1]-40 );
+    m_instructionTextActor->SetPosition( 10, size[1]-40 );
     this->repaint();
   }
 
@@ -543,10 +543,10 @@ namespace Nf
       R.m_data[0][0], R.m_data[0][1], R.m_data[0][2], 
       R.m_data[1][0], R.m_data[1][1], R.m_data[1][2], 
       R.m_data[2][0], R.m_data[2][1], R.m_data[2][2]);
-    m_textActor3->SetInput(str);
+    m_segmentationTextActor->SetInput(str);
 
     int* size = m_renderer->GetSize();
-    m_textActor3->SetPosition( 10, int(size[1]/2) );
+    m_segmentationTextActor->SetPosition( 10, int(size[1]/2) );
 
     // Update the VTK rendering
     this->repaint();

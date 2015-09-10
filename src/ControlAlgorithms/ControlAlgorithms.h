@@ -43,10 +43,10 @@ namespace Nf {
     void ControlCorrection();
     Vec3d ImagePtToRobotPt(Vec2d p_im);
     Vec3d RobotPtToImagePt(Vec3d p_robot);
-    bool isCalibrationSet();
     void setCalibration(Matrix44d, Matrix44d, s32);
     void updateTransducerPose();
     void setJointSpaceControlVelocities(f32 v_rot, f32 v_ins);
+    void initializeEstimator();
 
     void getOverlayValues(bool &show_p, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Vec3d &p, Matrix33d &R,
                           bool &show_t, Vec3d &t_img, Vec3d &t,

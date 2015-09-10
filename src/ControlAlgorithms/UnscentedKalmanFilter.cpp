@@ -20,17 +20,17 @@
 namespace Nf
 {
   /// \brief		Constructor: Initializes filter	
-  UnscentedKalmanFilter::UnscentedKalmanFilter(void)
+  UnscentedKalmanFilter::UnscentedKalmanFilter(void):
+      x_hat(Matrix44d::Zero())
+    , m_initialized(false)
+    , Q( Matrix66d::Diagonal(Q_POS, Q_POS, Q_POS, Q_ROT, Q_ROT, Q_ROT) )
+    , R( R = Matrix66d::Diagonal(R_POS, R_POS, R_POS, R_ROT, R_ROT, R_ROT) )
   {
-    m_initialized = false;
-    Q = Matrix66d::Diagonal(Q_POS, Q_POS, Q_POS, Q_ROT, Q_ROT, Q_ROT);
-    R = Matrix66d::Diagonal(R_POS, R_POS, R_POS, R_ROT, R_ROT, R_ROT);
   }
 
   /// \brief		Destructor
   UnscentedKalmanFilter::~UnscentedKalmanFilter(void)
   {
-
   }
 
   /// Initialize the UKF based on the robot insertion l and robot rotation theta from nominal
@@ -45,49 +45,53 @@ namespace Nf
   /// \brief		Update Kalman filter using measurement z
   void UnscentedKalmanFilter::fullUpdateUKF(Vec3d u, Matrix44d z)
   {
-    //// create Sigma points X for the current estimate distribution
-    //std::vector<Matrix44d> X;
-    //sigmas(x_hat, P_hat+Q, X);
+    if( m_initialized ){
+      // create Sigma points X for the current estimate distribution
+      std::vector<Matrix44d> X;
+      sigmas(x_hat, P_hat+Q, X);
 
-    //// apply unscented transformation for process model 
-    //Matrix44d x_;                 // transformed mean
-    //Matrix66d P_;                 // transformed covariance
-    //std::vector<Vec6d> Ex_;       // transformed error vectors
-    //utf(X, u, x_, P_, Ex_);
+      // apply unscented transformation for process model 
+      Matrix44d x_;                 // transformed mean
+      Matrix66d P_;                 // transformed covariance
+      std::vector<Vec6d> Ex_;       // transformed error vectors
+      utf(X, u, x_, P_, Ex_);
 
-    //// resample sigma points
-    //std::vector<Matrix44d> X_;    
-    //sigmas(x_, P_+R, X_);
+      // resample sigma points
+      std::vector<Matrix44d> X_;    
+      sigmas(x_, P_+R, X_);
 
-    //// apply unscented transform for measurement model
-    //Matrix44d z_;                 // transformed measurement mean
-    //Matrix66d Pzz;                // transformed measurement covariance
-    //std::vector<Vec6d> Ez;        // transformed measurement error vectors
-    //utg(X_, z_, Pzz, Ez);
+      // apply unscented transform for measurement model
+      Matrix44d z_;                 // transformed measurement mean
+      Matrix66d Pzz;                // transformed measurement covariance
+      std::vector<Vec6d> Ez;        // transformed measurement error vectors
+      utg(X_, z_, Pzz, Ez);
 
-    //// define transformated cross-covariance
-    //Matrix66d Pxz;
-    //for( int i = 0; i < Ez.size(); i++ )
-    //  Pxz += ( (Matrix66d::OuterProduct(Ex_[i],Ez[i]) )*( 0.5/N ) );
-    //Matrix66d K = Pxz*Pzz.Inverse();
+      // define transformated cross-covariance
+      Matrix66d Pxz;
+      for( int i = 0; i < Ez.size(); i++ )
+        Pxz += ( (Matrix66d::OuterProduct(Ex_[i],Ez[i]) )*( 0.5/N ) );
+      Matrix66d K = Pxz*Pzz.Inverse();
 
-    //// update state and covariance
-    //x_hat = addDifferentialPose( x_, K*differentialPose( z, z_) );
-    //P_hat = P_ - K*Pzz*K.Transpose();    
+      // update state and covariance
+      x_hat = addDifferentialPose( x_, K*differentialPose( z, z_) );
+      P_hat = P_ - K*Pzz*K.Transpose();    
 
-    x_hat = z;
+      x_hat = z;
+    }
   }
 
   /// \brief		Update Kalman filter without measurement
   void UnscentedKalmanFilter::processUpdateUKF(Vec3d u)
   {
-    // create Sigma points X for the current estimate distribution
-    std::vector<Matrix44d> X;
-    sigmas(x_hat, P_hat+Q, X);
+    if( m_initialized ){
+      // create Sigma points X for the current estimate distribution
+      std::vector<Matrix44d> X;
+      sigmas(x_hat, P_hat+Q, X);
 
-    // apply unscented transformation for process model 
-    std::vector<Vec6d> Ex_;       // transformed error vectors
-    utf(X, u, x_hat, P_hat, Ex_);
+      // apply unscented transformation for process model 
+      std::vector<Vec6d> Ex_;       // transformed error vectors
+      utf(X, u, x_hat, P_hat, Ex_);
+    }
   }
   
   /// \brief		Unscented transform of process Sigma points
@@ -348,33 +352,4 @@ namespace Nf
   {
     return m_initialized;
   }
-
-/*  /// \brief		Reset the Kalman filter estimate
-  void UnscentedKalmanFilter::resetEstimate()
-  {
-    // Set mean of initial position prior (orientation already 0)
-    x_hat[0] = 0.0; x_hat[1] = 40.0; x_hat[2] = -15.0;
-    x_hat[3] = 0.0; x_hat[4] = 0.0; x_hat[5] = 0.0;
-    // Set diagonal covariance entries for prior
-    P_hat.fill(0.0);
-    P_hat.fill_diagonal(P_POS_INIT);
-    P_hat(3,3) = P_ROT_INIT; P_hat(4,4) = P_ROT_INIT; P_hat(5,5) = P_ROT_INIT;
-  }
-
-  /// \brief Zero the orientation portion of the state estimate.
-  /// Avoids the orientation estimate gettings messed up by poor initial measurements
-  void UnscentedKalmanFilter::zeroRotationEstimate()
-  {
-    x_hat[3] = 0.0; x_hat[4] = 0.0; x_hat[5] = 0.0;
-    for (int i = 3; i<6; i++)
-    {
-      for (int j = 3; j<6; j++)
-      {
-        P_hat(i,j) = 0.0;
-      }
-    }
-    P_hat(3,3) = P_ROT_INIT; P_hat(4,4) = P_ROT_INIT; P_hat(5,5) = P_ROT_INIT;
-  }*/
-
-
 }

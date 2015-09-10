@@ -45,7 +45,7 @@ namespace Nf {
 
     // Reset and preallocate points matrix
     m_dopplerPoints.clear();
-    m_dopplerPoints = arma::zeros<arma::mat>(100000,3);
+    m_dopplerPoints = arma::zeros<arma::mat>(300000,3);
     m_NdopplerPoints = 0;
 
     if( m_scanFrames.size() < 1 )
@@ -177,6 +177,9 @@ namespace Nf {
     Vec2d scale(data.mpp.x/1000.0, data.mpp.y/1000.0);
 
     //BEGIN_TIMING(DopplerPointSaving,10);
+    // expand the points matrix if necessary
+    if( m_NdopplerPoints > m_dopplerPoints.n_rows-25000 )
+      m_dopplerPoints.insert_rows(m_dopplerPoints.n_rows,arma::zeros<arma::mat>(100000,3));
     // iterate through the pixels, and save the coordinates of non-zero pixels
     for (int i = 0; i < gray_mat.cols; i++ ) {
       for (int j = 0; j < gray_mat.rows; j++) {

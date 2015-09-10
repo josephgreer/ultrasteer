@@ -32,14 +32,15 @@ namespace Nf
     void onSetTransducerType();
     CLASS_CALLBACK(onSetTransducerType, Teleoperation2DWidget);
 
+    std::tr1::shared_ptr < Nf::BoolParameter > m_initializeEstimator;
+    void onInitializeEstimator();
+    CLASS_CALLBACK(onInitializeEstimator, Teleoperation2DWidget);
+
     std::tr1::shared_ptr <ImageViewer2DTeleoperationWidget> m_imageViewer;
     std::tr1::shared_ptr <TeleoperationVisualizationWidget> m_teleoperationVisualizer;
     QGridLayout *m_layout;
 
-    
     RobotStatusWidget *m_robotStatusWidget;
-    QLCDNumber *m_3DmouseIns;
-    QLCDNumber *m_3DmouseRot;
 
     QGridLayout *m_rightSubLayout;
     QHBoxLayout *m_leftSubLayout;

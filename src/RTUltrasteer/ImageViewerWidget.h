@@ -116,9 +116,9 @@ namespace Nf
   class ImageViewer2DTeleoperationWidget : public ImageViewerWidget
   {
   protected:
-    vtkSmartPointer < vtkTextActor > m_textActor1;
-    vtkSmartPointer < vtkTextActor > m_textActor2;
-    vtkSmartPointer < vtkTextActor > m_textActor3;
+    vtkSmartPointer < vtkTextActor > m_targetTextActor;
+    vtkSmartPointer < vtkTextActor > m_instructionTextActor;
+    vtkSmartPointer < vtkTextActor > m_segmentationTextActor;
     vtkSmartPointer < vtkTextActor > m_textActor4;
     vtkSmartPointer < vtkPointPicker > m_pointPicker;
     vtkSmartPointer < vtkImageMapToColors > m_mapTransparency;

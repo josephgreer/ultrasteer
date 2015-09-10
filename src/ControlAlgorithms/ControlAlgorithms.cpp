@@ -2,9 +2,10 @@
 #include "math.h"
 #include <time.h>
 
-#define   RHO         60.0    // radius of curvature for needle in mm
-#define   INS_SPEED   40.0    // insertion speed during teleoperation (mm/s) 
-#define   ROT_SPEED   200.0   // rotation speed during teleoperation (RPM)
+#define   RHO                     60.0    // radius of curvature for needle in mm
+#define   INS_SPEED               40.0    // insertion speed during teleoperation (mm/s) 
+#define   ROT_SPEED               200.0   // rotation speed during teleoperation (RPM)
+#define   NEEDLE_DEAD_LENGTH      30.0    // offset of needle tip at zero insertion due to extra needle length 
 
 namespace Nf {
 
@@ -19,10 +20,10 @@ namespace Nf {
     , m_Tref2robot(Matrix44d::Zero())
     , m_Tem2robot(Matrix44d::Zero())
     , m_transducerType(0)
+    , m_robot(NULL)
   {
     m_insTrigger = new STrigger();
     m_rotTrigger = new STrigger();
-
     m_insTrigger->setThresholds(0.005);
     m_rotTrigger->setThresholds(0.005);
   }
@@ -54,18 +55,34 @@ namespace Nf {
   // toggle the task-space control state
   bool ControlAlgorithms::startStopTaskSpaceControl()
   {
-    if(!m_UKF.isInitialized()) // initialize the UKF based on robot joint variables if necessary
-      m_UKF.initialize(m_robot->getInsMM(), m_robot->getRollAngle());
-
-    m_inTaskSpaceControl = !m_inTaskSpaceControl;
+    if(m_UKF.isInitialized()){ //don't change the state if UKF is not initialized
+      m_inTaskSpaceControl = !m_inTaskSpaceControl;
+    }
     return m_inTaskSpaceControl;
+  }
+
+  // initialize the Unscented Kalman Filter based on joint values
+  void ControlAlgorithms::initializeEstimator()
+  {
+    m_UKF.initialize(m_robot->getInsMM()+NEEDLE_DEAD_LENGTH, m_robot->getRollAngle());
   }
 
   // toggle the joint-space control state
   bool ControlAlgorithms::startStopJointSpaceControl()
   {
-    m_inJointSpaceControl = !m_inJointSpaceControl;
+    if(m_UKF.isInitialized()){ //don't change the state if UKF is not initialized
+      m_inJointSpaceControl = !m_inJointSpaceControl;
+    }
     return m_inJointSpaceControl;
+  }
+
+  // set the robot velocity based on input from 3D mouse
+  void ControlAlgorithms::setJointSpaceControlVelocities(f32 v_rot, f32 v_ins)
+  {
+    if( m_inJointSpaceControl ){
+      m_robot->SetInsertionVelocity(m_insTrigger->update(v_ins)*INS_SPEED);
+      m_robot->SetRotationVelocity(m_rotTrigger->update(v_rot)*ROT_SPEED);
+    }
   }
 
   void ControlAlgorithms::startStopManualScanning(bool start)
@@ -78,11 +95,6 @@ namespace Nf {
       m_x = processManualScan();
     }
   }  
-
-  bool ControlAlgorithms::isCalibrationSet()
-  {
-    return !m_usCalibrationMatrix.isZero();
-  }
 
   void ControlAlgorithms::setCalibration(Matrix44d Tref2robot, Matrix44d usCal, s32 transducerType)
   {
@@ -141,10 +153,10 @@ namespace Nf {
       m_segmentation.addManualScanFrame(data);
     }
 
-    if( m_inTaskSpaceControl ) // if in following
+    GetPoseEstimate(m_x); // update the estimate  
+
+    if( m_inTaskSpaceControl ) 
     {
-      GetPoseEstimate(m_x); // update the UKF estimate      
-      ControlCorrection();  // execute control correction
       if( CheckCompletion() ){  // if we've reached the target
         m_robot->SetInsertionVelocity(0.0);
         m_inTaskSpaceControl = false;
@@ -152,28 +164,12 @@ namespace Nf {
     }
   }
 
-  // brief: set the robot velocity based on input from 3D mouse
-  void ControlAlgorithms::setJointSpaceControlVelocities(f32 v_rot, f32 v_ins)
+  void ControlAlgorithms::GetPoseEstimate(Matrix44d &x)
   {
-    if( m_inJointSpaceControl ){
-      //double saturation = 0.001;
-      //double deadspace = 0.0001;
-      //if( v_rot < -saturation )
-      //  v_rot = -saturation;
-      //if( v_rot > saturation )
-      //  v_rot = saturation;     
-      //if( fabs(v_rot) < deadspace )
-      //  v_rot = 0.0;
-
-      //double binaryThreshold = 0.25;
-      //if( v_ins < -binaryThreshold )
-      //  v_ins = -saturation;
-      //if( v_ins > binaryThreshold )
-      //  v_ins = saturation;
-
-      m_robot->SetInsertionVelocity(m_insTrigger->update(v_ins)*INS_SPEED);
-      m_robot->SetRotationVelocity(m_rotTrigger->update(v_rot)*ROT_SPEED);
-    }
+    Vec3d u;
+    GetIncrementalInputVector(u);
+    m_UKF.processUpdateUKF(u);
+    m_UKF.getCurrentStateEstimate(x);
   }
 
   void ControlAlgorithms::updateTransducerPose()
@@ -208,28 +204,25 @@ namespace Nf {
     t = m_t;
   } 
 
-  void ControlAlgorithms::GetPoseEstimate(Matrix44d &x)
-  {
-    Vec3d u;
-    GetIncrementalInputVector(u);
-    //m_UKF.processUpdateUKF(u);
-
-    m_UKF.getCurrentStateEstimate(x);
-  }
-
   void ControlAlgorithms::GetIncrementalInputVector(Vec3d &u)
   {
-    double currentInsMM = m_robot->getInsMM();
-    double l = currentInsMM - m_lastInsMM;
+    if( m_robot && m_robot->isRollInitialized() && m_robot->isInsertionInitialized() ){
+      double currentInsMM = m_robot->getInsMM();
+      double l = currentInsMM - m_lastInsMM;
 
-    double currentRollDeg = m_robot->getRollAngle();
-    double d_th = currentRollDeg - m_lastRollDeg;
+      double currentRollDeg = m_robot->getRollAngle();
+      double d_th = currentRollDeg - m_lastRollDeg;
 
-    u = Vec3d(d_th,RHO,l);
+      u = Vec3d(d_th,RHO,l);
 
-    m_lastInsMM = currentInsMM;
-    m_lastRollDeg = currentRollDeg;
+      m_lastInsMM = currentInsMM;
+      m_lastRollDeg = currentRollDeg;
+    }else{
+      u = Vec3d(0.0,RHO,0.0);
+    }
   }
+
+  
 
   bool ControlAlgorithms::isTargetDefined()
   {
@@ -257,6 +250,7 @@ namespace Nf {
     m_lastInsMM = m_robot->getInsMM();
     m_lastRollDeg = m_robot->getRollAngle();
   }
+
 
   void ControlAlgorithms::ControlCorrection()
   {

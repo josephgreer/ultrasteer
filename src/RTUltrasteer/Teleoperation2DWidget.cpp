@@ -1,6 +1,6 @@
 #include "Teleoperation2DWidget.h"
 
-#define   TSCAN       4.0     // total manual scan time in ms 
+#define   TSCAN       8.0     // total manual scan time in ms 
 
 namespace Nf
 {
@@ -8,8 +8,6 @@ namespace Nf
     : Nf::ParameterCollection("Teleoperation 2D")
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
     , m_Tref2robot(Matrix44d::Zero())
-    , m_3DmouseRot(NULL)
-    , m_3DmouseIns(NULL)
   {
     m_robot = robot;
     m_control = control;
@@ -42,11 +40,6 @@ namespace Nf
     m_jointControlButton->setFixedWidth(300);
     connect(m_jointControlButton, SIGNAL(clicked()), this, SLOT(onStartStopJointSpaceControl()));
 
-    //m_3DmouseIns = new QLCDNumber(parent);
-    //m_3DmouseRot = new QLCDNumber (parent);
-    //m_3DmouseIns->setSegmentStyle(QLCDNumber::SegmentStyle::Flat);
-    //m_3DmouseRot->setSegmentStyle(QLCDNumber::SegmentStyle::Flat);
-
     m_robotStatusWidget = new RobotStatusWidget(parent, m_robot);
 
     m_leftSubLayout = new QHBoxLayout(parent);
@@ -56,8 +49,6 @@ namespace Nf
     m_buttonLayout->addWidget(m_scanButton);
     m_buttonLayout->addWidget(m_taskControlButton);
     m_buttonLayout->addWidget(m_jointControlButton);
-    //m_buttonLayout->addWidget(m_3DmouseIns);
-    //m_buttonLayout->addWidget(m_3DmouseRot);
     m_buttonLayout->setMargin(0);
     m_buttonLayout->setContentsMargins(QMargins(0,0,0,0));
     m_buttonLayout->setSpacing(0);
@@ -78,6 +69,7 @@ namespace Nf
 
     // add framework params
     ADD_ENUM_PARAMETER(m_transducerType, "Transducer", CALLBACK_POINTER(onSetTransducerType, Teleoperation2DWidget), this, QtEnums::Transducer::CONVEX, "Transducer");
+    ADD_BOOL_PARAMETER(m_initializeEstimator, "Initialize Estimator", CALLBACK_POINTER(onInitializeEstimator, Teleoperation2DWidget), this, false);
     ADD_CHILD_COLLECTION(m_imageViewer.get());
     ADD_CHILD_COLLECTION(m_teleoperationVisualizer.get());
   }
@@ -110,11 +102,11 @@ namespace Nf
   {
     if( checkCalibrations() ) 
     {
-
-      if( m_control->startStopTaskSpaceControl() ){
+      if( m_control->startStopTaskSpaceControl() ){ // starting task-space control
         m_taskControlButton->setText("Stop Task-Space Teleoperation");
         m_jointControlButton->setEnabled(false);
-      }else{
+      }else{ // stopping task-space control
+        m_control->setJointSpaceControlVelocities(0.0, 0.0);
         m_taskControlButton->setText("Start Task-Space Teleoperation");
         m_jointControlButton->setEnabled(true);
       }
@@ -140,7 +132,6 @@ namespace Nf
   {
     if (checkCalibrations())
     {
-
       if(!m_preScanTimer) {
         m_preScanTimer = std::tr1::shared_ptr<QTimer>(new QTimer());
         connect(m_preScanTimer.get(), SIGNAL(timeout()), this, SLOT(onManualTimeout()));
@@ -190,39 +181,48 @@ namespace Nf
 
   bool Teleoperation2DWidget::checkCalibrations()
   {
-    if ( m_robot->isRollInitialized() && m_robot->isInsertionInitialized() )
-    { // if we have already initialized the robot DOF
-      if( m_Tref2robot.isZero() ){
-        m_Tref2robot = loadRobotEmCalibration();
-      }
-      Matrix44d transducerCalibration;
-      switch ( m_transducerType->GetValue() ){
-      case QtEnums::Transducer::LINEAR :
-        transducerCalibration = Matrix44d(14.8449, 0.9477, -0.0018, 0.0, 
-          15.0061, 0.0016, 1.00, 0.0, 
-          0.1638, 0.0166, 0.0052, 0.0, 
-          0.0, 0.0, 0.0, 1.0);
-        break;
-      case QtEnums::Transducer::CONVEX :
-        transducerCalibration = Matrix44d(-29.7558, 0.9433, -0.0034, 0.0, 
-          -0.087, 0.0033, 1.00, 0.0, 
-          -0.7053, 0.0132, -0.0087, 0.0, 
-          0.0, 0.0, 0.0, 1.0);
-        break;
-      }
-      m_control->setCalibration( m_Tref2robot, transducerCalibration, m_transducerType->GetValue() );
-      return true;
-    }
-    else
-    {  // we haven't initialized the robot yet...
-      QString port;
-      QMessageBox msgBox;
+    QString port;
+    QMessageBox msgBox;
+
+    if( !(m_robot->isRollInitialized()) || !(m_robot->isInsertionInitialized()) ){
+      // we haven't initialized the robot yet...
       msgBox.setWindowTitle("DANGER: SLEEPING ROBOT");
       msgBox.setText("Initialize the insertion and rotation DOF with the Robot Hardware Widget.");
       QPushButton *continueButton = msgBox.addButton("Got it!", QMessageBox::ActionRole);
       msgBox.exec();
       return false;
     }
+
+    if( !m_initializeEstimator->GetValue() ){
+      // we haven't initialized the estimator yet...
+      msgBox.setWindowTitle("WARNING: THIS KALMAN FILTER STINKS!");
+      msgBox.setText("Initialize the estimator before teleoperation.");
+      QPushButton *continueButton = msgBox.addButton("Got it!", QMessageBox::ActionRole);
+      msgBox.exec();
+      return false;
+    }
+
+    if( m_Tref2robot.isZero() ){
+      m_Tref2robot = loadRobotEmCalibration();
+    }
+
+    Matrix44d transducerCalibration;
+    switch ( m_transducerType->GetValue() ){
+    case QtEnums::Transducer::LINEAR :
+      transducerCalibration = Matrix44d(14.8449, 0.9477, -0.0018, 0.0, 
+        15.0061, 0.0016, 1.00, 0.0, 
+        0.1638, 0.0166, 0.0052, 0.0, 
+        0.0, 0.0, 0.0, 1.0);
+      break;
+    case QtEnums::Transducer::CONVEX :
+      transducerCalibration = Matrix44d(-29.7558, 0.9433, -0.0034, 0.0, 
+        -0.087, 0.0033, 1.00, 0.0, 
+        -0.7053, 0.0132, -0.0087, 0.0, 
+        0.0, 0.0, 0.0, 1.0);
+      break;
+    }
+    m_control->setCalibration( m_Tref2robot, transducerCalibration, m_transducerType->GetValue() );
+    return true;    
   }
 
   Matrix44d Teleoperation2DWidget::loadRobotEmCalibration()
@@ -247,6 +247,23 @@ namespace Nf
   {
     m_imageViewer->onUpdateOverlay();
     m_teleoperationVisualizer->onUpdateVisualization();
+  }
+
+  void Teleoperation2DWidget::onInitializeEstimator()
+  {   
+    if(m_initializeEstimator->GetValue()){
+      QMessageBox msgBox;
+      msgBox.setWindowTitle("CAUTION");
+      msgBox.setText("Estimator initialization assumes the needle tip is inside the introducer and aligned with the robot's Z-axis.\n\nContinue with initialization?");
+      QPushButton *continueButton = msgBox.addButton("Do it!", QMessageBox::ActionRole);
+      QPushButton *abortButton = msgBox.addButton(QMessageBox::Abort);
+      msgBox.exec();
+      if (msgBox.clickedButton() == continueButton){
+        m_control->initializeEstimator();
+      }else{
+        m_initializeEstimator->SetValue(false);
+      }
+    }
   }
 
   Teleoperation2DFileWidget::Teleoperation2DFileWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control, Mouse3DInput* mouse)
