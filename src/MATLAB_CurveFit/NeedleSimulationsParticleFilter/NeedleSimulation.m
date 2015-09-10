@@ -1,7 +1,7 @@
 % this script is for simulating a needle insertion with random control
 % inputs
 clear; clc; close all;
-rng(1);
+rng(5);
 
 % init params
 params = initParamsForSimulation();

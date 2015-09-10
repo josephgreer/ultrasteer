@@ -268,6 +268,10 @@ pw = zeros(params.np,1);
 
 measurement = measurements{1};
 
+% for projection particle position onto ultrasound image planes
+A = [measurement.bx measurement.by cross(measurement.bx, measurement.by)];
+invA = inv(A);
+
 for i=1:params.np
     Rprior = xp{i}.qdist.mu;
     
@@ -312,78 +316,70 @@ for i=1:params.np
     
     
     
-    %vector pointing from particle to measurement loc
-    dr = measurement.pos-xp{i}.pos;
-    
-    %look at projection of dr onto particle tip frame.  if it's positive
-    %then we believe it's in front of this particle (in other words, the
-    %ultrasound frame is off the needle in this hypothetical position)
+
     R = x{i}.qdist.mu;
-    proj = dr'*R(:,3);
-    
     Rdelta = R*R1';
     
-    % compute p((u,v)|x), p(d|x)
-    p_uvx = 0;
-    p_dx = 0;
+    % adjust particle flagella for this particular flagella by multiplying
+    % by Rdelta and adding offset between x{0} and x{i}
+    xs = xsc-repmat(xsc(:,1),1,size(xsc,2));
+    xs = Rdelta*xs;
+    xs = xs+repmat(xp{i}.pos, 1, size(xsc,2));
     
-    % does particle intersect the frame?
-    offFrame = 1;
-    % if image frame is past the end of the particle needle tip, then yes
-    if(proj <= 0)
-        %before the needle tip of this particle
-        % work backwards
-        xs = xsc-repmat(xsc(:,1),1,size(xsc,2));
-        xs = Rdelta*xs;
-        xs = xs+repmat(xp{i}.pos, 1, size(xsc,2));
+    % find flagella point with minimum distance projection onto ultrasound
+    % frame
+    ds = zeros(3,size(xs,2));
+    for j=1:size(xs,2)
         
-        %         xx = propagateNeedleBack(xp{i}, u, params);
-        %         xx = cell2mat(xx); xx = [xx.pos];
-        %
-        %         assert(norm(abs(xx-xs)) < 1e-5);
-        for j=1:length(xs)-1
-            dr = xs(:,j+1)-xs(:,j);
-            if(norm(dr) < 1e-5)
-                continue;
-            end
-            if(det([-dr measurement.bx measurement.by]) == 0)
-                ss = 0;
-            end
-            % t(2:3) = image coordinates of particle image frame intersection
-            % in mm
-            t = [-dr measurement.bx measurement.by]\(xs(:,j)-measurement.ful);
-            if(sum(zeros(3,1) <= t)==3 && sum(t <= [1;params.usw;params.ush])==3)
-                % t(2:3) = intersection of shaft and particle in image coordinates (mm)
-                suv = t(2:3);
-                
-                % measurement.uv = measurement in image coordinaates in (mm)
-                % p((u,v)|d,x) ~ truncated gaussian centered at shaft particle interesection
-                % calculate limits for truncated gaussian
-                a = suv-[params.usw;params.ush]; % if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
-                b = suv; % if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0)
-                
-                duv = suv-measurement.uv;
-                
-                pin = sigmf(measurement.doppler, [params.sigB0, params.sigB1]);
-                p_uvx = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.measurementOffsetSigma),...,
-                    a,b) + ...
-                    (1-pin)*(1/(params.ush*params.usw));
-                
-                % p(d|x) in case particle intersects frame
-                p_dx = lognpdf(measurement.doppler, params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
-                offFrame = 0;
-                break;
-            end
+        % find distance between particle flagella position and plane
+        curr = invA*(xs(:,j)-measurement.ful);
+        if(sum(zeros(2,1) <= curr(1:2))<2 || sum(curr(1:2) <= [params.usw;params.ush]) < 2)
+            ds(:,j) = [curr(1); curr(2); 1e9];
+        else
+            ds(:,j) = curr;
         end
+        
     end
+    
+    
+    [minVal, minIdx] = min(ds(3,:));
+    [maxVal, maxIdx] = max(ds(3,:));
+    [minAbsVal, minAbsIdx] = min(abs(ds(3,:)));
+    
+    if(minVal < 0 && maxVal > 0)
+        minAbsVal = 0;
+    end
+    
+    % p(off frame | point distance from us frame)
+    offFrame = sigmf(minAbsVal, [params.offFrameB0 params.offFrameB1]);
+    
+    % particle projection onto us frame in pixels
+    suv = ds([1 2], minAbsIdx);
+    
+    % measurement.uv = measurement in image coordinaates in (mm)
+    % p((u,v)|d,x) ~ truncated gaussian centered at shaft particle interesection
+    % calculate limits for truncated gaussian
+    a = suv-[params.usw;params.ush]; % if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
+    b = suv; % if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0)
+    
+    duv = suv-measurement.uv;
+    
+    pin = sigmf(measurement.doppler, [params.sigB0, params.sigB1]);
+    p_uvxOnFrame = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.p1.uvOffsetSigma),...,
+        a,b) + ...
+        (1-pin)*(1/(params.ush*params.usw));
+    
+    p_uvxOffFrame = 1/(params.ush*params.usw);
+    
+    % p(d|x) in case particle intersects frame
+    p_dxOnFrame = lognpdf(measurement.doppler, params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
     
     % particle doesn't intersect image frame
-    if(offFrame)
-        p_uvx = 1/(params.ush*params.usw);
-        p_dx = lognpdf(measurement.doppler, params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
-    end
+    %p_uvxOffFrame = 1/(params.ush*params.usw);
+    p_dxOffFrame = lognpdf(measurement.doppler, params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
     
-    pw(i) = p_dx*p_uvx;
+    % p(measurement | x)
+    pw(i) = (p_uvxOnFrame*p_dxOnFrame*(1-offFrame))+p_dxOffFrame*p_uvxOffFrame*offFrame;
     x{i}.w = xp{i}.w;
    
 end
