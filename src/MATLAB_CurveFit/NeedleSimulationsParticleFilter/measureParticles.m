@@ -128,6 +128,8 @@ for i=1:length(xp)
         a,b) + ...
         (1-pin)*(1/(params.ush*params.usw));
     
+    p_uvxOffFrame = 1/(params.ush*params.usw);
+    
     % p(d|x) in case particle intersects frame
     p_dxOnFrame = lognpdf(measurement.doppler, params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
     
@@ -136,7 +138,7 @@ for i=1:length(xp)
     p_dxOffFrame = lognpdf(measurement.doppler, params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
     
     % p(measurement | x)
-    pw(i) = p_uvxOnFrame*(p_dxOnFrame*(1-offFrame)+p_dxOffFrame*offFrame);
+    pw(i) = (p_uvxOnFrame*p_dxOnFrame*(1-offFrame))+p_dxOffFrame*p_uvxOffFrame*offFrame;
 end
 
 % in case all probabilities are exceedingly low!

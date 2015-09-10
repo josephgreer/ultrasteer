@@ -6,6 +6,8 @@ addpath('../');
 
 params = initParamsForSimulation;
 params.axialSigma = 15;
+params.offFrameB0 = -5;
+params.offFrameB1 = 5;
 
 params.n = 400;
 dt = params.dt;
@@ -21,7 +23,7 @@ end
 
 % gridSz = 2 cm;
 gridSz = 20;
-nParticlesPerDim = 50;
+nParticlesPerDim = 150;
 
 
 xcurr.q = RotationMatrixToQuat(Ry(pi/2));
@@ -66,7 +68,7 @@ positionsxx = positionsx(:);
 positionsyy = positionsy(:);
 for i=1:length(positionsxx)
     [yy xx] = ind2sub(size(positionsx), i);
-    particles{i}.q = xcurr.q;%xsl{lookupTableX(xx)}.q;
+    particles{i}.q = xsl{lookupTableX(xx)}.q;
     particles{i}.pos = [positionsxx(i); positionsyy(i); 0];
     particles{i}.rho = xs{1}.rho;
     particles{i}.w = 1/length(positionsxx);
@@ -76,14 +78,14 @@ end
 
 params.p1.uvOffsetSigma = eye(2)*params.mpp*20*1e-3
 params.measurementOffsetSigma = zeros(2,2);
-params.onNeedleDopplerMu = 2.3455942812457916254579942197096;
-params.onNeedleDopplerSigma = 0.4;%0.20738656719215432695570750167604;
-params.offNeedleDopplerMu = 1.7734450777207952976725841602777;
-params.offNeedleDopplerSigma = 1.3317075796588361003232373858813;
+% params.onNeedleDopplerMu = 2.3455942812457916254579942197096;
+% params.onNeedleDopplerSigma = 0.4;%0.20738656719215432695570750167604;
+% params.offNeedleDopplerMu = 1.7734450777207952976725841602777;
+% params.offNeedleDopplerSigma = 1.3317075796588361003232373858813;
 %params.usw = params.usw*100;
 %params.ush = params.ush*100;
 
-ts = [2 2.75 3];
+ts = [2 2.75 3.05];
 figHandle = figure;
 for i=1:3
     measurement = generateRandomMeasurement(xs, u, ts(i), params);
@@ -100,7 +102,7 @@ for i=1:3
     set(gca, 'FontSize', 12, 'FontName', 'Times New Roman');
     xlim([min(positionsxx) max(positionsxx)]);
     ylim([min(positionsyy) max(positionsyy)]);
-    daspect([1 1 1/1000])
+    daspect([1 1 1/5000])
     rotate(h, [0 0 1], 270);
     view(2);
     %particles = particlesBackup;
