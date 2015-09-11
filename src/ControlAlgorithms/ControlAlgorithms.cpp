@@ -6,6 +6,7 @@
 #define   INS_SPEED               40.0    // insertion speed during teleoperation (mm/s) 
 #define   ROT_SPEED               200.0   // rotation speed during teleoperation (RPM)
 #define   NEEDLE_DEAD_LENGTH      30.0    // offset of needle tip at zero insertion due to extra needle length 
+#define   PI                      3.14159265359
 
 namespace Nf {
 
@@ -209,9 +210,9 @@ namespace Nf {
     if( m_robot && m_robot->isRollInitialized() && m_robot->isInsertionInitialized() ){
       double currentInsMM = m_robot->getInsMM();
       double l = currentInsMM - m_lastInsMM;
-
+      
       double currentRollDeg = m_robot->getRollAngle();
-      double d_th = currentRollDeg - m_lastRollDeg;
+      double d_th = (currentRollDeg - m_lastRollDeg)*PI/180.0;
 
       u = Vec3d(d_th,RHO,l);
 
@@ -221,8 +222,6 @@ namespace Nf {
       u = Vec3d(0.0,RHO,0.0);
     }
   }
-
-  
 
   bool ControlAlgorithms::isTargetDefined()
   {
@@ -276,43 +275,27 @@ namespace Nf {
     }
   }
 
-  void ControlAlgorithms::getOverlayValues(bool &show_p, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Vec3d &p, Matrix33d &R,
-                                           bool &show_t, Vec3d &t_img, Vec3d &t,
-                                           bool &show_S, Vec3d &Sxyz)
+  void ControlAlgorithms::getOverlayValues(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img,
+                                           Matrix44d &z,
+                                           Vec3d &Sxyz,
+                                           Vec3d &t_img, Vec3d &t )
   {
-    // default to not showing anything
-    show_p = false;
-    show_t = false;
-    show_S = false;
-
-    if( !m_t.isZero() ){ // if we have defined the target
-      t_img = RobotPtToImagePt(m_t);
-
-      if( fabs(t_img.z) < 10.0 ){ // if the target is within 5 mm of the image plane
-        show_t = true;
-        t = m_t;
-      }
-    }
-
-    if( !m_x.isZero() ){ // if we have defined the estimate
-      Matrix44d T;
-      T = m_x;
-      p = T.GetPosition();
-      R = T.GetOrientation();
-      p_img = RobotPtToImagePt(p);
-
-      if( fabs(p_img.z) < 10.0 ){ // if the tip estimate is within 5 mm of the image plane
-        show_S = true;
-        Sxyz = m_UKF.getCurrentXYZVariance();
-
-        show_p = true;
-        Matrix33d R = T.GetOrientation();
-        Vec3d pz_world = p + R*Vec3d(0.0,0.0,10.0);
-        Vec3d py_world = p + R*Vec3d(0.0,5.0,0.0);
-        pz_img = RobotPtToImagePt(pz_world);
-        py_img = RobotPtToImagePt(py_world);
-      }
-    }
+    // target  
+    t_img = RobotPtToImagePt(m_t);
+    t = m_t;
+    // estimate and variance
+    x = m_x;
+    Sxyz = m_UKF.getCurrentXYZVariance();
+    // measurement
+    z = m_z;
+    // tip frame in image coordinates
+    Vec3d p = m_x.GetPosition();
+    Matrix33d R = m_x.GetOrientation();
+    p_img = RobotPtToImagePt(p);
+    Vec3d pz_world = p + R*Vec3d(0.0,0.0,10.0);
+    Vec3d py_world = p + R*Vec3d(0.0,5.0,0.0);
+    pz_img = RobotPtToImagePt(pz_world);
+    py_img = RobotPtToImagePt(py_world);
   }
 
   void ControlAlgorithms::getVisualizerValues(Vec3d &t, Matrix44d &x, Matrix44d &z, Matrix44d &Tref2robot,

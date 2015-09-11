@@ -1,18 +1,18 @@
 #include "UnscentedKalmanFilter.h"
 
-#define		N					      6.0				// length of state vector
-#define   SQN             2.4495    // sqrt(N)
+#define		N					      6.0				        // length of state vector
+#define   SQN             2.4495            // sqrt(N)
 
-#define		P_POS_I   			3.0				// prior covariance of position
-#define		P_ROT_I   			1e-2			// prior covariance of orientation
+#define		P_POS_I   			3.0				        // prior covariance of position
+#define		P_ROT_I   			1e-2			        // prior covariance of orientation
 
-#define		Q_POS				    0.2				// process covariance of position
-#define		Q_ROT				    1e-3			// process covariance of orientation
+#define		Q_POS				    0.2				        // process covariance of position
+#define		Q_ROT				    1e-3			        // process covariance of orientation
 
-#define		R_POS				    1.0				// measurement covariance of position
-#define		R_ROT				    1.0				// measurement covariance of orientation
+#define		R_POS				    1.0				        // measurement covariance of position
+#define		R_ROT				    1.0				        // measurement covariance of orientation
 
-#define   PI              3.141     // pi
+#define   PI              3.141             // pi
 
 
 
@@ -86,10 +86,11 @@ namespace Nf
     if( m_initialized ){
       // create Sigma points X for the current estimate distribution
       std::vector<Matrix44d> X;
-      sigmas(x_hat, P_hat+Q, X);
+      sigmas(x_hat, P_hat+(Q*(u.z/5.0)), X); // scale uncertainty by length of insertion
 
       // apply unscented transformation for process model 
       std::vector<Vec6d> Ex_;       // transformed error vectors
+      Matrix44d old_x_hat = x_hat;
       utf(X, u, x_hat, P_hat, Ex_);
     }
   }
@@ -106,7 +107,7 @@ namespace Nf
     X_.clear();
     for( int k = 0; k < l; k++ )
       X_.push_back( f(X[k],u) );
-   
+
     // find the mean, covariance, and error vectors for the set
     findMeanAndCov( X_, x_, P_, Ex_ );
   }
@@ -149,6 +150,7 @@ namespace Nf
 
     // set the output to 
     Matrix44d x2 = Matrix44d::FromOrientationAndTranslation(R2,p2);
+
     return x2;
   }
 
@@ -201,6 +203,7 @@ namespace Nf
     }
 
     // calculate covariance and compose deviations
+    P = Matrix66d::Zero();
     for( int i = 0; i<l; i++ )
     {
       E[i] = Vec6d::From2x3s(E_p[i],E_R[i]);
@@ -263,7 +266,7 @@ namespace Nf
     }
   }
 
-    /// \brief    Create a 3x3 rotation z-axis rotation matrix parameterized by th
+    /// \brief    Create a 3x3 rotation z-axis rotation matrix parameterized by th (in rad)
   Matrix33d UnscentedKalmanFilter::Rz( double th)
   {
     Matrix33d res(cos(th), -sin(th), 0.0, 
@@ -272,7 +275,7 @@ namespace Nf
     return res;
   }
 
-  /// \brief    Create a 3x3 rotation x-axis rotation matrix parameterized by al
+  /// \brief    Create a 3x3 rotation x-axis rotation matrix parameterized by al (in rad)
   Matrix33d UnscentedKalmanFilter::Rx( double al)
   {
     Matrix33d res(  1.0,   0.0,      0.0,
@@ -307,16 +310,18 @@ namespace Nf
   /// \brief    Create a rotation vector equivalent to 3x3 rotation matrix input
   Vec3d UnscentedKalmanFilter::mat2vec(Matrix33d R)
   {
-    f64 th = acos( (R.Trace()-1.0)/2.0 );
+    f64 th = safeAcos( (R.Trace()-1.0)/2.0 );
 
-    if( th < 1e-6 )
+    if( fabs(th) < 1e-3 )
       return Vec3d(0.0,0.0,0.0);
 
     Vec3d skw(    R.m_data[2][1]-R.m_data[1][2],
                   R.m_data[0][2]-R.m_data[2][0],
                   R.m_data[1][0]-R.m_data[0][1] );
     
-    return skw/(2.0*sin(th))*th;
+    Vec3d retval = skw/(2.0*sin(th))*th;
+
+    return retval;
   }
 
   /// \brief    Find the 6x1 vector difference between two poses (a-b)
@@ -352,4 +357,11 @@ namespace Nf
   {
     return m_initialized;
   }
-}
+
+  double UnscentedKalmanFilter::safeAcos( double x )
+  {
+    if (x < -1.0) x = -1.0 ;
+    else if (x > 1.0) x = 1.0 ;
+    return acos (x) ;
+  }
+  }

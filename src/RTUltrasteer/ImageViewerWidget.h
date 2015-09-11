@@ -118,8 +118,8 @@ namespace Nf
   protected:
     vtkSmartPointer < vtkTextActor > m_targetTextActor;
     vtkSmartPointer < vtkTextActor > m_instructionTextActor;
-    vtkSmartPointer < vtkTextActor > m_segmentationTextActor;
-    vtkSmartPointer < vtkTextActor > m_textActor4;
+    vtkSmartPointer < vtkTextActor > m_measurementTextActor;
+    vtkSmartPointer < vtkTextActor > m_estimateTextActor;
     vtkSmartPointer < vtkPointPicker > m_pointPicker;
     vtkSmartPointer < vtkImageMapToColors > m_mapTransparency;
     vtkSmartPointer < vtkImageImport > m_maskImporter;
@@ -138,9 +138,9 @@ namespace Nf
     void DrawTargetIcon(Vec3d t);
     void DrawTipIcon(Vec3d p, Vec3d pz, Vec3d py);
     void SetTargetText(Vec2d px, Vec3d wpt);
-    void SetSegmentationText(Matrix33d R, Vec3d p);
+    void SetEstimateText(Matrix44d x, Vec3d Sxyz);
     void SetInstructionText(char* str);
-    void SetVarianceText(Vec3d var);
+    void SetMeasurementText(Matrix44d z);
     void SetTeleoperation2DWidget(Teleoperation2DWidget *widget);
     void getImageDim(int &w, int &h);
     void setControl(ControlAlgorithms* control);

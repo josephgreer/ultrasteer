@@ -1264,6 +1264,12 @@ namespace Nf
       return Matrix66d(data);
     }
 
+    static Matrix66d Zero()
+    {
+      f64 data[6][6] = {0};
+      return Matrix66d(data);
+    }
+
     Matrix66d operator=(const Matrix66d &rhs)
     {
       memcpy(&this->m_data[0][0], &rhs.m_data[0][0], sizeof(f64)*36);

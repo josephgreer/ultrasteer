@@ -163,7 +163,6 @@ namespace Nf
   {
     f64 *bounds = m_imageActor->GetBounds();
     m_renderer->ResetCamera(bounds);
-
   }
   ////////////////////////////////////////////////////////
   // End ImageViwerWidget
@@ -359,8 +358,8 @@ namespace Nf
 
     m_targetTextActor = vtkSmartPointer<vtkTextActor>::New();
     m_instructionTextActor = vtkSmartPointer<vtkTextActor>::New();
-    m_segmentationTextActor = vtkSmartPointer<vtkTextActor>::New();
-    m_textActor4 = vtkSmartPointer<vtkTextActor>::New();
+    m_measurementTextActor = vtkSmartPointer<vtkTextActor>::New();
+    m_estimateTextActor = vtkSmartPointer<vtkTextActor>::New();
     m_pointPicker = vtkSmartPointer<vtkPointPicker>::New();
     m_maskImporter = vtkSmartPointer<vtkImageImport>::New();
     m_mapTransparency = vtkSmartPointer<vtkImageMapToColors>::New();
@@ -435,19 +434,19 @@ namespace Nf
       m_instructionTextActor->SetInput ( "" );
       m_instructionTextActor->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
 
-      // Add text overlay for segmentation results
-      m_segmentationTextActor->GetTextProperty()->SetFontSize ( 24 );
-      m_segmentationTextActor->SetPosition( 10, 200 );
-      m_renderer->AddActor2D ( m_segmentationTextActor );
-      m_segmentationTextActor->SetInput ( "" );
-      m_segmentationTextActor->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
+      // Add text overlay for measurement results
+      m_measurementTextActor->GetTextProperty()->SetFontSize ( 24 );
+      m_measurementTextActor->SetPosition( 10, 200 );
+      m_renderer->AddActor2D ( m_measurementTextActor );
+      m_measurementTextActor->SetInput ( "" );
+      m_measurementTextActor->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
 
-      // Add text overlay for estimate variance
-      m_segmentationTextActor->GetTextProperty()->SetFontSize ( 24 );
-      m_segmentationTextActor->SetPosition( 200, 200 );
-      m_renderer->AddActor2D ( m_segmentationTextActor );
-      m_segmentationTextActor->SetInput ( "" );
-      m_segmentationTextActor->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
+      // Add text overlay for estimate 
+      m_estimateTextActor->GetTextProperty()->SetFontSize ( 24 );
+      m_estimateTextActor->SetPosition( 200, 200 );
+      m_renderer->AddActor2D ( m_estimateTextActor );
+      m_estimateTextActor->SetInput ( "" );
+      m_estimateTextActor->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
 
       // Set up interaction 
       vtkSmartPointer<MouseInteractorStylePP> style = 
@@ -492,38 +491,30 @@ namespace Nf
 
     // get current values for overlaying
     Vec3d p_img, pz_img, py_img;
-    Vec3d p;
-    Matrix33d R;
+    Matrix44d x, z;
     Vec3d t_img, t;
     Vec3d Sxyz;
-    bool show_p, show_t, show_S;
-    m_control->getOverlayValues(show_p, p_img, pz_img, py_img, p, R,
-      show_t, t_img, t,
-      show_S, Sxyz);
+    m_control->getOverlayValues(x, p_img, pz_img, py_img,
+      z, Sxyz, t_img, t);
 
-    // update tip pose estimate and variance
-    if( show_p ){
-      SetSegmentationText(R, p);
-      SetVarianceText(Sxyz);
+    // update target
+    if( !t.isZero() ){
+      SetTargetText(Vec2d(t_img.x,t_img.y), t);      
+      if( fabs(t_img.z) < 10.0 ) {
+        DrawTargetIcon(t_img);
+      }
+    }
+
+    // update estimate
+    if( !x.isZero() ){
+      SetEstimateText(x,Sxyz);
       DrawTipIcon(p_img, pz_img, py_img);
     }
 
-    // update target
-    if( show_t ){
-      SetTargetText(Vec2d(t_img.x,t_img.y), t);
-      DrawTargetIcon(t_img);
+    // update measurement
+    if( !z.isZero() ){
+      SetMeasurementText(z);
     }
-  }
-
-  void ImageViewer2DTeleoperationWidget::SetTargetText(Vec2d t_img, Vec3d t_wld)
-  {
-    // Format the click position and print over image
-    char str [100];
-    int n = sprintf(str, "t_img = {%.1f, %.1f}\nt_wld = {%.2f, %.2f, %.2f}", t_img.x, t_img.y, t_wld.x, t_wld.y, t_wld.z);
-    m_targetTextActor->SetInput(str);
-
-    // Update the VTK rendering
-    this->repaint();
   }
 
   void ImageViewer2DTeleoperationWidget::SetInstructionText(char* str)
@@ -531,40 +522,58 @@ namespace Nf
     m_instructionTextActor->SetInput(str);
     int* size = m_renderer->GetSize();
     m_instructionTextActor->SetPosition( 10, size[1]-40 );
-    this->repaint();
+    //this->repaint();
   }
 
-  void ImageViewer2DTeleoperationWidget::SetSegmentationText(Matrix33d R, Vec3d p)
+  void ImageViewer2DTeleoperationWidget::SetTargetText(Vec2d t_img, Vec3d t_wld)
   {
     // Format the click position and print over image
-    char str [100];
-    int n = sprintf(str, "p = {%.2f, %.2f, %.2f}\nR = \n%.2f, %.2f, %.2f\n%.2f, %.2f, %.2f\n%.2f, %.2f, %.2f", 
-      p.x, p.y, p.z,
-      R.m_data[0][0], R.m_data[0][1], R.m_data[0][2], 
-      R.m_data[1][0], R.m_data[1][1], R.m_data[1][2], 
-      R.m_data[2][0], R.m_data[2][1], R.m_data[2][2]);
-    m_segmentationTextActor->SetInput(str);
-
-    int* size = m_renderer->GetSize();
-    m_segmentationTextActor->SetPosition( 10, int(size[1]/2) );
+    char str [1000];
+    int n = sprintf(str, "t_img = {%.1f, %.1f}\nt_wld = {%.2f, %.2f, %.2f}", t_img.x, t_img.y, t_wld.x, t_wld.y, t_wld.z);
+    m_targetTextActor->SetInput(str);
 
     // Update the VTK rendering
-    this->repaint();
+    //this->repaint();
   }
 
-  void ImageViewer2DTeleoperationWidget::SetVarianceText(Vec3d var)
+  void ImageViewer2DTeleoperationWidget::SetEstimateText(Matrix44d x, Vec3d Sxyz)
   {
-    char str [100];
-    int n = sprintf(str,"s_x = %.2f\ns_y = %.2f\ns_z = %.2f",var.x,var.y,var.z);
-    m_textActor4->SetInput(str);
+    // Format the click position and print over image
+    Vec3d p = x.GetPosition();
+    Matrix33d R = x.GetOrientation();
+    char str [1000];
+    int n = sprintf(str, "x = \n%.2f, %.2f, %.2f, %.2f\n%.2f, %.2f, %.2f, %.2f\n%.2f, %.2f, %.2f, %.2f\n\n Sxyz = %.2f, %.2f, %.2f", 
+      R.m_data[0][0], R.m_data[0][1], R.m_data[0][2], p.x, 
+      R.m_data[1][0], R.m_data[1][1], R.m_data[1][2], p.y, 
+      R.m_data[2][0], R.m_data[2][1], R.m_data[2][2], p.z,
+      Sxyz.x, Sxyz.y, Sxyz.z);
+    m_estimateTextActor->SetInput(str);
+
+    f32 danger = Sxyz.magnitude()/MAX_VAR_NORM;
+    m_estimateTextActor->GetTextProperty()->SetColor( 1.0,1.0-danger,1.0-danger );
 
     int* size = m_renderer->GetSize();
-    m_textActor4->SetPosition( 10, size[0]-100 );
+    m_estimateTextActor->SetPosition( 10, int(size[1]/2) );
     
-    f32 danger = var.magnitude()/MAX_VAR_NORM;
-    m_textActor4->GetTextProperty()->SetColor( 1.0,1.0-danger,1.0-danger );
+    //this->repaint();
+  }
 
-    this->repaint();
+  void ImageViewer2DTeleoperationWidget::SetMeasurementText(Matrix44d z)
+  {
+    // Format the click position and print over image
+    Vec3d p = z.GetPosition();
+    Matrix33d R = z.GetOrientation();
+    char str [1000];
+    int n = sprintf(str, "z = \n%.2f, %.2f, %.2f, %.2f\n%.2f, %.2f, %.2f, %.2f\n%.2f, %.2f, %.2f, %.2f\n", 
+      R.m_data[0][0], R.m_data[0][1], R.m_data[0][2], p.x, 
+      R.m_data[1][0], R.m_data[1][1], R.m_data[1][2], p.y, 
+      R.m_data[2][0], R.m_data[2][1], R.m_data[2][2], p.z);
+    m_measurementTextActor->SetInput(str);
+
+    int* size = m_renderer->GetSize();
+    m_measurementTextActor->SetPosition( 10, int(size[1]/4) );
+
+    //this->repaint();
   }
 
   void ImageViewer2DTeleoperationWidget::DrawTargetIcon(Vec3d t)
@@ -578,19 +587,21 @@ namespace Nf
       // Update the VTK rendering
       m_maskImporter->Update();
       m_maskImporter->Modified();
-      this->repaint();
+      //this->repaint();
     }
   }
 
   void ImageViewer2DTeleoperationWidget::DrawTipIcon(Vec3d p, Vec3d pz, Vec3d py)
   {
-    cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(pz.x, pz.y),cvScalar(1.0),3,CV_AA);
-    cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(py.x, py.y),cvScalar(1.0),3,CV_AA);
 
+    if( fabs(p.z) < 10.0 ){ // if the tip estimate is within 10 mm of the image plane
+      cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(pz.x, pz.y),cvScalar(1.0),3,CV_AA);
+      cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(py.x, py.y),cvScalar(1.0),3,CV_AA);
+    }
     // Update the VTK rendering
     m_maskImporter->Update();
     m_maskImporter->Modified();
-    this->repaint();
+    //this->repaint();
   }
 
   void ImageViewer2DTeleoperationWidget::getImageDim(int &w, int &h)

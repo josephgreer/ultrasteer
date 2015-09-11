@@ -119,17 +119,6 @@ namespace Nf
     virtual void HandleFrame(RPData &rp);
 
   };
-
-  //class ManualControlWidget //: public ResizableQWidget
-  //{
-  //  Q_OBJECT 
-
-  //public:
-  //  ManualControlWidget();
-  //  ~ManualControlWidget();
-  //  void TDxMouseCallbackFunction(vtkObject*, unsigned long eid, void* clientdata, void *calldata);
-
-  //};
 }
 
 #endif //TELEOPERATION2DWIDGET_H

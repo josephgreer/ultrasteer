@@ -83,3 +83,46 @@ TEST(Vec2matMat2vec, UKF)
   // Turn it back into a rotation vector
   Vec3d r2 = m_UKF.mat2vec(R1);
 }
+
+TEST(Sigmas, UKF)
+{
+  
+  Vec6d v(1.4, 4.3, 43.3, 10.3, 0.5, 100.4);
+  Matrix66d Mtest = Matrix66d::Diagonal(v);
+  Matrix66d S = Mtest.cholesky();
+
+
+  Matrix33d R = Matrix33d::I();
+  Vec3d p(0.0, 0.0, 30.0);
+  
+  Matrix44d x1 = Matrix44d::FromOrientationAndTranslation(R,p);
+  Matrix66d P1 = Matrix66d::I();
+
+  Matrix44d x2;
+  Matrix66d P2;
+
+  std::vector<Matrix44d> sigmas;
+  std::vector<Vec6d> E;
+
+  Vec3d u(0, 60, 0);
+
+  UnscentedKalmanFilter ukf;
+  ukf.sigmas(x1, P1, sigmas);
+  ukf.findMeanAndCov( sigmas, x2, P2, E);
+  
+  NTrace("\nx1 = \n");
+  x1.Print();
+  NTrace("\n");
+
+  NTrace("\nP1 =\n");
+  P1.Print();
+  NTrace("\n");
+  
+  NTrace("\nx2 = \n");
+  x2.Print();
+  NTrace("\n");
+
+  NTrace("\nP2 =\n");
+  P2.Print();
+  NTrace("\n");
+}
