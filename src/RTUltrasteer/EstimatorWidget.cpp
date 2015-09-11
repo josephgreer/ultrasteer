@@ -239,9 +239,13 @@ namespace Nf
   {
     std::tr1::shared_ptr < PFParams > params = GetParams(-1);
     if(m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
-      m_pf = std::tr1::shared_ptr < ParticleFilter > (new ParticleFilterFullState(m_nParticles->GetValue(), params.get()));
+      m_pf = std::tr1::shared_ptr < ParticleFilter > (new ParticleFilterFullState(m_nParticles->GetValue(), 
+        std::tr1::shared_ptr < Distribution > (new LUTDist(params->onNeedleDopplerLUTPath.c_str())), 
+        std::tr1::shared_ptr < Distribution > (new LUTDist(params->offNeedleDopplerLUTPath.c_str())), params.get()));
     } else {
-      m_pf = std::tr1::shared_ptr < ParticleFilter > (new ParticleFilterMarginalized(m_nParticles->GetValue(), params.get()));
+      m_pf = std::tr1::shared_ptr < ParticleFilter > (new ParticleFilterMarginalized(m_nParticles->GetValue(), 
+        std::tr1::shared_ptr < Distribution > (new LUTDist(params->onNeedleDopplerLUTPath.c_str())), 
+        std::tr1::shared_ptr < Distribution > (new LUTDist(params->offNeedleDopplerLUTPath.c_str())), params.get()));
     }
     m_init = false;
   }

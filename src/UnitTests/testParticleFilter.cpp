@@ -376,7 +376,10 @@ TEST(ParticleFilter, PropagateParticles)
 
   // First use full state particle filter
   PFFullStateParams pfs;
-  ParticleFilterFullState pffs(nParticles, &pfs);
+
+  std::tr1::shared_ptr < LogNormalDist > pOverNeedle(new LogNormalDist(pfs.onNeedleDopplerMu, pfs.onNeedleDopplerSigma));
+  std::tr1::shared_ptr < LogNormalDist > pNotOverNeedle(new LogNormalDist(pfs.offNeedleDopplerMu, pfs.offNeedleDopplerSigma));
+  ParticleFilterFullState pffs(nParticles, pOverNeedle, pNotOverNeedle, &pfs);
   pffs.InitializeParticleFilter(hist, &pfs);
 
   std::vector < mat33 > Rs = pffs.GetParticleOrientations(&pfs);
@@ -406,7 +409,7 @@ TEST(ParticleFilter, PropagateParticles)
 
   //Now use marginalized particle filter
   PFMarginalizedParams ppfm;
-  ParticleFilterMarginalized pfm(nParticles, &ppfm);
+  ParticleFilterMarginalized pfm(nParticles, pOverNeedle, pNotOverNeedle, &ppfm);
   pfm.InitializeParticleFilter(hist, &ppfm);
 
   Rs = pfm.GetParticleOrientations(&ppfm);
@@ -591,8 +594,12 @@ static PartMethod3 loadParticlesMethod3(const char *basePath)
 TEST(ParticleFilter, ApplyMeasurement)
 {
   using ::s32;
-
+  
+#if 0
   char basePath[] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testMeasure";
+#else
+  char basePath[] = "C:/Users/Joey/Documents/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testMeasure";
+#endif
   char path[150] = {0};
 
   f64 eps = 1e-2;
@@ -607,7 +614,13 @@ TEST(ParticleFilter, ApplyMeasurement)
   PartMethod1 psa = loadParticlesMethod1(path);
 
   PFFullStateParams pfp;
-  ParticleFilterFullState pffs(ps.pos.n_cols, &pfp);
+  pfp.sigB0 = -2;
+  pfp.sigB1 = 0.5;
+
+  
+  std::tr1::shared_ptr < LogNormalDist >  pOverNeedle(new LogNormalDist(pfp.onNeedleDopplerMu, pfp.onNeedleDopplerSigma));
+  std::tr1::shared_ptr < LogNormalDist > pNotOverNeedle(new LogNormalDist(pfp.offNeedleDopplerMu, pfp.offNeedleDopplerSigma));
+  ParticleFilterFullState pffs(ps.pos.n_cols, pOverNeedle, pNotOverNeedle, &pfp);
   pffs.SetOrientations(ps.Rs);
   pffs.SetPositions(ps.pos);
   pffs.SetRhos(ps.rhos);
@@ -629,7 +642,7 @@ TEST(ParticleFilter, ApplyMeasurement)
   sprintf(path, "%sAfter12", basePath);
   psa = loadParticlesMethod1(path);
 
-  pffs = ParticleFilterFullState(ps.pos.n_cols, &pfp);
+  pffs = ParticleFilterFullState(ps.pos.n_cols, pOverNeedle, pNotOverNeedle, &pfp);
   pffs.SetOrientations(ps.Rs);
   pffs.SetPositions(ps.pos);
   pffs.SetRhos(ps.rhos);
@@ -655,7 +668,9 @@ TEST(ParticleFilter, ApplyMeasurement)
   PFMarginalizedParams pfmp;
   pfmp.subsetSize = 2000;
   pfmp.distanceThreshSq = 50*50;
-  ParticleFilterMarginalized pfmm(ps3.pos.n_cols, &pfmp);
+  pfmp.sigB0 = -2;
+  pfmp.sigB1 = 0.5;
+  ParticleFilterMarginalized pfmm(ps3.pos.n_cols, pOverNeedle, pNotOverNeedle, &pfmp);
   pfmm.SetOrientationKFs(ps3.Rs);
   pfmm.SetPositions(ps3.pos);
   pfmm.SetRhos(ps3.rhos);
@@ -688,7 +703,7 @@ TEST(ParticleFilter, ApplyMeasurement)
   sprintf(path, "%sAfter32", basePath);
   ps3a = loadParticlesMethod3(path);
 
-  pfmm = ParticleFilterMarginalized(ps3.pos.n_cols, &pfmp);
+  pfmm = ParticleFilterMarginalized(ps3.pos.n_cols, pOverNeedle, pNotOverNeedle, &pfmp);
   pfmm.SetOrientationKFs(ps3.Rs);
   pfmm.SetPositions(ps3.pos);
   pfmm.SetRhos(ps3.rhos);
@@ -743,7 +758,7 @@ TEST(ParticleFilter, WholeSystem)
   using ::s32;
   using ::u32;
 
-#if 1
+#if 0
   char basePath[] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testWholeSystem";
 #else
   char basePath[] = "C:/Users/Joey/Documents/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testWholeSystem";
@@ -766,6 +781,9 @@ TEST(ParticleFilter, WholeSystem)
   PFMarginalizedParams *pmp;
   ParticleFilterMarginalized *pfms;
 
+  std::tr1::shared_ptr < LogNormalDist > pOverNeedle = NULL;
+  std::tr1::shared_ptr < LogNormalDist > pNotOverNeedle = NULL;
+
   for(s32 mth=0; mth<2; mth++) {
     //Method 1
     for(s32 i=0; i<nTests; i++) {
@@ -783,12 +801,16 @@ TEST(ParticleFilter, WholeSystem)
       if(mth == 0) {
         pfp = new PFFullStateParams();
         pfp->particleSigmaRho = 0;
-        pf =  new ParticleFilterFullState(nParticles[mth], pfp);
+        pOverNeedle = std::tr1::shared_ptr < LogNormalDist > (new LogNormalDist(pfp->onNeedleDopplerMu, pfp->onNeedleDopplerSigma));
+        pNotOverNeedle = std::tr1::shared_ptr < LogNormalDist > (new LogNormalDist(pfp->offNeedleDopplerMu, pfp->offNeedleDopplerSigma));
+        pf =  new ParticleFilterFullState(nParticles[mth], pOverNeedle, pNotOverNeedle, pfp);
         pp = pfp;
       } else {
         pmp = new PFMarginalizedParams();
         pmp->particleSigmaRho = 0;
-        pfms = new ParticleFilterMarginalized(nParticles[mth], pmp);
+        pOverNeedle = std::tr1::shared_ptr < LogNormalDist > (new LogNormalDist(pmp->onNeedleDopplerMu, pmp->onNeedleDopplerSigma));
+        pNotOverNeedle = std::tr1::shared_ptr < LogNormalDist > (new LogNormalDist(pmp->offNeedleDopplerMu, pmp->offNeedleDopplerSigma));
+        pfms = new ParticleFilterMarginalized(nParticles[mth], pOverNeedle, pNotOverNeedle, pmp);
         pf = pfms;
         pp = pmp;
       }
@@ -880,7 +902,6 @@ TEST(ParticleFilter, WholeSystem)
       delete pp;
     }
   }
-
 }
 
 

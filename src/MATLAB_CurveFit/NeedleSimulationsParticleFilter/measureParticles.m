@@ -91,43 +91,49 @@ for i=1:length(xp)
     for j=1:size(xs,2)
         
         % find distance between particle flagella position and plane
-        curr = invA*(xs(:,j)-measurement.ful);
-        if(sum(zeros(2,1) <= curr(1:2))<2 || sum(curr(1:2) <= [params.usw;params.ush]) < 2)
-            ds(:,j) = [curr(1); curr(2); 1e9];
+        ds(:,j) = invA*(xs(:,j)-measurement.ful); 
+    end
+    
+    j = 1;
+    while(j <= size(ds,2))
+        if(sum(zeros(2,1) <= ds(1:2,j))<2 || sum(ds(1:2,j) <= [params.usw;params.ush]) < 2)
+            ds(:,j) = [];
         else
-            ds(:,j) = curr;
+            j = j+1;
+        end
+    end
+    
+    if(size(ds,2) == 0)
+        offFrame = 1;
+        p_uvxOnFrame = 0;
+    else
+        [minVal, ~] = min(ds(3,:));
+        [maxVal, ~] = max(ds(3,:));
+        [minAbsVal, minAbsIdx] = min(abs(ds(3,:)));
+        
+        if(minVal < 0 && maxVal > 0)
+            minAbsVal = 0;
         end
         
+        % p(off frame | point distance from us frame)
+        offFrame = sigmf(minAbsVal, [params.offFrameB0 params.offFrameB1]);
+        
+        % particle projection onto us frame in pixels
+        suv = ds([1 2], minAbsIdx);
+        
+        % measurement.uv = measurement in image coordinaates in (mm)
+        % p((u,v)|d,x) ~ truncated gaussian centered at shaft particle interesection
+        % calculate limits for truncated gaussian
+        a = suv-[params.usw;params.ush]; % if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
+        b = suv; % if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0)
+        
+        duv = suv-measurement.uv;
+        
+        pin = sigmf(measurement.doppler, [params.sigB0, params.sigB1]);
+        p_uvxOnFrame = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.p1.uvOffsetSigma),...,
+            a,b) + ...
+            (1-pin)*(1/(params.ush*params.usw));
     end
-    
-    
-    [minVal, minIdx] = min(ds(3,:));
-    [maxVal, maxIdx] = max(ds(3,:));
-    [minAbsVal, minAbsIdx] = min(abs(ds(3,:)));
-    
-    if(minVal < 0 && maxVal > 0)
-        minAbsVal = 0;
-    end
-    
-    % p(off frame | point distance from us frame)
-    offFrame = sigmf(minAbsVal, [params.offFrameB0 params.offFrameB1]);
-    
-    % particle projection onto us frame in pixels
-    suv = ds([1 2], minAbsIdx);
-    
-    % measurement.uv = measurement in image coordinaates in (mm)
-    % p((u,v)|d,x) ~ truncated gaussian centered at shaft particle interesection
-    % calculate limits for truncated gaussian
-    a = suv-[params.usw;params.ush]; % if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
-    b = suv; % if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0)
-    
-    duv = suv-measurement.uv;
-    
-    pin = sigmf(measurement.doppler, [params.sigB0, params.sigB1]);
-    p_uvxOnFrame = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.p1.uvOffsetSigma),...,
-        a,b) + ...
-        (1-pin)*(1/(params.ush*params.usw));
-    
     p_uvxOffFrame = 1/(params.ush*params.usw);
     
     % p(d|x) in case particle intersects frame
@@ -314,9 +320,6 @@ for i=1:params.np
     x{i}.rho = xp{i}.rho;
     x{i}.pos = xp{i}.pos;
     
-    
-    
-
     R = x{i}.qdist.mu;
     Rdelta = R*R1';
     
@@ -332,43 +335,49 @@ for i=1:params.np
     for j=1:size(xs,2)
         
         % find distance between particle flagella position and plane
-        curr = invA*(xs(:,j)-measurement.ful);
-        if(sum(zeros(2,1) <= curr(1:2))<2 || sum(curr(1:2) <= [params.usw;params.ush]) < 2)
-            ds(:,j) = [curr(1); curr(2); 1e9];
+        ds(:,j) = invA*(xs(:,j)-measurement.ful);
+    end
+    
+    j = 1;
+    while(j <= size(ds,2))
+        if(sum(zeros(2,1) <= ds(1:2,j))<2 || sum(ds(1:2,j) <= [params.usw;params.ush]) < 2)
+            ds(:,j) = [];
         else
-            ds(:,j) = curr;
+            j = j+1;
+        end
+    end
+    
+    if(size(ds,2) == 0)
+        offFrame = 1;
+        p_uvxOnFrame = 0;
+    else
+        [minVal, ~] = min(ds(3,:));
+        [maxVal, ~] = max(ds(3,:));
+        [minAbsVal, minAbsIdx] = min(abs(ds(3,:)));
+        
+        if(minVal < 0 && maxVal > 0)
+            minAbsVal = 0;
         end
         
+        % p(off frame | point distance from us frame)
+        offFrame = sigmf(minAbsVal, [params.offFrameB0 params.offFrameB1]);
+        
+        % particle projection onto us frame in pixels
+        suv = ds([1 2], minAbsIdx);
+        
+        % measurement.uv = measurement in image coordinaates in (mm)
+        % p((u,v)|d,x) ~ truncated gaussian centered at shaft particle interesection
+        % calculate limits for truncated gaussian
+        a = suv-[params.usw;params.ush]; % if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
+        b = suv; % if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0)
+        
+        duv = suv-measurement.uv;
+        
+        pin = sigmf(measurement.doppler, [params.sigB0, params.sigB1]);
+        p_uvxOnFrame = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.p1.uvOffsetSigma),...,
+            a,b) + ...
+            (1-pin)*(1/(params.ush*params.usw));
     end
-    
-    
-    [minVal, minIdx] = min(ds(3,:));
-    [maxVal, maxIdx] = max(ds(3,:));
-    [minAbsVal, minAbsIdx] = min(abs(ds(3,:)));
-    
-    if(minVal < 0 && maxVal > 0)
-        minAbsVal = 0;
-    end
-    
-    % p(off frame | point distance from us frame)
-    offFrame = sigmf(minAbsVal, [params.offFrameB0 params.offFrameB1]);
-    
-    % particle projection onto us frame in pixels
-    suv = ds([1 2], minAbsIdx);
-    
-    % measurement.uv = measurement in image coordinaates in (mm)
-    % p((u,v)|d,x) ~ truncated gaussian centered at shaft particle interesection
-    % calculate limits for truncated gaussian
-    a = suv-[params.usw;params.ush]; % if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
-    b = suv; % if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0)
-    
-    duv = suv-measurement.uv;
-    
-    pin = sigmf(measurement.doppler, [params.sigB0, params.sigB1]);
-    p_uvxOnFrame = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.p1.uvOffsetSigma),...,
-        a,b) + ...
-        (1-pin)*(1/(params.ush*params.usw));
-    
     p_uvxOffFrame = 1/(params.ush*params.usw);
     
     % p(d|x) in case particle intersects frame
@@ -381,7 +390,7 @@ for i=1:params.np
     % p(measurement | x)
     pw(i) = (p_uvxOnFrame*p_dxOnFrame*(1-offFrame))+p_dxOffFrame*p_uvxOffFrame*offFrame;
     x{i}.w = xp{i}.w;
-   
+    
 end
 
 % in case all probabilities are exceedingly low!

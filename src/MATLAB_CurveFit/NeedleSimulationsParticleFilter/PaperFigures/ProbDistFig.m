@@ -100,13 +100,13 @@ for i=1:3
     measurement = generateRandomMeasurement(xs, u, ts(i), params);
     %particlesBackup = particles;
     fakeMeas = measurement;
-    fakeMeas.ful = [measurement.pos(1); -params.usw/2; -params.ush/2];
-    fakeMeas.fbl = [measurement.pos(1); -params.usw/2; params.ush/2];
-    fakeMeas.fbr = [measurement.pos(1); params.usw/2; params.ush/2];
-    fakeMeas.fur = [measurement.pos(1); params.usw/2; -params.ush/2];
-    fakeMeas.bx = fakeMeas.fur-fakeMeas.ful; fakeMeas.bx = fakeMeas.bx/norm(fakeMeas.bx);
-    fakeMeas.by = fakeMeas.fbl-fakeMeas.ful; fakeMeas.by = fakeMeas.by/norm(fakeMeas.by);
-    fakeMeas.uv = [fakeMeas.bx fakeMeas.by]\(fakeMeas.pos-fakeMeas.ful);
+%     fakeMeas.ful = [measurement.pos(1); -params.usw/2; -params.ush/2];
+%     fakeMeas.fbl = [measurement.pos(1); -params.usw/2; params.ush/2];
+%     fakeMeas.fbr = [measurement.pos(1); params.usw/2; params.ush/2];
+%     fakeMeas.fur = [measurement.pos(1); params.usw/2; -params.ush/2];
+%     fakeMeas.bx = fakeMeas.fur-fakeMeas.ful; fakeMeas.bx = fakeMeas.bx/norm(fakeMeas.bx);
+%     fakeMeas.by = fakeMeas.fbl-fakeMeas.ful; fakeMeas.by = fakeMeas.by/norm(fakeMeas.by);
+%     fakeMeas.uv = [fakeMeas.bx fakeMeas.by]\(fakeMeas.pos-fakeMeas.ful);
     
     
     particles = measureParticles(particles, u, xcurr, {fakeMeas}, params);

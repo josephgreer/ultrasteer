@@ -6,6 +6,7 @@ using namespace arma;
 namespace Nf
 {
   using ::s32;
+  using ::u8;
 
   PFParams::PFParams(Vec2d mpp)
   {
@@ -40,12 +41,10 @@ namespace Nf
 
     measurementOffsetSigma << mpp.x*5*1e-3 << endr << mpp.y*5*1e-3;
 
-#if 0
     offNeedleDopplerMu = 0.56;                                           
     offNeedleDopplerSigma = 0.75;                                        
     onNeedleDopplerMu = 2.33;                                            
     onNeedleDopplerSigma = 0.098;  
-#endif
 
     minimumMeasurements = 1;
 
@@ -54,10 +53,14 @@ namespace Nf
 
     sigB0 = -2.37901785297659;
     sigB1 = 0.0534736687985484;
+    offFrameB0 = -5;
+    offFrameB1 = 20;
 
     n = 50;
     neff = 0.5;
 
+    onNeedleDopplerLUTPath = std::string(PATH_CAT("Trial3/Insertion/pdopoverneedle.dat"));
+    offNeedleDopplerLUTPath = std::string(PATH_CAT("Trial3/Insertion/pdopnotoverneedle.dat"));
   }
 
   PFFullStateParams::PFFullStateParams(Vec2d mpp)
@@ -299,7 +302,7 @@ namespace Nf
     m_p = (vec)temp.row(1).t();
   }
 
-  f64 LUTDist::P(f64 x)
+  f64 LUTDist::P(f64 x) const
   {
     vec dist = abs(m_x-ones(m_x.n_elem)*x);
     u32 minIdx = 0;
@@ -314,10 +317,11 @@ namespace Nf
   //////////////////////////////////////////////////////////////////////////////////////////
   /// Begin Basic Particle Filter
   //////////////////////////////////////////////////////////////////////////////////////////
-  ParticleFilter::ParticleFilter(s32 nParticles, const char *name, const PFParams *p)
+  ParticleFilter::ParticleFilter(s32 nParticles, const char *name, 
+    std::tr1::shared_ptr < Distribution > pDopOverNeedle, std::tr1::shared_ptr < Distribution > pDopNotOverNeedle, const PFParams *p)
     : m_nParticles(nParticles)
-    , m_pDopOverNeedle(PATH_CAT("Trial3/Insertion/pdopoverneedle.dat"))
-    , m_pDopNotOverNeedle(PATH_CAT("Trial3/Insertion/pdopnotoverneedle.dat"))
+    , m_pDopOverNeedle(pDopOverNeedle)
+    , m_pDopNotOverNeedle(pDopNotOverNeedle)
   {
     m_w = ones(1,m_nParticles)/(f64)m_nParticles;
   }
@@ -363,8 +367,8 @@ namespace Nf
   //////////////////////////////////////////////////////////////////////////////////////////
   /// Begin Particle Filter Full State
   //////////////////////////////////////////////////////////////////////////////////////////
-  ParticleFilterFullState::ParticleFilterFullState(s32 nParticles, const PFParams *p)
-    : ParticleFilter(nParticles, "ParticleFilterFullState", p)
+  ParticleFilterFullState::ParticleFilterFullState(s32 nParticles, std::tr1::shared_ptr < Distribution > pDopOverNeedle, std::tr1::shared_ptr < Distribution > pDopNotOverNeedle, const PFParams *p)
+    : ParticleFilter(nParticles, "ParticleFilterFullState", pDopOverNeedle, pDopNotOverNeedle, p)
   {
   }
 
@@ -453,89 +457,101 @@ namespace Nf
     
     mat33 Rdelta;
     mat33 frameMat;
-    vec3 tt;
+    mat33 A, invA;
+    mat ds;
     vec2 suv, duv, a, b;
-    vec3 dr;
-    f64 proj, p_uvx, p_dx, pin, dop;
+    f64 p_uvxOffFrame, p_uvxOnFrame, p_dxOffFrame, p_dxOnFrame, p_offFrame, pin, dop;
+
+    f64 minVal, maxVal, minAbsVal;
+    uword minAbsIdx;
 
     vec usFrameParams;
-    usFrameParams << 1 << endr << params->usw << endr << params->ush << endr;
+    usFrameParams << params->usw << endr << params->ush << endr;
 
     mat pw = zeros(1,m_nParticles);
 
-    bool offFrame;
+    // For projecting particle position onto ultrasound frame
+    A.col(0) = m[0].fbx; A.col(1) = m[0].fby; A.col(2) = cross(m[0].fbx, m[0].fby);
+    invA = (mat33)inv(A);
+
+    s32 sum1, sum2;
+
     // For each particle...
     for(s32 i=0; i<m_nParticles; i++) {
       //delta rotation from particle 0 to particle i
       Rdelta = (mat33)(m_R[i]*m_R[0].t());
 
-      //points from measurement to particle loc
-      dr = m[0].pos.col(0)-m_pos.col(i);
-
-      // look at projection of dr onto particle tip frame.  if it's positive
-      // then we believe it's in front of this particle (in other words, the
-      // ultrasound frame is off the needle in this hypothetical position)
-      proj = ((mat)(dr.t()*m_R[i].col(2)))(0,0);
-
-      p_uvx = p_dx = 0;
-
-      //does the needle flagella of the particle intersect the frame?
-      offFrame = true;
-
       dop = m[0].doppler(0,0);
 
-      if(proj <= 0) {
-        // ultrasound frame behind the needle tip
-        //subtract off first point so we rotate about it
-        cModelHist = modelHist-repmat(modelHist.col(0),1,modelHist.n_cols);
-        // rotate history by Rdelta
-        cModelHist = Rdelta*cModelHist;
-        // offset so that first point is now particle i point
-        cModelHist = cModelHist+repmat(m_pos.col(i),1,cModelHist.n_cols);
+      // ultrasound frame behind the needle tip
+      //subtract off first point so we rotate about it
+      cModelHist = modelHist-repmat(modelHist.col(0),1,modelHist.n_cols);
+      // rotate history by Rdelta
+      cModelHist = Rdelta*cModelHist;
+      // offset so that first point is now particle i point
+      cModelHist = cModelHist+repmat(m_pos.col(i),1,cModelHist.n_cols);
 
-        // for each history point...
-        for(s32 j=0; j<cModelHist.n_cols-1; j++) {
-          dr = cModelHist.col(j+1)-cModelHist.col(j);
-          if(((mat)(dr.t()*dr))(0,0) < 1e-6)
-            continue;
+      // find flagella point with minimum distance projection onto ultrasound frame
+      ds = zeros(3,cModelHist.n_cols);
 
-          // find the point of intersection between ultrasound frame and "flagella"
-          frameMat = (mat33)(join_horiz(join_horiz(-dr, m[0].fbx), m[0].fby));
-
-          tt = solve(frameMat,cModelHist.col(j)-m[0].ful);
-          if(sum(zeros(3,1) <= tt)==3 && sum(tt <= usFrameParams)==3) {
-            // it intersects so look up location in truncated 
-            // gaussian centered at measurement intersections
-            suv = tt.submat(span(1,2), span(0,0));
-
-            // measurement.uv = measurement in image coordinaates in (mm)
-            // p((u,v)|d,x) ~ truncated gaussian centered at shaft particle interesection
-            // calculate limits for truncated gaussian
-            a = suv-usFrameParams.submat(span(1,2),span(0,0));  // if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
-            b = suv;                                            // if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0) 
-
-            duv = suv-m[0].uv.col(0);
-
-            // calculate p(frame interesects with flagella|doppler)
-            pin = sigmoid(m[0].doppler(0,0), params->sigB0, params->sigB1);
-            p_uvx = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), params->measurementOffsetSigma, a, b)+
-              (1-pin)*(1/(params->ush*params->usw));
-
-            //p(doppler | over needle)
-            p_dx = m_pDopOverNeedle.P(dop);
-            offFrame = 0;
-            break;
-          }
-        }
+      // for each history point...
+      for(s32 j=0; j<cModelHist.n_cols; j++) {
+        ds.col(j) = invA*(cModelHist.col(j)-m[0].ful);
       }
 
-      // particle doesn't intersect image frame
-      if(offFrame) {
-        p_uvx = 1/(params->ush*params->usw);
-        p_dx = m_pDopNotOverNeedle.P(dop);
+
+      // if point projections were outside frame, get rid of them
+      s32 j = 0;
+      while(j < ds.n_cols) {
+        // did it not intersect the frame then set the projection distance to extremely high.
+        if((sum(sum(zeros(2,1) <= ds.submat(span(0,1), span(j,j)))) == 2) && sum(sum(ds.submat(span(0,1), span(j,j)) <= usFrameParams)) == 2)
+          j++;
+        else
+          ds.shed_col(j);
       }
 
-      pw(0,i) = p_uvx*p_dx;
+      if(ds.n_cols == 0) {
+        p_offFrame = 1.0; //no part of particle flagella intersects frame, so just set p(offFrame) = 1 and p_uvxOnFrame = 0
+        p_uvxOnFrame = 0;
+      } else {
+
+        minVal = ds.row(2).min();
+        maxVal = ds.row(2).max();
+        minAbsVal = abs(ds.row(2)).min(minAbsIdx);
+
+        // if projection value changes from positive to negative, then the frame intersects the particle flagella
+        if(minVal < 0 && maxVal > 0)
+          minAbsVal = 0;
+
+        // p(off frame | distance of projection)
+        p_offFrame = sigmoid(minAbsVal, params->offFrameB0, params->offFrameB1);
+
+        // gaussian centered at measurement intersections
+        suv = (vec2)(ds.submat(span(0,1), span(minAbsIdx,minAbsIdx)));
+
+        // measurement.uv = measurement in image coordinaates in (mm)
+        // p((u,v)|d,x) ~ truncated gaussian centered at shaft particle interesection
+        // calculate limits for truncated gaussian
+        a = suv-usFrameParams;  // if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
+        b = suv;                                            // if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0) 
+
+        duv = suv-m[0].uv.col(0);
+
+        // calculate p(frame interesects with flagella|doppler)
+        pin = sigmoid(m[0].doppler(0,0), params->sigB0, params->sigB1);
+        p_uvxOnFrame = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), params->measurementOffsetSigma, a, b)+
+          (1-pin)*(1/(params->ush*params->usw));
+      }
+
+      p_uvxOffFrame = 1/(params->ush*params->usw);
+
+      //p(doppler | over needle)
+      p_dxOnFrame  = m_pDopOverNeedle->P(dop);
+
+      //p(doppler | not over needle)
+      p_dxOffFrame = m_pDopNotOverNeedle->P(dop);
+
+      pw(0,i) = (p_uvxOnFrame*p_dxOnFrame)*(1-p_offFrame)+(p_uvxOffFrame*p_dxOffFrame*p_offFrame);
     }
 
     ApplyWeights(pw);
@@ -601,8 +617,8 @@ namespace Nf
   //////////////////////////////////////////////////////////////////////////////////////////
   /// Begin Particle Filter With Kalman Filter for Orientation
   //////////////////////////////////////////////////////////////////////////////////////////
-  ParticleFilterMarginalized::ParticleFilterMarginalized(s32 nParticles, const PFParams *p)
-    : ParticleFilter(nParticles, "MarginalizedParticleFilter", p)
+  ParticleFilterMarginalized::ParticleFilterMarginalized(s32 nParticles, std::tr1::shared_ptr < Distribution > pDopOverNeedle, std::tr1::shared_ptr < Distribution > pDopNotOverNeedle, const PFParams *p)
+    : ParticleFilter(nParticles, "MarginalizedParticleFilter", pDopOverNeedle, pDopNotOverNeedle, p)
   {
   }
 
@@ -692,6 +708,10 @@ namespace Nf
     t.rho = m_rho(0, 0);
     std::vector < TipState > ts = t.PropagateBack(u, dts, p);
     
+
+    mat33 A, invA;
+    mat ds;
+
     // backward projected points from particle 0.
     // this will be adjusted for each particle
     mat modelHist = tipHistoryToPointMatrix(ts);
@@ -701,18 +721,24 @@ namespace Nf
     
     mat33 Rdelta, frameMat, Rmeas, measSigma,K,sigmaC,Rc,Rprior;
 
-    vec3 tt, errorVec,v;
+    // For projecting particle position onto ultrasound frame
+    A.col(0) = m[0].fbx; A.col(1) = m[0].fby; A.col(2) = cross(m[0].fbx, m[0].fby);
+    invA = (mat33)inv(A);
+
+    vec3 v;
     vec2 suv, duv, a, b;
-    vec3 dr;
-    f64 proj, p_uvx, p_dx, pin, dop;
+    f64 p_uvxOffFrame, p_uvxOnFrame, p_dxOffFrame, p_dxOnFrame, p_offFrame, pin, dop;
+    f64 minVal, maxVal, minAbsVal;
+    uword minAbsIdx;
 
     vec usFrameParams;
-    usFrameParams << 1 << endr << params->usw << endr << params->ush << endr;
+    usFrameParams << params->usw << endr << params->ush << endr;
 
     mat pw = zeros(1,m_nParticles);
     mat meas = measurementToPointMat(m);
 
-    bool offFrame;
+    dop = m[0].doppler(0,0);
+
     // For each particle...
     for(s32 i=0; i<m_nParticles; i++) {
       Rprior = m_R[i].mu;
@@ -740,72 +766,73 @@ namespace Nf
         m_R[i] = OrientationKF(Rc, sigmaC);
       }
 
-      //points from measurement to particle loc
-      dr = m[0].pos.col(0)-m_pos.col(i);
+      Rdelta = (mat33)(m_R[i].mu*t.R.t());
 
-      // look at projection of dr onto particle tip frame.  if it's positive
-      // then we believe it's in front of this particle (in other words, the
-      // ultrasound frame is off the needle in this hypothetical position)
-      proj = ((mat)(dr.t()*m_R[i].mu.col(2)))(0,0);
+      cModelHist = Rdelta*zModelHist;
+      // offset so that first point is now particle i point
+      cModelHist = cModelHist+repmat(m_pos.col(i),1,cModelHist.n_cols);
 
-      p_uvx = p_dx = 0;
+      // find flagella point with minimum distance projection onto ultrasound frame
+      ds = zeros(3,cModelHist.n_cols);
 
-      //does the needle flagella of the particle intersect the frame?
-      offFrame = true;
-
-      dop = m[0].doppler(0,0);
-
-      if(proj <= 0) {
-      // ultrasound frame behind the needle tip
-        Rdelta = (mat33)(m_R[i].mu*t.R.t());
-
-        cModelHist = Rdelta*zModelHist;
-        // offset so that first point is now particle i point
-        cModelHist = cModelHist+repmat(m_pos.col(i),1,cModelHist.n_cols);
-
-        // for each history point...
-        for(s32 j=0; j<cModelHist.n_cols-1; j++) {
-          dr = cModelHist.col(j+1)-cModelHist.col(j);
-          if(((mat)(dr.t()*dr))(0,0) < 1e-6)
-            continue;
-
-          // find the point of intersection between ultrasound frame and "flagella"
-          frameMat = (mat33)(join_horiz(join_horiz(-dr, m[0].fbx), m[0].fby));
-
-          tt = solve(frameMat,cModelHist.col(j)-m[0].ful);
-          if(sum(zeros(3,1) <= tt)==3 && sum(tt <= usFrameParams)==3) {
-            // it intersects so look up location in truncated 
-            // gaussian centered at measurement intersections
-            suv = tt.submat(span(1,2), span(0,0));
-
-            // measurement.uv = measurement in image coordinaates in (mm)
-            // p((u,v)|d,x) ~ truncated gaussian centered at shaft particle interesection
-            // calculate limits for truncated gaussian
-            a = suv-usFrameParams.submat(span(1,2),span(0,0));  // if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
-            b = suv;                                            // if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0) 
-
-            duv = suv-m[0].uv.col(0);
-
-            // calculate p(frame interesects with flagella|doppler)
-            pin = sigmoid(m[0].doppler(0,0), params->sigB0, params->sigB1);
-            p_uvx = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), params->measurementOffsetSigma, a, b)+
-              (1-pin)*(1/(params->ush*params->usw));
-
-            //TODO change this to sigmoid
-            p_dx = m_pDopOverNeedle.P(dop);
-            offFrame = 0;
-            break;
-          }
-        }
+      // for each history point...
+      for(s32 j=0; j<cModelHist.n_cols; j++) {
+        ds.col(j) = invA*(cModelHist.col(j)-m[0].ful);
       }
 
-      // particle doesn't intersect image frame
-      if(offFrame) {
-        p_uvx = 1/(params->ush*params->usw);
-        p_dx = m_pDopNotOverNeedle.P(dop);
+
+      // if point projections were outside frame, get rid of them
+      s32 j = 0;
+      while(j < ds.n_cols) {
+        // did it not intersect the frame then set the projection distance to extremely high.
+        if((sum(sum(zeros(2,1) <= ds.submat(span(0,1), span(j,j)))) == 2) && sum(sum(ds.submat(span(0,1), span(j,j)) <= usFrameParams)) == 2)
+          j++;
+        else
+          ds.shed_col(j);
       }
 
-      pw(0,i) = p_uvx*p_dx;
+      if(ds.n_cols == 0) {
+        p_offFrame = 1.0; //no part of particle flagella intersects frame, so just set p(offFrame) = 1 and p_uvxOnFrame = 0
+        p_uvxOnFrame = 0;
+      } else {
+
+        minVal = ds.row(2).min();
+        maxVal = ds.row(2).max();
+        minAbsVal = abs(ds.row(2)).min(minAbsIdx);
+
+        // if projection value changes from positive to negative, then the frame intersects the particle flagella
+        if(minVal < 0 && maxVal > 0)
+          minAbsVal = 0;
+
+        // p(off frame | distance of projection)
+        p_offFrame = sigmoid(minAbsVal, params->offFrameB0, params->offFrameB1);
+
+        // gaussian centered at measurement intersections
+        suv = (vec2)(ds.submat(span(0,1), span(minAbsIdx,minAbsIdx)));
+
+        // measurement.uv = measurement in image coordinaates in (mm)
+        // p((u,v)|d,x) ~ truncated gaussian centered at shaft particle interesection
+        // calculate limits for truncated gaussian
+        a = suv-usFrameParams;  // if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
+        b = suv;                                            // if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0) 
+
+        duv = suv-m[0].uv.col(0);
+
+        // calculate p(frame interesects with flagella|doppler)
+        pin = sigmoid(m[0].doppler(0,0), params->sigB0, params->sigB1);
+        p_uvxOnFrame = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), params->measurementOffsetSigma, a, b)+
+          (1-pin)*(1/(params->ush*params->usw));
+      }
+
+      p_uvxOffFrame = 1/(params->ush*params->usw);
+
+      //p(doppler | over needle)
+      p_dxOnFrame  = m_pDopOverNeedle->P(dop);
+
+      //p(doppler | not over needle)
+      p_dxOffFrame = m_pDopNotOverNeedle->P(dop);
+
+      pw(0,i) = (p_uvxOnFrame*p_dxOnFrame)*(1-p_offFrame)+(p_uvxOffFrame*p_dxOffFrame*p_offFrame);
     }
     mat sm = sum(pw, 1);
     pw = pw/sm(0,0);
