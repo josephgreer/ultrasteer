@@ -321,31 +321,6 @@ TEST(ParticleFilter, PropagateNeedleBack)
   }
 }
 
-static void saveOrientations(const std::vector < mat33 > &ors, const char *path)
-{
-  using ::s32;
-  mat res;    //res = [R1 R2 ... Rn] \in R^9xn, Ri = unrolled R \in R^9
-  for(s32 i=0; i<ors.size(); i++) {
-    mat curr = (mat)ors[i];
-    res.insert_cols(i, reshape(curr, 9, 1));
-  }
-  res.save(path, raw_ascii);
-}
-
-std::vector < mat33 > loadOrientations(const char *path)
-{
-  using ::s32;
-  std::vector < mat33 > res;
-  mat l;
-  bool rv = l.load(path);
-  assert(rv);
-  for(s32 i=0; i<l.n_cols; i++) {
-    res.push_back(reshape(l.col(i), 3, 3));
-  }
-  return res;
-}
-
-
 TEST(ParticleFilter, PropagateParticles)
 {
   using ::s32;
@@ -442,153 +417,6 @@ TEST(ParticleFilter, PropagateParticles)
   sprintf(fpath, "%s/propagateParticlesProp3Sigmas.dat", path);
   saveOrientations(sigmas, fpath);
 
-}
-
-// Assumes one point per measurement
-static std::vector < Measurement > loadMeasurements(const char *basePath, bool reverse=true)
-{
-  using ::s32;
-  std::vector < Measurement > res;
-
-  char path[150] = {0};
-
-  sprintf(path, "%sMeasDoppler.dat", basePath);
-  mat doppler; doppler.load(path);
-  sprintf(path, "%sMeasPos.dat", basePath);
-  mat pos; pos.load(path);
-
-  sprintf(path, "%sMeasFul.dat", basePath);
-  mat ful; ful.load(path);
-  sprintf(path, "%sMeasFbl.dat", basePath);
-  mat fbl; fbl.load(path);
-  sprintf(path, "%sMeasFbr.dat", basePath);
-  mat fbr; fbr.load(path);
-  sprintf(path, "%sMeasFur.dat", basePath);
-  mat fur; fur.load(path);
-  
-  sprintf(path, "%sMeasBx.dat", basePath);
-  mat bx; bx.load(path);
-  sprintf(path, "%sMeasBy.dat", basePath);
-  mat by; by.load(path);
-  
-  sprintf(path, "%sMeasUv.dat", basePath);
-  mat uv; uv.load(path);
-
-  for(s32 i=0; i<doppler.n_cols; i++) {
-    Measurement m;
-    m.doppler = doppler.col(i);
-    
-    m.pos = (vec)pos.col(i);
-
-    m.ful = (vec)ful.col(i);
-    m.fbl = (vec)fbl.col(i);
-    m.fbr = (vec)fbr.col(i);
-    m.fur = (vec)fur.col(i);
-
-    m.fbx = (vec)bx.col(i);
-    m.fby = (vec)by.col(i);
-
-    m.uv = (mat)uv.col(i);
-
-    res.push_back(m);
-  }
-  if(reverse)
-    std::reverse(res.begin(), res.end());
-  return res;
-}
-
-mat loadTimes(const char *basePath)
-{
-  char path[150] = {0};
-  sprintf(path, "%sdts.dat", basePath);
-
-  mat res; res.load(path);
-  res = res.t();
-  return res;
-}
-
-static std::vector < NSCommand > loadCommands(const char *basePath)
-{
-  using ::s32;
-  std::vector < NSCommand > res;
-
-  char path[150] = {0};
-
-  sprintf(path, "%sV.dat", basePath);
-  mat vs; vs.load(path);
-  sprintf(path, "%sThetas.dat", basePath);
-  mat dthetas; dthetas.load(path);
-
-  for(s32 i=0; i<vs.n_cols; i++) {
-    NSCommand u;
-    u.dtheta = dthetas(0,i);
-    u.v = vs(0,i);
-    u.dutyCycle = 0;
-
-    res.push_back(u);
-  }
-  return res;
-}
-
-struct PartMethod1
-{
-  mat pos;
-  mat rhos;
-  std::vector < mat33 > Rs;
-  mat ws;
-};
-
-struct PartMethod3
-{
-  mat pos;
-  mat rhos;
-  std::vector < OrientationKF > Rs;
-  mat ws;
-};
-
-static PartMethod1 loadParticlesMethod1(const char *basePath)
-{
-  using ::s32;
-
-  char path[150] = {0};
-
-  PartMethod1 res;
-
-  sprintf(path, "%sPos.dat", basePath);
-  res.pos.load(path);
-  sprintf(path, "%sRho.dat", basePath);
-  res.rhos.load(path);
-  sprintf(path, "%sws.dat", basePath);
-  res.ws.load(path);
-  sprintf(path, "%sRs.dat", basePath);
-  res.Rs = loadOrientations(path);
-  return res;
-}
-
-static PartMethod3 loadParticlesMethod3(const char *basePath)
-{
-  using ::s32;
-
-  char path[150] = {0};
-
-  PartMethod3 res;
-
-  sprintf(path, "%sPos.dat", basePath);
-  res.pos.load(path);
-  sprintf(path, "%sRho.dat", basePath);
-  res.rhos.load(path);
-  sprintf(path, "%sws.dat", basePath);
-  res.ws.load(path);
-  sprintf(path, "%sRs.dat", basePath);
-  std::vector < mat33 > Rs = loadOrientations(path);
-  sprintf(path, "%ssigmas.dat", basePath);
-  std::vector < mat33 > sigmas = loadOrientations(path);
-
-  for(s32 i=0; i<Rs.size(); i++) {
-    res.Rs.push_back(OrientationKF(Rs[i], sigmas[i]));
-  }
-
-  return res;
 }
 
 TEST(ParticleFilter, ApplyMeasurement)
@@ -801,6 +629,8 @@ TEST(ParticleFilter, WholeSystem)
       if(mth == 0) {
         pfp = new PFFullStateParams();
         pfp->particleSigmaRho = 0;
+        pfp->sigB0 = -2;
+        pfp->sigB1 = 0.5;
         pOverNeedle = std::tr1::shared_ptr < LogNormalDist > (new LogNormalDist(pfp->onNeedleDopplerMu, pfp->onNeedleDopplerSigma));
         pNotOverNeedle = std::tr1::shared_ptr < LogNormalDist > (new LogNormalDist(pfp->offNeedleDopplerMu, pfp->offNeedleDopplerSigma));
         pf =  new ParticleFilterFullState(nParticles[mth], pOverNeedle, pNotOverNeedle, pfp);
@@ -808,6 +638,8 @@ TEST(ParticleFilter, WholeSystem)
       } else {
         pmp = new PFMarginalizedParams();
         pmp->particleSigmaRho = 0;
+        pmp->sigB0 = -2;
+        pmp->sigB1 = 0.5;
         pOverNeedle = std::tr1::shared_ptr < LogNormalDist > (new LogNormalDist(pmp->onNeedleDopplerMu, pmp->onNeedleDopplerSigma));
         pNotOverNeedle = std::tr1::shared_ptr < LogNormalDist > (new LogNormalDist(pmp->offNeedleDopplerMu, pmp->offNeedleDopplerSigma));
         pfms = new ParticleFilterMarginalized(nParticles[mth], pOverNeedle, pNotOverNeedle, pmp);

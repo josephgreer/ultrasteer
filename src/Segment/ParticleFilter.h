@@ -401,4 +401,33 @@ namespace Nf
     //Used for testing only
     virtual void SetRhos(const arma::mat &rhos);
   };
+
+  struct PartMethod1
+  {
+    arma::mat pos;
+    arma::mat rhos;
+    std::vector < arma::mat33 > Rs;
+    arma::mat ws;
+  };
+
+  struct PartMethod3
+  {
+    arma::mat pos;
+    arma::mat rhos;
+    std::vector < OrientationKF > Rs;
+    arma::mat ws;
+  };
+
+  std::vector < Measurement > loadMeasurements(const char *basePath, bool reverse=true);
+  void saveMeasurements(const char *basePath, const std::vector < Measurement > &measurements);
+  arma::mat loadTimes(const char *basePath);
+  void saveTimes(const char *basePath, const arma::mat &ts);
+  std::vector < NSCommand > loadCommands(const char *basePath);
+  void saveCommands(const char *basePath, const std::vector < NSCommand > &commands);
+  PartMethod1 loadParticlesMethod1(const char *basePath);
+  void saveParticlesMethod1(const char *basePath, const PartMethod1 &particles);
+  PartMethod3 loadParticlesMethod3(const char *basePath);
+  void saveParticlesMethod3(const char *basePath, const PartMethod3 &particles); 
+  void saveOrientations(const std::vector < arma::mat33 > &ors, const char *path);
+  std::vector < arma::mat33 > loadOrientations(const char *path);
 }

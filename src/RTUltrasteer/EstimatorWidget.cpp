@@ -107,7 +107,7 @@ namespace Nf
     ADD_BOOL_PARAMETER(m_showExpectedOrientation, "Show Estimated Orientation", CALLBACK_POINTER(onVisibilityChanged, ParticleFilterVisualizer), this, true);
     ADD_BOOL_PARAMETER(m_showMeasurements, "Show Measurement Positions", CALLBACK_POINTER(onVisibilityChanged, ParticleFilterVisualizer), this, true);
     ADD_INT_PARAMETER(m_nParticles, "Number of Particles", CALLBACK_POINTER(onNumParticlesChanged, ParticleFilterVisualizer), this, 500, 25, 5000, 10);
-    ADD_INT_PARAMETER(m_nVisSkip, "NVis Skip", CALLBACK_POINTER(onNVisSkipChanged, ParticleFilterVisualizer), this, 5, 1, 20, 1);
+    ADD_INT_PARAMETER(m_nVisSkip, "NVis Skip", CALLBACK_POINTER(onNVisSkipChanged, ParticleFilterVisualizer), this, 5, 1, 100, 1);
     ADD_FLOAT_PARAMETER(m_measurementNoise, "Measurement Noise (Pixels)", NULL, this, 5, 1, 1000, 1);
     ADD_ENUM_PARAMETER(m_pfMethod, "Particle Filter Method", CALLBACK_POINTER(onPFMethodChanged, ParticleFilterVisualizer), this, QtEnums::ParticleFilterMethod::PFM_FULL_STATE, "ParticleFilterMethod");
     ADD_CHILD_COLLECTION(m_segmenter.get());
@@ -332,9 +332,33 @@ namespace Nf
     m_update->onRepaint();
   }
 
+  static void SaveParticleFilterState(const std::vector <NSCommand> &us, const arma::vec &dts, 
+    const std::vector < Measurement > &meas, const PartMethod1 &parts)
+  {
+    const char *basePath = "C:/Users/Joey/Documents/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testCMeasure";
+
+    saveCommands(basePath, us);
+    saveTimes(basePath, dts);
+    saveMeasurements(basePath, meas);
+    saveParticlesMethod1(basePath, parts);
+  }
+
+  static PartMethod1 AssembleParticles(const std::tr1::shared_ptr < ParticleFilterFullState > pf, const PFParams *p)
+  {
+    PartMethod1 res;
+
+    res.pos = pf->GetParticlePositions(p);
+    res.rhos = pf->GetParticleRhos(p);
+    res.Rs = pf->GetParticleOrientations(p);
+    res.ws = pf->GetWeights();
+
+    return res;
+  }
+
   void ParticleFilterVisualizer::Update(RPData *rp, s32 frame)
   {
     m_lastFrame=  frame;
+    arma::arma_rng::set_seed(frame);
     NeedleFrame doppler, bmode;
     DoSegmentation(rp, doppler, bmode);
 
@@ -380,6 +404,12 @@ namespace Nf
       //We're initialized
       m_pf->Propagate(&m_pfFramesProcessed[frame].u, 
         (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0, params.get());
+
+      if(false) {
+        SaveParticleFilterState(AssembleCommands(frame), AssembleDts(frame), AssembleMeasurements(frame),
+          AssembleParticles(std::tr1::shared_ptr < ParticleFilterFullState > ((ParticleFilterFullState *)m_pf.get()), GetParams(-1).get()));
+      }
+
       m_pf->ApplyMeasurement(AssembleMeasurements(frame), AssembleCommands(frame), AssembleDts(frame), params.get());
 
       // Push in estimate from particle filter

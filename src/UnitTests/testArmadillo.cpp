@@ -340,7 +340,6 @@ TEST(Math, Erf)
   }
 }
 
-std::vector < mat33 > loadOrientations(const char *path);
 TEST(Math, SO3Mean)
 {
   using ::s32;

@@ -914,4 +914,278 @@ namespace Nf
   //////////////////////////////////////////////////////////////////////////////////////////
   /// End Particle Filter With Kalman Filter for Orientation
   //////////////////////////////////////////////////////////////////////////////////////////
+
+  
+  // Assumes one point per measurement
+  std::vector < Measurement > loadMeasurements(const char *basePath, bool reverse)
+  {
+    using ::s32;
+    std::vector < Measurement > res;
+
+    char path[150] = {0};
+
+    sprintf(path, "%sMeasDoppler.dat", basePath);
+    mat doppler; doppler.load(path);
+    sprintf(path, "%sMeasPos.dat", basePath);
+    mat pos; pos.load(path);
+
+    sprintf(path, "%sMeasFul.dat", basePath);
+    mat ful; ful.load(path);
+    sprintf(path, "%sMeasFbl.dat", basePath);
+    mat fbl; fbl.load(path);
+    sprintf(path, "%sMeasFbr.dat", basePath);
+    mat fbr; fbr.load(path);
+    sprintf(path, "%sMeasFur.dat", basePath);
+    mat fur; fur.load(path);
+
+    sprintf(path, "%sMeasBx.dat", basePath);
+    mat bx; bx.load(path);
+    sprintf(path, "%sMeasBy.dat", basePath);
+    mat by; by.load(path);
+
+    sprintf(path, "%sMeasUv.dat", basePath);
+    mat uv; uv.load(path);
+
+    for(s32 i=0; i<doppler.n_cols; i++) {
+      Measurement m;
+      m.doppler = doppler.col(i);
+
+      m.pos = (vec)pos.col(i);
+
+      m.ful = (vec)ful.col(i);
+      m.fbl = (vec)fbl.col(i);
+      m.fbr = (vec)fbr.col(i);
+      m.fur = (vec)fur.col(i);
+
+      m.fbx = (vec)bx.col(i);
+      m.fby = (vec)by.col(i);
+
+      m.uv = (mat)uv.col(i);
+
+      res.push_back(m);
+    }
+    if(reverse)
+      std::reverse(res.begin(), res.end());
+    return res;
+  }
+
+  
+  void saveMeasurements(const char *basePath, const std::vector < Measurement > &measurements)
+  {
+    using ::s32;
+
+    mat doppler, pos, ful, fbl, fbr, fur, fbx, fby, uv; 
+    for(s32 i=0; i<measurements.size(); i++) {
+      doppler = join_horiz(doppler, measurements[i].doppler);
+      pos = join_horiz(pos, measurements[i].pos);
+      ful = join_horiz(ful, measurements[i].ful);
+      fbl = join_horiz(fbl, measurements[i].fbl);
+      fbr = join_horiz(fbr, measurements[i].fbr);
+      fur = join_horiz(fur, measurements[i].fur);
+      
+      fbx = join_horiz(fur, measurements[i].fbx);
+      fby = join_horiz(fur, measurements[i].fby);
+
+      uv = join_horiz(uv, measurements[i].uv);
+    }
+
+    char path[150] = {0};
+
+    sprintf(path, "%sMeasDoppler.dat", basePath);
+    doppler.save(path);
+    sprintf(path, "%sMeasPos.dat", basePath);
+    pos.save(path);
+
+    sprintf(path, "%sMeasFul.dat", basePath);
+    ful.save(path);
+    sprintf(path, "%sMeasFbl.dat", basePath);
+    fbl.save(path);
+    sprintf(path, "%sMeasFbr.dat", basePath);
+    fbr.save(path);
+    sprintf(path, "%sMeasFur.dat", basePath);
+    fur.save(path);
+
+    sprintf(path, "%sMeasBx.dat", basePath);
+    fbx.save(path);
+    sprintf(path, "%sMeasBy.dat", basePath);
+    fby.save(path);
+
+    sprintf(path, "%sMeasUv.dat", basePath);
+    uv.save(path);
+  }
+
+  mat loadTimes(const char *basePath)
+  {
+    char path[150] = {0};
+    sprintf(path, "%sdts.dat", basePath);
+
+    mat res; res.load(path);
+    res = res.t();
+    return res;
+  }
+
+  void saveTimes(const char *basePath, const arma::mat &ts)
+  {
+    char path[150] = {0};
+    sprintf(path, "%sdts.dat", basePath);
+
+    arma::mat temp = ts.t();
+    temp.save(path);
+  }
+
+  std::vector < NSCommand > loadCommands(const char *basePath)
+  {
+    using ::s32;
+    std::vector < NSCommand > res;
+
+    char path[150] = {0};
+
+    sprintf(path, "%sV.dat", basePath);
+    mat vs; vs.load(path);
+    sprintf(path, "%sThetas.dat", basePath);
+    mat dthetas; dthetas.load(path);
+
+    for(s32 i=0; i<vs.n_cols; i++) {
+      NSCommand u;
+      u.dtheta = dthetas(0,i);
+      u.v = vs(0,i);
+      u.dutyCycle = 0;
+
+      res.push_back(u);
+    }
+    return res;
+  }
+
+  void saveCommands(const char *basePath, const std::vector < NSCommand > &commands)
+  {
+    using ::s32;
+
+    mat dthetas = zeros(1,commands.size()); mat vs = zeros(1, commands.size()); mat dutyCycles = zeros(1, commands.size());
+    for(s32 i=0; i<commands.size(); i++) {
+      dthetas(0,i) = commands[i].dtheta;
+      vs(0,i) = commands[i].v;
+      dutyCycles(0,i) = commands[i].dutyCycle;
+    }
+
+    char path[150] = {0};
+
+    sprintf(path, "%sV.dat", basePath);
+    vs.save(path);
+    sprintf(path, "%sThetas.dat", basePath);
+    dthetas.save(path);
+    sprintf(path, "%sDutyCycles.dat", basePath);
+    dutyCycles.save(path);
+  }
+
+  PartMethod1 loadParticlesMethod1(const char *basePath)
+  {
+    using ::s32;
+
+    char path[150] = {0};
+
+    PartMethod1 res;
+
+    sprintf(path, "%sPos.dat", basePath);
+    res.pos.load(path);
+    sprintf(path, "%sRho.dat", basePath);
+    res.rhos.load(path);
+    sprintf(path, "%sws.dat", basePath);
+    res.ws.load(path);
+    sprintf(path, "%sRs.dat", basePath);
+    res.Rs = loadOrientations(path);
+    return res;
+  }
+
+  void saveParticlesMethod1(const char *basePath, const PartMethod1 &particles)
+  {
+    using ::s32;
+
+    char path[150] = {0};
+
+    sprintf(path, "%sPos.dat", basePath);
+    particles.pos.save(path);
+    sprintf(path, "%sRho.dat", basePath);
+    particles.rhos.save(path);
+    sprintf(path, "%sws.dat", basePath);
+    particles.ws.save(path);
+    sprintf(path, "%sRs.dat", basePath);
+    saveOrientations(particles.Rs, path);
+  }
+
+  PartMethod3 loadParticlesMethod3(const char *basePath)
+  {
+    using ::s32;
+
+    char path[150] = {0};
+
+    PartMethod3 res;
+
+    sprintf(path, "%sPos.dat", basePath);
+    res.pos.load(path);
+    sprintf(path, "%sRho.dat", basePath);
+    res.rhos.load(path);
+    sprintf(path, "%sws.dat", basePath);
+    res.ws.load(path);
+    sprintf(path, "%sRs.dat", basePath);
+    std::vector < mat33 > Rs = loadOrientations(path);
+    sprintf(path, "%ssigmas.dat", basePath);
+    std::vector < mat33 > sigmas = loadOrientations(path);
+
+    for(s32 i=0; i<Rs.size(); i++) {
+      res.Rs.push_back(OrientationKF(Rs[i], sigmas[i]));
+    }
+
+    return res;
+  }
+  
+  void saveParticlesMethod3(const char *basePath, const PartMethod3 &particles)
+  {
+    using ::s32;
+
+    char path[150] = {0};
+
+    sprintf(path, "%sPos.dat", basePath);
+    particles.pos.save(path);
+    sprintf(path, "%sRho.dat", basePath);
+    particles.rhos.save(path);
+    sprintf(path, "%sws.dat", basePath);
+    particles.ws.save(path);
+
+
+    std::vector < mat33 > orientationMus;
+    std::vector < mat33 > orientationSigmas;
+
+    for(s32 i=0; i<particles.Rs.size(); i++) {
+      orientationMus.push_back(particles.Rs[i].mu);
+      orientationSigmas.push_back(particles.Rs[i].sigma);
+    }
+    sprintf(path, "%sRs.dat", basePath);
+    saveOrientations(orientationMus, path);
+    sprintf(path, "%ssigmas.dat", basePath);
+    saveOrientations(orientationSigmas, path);
+  }
+
+  void saveOrientations(const std::vector < mat33 > &ors, const char *path)
+  {
+    using ::s32;
+    mat res;    //res = [R1 R2 ... Rn] \in R^9xn, Ri = unrolled R \in R^9
+    for(s32 i=0; i<ors.size(); i++) {
+      mat curr = (mat)ors[i];
+      res.insert_cols(i, reshape(curr, 9, 1));
+    }
+    res.save(path, raw_ascii);
+  }
+
+  std::vector < mat33 > loadOrientations(const char *path)
+  {
+    using ::s32;
+    std::vector < mat33 > res;
+    mat l;
+    bool rv = l.load(path);
+    assert(rv);
+    for(s32 i=0; i<l.n_cols; i++) {
+      res.push_back(reshape(l.col(i), 3, 3));
+    }
+    return res;
+  }
 }
