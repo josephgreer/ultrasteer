@@ -128,6 +128,7 @@ namespace Nf
     IplImage *m_mask;
     
     bool m_initTeleop;
+    bool m_inCountdownToManualScan;
     Teleoperation2DWidget *m_teleoperationWidget;
     ControlAlgorithms *m_control;
 
@@ -146,6 +147,7 @@ namespace Nf
     void setControl(ControlAlgorithms* control);
     void onUpdateOverlay();
     virtual void SetDataSpacing(const RPData *rp);    
+    void SetInCountdownToManualScan(bool input);
   };
 }
 

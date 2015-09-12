@@ -15,6 +15,14 @@
 #include <QtGui/QFileDialog>
 #include <cmath>
 
+#define   RHO                     60.0    // radius of curvature for needle in mm
+#define   INS_AUTO_SPEED          1.0     // insertions peed during task-space teleoperation  (mm/s)
+#define   INS_SPEED               20.0    // insertion speed during joint-space teleoperation (mm/s) 
+#define   ROT_SPEED               200.0   // rotation speed during joint-space teleoperation (RPM)
+#define   NEEDLE_DEAD_LENGTH      60.0    // offset of needle tip at zero insertion due to extra needle length 
+#define   MAX_OPEN_LOOP_INSERTION 10.0     // maximum open-loop insertion distance before a new scan is needed (mm)
+#define   PI                      3.14159265359
+
 namespace Nf {
 
   class STrigger;
@@ -37,7 +45,7 @@ namespace Nf {
     void GetTarget(Vec3d &t);
     bool isTargetDefined();
     void resetManualScan();
-    Matrix44d processManualScan();
+    void processManualScan();
     void setRobot(NeedleSteeringRobot* robot);
     void GetIncrementalInputVector(Vec3d &u);
     void ControlCorrection();
@@ -48,7 +56,7 @@ namespace Nf {
     void setJointSpaceControlVelocities(f32 v_rot, f32 v_ins);
     void initializeEstimator();
 
-    void getOverlayValues(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Matrix44d &z, Vec3d &Sxyz, Vec3d &t_img, Vec3d &t );
+    void getOverlayValues(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Matrix44d &z, Vec3d &Sxyz, Vec3d &t_img, Vec3d &t, double &mmToNextScan);
     
     void getVisualizerValues(Vec3d &t, Matrix44d &x, Matrix44d &z, Matrix44d &Tref2robot,
                                               Matrix44d &Ttrans2robot, s32 &transducerType, Cubed &frameBoundaries, Matrix44d &Tem2robot);
@@ -56,6 +64,7 @@ namespace Nf {
   private:
     void GetPoseEstimate(Matrix44d &x);
     bool CheckCompletion();
+    double insertionSinceLastManualScan();
 
   private:
     Vec3d m_t;
@@ -66,12 +75,11 @@ namespace Nf {
     Matrix44d m_Tem2robot;
     Cubed m_frameBoundaries;
     s32 m_transducerType;
-
-    //Matrix44d m_measurement;
     Matrix44d m_Ttrans2robot;
     bool m_inManualScanning;
     bool m_inTaskSpaceControl;
     bool m_inJointSpaceControl;
+    double m_insertionMMatLastManualScan;
     InPlaneSegmentation m_segmentation; 
     UnscentedKalmanFilter m_UKF;
     NeedleSteeringRobot* m_robot;

@@ -10,7 +10,7 @@
 #define		Q_ROT				    1e-3			        // process covariance of orientation
 
 #define		R_POS				    1.0				        // measurement covariance of position
-#define		R_ROT				    1.0				        // measurement covariance of orientation
+#define		R_ROT				    10.0				      // measurement covariance of orientation
 
 #define   PI              3.141             // pi
 
@@ -75,8 +75,6 @@ namespace Nf
       // update state and covariance
       x_hat = addDifferentialPose( x_, K*differentialPose( z, z_) );
       P_hat = P_ - K*Pzz*K.Transpose();    
-
-      x_hat = z;
     }
   }
 

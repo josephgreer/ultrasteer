@@ -152,6 +152,8 @@ namespace Nf
       m_renderer->AddActor(m_estimateSTLActor);
       m_renderer->SetBackground(.3, .3, .3); // Background color blue
 
+      onSetViewYZ();
+
       // render and start interaction
       m_interactor->SetRenderWindow(this->GetRenderWindow());
       m_interactor->Initialize();
@@ -174,7 +176,7 @@ namespace Nf
 
     // get values and update display
     m_control->getVisualizerValues(t, x, z, Tref2robot, Ttrans2robot, transducerType, framePoints, Tem2robot);
-
+   
     if( !t.isZero() ){
       m_targetSource->SetCenter(t.x,t.y,t.z);
       m_targetSource->Modified();
@@ -182,8 +184,9 @@ namespace Nf
     }else{
       m_targetActor->VisibilityOff();
     }
-
+    
     if( !x.isZero() ){
+      NTrace("Showing estimate\n");
       m_estimateAxes->PokeMatrix(x.GetVTKMatrix());
       m_estimateSTLActor->PokeMatrix(x.GetVTKMatrix());
       m_estimateAxes->VisibilityOn();
@@ -192,8 +195,9 @@ namespace Nf
       m_estimateAxes->VisibilityOff();
       m_estimateSTLActor->VisibilityOff();
     }
-
+    
     if( !z.isZero() ){
+      NTrace("Showing measurement\n");
       m_measurementAxes->PokeMatrix(z.GetVTKMatrix());
       m_measurementSTLActor->PokeMatrix(z.GetVTKMatrix());
       m_measurementAxes->VisibilityOn();
@@ -209,7 +213,7 @@ namespace Nf
     }else{
       m_referenceAxes->VisibilityOff();
     }
-
+    
     if( !Ttrans2robot.isZero() ){
       m_transducerAxes->PokeMatrix(Ttrans2robot.GetVTKMatrix());
       m_transducerSTLActor->PokeMatrix(Ttrans2robot.GetVTKMatrix());
@@ -239,7 +243,7 @@ namespace Nf
       if( m_frameBoundaries )
         m_renderer->RemoveActor(m_frameBoundaries->GetActor());
     }
-
+    
     if( !Tem2robot.isZero() ){
       m_emAxes->PokeMatrix(Tem2robot.GetVTKMatrix());
       m_emAxes->VisibilityOn();
@@ -249,6 +253,7 @@ namespace Nf
     
     m_renderer->ResetCameraClippingRange();
     QVTKWidget::update();
+    
   }
 
   void TeleoperationVisualizationWidget::SetVisView(s32 axis1, s32 axis2)

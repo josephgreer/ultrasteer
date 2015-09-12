@@ -351,6 +351,7 @@ namespace Nf
     : ImageViewerWidget(parent) 
     , m_initTeleop(false)
     , m_mask(NULL)
+    , m_inCountdownToManualScan(false)
   {
     m_control = control;
 
@@ -375,7 +376,7 @@ namespace Nf
   }
 
   void ImageViewer2DTeleoperationWidget::SetImage(const RPData *rp, RP_TYPE type)
-  {   
+  { 
     ImageViewerWidget::SetImage(rp, type);
     
     if(!m_initTeleop){
@@ -465,13 +466,9 @@ namespace Nf
 
     }
     m_initTeleop = true;
-
-    // Update the VTK rendering
-    m_maskImporter->Update();
+    
     m_maskImporter->Modified();
-    m_renderer->Render();
-    this->GetRenderWindow()->Render();
-    this->repaint();
+    QVTKWidget::update();
   } 
 
   void ImageViewer2DTeleoperationWidget::SetTeleoperation2DWidget(Teleoperation2DWidget *widget)
@@ -494,8 +491,9 @@ namespace Nf
     Matrix44d x, z;
     Vec3d t_img, t;
     Vec3d Sxyz;
+    double mmToNextScan;
     m_control->getOverlayValues(x, p_img, pz_img, py_img,
-      z, Sxyz, t_img, t);
+      z, Sxyz, t_img, t, mmToNextScan);
 
     // update target
     if( !t.isZero() ){
@@ -515,6 +513,24 @@ namespace Nf
     if( !z.isZero() ){
       SetMeasurementText(z);
     }
+
+    // update instructions if scan needed
+    if( (!m_inCountdownToManualScan) && (!m_control->inManualScanning()) && m_control->inTaskSpaceControl() ){
+      char str [100];
+      if( mmToNextScan == 0.0 ){
+        int n = sprintf(str, "Needle scan needed.");
+      }else{
+        int n = sprintf(str, "%.2f mm to next needle scan.",mmToNextScan);
+      }   
+      SetInstructionText(str);
+      f32 danger = 1.0 - mmToNextScan/MAX_OPEN_LOOP_INSERTION;
+      m_instructionTextActor->GetTextProperty()->SetColor( 1.0,1.0-danger,1.0-danger );
+    }
+  }
+
+  void ImageViewer2DTeleoperationWidget::SetInCountdownToManualScan(bool input)
+  {
+    m_inCountdownToManualScan = input;
   }
 
   void ImageViewer2DTeleoperationWidget::SetInstructionText(char* str)
@@ -522,6 +538,7 @@ namespace Nf
     m_instructionTextActor->SetInput(str);
     int* size = m_renderer->GetSize();
     m_instructionTextActor->SetPosition( 10, size[1]-40 );
+    m_instructionTextActor->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
     //this->repaint();
   }
 
@@ -548,9 +565,6 @@ namespace Nf
       R.m_data[2][0], R.m_data[2][1], R.m_data[2][2], p.z,
       Sxyz.x, Sxyz.y, Sxyz.z);
     m_estimateTextActor->SetInput(str);
-
-    f32 danger = Sxyz.magnitude()/MAX_VAR_NORM;
-    m_estimateTextActor->GetTextProperty()->SetColor( 1.0,1.0-danger,1.0-danger );
 
     int* size = m_renderer->GetSize();
     m_estimateTextActor->SetPosition( 10, int(size[1]/2) );

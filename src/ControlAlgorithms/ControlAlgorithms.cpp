@@ -2,11 +2,7 @@
 #include "math.h"
 #include <time.h>
 
-#define   RHO                     60.0    // radius of curvature for needle in mm
-#define   INS_SPEED               40.0    // insertion speed during teleoperation (mm/s) 
-#define   ROT_SPEED               200.0   // rotation speed during teleoperation (RPM)
-#define   NEEDLE_DEAD_LENGTH      30.0    // offset of needle tip at zero insertion due to extra needle length 
-#define   PI                      3.14159265359
+
 
 namespace Nf {
 
@@ -22,11 +18,12 @@ namespace Nf {
     , m_Tem2robot(Matrix44d::Zero())
     , m_transducerType(0)
     , m_robot(NULL)
+    , m_insertionMMatLastManualScan(0.0)
   {
     m_insTrigger = new STrigger();
     m_rotTrigger = new STrigger();
-    m_insTrigger->setThresholds(0.005);
-    m_rotTrigger->setThresholds(0.005);
+    m_insTrigger->setThresholds(0.02);
+    m_rotTrigger->setThresholds(0.02);
   }
 
   ControlAlgorithms::~ControlAlgorithms()
@@ -59,6 +56,14 @@ namespace Nf {
     if(m_UKF.isInitialized()){ //don't change the state if UKF is not initialized
       m_inTaskSpaceControl = !m_inTaskSpaceControl;
     }
+
+    if(m_inTaskSpaceControl){ // if we've just started teleoperation
+      m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
+    }else{
+      m_robot->SetInsertionVelocity(0.0);
+      m_robot->SetRotationVelocity(0.0);
+    }
+
     return m_inTaskSpaceControl;
   }
 
@@ -74,6 +79,12 @@ namespace Nf {
     if(m_UKF.isInitialized()){ //don't change the state if UKF is not initialized
       m_inJointSpaceControl = !m_inJointSpaceControl;
     }
+
+    if(!m_inJointSpaceControl){
+      m_robot->SetInsertionVelocity(0.0);
+      m_robot->SetRotationVelocity(0.0);
+    }
+
     return m_inJointSpaceControl;
   }
 
@@ -81,6 +92,7 @@ namespace Nf {
   void ControlAlgorithms::setJointSpaceControlVelocities(f32 v_rot, f32 v_ins)
   {
     if( m_inJointSpaceControl ){
+      NTrace("v_ins = %.5f, v_rtot =%.5f\n",v_ins,v_rot);
       m_robot->SetInsertionVelocity(m_insTrigger->update(v_ins)*INS_SPEED);
       m_robot->SetRotationVelocity(m_rotTrigger->update(v_rot)*ROT_SPEED);
     }
@@ -93,7 +105,11 @@ namespace Nf {
         m_inManualScanning = true;
     }else{
       m_inManualScanning = false;
-      m_x = processManualScan();
+      processManualScan();
+      m_insertionMMatLastManualScan = m_robot->getInsMM(); 
+      if( m_inTaskSpaceControl ){        
+        m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
+      }
     }
   }  
 
@@ -154,14 +170,23 @@ namespace Nf {
       m_segmentation.addManualScanFrame(data);
     }
 
-    GetPoseEstimate(m_x); // update the estimate  
+    GetPoseEstimate(m_x); // update the estimate 
 
     if( m_inTaskSpaceControl ) 
     {
+      ControlCorrection();
+
       if( CheckCompletion() ){  // if we've reached the target
         m_robot->SetInsertionVelocity(0.0);
+        m_robot->SetRotationVelocity(0.0);
         m_inTaskSpaceControl = false;
       }
+
+      if( insertionSinceLastManualScan() >= MAX_OPEN_LOOP_INSERTION ){ // if we need a new scan
+        m_robot->SetInsertionVelocity(0.0);
+        m_robot->SetRotationVelocity(0.0);
+      }
+
     }
   }
 
@@ -233,14 +258,13 @@ namespace Nf {
     m_segmentation.resetManualScan();
   }
 
-  Matrix44d ControlAlgorithms::processManualScan()
+  void ControlAlgorithms::processManualScan()
   {
     Vec3d u;
     GetIncrementalInputVector(u);
-    Matrix44d T = m_segmentation.processManualScan();
-    m_z = T;
-    m_UKF.fullUpdateUKF(u, T);
-    return T;
+    m_z = m_segmentation.processManualScan();
+    m_UKF.fullUpdateUKF(u, m_z);
+    m_UKF.getCurrentStateEstimate(m_x);
   }
 
   void ControlAlgorithms::setRobot(NeedleSteeringRobot* robot)
@@ -278,7 +302,8 @@ namespace Nf {
   void ControlAlgorithms::getOverlayValues(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img,
                                            Matrix44d &z,
                                            Vec3d &Sxyz,
-                                           Vec3d &t_img, Vec3d &t )
+                                           Vec3d &t_img, Vec3d &t,
+                                           double &mmToNextScan)
   {
     // target  
     t_img = RobotPtToImagePt(m_t);
@@ -296,6 +321,7 @@ namespace Nf {
     Vec3d py_world = p + R*Vec3d(0.0,5.0,0.0);
     pz_img = RobotPtToImagePt(pz_world);
     py_img = RobotPtToImagePt(py_world);
+    mmToNextScan = max(MAX_OPEN_LOOP_INSERTION-insertionSinceLastManualScan(),0.0);
   }
 
   void ControlAlgorithms::getVisualizerValues(Vec3d &t, Matrix44d &x, Matrix44d &z, Matrix44d &Tref2robot,
@@ -309,6 +335,16 @@ namespace Nf {
     frameBoundaries = m_frameBoundaries;
     Tem2robot = m_Tem2robot;
     transducerType = m_transducerType;
+  }
+
+  double ControlAlgorithms::insertionSinceLastManualScan()
+  {
+    if( m_robot && m_robot->isInsertionInitialized() ){
+      double currentInsMM = m_robot->getInsMM();
+      return currentInsMM - m_insertionMMatLastManualScan;
+    }else{
+      return 0.0;
+    }
   }
 
   /// ----------------------------------------------------

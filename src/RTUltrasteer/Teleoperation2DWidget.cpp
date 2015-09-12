@@ -141,6 +141,7 @@ namespace Nf
       // print prepare for scan message
       char str [100];
       int n = sprintf(str, "Prepare for needle scan");
+      m_imageViewer->SetInCountdownToManualScan(true);
       m_imageViewer->SetInstructionText(str);
     }
   }
@@ -149,6 +150,7 @@ namespace Nf
   {
     // stop the preparation timer and begin the manual scan
     m_preScanTimer->stop();
+    m_imageViewer->SetInCountdownToManualScan(false);
     m_scanTimer.start();
     displayScanTimeRemaining();
     m_control->startStopManualScanning(true);
@@ -245,8 +247,8 @@ namespace Nf
 
   void Teleoperation2DWidget::updateTeleoperationVisualization()
   {
-    m_imageViewer->onUpdateOverlay();
     m_teleoperationVisualizer->onUpdateVisualization();
+    m_imageViewer->onUpdateOverlay();
   }
 
   void Teleoperation2DWidget::onInitializeEstimator()
@@ -350,16 +352,24 @@ namespace Nf
 
   void Teleoperation2DStreamingWidget::HandleFrame(RPData &rp)
   {
+    BEGIN_TIMING(HandleFrame,10);
+
     m_data.Release();
     m_data = rp;
 
+    BEGIN_TIMING(setImage,10);
     m_imageViewer->SetImage(&m_data, RPF_BPOST32);
+    END_TIMING(setImage,10);
 
     m_control->controlHeartBeat(m_data);
+    BEGIN_TIMING(UpdateTeleoperationVisualization,10);
     updateTeleoperationVisualization();
+    END_TIMING(UpdateTeleoperationVisualization,10);
 
     if( m_control->inManualScanning() )
       displayScanTimeRemaining();
+
+    END_TIMING(HandleFrame,10);
   }
 
   Teleoperation2DStreamingWidget::~Teleoperation2DStreamingWidget()
