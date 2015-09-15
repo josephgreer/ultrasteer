@@ -575,9 +575,9 @@ namespace Nf
   TipState ParticleFilterFullState::GetExpectedValue(const PFParams *p)
   {
     TipState res;
-    res.pos = (vec3)mean(m_pos, 1);
+    res.pos = (vec3)((m_w*m_pos.t()).t());
     res.R = SO3Mean(m_R, m_w, 1e-2);
-    res.rho = ((mat)mean(m_rho))(0,0);
+    res.rho = ((mat)(m_w*m_rho.t()))(0,0);
 
     return res;
   }
@@ -870,14 +870,14 @@ namespace Nf
   TipState ParticleFilterMarginalized::GetExpectedValue(const PFParams *p)
   {
     TipState res;
-    res.pos = (vec3)mean(m_pos, 1);
+    res.pos = (vec3)((m_w*m_pos.t()).t());
 
     std::vector < mat33 > Rs(m_R.size());
     for(s32 i=0; i<m_R.size(); i++) 
       Rs[i] = m_R[i].mu;
 
     res.R = SO3Mean(Rs, m_w, 1e-2);
-    res.rho = ((mat)mean(m_rho))(0,0);
+    res.rho = ((mat)(m_w*m_rho.t()))(0,0);
 
     return res;
 
@@ -983,8 +983,8 @@ namespace Nf
       fbr = join_horiz(fbr, measurements[i].fbr);
       fur = join_horiz(fur, measurements[i].fur);
       
-      fbx = join_horiz(fur, measurements[i].fbx);
-      fby = join_horiz(fur, measurements[i].fby);
+      fbx = join_horiz(fbx, measurements[i].fbx);
+      fby = join_horiz(fby, measurements[i].fby);
 
       uv = join_horiz(uv, measurements[i].uv);
     }
@@ -992,26 +992,26 @@ namespace Nf
     char path[150] = {0};
 
     sprintf(path, "%sMeasDoppler.dat", basePath);
-    doppler.save(path);
+    doppler.save(path, raw_ascii);
     sprintf(path, "%sMeasPos.dat", basePath);
-    pos.save(path);
+    pos.save(path, raw_ascii);
 
     sprintf(path, "%sMeasFul.dat", basePath);
-    ful.save(path);
+    ful.save(path, raw_ascii);
     sprintf(path, "%sMeasFbl.dat", basePath);
-    fbl.save(path);
+    fbl.save(path, raw_ascii);
     sprintf(path, "%sMeasFbr.dat", basePath);
-    fbr.save(path);
+    fbr.save(path, raw_ascii);
     sprintf(path, "%sMeasFur.dat", basePath);
-    fur.save(path);
+    fur.save(path, raw_ascii);
 
     sprintf(path, "%sMeasBx.dat", basePath);
-    fbx.save(path);
+    fbx.save(path, raw_ascii);
     sprintf(path, "%sMeasBy.dat", basePath);
-    fby.save(path);
+    fby.save(path, raw_ascii);
 
     sprintf(path, "%sMeasUv.dat", basePath);
-    uv.save(path);
+    uv.save(path, raw_ascii);
   }
 
   mat loadTimes(const char *basePath)
@@ -1030,7 +1030,7 @@ namespace Nf
     sprintf(path, "%sdts.dat", basePath);
 
     arma::mat temp = ts.t();
-    temp.save(path);
+    temp.save(path, raw_ascii);
   }
 
   std::vector < NSCommand > loadCommands(const char *basePath)
@@ -1070,11 +1070,11 @@ namespace Nf
     char path[150] = {0};
 
     sprintf(path, "%sV.dat", basePath);
-    vs.save(path);
+    vs.save(path, raw_ascii);
     sprintf(path, "%sThetas.dat", basePath);
-    dthetas.save(path);
+    dthetas.save(path, raw_ascii);
     sprintf(path, "%sDutyCycles.dat", basePath);
-    dutyCycles.save(path);
+    dutyCycles.save(path, raw_ascii);
   }
 
   PartMethod1 loadParticlesMethod1(const char *basePath)
@@ -1103,11 +1103,11 @@ namespace Nf
     char path[150] = {0};
 
     sprintf(path, "%sPos.dat", basePath);
-    particles.pos.save(path);
+    particles.pos.save(path, raw_ascii);
     sprintf(path, "%sRho.dat", basePath);
-    particles.rhos.save(path);
+    particles.rhos.save(path, raw_ascii);
     sprintf(path, "%sws.dat", basePath);
-    particles.ws.save(path);
+    particles.ws.save(path, raw_ascii);
     sprintf(path, "%sRs.dat", basePath);
     saveOrientations(particles.Rs, path);
   }
@@ -1145,11 +1145,11 @@ namespace Nf
     char path[150] = {0};
 
     sprintf(path, "%sPos.dat", basePath);
-    particles.pos.save(path);
+    particles.pos.save(path, raw_ascii);
     sprintf(path, "%sRho.dat", basePath);
-    particles.rhos.save(path);
+    particles.rhos.save(path, raw_ascii);
     sprintf(path, "%sws.dat", basePath);
-    particles.ws.save(path);
+    particles.ws.save(path, raw_ascii);
 
 
     std::vector < mat33 > orientationMus;
