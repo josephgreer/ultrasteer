@@ -15,7 +15,7 @@
 #include <QtGui/QFileDialog>
 #include <cmath>
 
-#define   RHO                     60.0    // radius of curvature for needle in mm
+#define   RHO                     85.0    // radius of curvature for 12-mm needle in gelatin (mm)
 #define   INS_AUTO_SPEED          1.0     // insertions peed during task-space teleoperation  (mm/s)
 #define   INS_SPEED               20.0    // insertion speed during joint-space teleoperation (mm/s) 
 #define   ROT_SPEED               200.0   // rotation speed during joint-space teleoperation (RPM)
@@ -42,6 +42,7 @@ namespace Nf {
     void controlHeartBeat(RPData);
     void onUpdateOverlay();
     void SetTarget(Vec2d t_im);
+    void ManualNeedleTipSelection(Vec2d p_im);
     void GetTarget(Vec3d &t);
     bool isTargetDefined();
     void resetManualScan();

@@ -22,8 +22,8 @@ namespace Nf {
   {
     m_insTrigger = new STrigger();
     m_rotTrigger = new STrigger();
-    m_insTrigger->setThresholds(0.02);
-    m_rotTrigger->setThresholds(0.02);
+    m_insTrigger->setThresholds(0.01);
+    m_rotTrigger->setThresholds(0.01);
   }
 
   ControlAlgorithms::~ControlAlgorithms()
@@ -125,6 +125,22 @@ namespace Nf {
   {
     m_t = ImagePtToRobotPt(t_im);
   }
+
+  void ControlAlgorithms::ManualNeedleTipSelection(Vec2d p_im)
+  {
+    Vec3d p = ImagePtToRobotPt(p_im);
+    Matrix33d R = Matrix33d::I();
+    Matrix44d m_z = Matrix44d::FromOrientationAndTranslation(R,p);
+    Vec3d u;
+    GetIncrementalInputVector(u);
+    m_UKF.fullUpdateUKF(u, m_z);
+    m_UKF.getCurrentStateEstimate(m_x);
+    m_insertionMMatLastManualScan = m_robot->getInsMM(); 
+    if( m_inTaskSpaceControl ){        
+      m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
+    }
+  }
+
 
   Vec3d ControlAlgorithms::ImagePtToRobotPt(Vec2d p_im)
   {

@@ -131,6 +131,11 @@ namespace Nf
     header.ld = (s32)(m_dataToSave[0].origin.x+0.5);
     header.extra = (s32)(m_dataToSave[0].origin.y+0.5);
 
+    for(s32 i=0; i<m_dataToSave.size(); i++) {
+      rpw->WriteNextRPData(&m_dataToSave[i]);
+    }
+
+
     rpw->Cleanup(&header);
     FreeData();
     ui.progressBar->setValue(0);

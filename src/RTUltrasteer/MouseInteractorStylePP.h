@@ -49,12 +49,12 @@ namespace Nf
     void SetRenderWindowInteractor(vtkSmartPointer < vtkRenderWindowInteractor > interactor)
     { m_interactor = interactor; }
 
-    virtual void OnLeftButtonDown() 
+    virtual void OnRightButtonDown() 
     {	
-      qDebug() << "Pressed left mouse button." << "\n";
+      qDebug() << "Pressed right mouse button." << "\n";
 
       // play a sound effect
-      QSound::play("C:/Windows/Media/Windows Default.wav");
+      QSound::play("C:/Windows/Media/Speech On.wav");
 
       // Check that the robot calibration has been loaded
       m_TeleoperationWidget->checkCalibrations();
@@ -73,8 +73,6 @@ namespace Nf
       this->Interactor->GetPicker()->GetPickPosition(ima);
       Vec3d im(ima[0],ima[1],ima[2]);
       // flip the y-axis point
-      //int w,h;
-      //m_imageViewerWidget->getImageDim(w, h);
       im.y = -1.0*ima[1]; 
 
       // Update the target control point
@@ -84,6 +82,38 @@ namespace Nf
 
       // Forward events if functionality is desired
       //vtkInteractorStyleImage::OnLeftButtonDown();
+    }
+
+    virtual void OnLeftButtonDown() 
+    {	
+      qDebug() << "Pressed left mouse button." << "\n";
+
+      // play a sound effect
+      QSound::play("C:/Windows/Media/Windows Default.wav");
+   
+      // Check that the robot calibration has been loaded
+      m_TeleoperationWidget->checkCalibrations();
+
+      // find coordinates in viewer pixels
+      Vec2d vw;
+      vw.x = this->Interactor->GetEventPosition()[0];
+      vw.y = this->Interactor->GetEventPosition()[1];
+
+      // find coordinates in image pixels
+      this->Interactor->GetPicker()->Pick(this->Interactor->GetEventPosition()[0], 
+        this->Interactor->GetEventPosition()[1], 
+        0,  // always zero.
+        this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer());
+      double ima[3];
+      this->Interactor->GetPicker()->GetPickPosition(ima);
+      Vec3d im(ima[0],ima[1],ima[2]);
+      // flip the y-axis point
+      im.y = -1.0*ima[1]; 
+
+      // Update the target control point
+      Vec2d im2D( im.x, im.y );
+      m_control->ManualNeedleTipSelection(im2D);
+      m_TeleoperationWidget->updateTeleoperationVisualization();
     }
   
   private:

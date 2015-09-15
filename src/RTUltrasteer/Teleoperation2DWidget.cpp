@@ -326,6 +326,7 @@ namespace Nf
 
     m_data = m_rpReaders->GetRPData(m_frame->GetValue());
     m_imageViewer->SetImage(&m_data, RPF_BPOST32);
+    m_imageViewerB->SetImage(&m_data, RPF_BPOST8);
 
     m_control->controlHeartBeat(m_data);
     updateTeleoperationVisualization();
@@ -359,6 +360,7 @@ namespace Nf
 
     BEGIN_TIMING(setImage,10);
     m_imageViewer->SetImage(&m_data, RPF_BPOST32);
+    m_imageViewerB->SetImage(&m_data, RPF_BPOST8);
     END_TIMING(setImage,10);
 
     m_control->controlHeartBeat(m_data);
