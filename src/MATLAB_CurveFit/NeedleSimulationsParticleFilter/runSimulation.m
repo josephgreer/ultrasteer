@@ -96,8 +96,9 @@ for t=0:params.dt:params.simulationTime
             params.particlesInit = params.doParticleFilter&length(measurements)>=getMinimumMeasurements(params);
         else
             xp = propagateParticles(xp,uc,params);
+            dts = repmat(params.dt, params.n);
             if(params.doMeasurement)
-                xp = measureParticles(xp,u,xhist,measurements,params);
+                xp = measureParticles(xp,u,xhist,dts,measurements,params);
             end
         end
         

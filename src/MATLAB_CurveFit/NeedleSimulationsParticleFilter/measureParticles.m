@@ -7,6 +7,10 @@
 %   u{i}.v         = insertion velocity
 %   u{i}.dtheta    = rotation about needle's axis
 %   u{i}.dc        = duty cycle ratio
+% dts = time steps
+%   dt(1)        = time step from time t-1 to time t
+% ...
+%   dt(n)        = time step from time t-n to time t-(n-1)
 % xhist = true state. 
 % xhist{1} = current state
 % ...
@@ -18,17 +22,17 @@
 %  measurement{1}.ful,fbl,fbr,fur = us frame positions
 % params = simulation parameters
 % see ../NeedleSimulation.m for description of parameters
-function x = measureParticles(xp, u, xtrue, measurements, params)
+function x = measureParticles(xp, u, xtrue, dts, measurements, params)
 if(params.particleFilterMethod == 1)
-    pw = measureParticles1(xp, u, measurements, params);
+    pw = measureParticles1(xp, u, dts, measurements, params);
 elseif(params.particleFilterMethod == 2)
-    pw = measureParticles2(xp, u, measurements, params);
+    pw = measureParticles2(xp, u, dts, measurements, params);
 elseif(params.particleFilterMethod == 3)
-    [xp,pw] = measureParticles3(xp, u, measurements, params);
+    [xp,pw] = measureParticles3(xp, u, dts, measurements, params);
 elseif(params.particleFilterMethod == 4)
-    [xp,pw] = measureParticles4(xp, u, measurements, params);
+    [xp,pw] = measureParticles4(xp, u, dts, measurements, params);
 else
-    xp = measureParticles100(xp, u, xtrue, measurements, params);
+    xp = measureParticles100(xp, u, xtrue, dts, measurements, params);
     pw = 1;
 end
 
@@ -46,7 +50,15 @@ end
 %   x.pos % position of needle tip frame 
 %   x.q  % orientation of needle tip frame 
 %   x.rho radius of curvature
-function pw = measureParticles1(xp, u, measurements, params)
+function pw = measureParticles1(xp, u, dts, measurements, params)
+if(params.useLUTDistribution)
+    if(params.pdopnotoverneedle == 0)
+        params.pdopnotoverneedle = load(sprintf('%spdopnotoverneedle.dat', params.LUTDistributionBasePath));
+    end
+    if(params.pdopoverneedle == 0)
+        params.pdopoverneedle = load(sprintf('%spdopoverneedle.dat', params.LUTDistributionBasePath));
+    end
+end
 measurement = measurements{1};
 pw = zeros(length(xp),1);
 % compute p(z|x)
@@ -65,7 +77,7 @@ pw = zeros(length(xp),1);
 % of curve segment and transducer image plane and measurement position.
 % then look up the probability of this distance
 
-xsc = propagateNeedleBack(xp{1}, u, params);
+xsc = propagateNeedleBackWithDts(xp{1}, u, dts, params);
 xsc = cell2mat(xsc);
 xsc = [xsc.pos];
 
@@ -137,11 +149,19 @@ for i=1:length(xp)
     p_uvxOffFrame = 1/(params.ush*params.usw);
     
     % p(d|x) in case particle intersects frame
-    p_dxOnFrame = lognpdf(measurement.doppler, params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
+    if(params.useLUTDistribution == 0)
+        p_dxOnFrame = lognpdf(measurement.doppler, params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
+    else
+        p_dxOnFrame = lutDistributionP(measurement.doppler, params.pdopoverneedle, params);
+    end
     
     % particle doesn't intersect image frame
     %p_uvxOffFrame = 1/(params.ush*params.usw);
-    p_dxOffFrame = lognpdf(measurement.doppler, params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
+    if(params.useLUTDistribution == 0)
+        p_dxOffFrame = lognpdf(measurement.doppler, params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
+    else
+        p_dxOffFrame = lutDistributionP(measurement.doppler, params.pdopnotoverneedle, params);
+    end
     
     % p(measurement | x)
     pw(i) = (p_uvxOnFrame*p_dxOnFrame*(1-offFrame))+p_dxOffFrame*p_uvxOffFrame*offFrame;
@@ -161,7 +181,7 @@ end
 %   x.pos % position of needle tip frame 
 %   x.q  % orientation of needle tip frame 
 %   x.rho radius of curvature
-function pw = measureParticles2(xp, u, measurements, params)
+function pw = measureParticles2(xp, u, dts, measurements, params)
 measurement = measurements{1};
 pw = zeros(length(xp),1);
 % compute p(z|x)
@@ -199,7 +219,8 @@ for i=1:length(xp)
     if(proj <= 0)
         %before the needle tip of this particle
         % work backwards
-        xs = propagateNeedleBack(xp{i},u,params);
+        
+        xs = propagateNeedleBackWithDts(xp{i}, u, dts, params);
         for j=1:length(xs)-1
             dr = xs{j+1}.pos-xs{j}.pos;
             if(det([-dr measurement.bx measurement.by]) == 0)
@@ -257,7 +278,7 @@ end
 % x.dist = distribution of kalman filter
 % x.rho = current curvature
 % x.w = weight (which is only used for particle filter)
-function [x,pw] = measureParticles3(xp, u, measurements, params)
+function [x,pw] = measureParticles3(xp, u, dts, measurements, params)
 
 
 R1 = xp{1}.qdist.mu;
@@ -266,7 +287,7 @@ xcurr.pos = xp{1}.pos;
 xcurr.rho = xp{1}.rho;
 xcurr.w = 1;
 
-xsc = propagateNeedleBack(xcurr, u, params);
+xsc = propagateNeedleBackWithDts(xp{1}, u, dts, params);
 xsc = cell2mat(xsc);
 xsc = [xsc.pos];
 
@@ -408,7 +429,7 @@ end
 % x.dist = distribution of kalman filter
 % x.rho = current curvature
 % x.w = weight (which is only used for particle filter)
-function [x,pw] = measureParticles4(xp, u, measurements, params)
+function [x,pw] = measureParticles4(xp, u, dts, measurements, params)
 
 
 R1 = xp{1}.qdist.mu;
@@ -550,13 +571,13 @@ end
 % x.dist = distribution of kalman filter
 % x.rho = current curvature
 % x.w = weight (which is only used for particle filter)
-function x = measureParticles100(xp, u, xtrue, measurements, params)
+function x = measureParticles100(xp, u, dts, xtrue, measurements, params)
 xcurr.q = RotationMatrixToQuat(xp{1}.dist.mu);
 xcurr.pos = xtrue{1}.pos;
 xcurr.rho = xp{1}.rho;
 xcurr.w = 1;
 
-xhist = propagateNeedleBack(xcurr, u, params);
+xhist = propagateNeedleBackWithDts(xcurr, u, dts, params);
 
 Rprior = QuatToRotationMatrix(xcurr.q);
 
@@ -603,24 +624,25 @@ x{1}.w = 1;
 x{1}.pos = xcurr.pos;
 end
 
-function drawMeasurementInformationForParticle(xp, xs, u, measurement, params, i)
+function drawMeasurementInformationForParticle(xp, xs, u, dts, measurement, params, i)
 figure(2);
 hold on;
 
 view(3);
 view(240, 30);
 drawUSFrame(measurement,params,[]);
-xss = propagateNeedleBack(xp{i},u,params);
+xss = propagateNeedleBackWithDts(xp{i},u,dts,params);
 xsc = cell2mat(xss); xsc = [xsc.pos]';
 scatter3(xsc(:,1), xsc(:,2), xsc(:,3), 'r');
 xs = xs';
 scatter3(xs(:,1), xs(:,2), xs(:,3), 'b');
 drawFrames(2, xss(1), 20,params,[]);
 axis equal;
+daspect([1 1 1]);
 grid on;
-ylim([-100 100]);
-zlim([-10 100]);
-xlim([-100 100]);
+% ylim([-100 100]);
+% zlim([-10 100]);
+% xlim([-100 100]);
 
 close(2);
 end

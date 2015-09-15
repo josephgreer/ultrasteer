@@ -5,7 +5,7 @@ dutyCycles = load(sprintf('%sDutyCycles.dat', pathBase));
 
 us = {};
 for i=1:length(vs)
-    u.v = v(i);
+    u.v = vs(i);
     u.dutyCycle = dutyCycles(i);
     u.dtheta = dthetas(i);
     us = vertcat(us,u);

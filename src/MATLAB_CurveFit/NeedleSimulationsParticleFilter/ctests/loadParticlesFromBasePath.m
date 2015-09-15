@@ -1,5 +1,5 @@
 % load particles saved from c++ test
-function xp = loadParticlesFromBasePath(params, basePath)
+function xp = loadParticlesFromBasePath(basePath, params)
 if(params.particleFilterMethod == 1)
     
     
@@ -10,10 +10,10 @@ if(params.particleFilterMethod == 1)
     
     xp = {};
     for i=1:size(pos,2)
-        xc.pos = pos(:,i);
-        xc.rho = rhos(i);
         Rc = reshape(Rs(:,i),3,3);
         xc.q = RotationMatrixToQuat(Rc);
+        xc.pos = pos(:,i);
+        xc.rho = rhos(i);
         xc.w = ws(i);
         xp = vertcat(xp, {xc});
     end

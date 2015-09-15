@@ -20,7 +20,7 @@ for i=1:length(doppler)
     mm.fur = furs(:,i);
     mm.bx = fbxs(:,i);
     mm.by = fbys(:,i);
-    mm.uv = uvs(i);
+    mm.uv = uvs(:, i);
     
     measurements = vertcat(measurements, mm);
 end

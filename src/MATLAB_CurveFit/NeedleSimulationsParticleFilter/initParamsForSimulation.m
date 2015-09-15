@@ -44,6 +44,12 @@ params.offNeedleDopplerMu = 0.56;                                           %Dop
 params.offNeedleDopplerSigma = 0.75;                                        %Doppler strength of measurement off needle distributed according to lognormal dist
 params.onNeedleDopplerMu = 2.33;                                            %Doppler strength of measurement on needle distributed according to lognormal dist
 params.onNeedleDopplerSigma = 0.098;                                        %Doppler strength of measurement on needle distributed according to lognormal dist
+params.useLUTDistribution = 0;
+params.LUTDistributionFileHandle1 = 0;
+params.LUTDistributionFileHandle2 = 0;
+params.LUTDistributionBasePath = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\8_24_15\Trial3\Insertion\';
+params.pdopoverneedle = 0;
+params.pdopnotoverneedle = 0;
 
 % particle filter parameters
 params.doParticleFilter = 1;                                                %should we particle filter?
