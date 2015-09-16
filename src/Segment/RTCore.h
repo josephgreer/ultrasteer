@@ -10,8 +10,8 @@
 #include <armadillo>
 #include "RTMath.h"
 
-#define PATH_CAT(x) (std::string("C:/Users/Joey/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Data/NeedleScan/8_24_15/")+std::string(x)).c_str()
-#define BASE_PATH_CAT(x) (std::string("C:/Users/Joey/")+std::string(x)).c_str()
+#define PATH_CAT(x) (std::string("C:/Joey/Data/8_24_15/")+std::string(x)).c_str()
+#define BASE_PATH_CAT(x) (std::string("C:/Joey/Data/")+std::string(x)).c_str()
 #define STL_PATH_CAT(x) (std::string("C:/Troy/ultrasteer/models/")+std::string(x)).c_str()
 
 #define TRANSDUCER_CALIBRATION_COEFFICIENTS 14.8449, 0.9477, -0.0018, 0.0, 15.0061, 0.0016, 1.00, 0.0, 0.1638, 0.0166, 0.0052, 0.0, 0.0, 0.0, 0.0, 1.0

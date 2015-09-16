@@ -83,7 +83,7 @@ namespace Nf
     std::vector < Measurement > AssembleMeasurements(s32 frame);
     std::vector < NSCommand > AssembleCommands(s32 frame);
     arma::vec AssembleDts(s32 frame);
-    void SaveParticleFilterResults(s32 frame);
+    void SaveParticleFilterResults(s32 frame, const char *basePath);
 
     //Parameters
     std::tr1::shared_ptr < Nf::FloatParameter > m_roc;

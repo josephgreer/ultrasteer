@@ -76,4 +76,16 @@ plot(time, rhosEst, 'r');
 xlabel('time');
 ylabel('roc');
 
+figure;
+estStates = cell2mat(results.estimatedStates);
+estStatesPos = [estStates.pos]';
+
+trueStates = cell2mat(results.states);
+trueStatesPos = [trueStates.pos]';
+
+scatter3(trueStatesPos(:,1),trueStatesPos(:,2), trueStatesPos(:,3),'r');
+hold on;
+scatter3(estStatesPos(:,1),estStatesPos(:,2), estStatesPos(:,3),'b');
+daspect([1 1 1]);
+
 end

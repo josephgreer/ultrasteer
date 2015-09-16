@@ -89,18 +89,18 @@ TEST(GPS, Smooth)
 {
   using ::s32;
 
-  const char *basePath = "C:/Users/Joey/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Data/NeedleScan/8_24_15/Trial2/Insertion/scan";
+  std::string basePath = PATH_CAT("Trial3/Insertion/scan");
 
   char temp[200] = {0};
-  sprintf(temp, "%s.gps2", basePath);
+  sprintf(temp, "%s.gps2", basePath.c_str());
 
   RPGPSReader *gpsReader = new RPGPSReader(temp);
   RPFileHeader header = gpsReader->GetHeader();
 
-  sprintf(temp, "%ssmoothed.gps2", basePath);
+  sprintf(temp, "%ssmoothed.gps2", basePath.c_str());
   RPGPSWriter *writer = new RPGPSWriter(temp, &header);
 
-  sprintf(temp, "%ssmoothed.dat", basePath);
+  sprintf(temp, "%ssmoothed.dat", basePath.c_str());
   arma::mat smoothedPoints; smoothedPoints.load(temp);
 
   for(s32 i=0; i<smoothedPoints.n_rows; i++) {

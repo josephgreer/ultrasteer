@@ -1,7 +1,7 @@
 clear; clc; close all;
 
 addpath('../../LabelData');
-basePath = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\8_24_15\Trial2\Insertion\scan';
+basePath = 'C:\Joey\Data\8_24_15\Trial3\Insertion\scan';
 
 fgps = fopen(strcat(basePath,'.gps2'));
 header = ReadHeader(fgps);

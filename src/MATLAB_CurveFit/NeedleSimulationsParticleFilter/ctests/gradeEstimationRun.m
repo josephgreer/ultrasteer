@@ -1,7 +1,7 @@
-clear; clc; close all;
+clearvars -except 'truePosB' 'estPosB'; clc; close all;
 
-estBasePath = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\8_24_15\Trial3\Insertion\Estimated';
-truthBasePath = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\8_24_15\Trial3\Insertion\GroundTruth';
+estBasePath = 'C:\Joey\Data\8_24_15\Trial3\Insertion\Estimated';
+truthBasePath = 'C:\Joey\Data\8_24_15\Trial3\Insertion\GroundTruth';
 
 estPos = load(strcat(estBasePath, 'Pos.dat'));
 truePos = load(strcat(truthBasePath, 'Pos.dat'));

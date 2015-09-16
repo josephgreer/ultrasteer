@@ -310,9 +310,8 @@ namespace Nf
     return res;
   }
 
-  void ParticleFilterVisualizer::SaveParticleFilterResults(s32 frame)
+  void ParticleFilterVisualizer::SaveParticleFilterResults(s32 frame, const char *basePath)
   {
-    const char *basePath = "C:/Users/Joey/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Data/NeedleScan/8_24_15/Trial2/Insertion/";
     std::vector < TipState > trueStates;
     std::vector < TipState > estimatedStates;
     
@@ -448,11 +447,6 @@ namespace Nf
       if(nParts < params->neff*m_pf->GetNumberOfParticles())
         m_pf->Resample(m_pf->GetNumberOfParticles(), params.get());
 
-      if(false) {
-        SaveParticleFilterResults(frame);
-      }
-      
-
       //NTrace("Frame %d, dt %f, u.v %f\n", frame, (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0, m_pfFramesProcessed[frame].u.v);
     }
 
@@ -480,8 +474,8 @@ namespace Nf
   {
     ADD_ACTION_PARAMETER(m_doNeedleCalib, "Do Needle Calibration", CALLBACK_POINTER(onDoNeedleCalibrationPushed, EstimatorFileWidget), this, false);
     ADD_ENUM_PARAMETER(m_operationMode, "Operation Mode", CALLBACK_POINTER(onSetOperationMode, EstimatorFileWidget), this, QtEnums::EstimatorOperationMode::EOM_NONE, "EstimatorOperationMode");
-    ADD_SAVE_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Save Path", NULL, this, PATH_CAT("TipCalibration/ShallowInsertion/tipCalib.mat"), "(*.mat)");
-    ADD_OPEN_FILE_PARAMETER(m_tipCalibPathLoad, "Presaved Tip Calibration",CALLBACK_POINTER(onTipCalibPathChanged, EstimatorFileWidget), this, PATH_CAT("TipCalibration/ShallowInsertion/tipCalib.mat"), "(*.mat)");
+    ADD_SAVE_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Save Path", NULL, this, BASE_PATH_CAT("TipCalibration/ShallowInsertion/tipCalib.mat"), "(*.mat)");
+    ADD_OPEN_FILE_PARAMETER(m_tipCalibPathLoad, "Presaved Tip Calibration",CALLBACK_POINTER(onTipCalibPathChanged, EstimatorFileWidget), this, BASE_PATH_CAT("TipCalibration/ShallowInsertion/tipCalib.mat"), "(*.mat)");
     ADD_SAVE_FILE_PARAMETER(m_pointsDataPath, "Point History Save Path", NULL, this, PATH_CAT("Trial1/PreInsertionGPS/TipHistory.mat"), "(*.mat)");
     ADD_OPEN_FILE_PARAMETER(m_pointsDataPathLoad, "Presaved Point History", CALLBACK_POINTER(onPointsDataPathChanged, EstimatorFileWidget), this, PATH_CAT("Trial1/PreInsertionGPS/TipHistory.mat"), "(*.mat)");
     ADD_ACTION_PARAMETER(m_clearCalibrationData, "Clear Calibration Data", CALLBACK_POINTER(onClearCalibrationData, EstimatorFileWidget), this, false);
@@ -747,7 +741,12 @@ namespace Nf
         break;
       }
     case EFS_ESTIMATE:
+      {
+        std::string fl = m_rpFile->GetValue();
+        fl = fl.substr(0, fl.find_last_of("/")+1);
+        m_pfVisualizer->SaveParticleFilterResults(m_frame->GetValue(), fl.c_str());
       break;
+      }
     default: 
       {
         throw std::runtime_error("EstimatorFileWidget: unknown state\n");
