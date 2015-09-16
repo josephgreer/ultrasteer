@@ -1112,6 +1112,26 @@ namespace Nf
     saveOrientations(particles.Rs, path);
   }
 
+  void saveTipHistory(const char *basePath, const std::vector < TipState > &hist)
+  {
+    mat pos = zeros(hist.size(), 3);
+    std::vector < mat33 > Rs(hist.size());
+    mat rhos = zeros(hist.size(), 1);
+    for(s32 i=0; i<hist.size(); i++) {
+      pos.row(i) = hist[i].pos.t();
+      rhos(i,0) = hist[i].rho;
+      Rs[i] = hist[i].R;
+    }
+
+    char path[200] = {0};
+    sprintf(path, "%sPos.dat", basePath);
+    pos.save(path, raw_ascii);
+    sprintf(path, "%sRho.dat", basePath);
+    rhos.save(path, raw_ascii);
+    sprintf(path, "%sRs.dat", basePath);
+    saveOrientations(Rs, path);
+  }
+
   PartMethod3 loadParticlesMethod3(const char *basePath)
   {
     using ::s32;

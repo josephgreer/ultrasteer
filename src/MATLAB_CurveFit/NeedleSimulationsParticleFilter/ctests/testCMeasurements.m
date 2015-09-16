@@ -7,7 +7,9 @@ params.useLUTDistribution = 1;
 params.drawTipFrame = 1;
 params.drawUSFrame = 1;
 params.drawTruePos = 0;
-%params.drawParticlePos = 1;
+params.drawParticlesNs = 5;
+params.drawParticlePos = 0;
+params.drawParticleOrientation = 1;
 params.drawExpectedPos = 1;
 params.drawExpectedOrientation = 1;
 params.mpp = 163;
@@ -42,6 +44,19 @@ xpa = measureParticles(xp, us, [], dts, measurements, params);
 
 xpea = expectedValueOfParticles(xpa, params);
 particleHandles = drawParticles(1, xpa, xpea, [], params, particleHandles);
-campos(yep);
-daspect([1 1 1]);
+
+figure;
+
+Re = QuatToRotationMatrix(xpea.q);
+projScatter = zeros(length(xpa),3);
+for i=1:length(xpa)
+    projScatter(i,1) = (xpa{i}.pos-xpea.pos)'*Re(:,3);
+    projScatter(i,2) = xpa{i}.w;
+    projScatter(i,3) = i;
+end
+scatter(projScatter(:,1), projScatter(:,2));
+indices = sortrows(projScatter);
+indices = indices(find(indices(:,1) > 2.5),:);
+% campos(yep);
+% daspect([1 1 1]);
 %tipFrameHandles = drawFrame(1, xpea, 5, params, tipFrameHandles);

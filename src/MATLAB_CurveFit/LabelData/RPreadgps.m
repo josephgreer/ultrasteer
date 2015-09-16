@@ -15,7 +15,7 @@ function [res] = RPreadgps(fid, header)
 
 res = struct('pos', [0; 0; 0], 'posaer', [0; 0; 0], 'pose', [0 0 0; 0 0 0; 0 0 0], 'quality', 0);
 
- if (header.filetype == 131072) %.gps
+ if (header.filetype == 131072 || header.filetype == 262144) %.gps
      gps_posx =  fread(fid, 1, 'double');   %8 bytes for double
      gps_posy =  fread(fid, 1, 'double');   %8 bytes for double
      gps_posz =  fread(fid, 1, 'double');   %8 bytes for double

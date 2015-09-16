@@ -1,8 +1,8 @@
 clear; clc; close all;
 
-path = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\8_24_15\Trial3\Insertion\TipHistory.mat';
+path = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\8_24_15\Trial3\Insertion\scan_backup.dat';
 
-load(path, '-ascii')
+TipHistory = load(path, '-ascii')
 
 scatter3(TipHistory(:,1), TipHistory(:,2), TipHistory(:,3));
 daspect([1 1 1]);

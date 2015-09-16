@@ -230,7 +230,9 @@ namespace Nf
       res->ush = norm(pd.m.ful-pd.m.fbl);
       res->measurementOffsetSigma = (Vec2d(pd.mpp.x/1000.0, pd.mpp.y/1000.0)*m_measurementNoise->GetValue()).ToArmaVec();
     }
-    res->minimumMeasurements = 10;
+    res->minimumMeasurements = 20;
+    res->n = 500;
+    //res->particleSigmaPos =
 
     return res;
   }
@@ -306,6 +308,28 @@ namespace Nf
       frame--;
     }
     return res;
+  }
+
+  void ParticleFilterVisualizer::SaveParticleFilterResults(s32 frame)
+  {
+    const char *basePath = "C:/Users/Joey/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Data/NeedleScan/8_24_15/Trial2/Insertion/";
+    std::vector < TipState > trueStates;
+    std::vector < TipState > estimatedStates;
+    
+    while(m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end()) {
+      trueStates.push_back(m_pfFramesProcessed[frame].t);
+      estimatedStates.push_back(m_pfFramesProcessed[frame].est);
+      frame--;
+    }
+
+    std::reverse(trueStates.begin(), trueStates.end());
+    std::reverse(estimatedStates.begin(), estimatedStates.end());
+
+    char temp[200] = {0};
+    sprintf(temp, "%sGroundTruth", basePath);
+    saveTipHistory(temp, trueStates);
+    sprintf(temp, "%sEstimated", basePath);
+    saveTipHistory(temp, estimatedStates);
   }
 
   void ParticleFilterVisualizer::onNVisSkipChanged()
@@ -423,6 +447,10 @@ namespace Nf
       f64 nParts = m_pf->EffectiveSampleSize();
       if(nParts < params->neff*m_pf->GetNumberOfParticles())
         m_pf->Resample(m_pf->GetNumberOfParticles(), params.get());
+
+      if(false) {
+        SaveParticleFilterResults(frame);
+      }
       
 
       //NTrace("Frame %d, dt %f, u.v %f\n", frame, (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0, m_pfFramesProcessed[frame].u.v);

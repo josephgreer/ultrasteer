@@ -430,4 +430,5 @@ namespace Nf
   void saveParticlesMethod3(const char *basePath, const PartMethod3 &particles); 
   void saveOrientations(const std::vector < arma::mat33 > &ors, const char *path);
   std::vector < arma::mat33 > loadOrientations(const char *path);
+  void saveTipHistory(const char *basePath, const std::vector < TipState > &hist);
 }

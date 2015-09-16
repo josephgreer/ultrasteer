@@ -286,7 +286,7 @@ namespace Nf
     m_renderer->SetActiveCamera(camera);
     m_renderer->ResetCamera(bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], 
       bounds[5]);
-    m_renderer->GetActiveCamera()->Zoom(1.2);
+    m_renderer->GetActiveCamera()->Zoom(1.5);
     this->update();
   }
 

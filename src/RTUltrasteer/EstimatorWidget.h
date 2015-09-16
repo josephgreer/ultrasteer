@@ -65,6 +65,9 @@ namespace Nf
     s32 m_lastFrame;
     bool m_init;
 
+    std::map < s32, TipState > m_estTipStates;
+    std::map < s32, TipState > m_trueTipStates;
+
   public:
     ParticleFilterVisualizer(Updateable *update);
     ~ParticleFilterVisualizer();
@@ -80,6 +83,7 @@ namespace Nf
     std::vector < Measurement > AssembleMeasurements(s32 frame);
     std::vector < NSCommand > AssembleCommands(s32 frame);
     arma::vec AssembleDts(s32 frame);
+    void SaveParticleFilterResults(s32 frame);
 
     //Parameters
     std::tr1::shared_ptr < Nf::FloatParameter > m_roc;

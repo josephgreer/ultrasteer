@@ -1,8 +1,8 @@
 #include "CppUnitLite/Test.h"
 #include "RTCore.h"
 #include "RPFileReader.h"
+#include "RPFileWriter.h"
 #include "RPUlterius.h"
-
 #include <iostream>
 #include <cv.h>
 #include <cxcore.h>
@@ -83,4 +83,35 @@ TEST(Scratch, ReverseIterator)
     else
       assert(yep.find(i) != yep.end());
   }
+}
+
+TEST(GPS, Smooth)
+{
+  using ::s32;
+
+  const char *basePath = "C:/Users/Joey/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Data/NeedleScan/8_24_15/Trial2/Insertion/scan";
+
+  char temp[200] = {0};
+  sprintf(temp, "%s.gps2", basePath);
+
+  RPGPSReader *gpsReader = new RPGPSReader(temp);
+  RPFileHeader header = gpsReader->GetHeader();
+
+  sprintf(temp, "%ssmoothed.gps2", basePath);
+  RPGPSWriter *writer = new RPGPSWriter(temp, &header);
+
+  sprintf(temp, "%ssmoothed.dat", basePath);
+  arma::mat smoothedPoints; smoothedPoints.load(temp);
+
+  for(s32 i=0; i<smoothedPoints.n_rows; i++) {
+    arma::vec3 point = (arma::vec3)(smoothedPoints.row(i).t());
+    GPS_Data datum = gpsReader->GetNextGPSDatum();
+    datum.pos = Vec3d::FromArmaVec(point);
+    writer->WriteNextGPSDatum(&datum);
+  }
+
+  writer->Cleanup(&header);
+
+  delete writer;
+  delete gpsReader;
 }

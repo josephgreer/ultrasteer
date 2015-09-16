@@ -22,6 +22,7 @@ INCLUDE_DIRECTORIES(${OPENCV_INCLUDE_DIRS}
 ${CMAKE_CURRENT_SOURCE_DIR}/../Segment 
 ${CMAKE_CURRENT_SOURCE_DIR}/../ControlAlgorithms 
 ${CMAKE_CURRENT_SOURCE_DIR}/../RPFileReader 
+${CMAKE_CURRENT_SOURCE_DIR}/../RPFileWriter
 ${CMAKE_CURRENT_SOURCE_DIR}/../RTUltrasteer 
 ${CMAKE_CURRENT_SOURCE_DIR}/../../external/alglib/src
 ${CMAKE_CURRENT_SOURCE_DIR}/../../external/armadillo/include
@@ -51,6 +52,6 @@ SET_TARGET_PROPERTIES(UnitTests PROPERTIES LINK_FLAGS_DEBUG /SUBSYSTEM:console)
 SET_TARGET_PROPERTIES(UnitTests PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:console)
  #Must be lowercase windows
 
-TARGET_LINK_LIBRARIES(UnitTests alglib Segment RPFileReader ControlAlgorithms ${OpenCV_LIBS} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${UlteriusDir}/lib/ulterius_old.lib 
+TARGET_LINK_LIBRARIES(UnitTests alglib Segment RPFileReader RPFileWriter ControlAlgorithms ${OpenCV_LIBS} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${UlteriusDir}/lib/ulterius_old.lib 
 ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/liblapack.lib ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/libblas.lib winmm.lib)
 #${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} 
