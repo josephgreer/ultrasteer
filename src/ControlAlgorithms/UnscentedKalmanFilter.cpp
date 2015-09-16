@@ -3,14 +3,14 @@
 #define		N					      6.0				        // length of state vector
 #define   SQN             2.4495            // sqrt(N)
 
-#define		P_POS_I   			3.0				        // prior covariance of position
+#define		P_POS_I   			5.0				        // prior covariance of position
 #define		P_ROT_I   			1e-2			        // prior covariance of orientation
 
 #define		Q_POS				    0.2				        // process covariance of position
 #define		Q_ROT				    1e-3			        // process covariance of orientation
 
 #define		R_POS				    1.0				        // measurement covariance of position
-#define		R_ROT				    10.0				      // measurement covariance of orientation
+#define		R_ROT				    1000.0			      // measurement covariance of orientation
 
 #define   PI              3.141             // pi
 
@@ -48,7 +48,7 @@ namespace Nf
     if( m_initialized ){
       // create Sigma points X for the current estimate distribution
       std::vector<Matrix44d> X;
-      sigmas(x_hat, P_hat+Q, X);
+      sigmas(x_hat, P_hat+(Q*(u.z/5.0)), X);
 
       // apply unscented transformation for process model 
       Matrix44d x_;                 // transformed mean
@@ -70,7 +70,8 @@ namespace Nf
       Matrix66d Pxz;
       for( int i = 0; i < Ez.size(); i++ )
         Pxz += ( (Matrix66d::OuterProduct(Ex_[i],Ez[i]) )*( 0.5/N ) );
-      Matrix66d K = Pxz*Pzz.Inverse();
+      Matrix66d PzzI = Pzz.Inverse();
+      Matrix66d K = Pxz*PzzI;      
 
       // update state and covariance
       x_hat = addDifferentialPose( x_, K*differentialPose( z, z_) );
@@ -85,6 +86,7 @@ namespace Nf
       // create Sigma points X for the current estimate distribution
       std::vector<Matrix44d> X;
       sigmas(x_hat, P_hat+(Q*(u.z/5.0)), X); // scale uncertainty by length of insertion
+      //sigmas(x_hat, P_hat+Q, X); // scale uncertainty by length of insertion
 
       // apply unscented transformation for process model 
       std::vector<Vec6d> Ex_;       // transformed error vectors
@@ -177,7 +179,7 @@ namespace Nf
       E_p.push_back(X[i].GetPosition() - mu_p);
     
     // iteratively find average orientation and deviations
-    Matrix33d mu_R = X[0].GetOrientation();
+    Matrix33d mu_R = X[4].GetOrientation();
     Matrix33d mu_R_old = Matrix33d::I();
     
     std::vector<Vec3d> E_R;

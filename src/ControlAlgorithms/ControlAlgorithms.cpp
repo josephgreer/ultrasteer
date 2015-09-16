@@ -71,6 +71,7 @@ namespace Nf {
   void ControlAlgorithms::initializeEstimator()
   {
     m_UKF.initialize(m_robot->getInsMM()+NEEDLE_DEAD_LENGTH, m_robot->getRollAngle());
+    m_x = m_UKF.getCurrentEstimate();
   }
 
   // toggle the joint-space control state
@@ -129,7 +130,7 @@ namespace Nf {
   void ControlAlgorithms::ManualNeedleTipSelection(Vec2d p_im)
   {
     Vec3d p = ImagePtToRobotPt(p_im);
-    Matrix33d R = Matrix33d::I();
+    Matrix33d R = m_x.GetOrientation();
     Matrix44d m_z = Matrix44d::FromOrientationAndTranslation(R,p);
     Vec3d u;
     GetIncrementalInputVector(u);
@@ -195,7 +196,6 @@ namespace Nf {
       if( CheckCompletion() ){  // if we've reached the target
         m_robot->SetInsertionVelocity(0.0);
         m_robot->SetRotationVelocity(0.0);
-        m_inTaskSpaceControl = false;
       }
 
       if( insertionSinceLastManualScan() >= MAX_OPEN_LOOP_INSERTION ){ // if we need a new scan
@@ -319,7 +319,7 @@ namespace Nf {
                                            Matrix44d &z,
                                            Vec3d &Sxyz,
                                            Vec3d &t_img, Vec3d &t,
-                                           double &mmToNextScan)
+                                           double &mmToNextScan, bool &targetDepthReached)
   {
     // target  
     t_img = RobotPtToImagePt(m_t);
@@ -338,6 +338,7 @@ namespace Nf {
     pz_img = RobotPtToImagePt(pz_world);
     py_img = RobotPtToImagePt(py_world);
     mmToNextScan = max(MAX_OPEN_LOOP_INSERTION-insertionSinceLastManualScan(),0.0);
+    targetDepthReached = CheckCompletion();
   }
 
   void ControlAlgorithms::getVisualizerValues(Vec3d &t, Matrix44d &x, Matrix44d &z, Matrix44d &Tref2robot,

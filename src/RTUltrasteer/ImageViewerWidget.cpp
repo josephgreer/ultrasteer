@@ -492,8 +492,9 @@ namespace Nf
     Vec3d t_img, t;
     Vec3d Sxyz;
     double mmToNextScan;
+    bool insertionDepthReached;
     m_control->getOverlayValues(x, p_img, pz_img, py_img,
-      z, Sxyz, t_img, t, mmToNextScan);
+      z, Sxyz, t_img, t, mmToNextScan, insertionDepthReached);
 
     // update target
     if( !t.isZero() ){
@@ -525,6 +526,12 @@ namespace Nf
       SetInstructionText(str);
       f32 danger = 1.0 - mmToNextScan/MAX_OPEN_LOOP_INSERTION;
       m_instructionTextActor->GetTextProperty()->SetColor( 1.0,1.0-danger,1.0-danger );
+
+      if( insertionDepthReached ){
+        int n = sprintf(str, "Target depth reached.");
+        SetInstructionText(str);
+      }
+
     }
   }
 
