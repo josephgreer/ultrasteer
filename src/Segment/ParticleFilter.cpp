@@ -25,7 +25,7 @@ namespace Nf
     
     particleMuPos = zeros<vec>(3);
     dd.clear(); dd << 1 << 1 << 1 << endr;
-    particleSigmaPos = (mat33)diagmat(dd/3.0);
+    particleSigmaPos = (mat33)diagmat(dd/10.0);
 
     particleMuOr = zeros<vec>(3);
     dd.clear(); dd << PI << PI << PI << endr;
