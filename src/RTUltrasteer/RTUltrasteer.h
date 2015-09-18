@@ -666,6 +666,7 @@ namespace Nf
     BoolParameter *param;
     QTreeWidgetItem *root;
     Resizable *resize;
+    ParameterCollection *collection;
   };
 }
 
@@ -699,6 +700,10 @@ public:
 
     void onSetDocksVisible();
     CLASS_CALLBACK(onSetDocksVisible, RTUltrasteer);
+
+    public slots:
+      void onSaveParameters();
+      void onLoadParameters();
 
 
 private:
@@ -756,6 +761,10 @@ private:
     void Resize();
 
     void CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollection &collection, const std::vector < QVTKWidget * > & repainters);
+
+    void SaveSettings(Nf::ParameterCollection *collection, FILE *f, const char *nameAppend);
+    void LoadSettings(Nf::ParameterCollection *collection, FILE *f);
+    void SetValue(Nf::ParameterCollection *collection, std::string line);
 
     //Holds all potential main dock windows
     std::map < std::string, Nf::DockWidgetInfo > m_roots;

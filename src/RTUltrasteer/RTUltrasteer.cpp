@@ -1,6 +1,8 @@
 #include "RTUltrasteer.h"
 #include "FileWidget.h"
 #include <QComboBox>
+#include <stdio.h>
+#include <stdlib.h>
 
 namespace Nf
 {
@@ -114,42 +116,52 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   m_roots[std::string("USDock")].param = m_usDockVisible.get();
   m_roots[std::string("USDock")].root = usVis;
   m_roots[std::string("USDock")].resize = (Resizable *)m_usVis;
+  m_roots[std::string("USDock")].collection = (ParameterCollection *)m_usVis;
   m_roots[std::string("RPFileDock")].dock = m_rpFileDock;
   m_roots[std::string("RPFileDock")].param = m_rpFileWidgetVisible.get();
   m_roots[std::string("RPFileDock")].root = rpF;
   m_roots[std::string("RPFileDock")].resize = (Resizable *)m_rpFileWidget;
+  m_roots[std::string("RPFileDock")].collection = (ParameterCollection *)m_rpFileWidget;
   m_roots[std::string("RPStreamingDock")].dock = m_rpStreamingDock;
   m_roots[std::string("RPStreamingDock")].param = m_rpStreamingWidgetVisible.get();
   m_roots[std::string("RPStreamingDock")].root = rpS;
   m_roots[std::string("RPStreamingDock")].resize = (Resizable *)m_rpStreamingWidget;
+  m_roots[std::string("RPStreamingDock")].collection = (ParameterCollection *)m_rpStreamingWidget;
   m_roots[std::string("EstimatorFileDock")].dock = m_estimatorFileDock;
   m_roots[std::string("EstimatorFileDock")].param = m_estimatorFileWidgetVisible.get();
   m_roots[std::string("EstimatorFileDock")].root = estF;
   m_roots[std::string("EstimatorFileDock")].resize = (Resizable *)m_estimatorFileWidget;
+  m_roots[std::string("EstimatorFileDock")].collection = (ParameterCollection *)m_estimatorFileWidget;
   m_roots[std::string("EstimatorStreamingDock")].dock = m_estimatorStreamingDock;
   m_roots[std::string("EstimatorStreamingDock")].param = m_estimatorStreamingWidgetVisible.get();
   m_roots[std::string("EstimatorStreamingDock")].root = estS;
   m_roots[std::string("EstimatorStreamingDock")].resize = (Resizable *)m_estimatorStreamingWidget;
+  m_roots[std::string("EstimatorStreamingDock")].collection = (ParameterCollection *)m_estimatorStreamingWidget;
   m_roots[std::string("RobotHWDock")].dock = m_robotHWDock;
   m_roots[std::string("RobotHWDock")].param = m_robotHWWidgetVisible.get();
   m_roots[std::string("RobotHWDock")].root = rpRHW;
   m_roots[std::string("RobotHWDock")].resize = (Resizable *)m_robotHWWidget;
+  m_roots[std::string("RobotHWDock")].collection = (ParameterCollection *)m_robotHWWidget;
   m_roots[std::string("2DTeleoperationFileDock")].dock = m_teleoperation2DFileDock;
   m_roots[std::string("2DTeleoperationFileDock")].param = m_teleoperation2DFileWidgetVisible.get();
   m_roots[std::string("2DTeleoperationFileDock")].root = rpTLFW;
   m_roots[std::string("2DTeleoperationFileDock")].resize = (Resizable *)m_teleoperation2DFileWidget;
+  m_roots[std::string("2DTeleoperationFileDock")].collection = (ParameterCollection *)m_teleoperation2DFileWidget;
   m_roots[std::string("2DTeleoperationStreamingDock")].dock = m_teleoperation2DStreamDock;
   m_roots[std::string("2DTeleoperationStreamingDock")].param = m_teleoperation2DStreamWidgetVisible.get();
   m_roots[std::string("2DTeleoperationStreamingDock")].root = rpTLSW;
   m_roots[std::string("2DTeleoperationStreamingDock")].resize = (Resizable *)m_teleoperation2DStreamWidget;
+  m_roots[std::string("2DTeleoperationStreamingDock")].collection = (ParameterCollection *)m_teleoperation2DStreamWidget;
   m_roots[std::string("EMCalibrationFileDock")].dock = m_EMCalibrationFileDock;
   m_roots[std::string("EMCalibrationFileDock")].param = m_emCalibrationFileWidgetVisible.get();
   m_roots[std::string("EMCalibrationFileDock")].root = rpEMCFW;
   m_roots[std::string("EMCalibrationFileDock")].resize = (Resizable *)m_EMCalibrationFileWidget;
+  m_roots[std::string("EMCalibrationFileDock")].collection = (ParameterCollection *)m_EMCalibrationFileWidget;
   m_roots[std::string("EMCalibrationStreamingDock")].dock = m_EMCalibrationStreamDock;
   m_roots[std::string("EMCalibrationStreamingDock")].param = m_emCalibrationStreamWidgetVisible.get();
   m_roots[std::string("EMCalibrationStreamingDock")].root = rpEMCSW;
   m_roots[std::string("EMCalibrationStreamingDock")].resize = (Resizable *)m_EMCalibrationStreamWidget;
+  m_roots[std::string("EMCalibrationStreamingDock")].collection = (ParameterCollection *)m_EMCalibrationStreamWidget;
 
   QDockWidget *last = NULL;
   for(std::map < std::string, DockWidgetInfo >::iterator i=m_roots.begin(); i!=m_roots.end(); i++) {
@@ -158,6 +170,9 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
       this->tabifyDockWidget(last, i->second.dock);
     last = i->second.dock;
   }
+
+  connect(ui.actionSave_Parameters, SIGNAL(triggered(bool)), SLOT(onSaveParameters()));
+  connect(ui.actionLoad_Parameters, SIGNAL(triggered(bool)), SLOT(onLoadParameters()));
 
   onSetDocksVisible();
   m_control.setRobot(&m_robot);
@@ -538,6 +553,385 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
   }
 }
 
+void RTUltrasteer::onSaveParameters()
+{
+  QString filename = QFileDialog::getSaveFileName(this);
+
+  if(filename.length() == 0)
+    return;
+
+  FILE *f = fopen(filename.toStdString().c_str(), "w");
+
+  //Find the dock currently visible
+  for(std::map<std::string, Nf::DockWidgetInfo >::iterator i=m_roots.begin(); i!=m_roots.end(); i++) {
+    if(i->second.param->GetValue()) {
+      try {
+        SaveSettings(i->second.collection, f, "");
+      } catch(std::runtime_error &e) {
+        QMessageBox box;
+        box.setText(e.what());
+        box.exec();
+      }
+      break;
+    }
+  }
+
+  if(f != NULL)
+    fclose(f);
+}
+
+void RTUltrasteer::onLoadParameters()
+{
+  QString filename = QFileDialog::getOpenFileName(this);
+  if(filename.length() == 0)
+    return;
+
+  FILE *f = fopen(filename.toStdString().c_str(), "r");
+
+  //Find the dock currently visible
+  for(std::map<std::string, Nf::DockWidgetInfo >::iterator i=m_roots.begin(); i!=m_roots.end(); i++) {
+    if(i->second.param->GetValue()) {
+      try {
+        LoadSettings(i->second.collection, f);
+      } catch(std::runtime_error &e) {
+        QMessageBox box;
+        box.setText(e.what());
+        box.exec();
+      }
+      break;
+    }
+  }
+
+  fclose(f);
+}
+
+
+void RTUltrasteer::SaveSettings(Nf::ParameterCollection *collection, FILE *f, const char *nameAppend)
+{
+  if(f == NULL)
+    throw std::runtime_error("Invalid settings file\n");
+  std::string appended;
+  if(strlen(nameAppend) > 0)
+    appended = std::string(nameAppend) + "." + collection->GetName();
+  else
+    appended = collection->GetName();
+
+  nameAppend = appended.c_str();
+
+  std::vector < std::tr1::shared_ptr < Nf::FileParameter > > ofiles = collection->GetOpenFileParameters();
+  for(s32 i=0; i<(s32)ofiles.size(); i++) {
+    fprintf(f, "%s++%s->OpenFile== %s\n", nameAppend, ofiles[i]->GetName(), ofiles[i]->GetValue().c_str());
+  }
+
+  //File Open Parameters
+  std::vector < std::tr1::shared_ptr < Nf::FileParameter > > sfiles = collection->GetSaveFileParameters();
+  for(s32 i=0; i<(s32)sfiles.size(); i++) {
+    fprintf(f, "%s++%s->SaveFile== %s\n", nameAppend, sfiles[i]->GetName(), sfiles[i]->GetValue().c_str());
+  }
+
+  //Bool Parameters
+  std::vector < std::tr1::shared_ptr < Nf::BoolParameter > > bools = collection->GetBoolParameters();
+  for(s32 i=0; i<(s32)bools.size(); i++) {
+    fprintf(f, "%s++%s->Bool== %d\n", nameAppend, bools[i]->GetName(), bools[i]->GetValue());
+  }
+
+  //Int Parameters
+  std::vector < std::tr1::shared_ptr < Nf::IntParameter > > ints = collection->GetIntParameters();
+  for(s32 i=0; i<(s32)ints.size(); i++) {
+    fprintf(f, "%s++%s->Int== %d\n", nameAppend, ints[i]->GetName(), ints[i]->GetValue());
+  }
+
+  //Float Parameters
+  std::vector < std::tr1::shared_ptr < Nf::FloatParameter > > floats = collection->GetFloatParameters();
+  for(s32 i=0; i<(s32)floats.size(); i++) {
+    fprintf(f, "%s++%s->Float== %f\n", nameAppend, floats[i]->GetName(), floats[i]->GetValue());
+  }
+
+  //Vec3d Parameters
+  std::vector < std::tr1::shared_ptr < Nf::Vec3dParameter > > vec3ds = collection->GetVec3dParameters();
+  for(s32 i=0; i<(s32)vec3ds.size(); i++) {
+    fprintf(f, "%s++%s->Vec3d== %f %f %f\n", nameAppend, vec3ds[i]->GetName(), vec3ds[i]->GetValue().x, vec3ds[i]->GetValue().y, vec3ds[i]->GetValue().z);
+  }
+
+  //Vec3f Parameters
+  std::vector < std::tr1::shared_ptr < Nf::Vec3fParameter > > vec3fs = collection->GetVec3fParameters();
+  for(s32 i=0; i<(s32)vec3fs.size(); i++) {
+    fprintf(f, "%s++%s->Vec3f== %f %f %f\n", nameAppend, vec3fs[i]->GetName(), vec3fs[i]->GetValue().x, vec3fs[i]->GetValue().y, vec3fs[i]->GetValue().z);
+  }
+
+  //Vec3i Parameters
+  std::vector < std::tr1::shared_ptr < Nf::Vec3iParameter > > vec3is = collection->GetVec3iParameters();
+  for(s32 i=0; i<(s32)vec3is.size(); i++) {
+    fprintf(f, "%s++%s->Vec3i== %d %d %d\n", nameAppend, vec3is[i]->GetName(), vec3is[i]->GetValue().x, vec3is[i]->GetValue().y, vec3is[i]->GetValue().z);
+  }
+
+  //Vec2d Parameters
+  std::vector < std::tr1::shared_ptr < Nf::Vec2dParameter > > vec2ds = collection->GetVec2dParameters();
+  for(s32 i=0; i<(s32)vec2ds.size(); i++) {
+    fprintf(f, "%s++%s->Vec2d== %f %f\n", nameAppend, vec2ds[i]->GetName(), vec2ds[i]->GetValue().x, vec2ds[i]->GetValue().y);
+  }
+
+  //Vec2f Parameters
+  std::vector < std::tr1::shared_ptr < Nf::Vec2fParameter > > vec2fs = collection->GetVec2fParameters();
+  for(s32 i=0; i<(s32)vec2fs.size(); i++) {
+    fprintf(f, "%s++%s->Vec2f== %f %f\n", nameAppend, vec2fs[i]->GetName(), vec2fs[i]->GetValue().x, vec2fs[i]->GetValue().y);
+  }
+
+  //Vec2i Parameters
+  std::vector < std::tr1::shared_ptr < Nf::Vec2iParameter > > vec2is = collection->GetVec2iParameters();
+  for(s32 i=0; i<(s32)vec2is.size(); i++) {
+    fprintf(f, "%s++%s->Vec2i== %d %d\n", nameAppend, vec2is[i]->GetName(), vec2is[i]->GetValue().x, vec2is[i]->GetValue().y);
+  }
+
+  //Enum Parameters
+  std::vector < std::tr1::shared_ptr < Nf::EnumParameter > > enums = collection->GetEnumParameters();
+  for(s32 i=0; i<(s32)enums.size(); i++) {
+    fprintf(f, "%s++%s->Enum== %d\n", nameAppend, enums[i]->GetName(), enums[i]->GetValue());
+  }
+
+  //Child parameters
+  std::vector < Nf::ParameterCollection * > colls = collection->GetChildCollections();
+  for(s32 i=0; i<(s32)colls.size(); i++) {
+    SaveSettings(colls[i], f, nameAppend);
+  }
+}
+
+void RTUltrasteer::SetValue(Nf::ParameterCollection *collection, std::string line)
+{
+  std::string collName = line.substr(0, line.find_first_of("++"));
+  std::string paramName = line.substr(line.find_first_of("++")+2, line.npos);
+
+  if(paramName.find_first_of("++") == paramName.npos) {
+    //We're done descending into child nodes 
+    char inputStrings[3][200] = {0};
+
+    strcpy(inputStrings[0], paramName.substr(0, paramName.find_first_of("->")).c_str());
+    strcpy(inputStrings[1], paramName.substr(paramName.find_first_of("->")+2, paramName.find_first_of("==")-paramName.find_first_of("->")-2).c_str());
+    strcpy(inputStrings[2], paramName.substr(paramName.find_first_of("==")+3, paramName.npos).c_str());
+
+    if(strcmpi("OpenFile", inputStrings[1]) == 0) {
+      std::vector < std::tr1::shared_ptr < Nf::FileParameter > > ofiles = collection->GetOpenFileParameters();
+      s32 idx = -1;
+      for(s32 i=0; i<(s32)ofiles.size(); i++) {
+        if(strcmpi(ofiles[i]->GetName(), inputStrings[0]) == 0) {
+          idx = i;
+          break;
+        }
+      }
+
+      if(idx < 0)
+        throw std::runtime_error("Cannot parses string\n");
+
+      ofiles[idx]->SetValue(std::string(inputStrings[2]));
+      ofiles[idx]->GetCallback()(ofiles[idx]->GetContext());
+    } else if(strcmpi("SaveFile", inputStrings[1]) == 0) {
+      std::vector < std::tr1::shared_ptr < Nf::FileParameter > > sfiles = collection->GetSaveFileParameters();
+      s32 idx = -1;
+      for(s32 i=0; i<(s32)sfiles.size(); i++) {
+        if(strcmpi(sfiles[i]->GetName(), inputStrings[0]) == 0) {
+          idx = i;
+          break;
+        }
+      }
+
+      if(idx < 0)
+        throw std::runtime_error("Cannot parses string\n");
+
+      sfiles[idx]->SetValue(std::string(inputStrings[2]));
+      sfiles[idx]->GetCallback()(sfiles[idx]->GetContext());
+    } else if(strcmpi("Bool", inputStrings[1]) == 0) {
+      std::vector < std::tr1::shared_ptr < Nf::BoolParameter > > bparams = collection->GetBoolParameters();
+      s32 idx = -1;
+      for(s32 i=0; i<(s32)bparams.size(); i++) {
+        if(strcmpi(bparams[i]->GetName(), inputStrings[0]) == 0) {
+          idx = i;
+          break;
+        }
+      }
+
+      s32 val = 0;
+      if(idx < 0 || sscanf(inputStrings[2], "%d", &val) != 1)
+        throw std::runtime_error("Cannot parses string\n");
+
+      bparams[idx]->SetValue((bool)val);
+      bparams[idx]->GetCallback()(bparams[idx]->GetContext());
+    } else if(strcmpi("Int", inputStrings[1]) == 0) {
+      std::vector < std::tr1::shared_ptr < Nf::IntParameter > > iparams = collection->GetIntParameters();
+      s32 idx = -1;
+      for(s32 i=0; i<(s32)iparams.size(); i++) {
+        if(strcmpi(iparams[i]->GetName(), inputStrings[0]) == 0) {
+          idx = i;
+          break;
+        }
+      }
+
+      s32 val = 0;
+      if(idx < 0 || sscanf(inputStrings[2], "%d", &val) != 1)
+        throw std::runtime_error("Cannot parses string\n");
+
+      iparams[idx]->SetValue(val);
+      iparams[idx]->GetCallback()(iparams[idx]->GetContext());
+    } else if(strcmpi("Float", inputStrings[1]) == 0) {
+      std::vector < std::tr1::shared_ptr < Nf::FloatParameter > > fparams = collection->GetFloatParameters();
+      s32 idx = -1;
+      for(s32 i=0; i<(s32)fparams.size(); i++) {
+        if(strcmpi(fparams[i]->GetName(), inputStrings[0]) == 0) {
+          idx = i;
+          break;
+        }
+      }
+
+      f32 val = 0;
+      if(idx < 0 || sscanf(inputStrings[2], "%d", &val) != 1)
+        throw std::runtime_error("Cannot parses string\n");
+
+      fparams[idx]->SetValue(val);
+      fparams[idx]->GetCallback()(fparams[idx]->GetContext());
+    } else if(strcmpi("Vec3d", inputStrings[1]) == 0) {
+      std::vector < std::tr1::shared_ptr < Nf::Vec3dParameter > > vparams = collection->GetVec3dParameters();
+      s32 idx = -1;
+      for(s32 i=0; i<(s32)vparams.size(); i++) {
+        if(strcmpi(vparams[i]->GetName(), inputStrings[0]) == 0) {
+          idx = i;
+          break;
+        }
+      }
+
+      Vec3d val(0,0,0);
+      if(idx < 0 || sscanf(inputStrings[2], "%f %f %f", &val.x, &val.y, &val.z) != 3)
+        throw std::runtime_error("Cannot parses string\n");
+
+      vparams[idx]->SetValue(val);
+      vparams[idx]->GetCallback()(vparams[idx]->GetContext());
+    } else if(strcmpi("Vec3f", inputStrings[1]) == 0) {
+      std::vector < std::tr1::shared_ptr < Nf::Vec3fParameter > > vparams = collection->GetVec3fParameters();
+      s32 idx = -1;
+      for(s32 i=0; i<(s32)vparams.size(); i++) {
+        if(strcmpi(vparams[i]->GetName(), inputStrings[0]) == 0) {
+          idx = i;
+          break;
+        }
+      }
+
+      Vec3f val(0,0,0);
+      if(idx < 0 || sscanf(inputStrings[2], "%f %f %f", &val.x, &val.y, &val.z) != 3)
+        throw std::runtime_error("Cannot parses string\n");
+
+      vparams[idx]->SetValue(val);
+      vparams[idx]->GetCallback()(vparams[idx]->GetContext());
+    } else if(strcmpi("Vec3i", inputStrings[1]) == 0) {
+      std::vector < std::tr1::shared_ptr < Nf::Vec3iParameter > > vparams = collection->GetVec3iParameters();
+      s32 idx = -1;
+      for(s32 i=0; i<(s32)vparams.size(); i++) {
+        if(strcmpi(vparams[i]->GetName(), inputStrings[0]) == 0) {
+          idx = i;
+          break;
+        }
+      }
+
+      Vec3i val(0,0,0);
+      if(idx < 0 || sscanf(inputStrings[2], "%d %d %d", &val.x, &val.y, &val.z) != 3)
+        throw std::runtime_error("Cannot parses string\n");
+
+      vparams[idx]->SetValue(val);
+      vparams[idx]->GetCallback()(vparams[idx]->GetContext());
+    } else if(strcmpi("Vec2d", inputStrings[1]) == 0) {
+      std::vector < std::tr1::shared_ptr < Nf::Vec2dParameter > > vparams = collection->GetVec2dParameters();
+      s32 idx = -1;
+      for(s32 i=0; i<(s32)vparams.size(); i++) {
+        if(strcmpi(vparams[i]->GetName(), inputStrings[0]) == 0) {
+          idx = i;
+          break;
+        }
+      }
+
+      Vec2d val(0,0);
+      if(idx < 0 || sscanf(inputStrings[2], "%f %f", &val.x, &val.y) != 2)
+        throw std::runtime_error("Cannot parses string\n");
+
+      vparams[idx]->SetValue(val);
+      vparams[idx]->GetCallback()(vparams[idx]->GetContext());
+    } else if(strcmpi("Vec2f", inputStrings[1]) == 0) {
+      std::vector < std::tr1::shared_ptr < Nf::Vec2fParameter > > vparams = collection->GetVec2fParameters();
+      s32 idx = -1;
+      for(s32 i=0; i<(s32)vparams.size(); i++) {
+        if(strcmpi(vparams[i]->GetName(), inputStrings[0]) == 0) {
+          idx = i;
+          break;
+        }
+      }
+
+      Vec2f val(0,0);
+      if(idx < 0 || sscanf(inputStrings[2], "%f %f", &val.x, &val.y) != 2)
+        throw std::runtime_error("Cannot parses string\n");
+
+      vparams[idx]->SetValue(val);
+      vparams[idx]->GetCallback()(vparams[idx]->GetContext());
+    } else if(strcmpi("Vec2i", inputStrings[1]) == 0) {
+      std::vector < std::tr1::shared_ptr < Nf::Vec2iParameter > > vparams = collection->GetVec2iParameters();
+      s32 idx = -1;
+      for(s32 i=0; i<(s32)vparams.size(); i++) {
+        if(strcmpi(vparams[i]->GetName(), inputStrings[0]) == 0) {
+          idx = i;
+          break;
+        }
+      }
+
+      Vec2i val(0,0);
+      if(idx < 0 || sscanf(inputStrings[2], "%d %d", &val.x, &val.y) != 2)
+        throw std::runtime_error("Cannot parses string\n");
+
+      vparams[idx]->SetValue(val);
+      vparams[idx]->GetCallback()(vparams[idx]->GetContext());
+    } else if(strcmpi("Enum", inputStrings[1]) == 0) {
+      std::vector < std::tr1::shared_ptr < Nf::EnumParameter > > eparams = collection->GetEnumParameters();
+      s32 idx = -1;
+      for(s32 i=0; i<(s32)eparams.size(); i++) {
+        if(strcmpi(eparams[i]->GetName(), inputStrings[0]) == 0) {
+          idx = i;
+          break;
+        }
+      }
+
+      s32 val = 0;
+      if(idx < 0 || sscanf(inputStrings[2], "%d", &val) != 1)
+        throw std::runtime_error("Cannot parses string\n");
+
+      eparams[idx]->SetValue(val);
+      eparams[idx]->GetCallback()(eparams[idx]->GetContext());
+    }
+  } else {
+    collName = paramName.substr(0, paramName.find_first_of("++"));
+
+    std::vector < Nf::ParameterCollection * > colls = collection->GetChildCollections();
+    s32 idx = -1;
+    for(s32 i=0; i<colls.size(); i++) {
+      if(strcmpi(colls[i]->GetName(), collName.c_str()) == 0) {
+        idx = i;
+        break;
+      }
+    }
+    if(idx == -1)
+      throw std::runtime_error("Unable to find child collection\n");
+
+    SetValue(colls[idx], paramName);
+  }
+}
+
+void RTUltrasteer::LoadSettings(Nf::ParameterCollection *collection, FILE *f)
+{
+  s32 maxCount = 1000;
+  char *line = new char[maxCount];
+
+  //Read line by line
+  while(fgets(line, maxCount, f) != NULL) {
+    std::string ln = line;
+    SetValue(collection, ln);
+  }
+
+  delete line;
+
+}
 
 void RTUltrasteer::CreateUSVisualizer()
 {

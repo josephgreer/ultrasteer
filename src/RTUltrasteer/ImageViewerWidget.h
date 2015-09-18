@@ -48,7 +48,7 @@ namespace Nf
     Matrix44d m_cal;        //Calibration Matrix for transducer (maps image coords to world coords)
 
   public:
-    ImageViewerWidget(QWidget *parent);
+    ImageViewerWidget(QWidget *parent, const char *name = "Image Viewer Widget");
     virtual ~ImageViewerWidget();
     virtual void SetImage(const RPData *rp, RP_TYPE type);
     virtual void SetDataSpacing(const RPData *rp);

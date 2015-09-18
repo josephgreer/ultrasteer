@@ -24,9 +24,9 @@ namespace Nf
   ////////////////////////////////////////////////////////
   // Begin ImageViwerWidget
   ////////////////////////////////////////////////////////
-  ImageViewerWidget::ImageViewerWidget(QWidget *parent)
+  ImageViewerWidget::ImageViewerWidget(QWidget *parent, const char *name)
     : ResizableQVTKWidget(parent, QSize(VIS_WIDTH, VIS_HEIGHT))
-    , Nf::ParameterCollection("Image Viewer Widget")
+    , Nf::ParameterCollection(name)
     , m_rp()
     , m_init(false)
     , m_useTrackball(false)
@@ -173,7 +173,7 @@ namespace Nf
   // Begin Image3DImagePlaneWidget
   ////////////////////////////////////////////////////////
   Image3DImagePlaneWidget::Image3DImagePlaneWidget(QWidget *parent)
-    : ImageViewerWidget(parent)
+    : ImageViewerWidget(parent, "Image Plane Viewer")
     , SphereContainer()
     , m_frameBoundaries((CubeVisualizer *)NULL)
   {
