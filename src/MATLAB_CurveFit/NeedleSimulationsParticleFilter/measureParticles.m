@@ -287,7 +287,7 @@ xcurr.pos = xp{1}.pos;
 xcurr.rho = xp{1}.rho;
 xcurr.w = 1;
 
-xsc = propagateNeedleBackWithDts(xp{1}, u, dts, params);
+xsc = propagateNeedleBackWithDts(xcurr, u, dts, params);
 xsc = cell2mat(xsc);
 xsc = [xsc.pos];
 

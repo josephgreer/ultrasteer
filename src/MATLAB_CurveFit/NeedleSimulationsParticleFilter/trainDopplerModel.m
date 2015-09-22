@@ -7,7 +7,7 @@ end
 
 addpath('../LabelData/');
 
-basePath = 'C:\Joey\Data\8_24_15\Trial3\Insertion\';
+basePath = 'C:\Joey\Data\8_24_15\Trial2\Insertion\';
 dop = fopen(strcat(basePath,'scan.b32'));
 dopHeader = ReadHeader(dop);
 
@@ -68,21 +68,23 @@ plot([-10:.1:100],vals);%/sum(vals(:,1)));
 %data(offNeedles,1) = 1;
 
 figure;
-[Fpos Xipos] = ksdensity(data(onNeedles,1),'bandwidth',70);
+[Fpos Xipos] = ksdensity(data(onNeedles,1),'bandwidth',30);
 plot(Xipos, Fpos)
 title('p(d | on needle)');
+res = [Xipos; Fpos];
+save(strcat(basePath, 'pdopoverneedle.dat'), 'res', '-ascii');
 hold on;
-[Fneg Xineg] = ksdensity(data(offNeedles,1), 'bandwidth',10);
+[Fneg Xineg] = ksdensity(data(offNeedles,1), 'bandwidth',5);
 plot(Xineg, Fneg, 'r');
 title('p(d | off needle)');
-
-load('C:/Joey/Data/probDist/testXs.mat', '-ascii');
-load('C:/Joey/Data/probDist/testPOverNeedle.mat', '-ascii');
-load('C:/Joey/Data/probDist/testPNotOverNeedle.mat', '-ascii');
-figure;
-plot(testXs, testPOverNeedle);
-hold on;
-plot(testXs, testPNotOverNeedle,'r');
+save(strcat(basePath, 'pdopnotoverneedle.dat'), 'res', '-ascii');
+% load('C:/Joey/Data/probDist/testXs.mat', '-ascii');
+% load('C:/Joey/Data/probDist/testPOverNeedle.mat', '-ascii');
+% load('C:/Joey/Data/probDist/testPNotOverNeedle.mat', '-ascii');
+% figure;
+% plot(testXs, testPOverNeedle);
+% hold on;
+% plot(testXs, testPNotOverNeedle,'r');
 
 % 
 % bernoulliParam = 0.5;

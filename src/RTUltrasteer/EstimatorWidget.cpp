@@ -5,7 +5,7 @@
 
 namespace Nf
 {
-#define INSERT_VEL 1 //mm/s
+#define INSERT_VEL 0.5 //mm/s
 
   static void SpoofRPDataWithNeedleTipCalibration(RPData &rp, const EMNeedleTipCalibrator *em)
   {
@@ -99,6 +99,8 @@ namespace Nf
     , m_lastFrame(0)
     , m_pf(NULL)
   {
+    m_pfParams = std::tr1::shared_ptr < PFParams > ((PFParams *)new PFFullStateParams());
+
     ADD_FLOAT_PARAMETER(m_roc, "Expected ROC (mm)", NULL, this, 76.8, 20, 1000, 0.1);
     ADD_ACTION_PARAMETER(m_clearEstimatorData, "Clear Estimator Data", CALLBACK_POINTER(onClearEstimatorData, ParticleFilterVisualizer), this, false);
     ADD_BOOL_PARAMETER(m_collectMeasurements, "Collect US Measurements", NULL, this, false);
@@ -108,9 +110,9 @@ namespace Nf
     ADD_BOOL_PARAMETER(m_showMeasurements, "Show Measurement Positions", CALLBACK_POINTER(onVisibilityChanged, ParticleFilterVisualizer), this, true);
     ADD_INT_PARAMETER(m_nParticles, "Number of Particles", CALLBACK_POINTER(onNumParticlesChanged, ParticleFilterVisualizer), this, 500, 25, 5000, 10);
     ADD_INT_PARAMETER(m_nVisSkip, "NVis Skip", CALLBACK_POINTER(onNVisSkipChanged, ParticleFilterVisualizer), this, 5, 1, 100, 1);
-    ADD_FLOAT_PARAMETER(m_measurementNoise, "Measurement Noise (Pixels)", NULL, this, 5, 1, 1000, 1);
     ADD_ENUM_PARAMETER(m_pfMethod, "Particle Filter Method", CALLBACK_POINTER(onPFMethodChanged, ParticleFilterVisualizer), this, QtEnums::ParticleFilterMethod::PFM_FULL_STATE, "ParticleFilterMethod");
     ADD_CHILD_COLLECTION(m_segmenter.get());
+    ADD_CHILD_COLLECTION(m_pfParams.get());
 
     m_pfExpectedOrientation = vtkSmartPointer <vtkAxesActor>::New();
     m_pfExpectedOrientation->SetTotalLength(5,5,5);
@@ -212,29 +214,23 @@ namespace Nf
 
   std::tr1::shared_ptr < PFParams > ParticleFilterVisualizer::GetParams(s32 frame)
   {
-    std::tr1::shared_ptr < PFParams > res;
-    if(frame < 0) {
-      if(m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
-        res = std::tr1::shared_ptr < PFParams > (new PFFullStateParams());
-      } else {
-        res = std::tr1::shared_ptr < PFParams > (new PFMarginalizedParams());
-      }
-    } else {
-      PFData pd = m_pfFramesProcessed[frame];
-      if(m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
-        res = std::tr1::shared_ptr < PFParams > (new PFFullStateParams(pd.mpp));
-      } else {
-        res = std::tr1::shared_ptr < PFParams > (new PFMarginalizedParams(pd.mpp));
-      }
-      res->usw = norm(pd.m.fur-pd.m.ful);
-      res->ush = norm(pd.m.ful-pd.m.fbl);
-      res->measurementOffsetSigma = (Vec2d(pd.mpp.x/1000.0, pd.mpp.y/1000.0)*m_measurementNoise->GetValue()).ToArmaVec();
-    }
-    res->minimumMeasurements = 20;
-    res->n = 500;
+    PFData pd = m_pfFramesProcessed[frame];
+
+    m_pfParams->usw = norm(pd.m.fur-pd.m.ful);
+    m_pfParams->ush = norm(pd.m.ful-pd.m.fbl);
+    m_pfParams->mpp = pd.mpp;
+    m_pfParams->measurementOffsetSigma = Vec2d(pd.mpp.x/1000.0*m_pfParams->measurementOffsetSigmaPx->GetValue().x, pd.mpp.y/1000.0*m_pfParams->measurementOffsetSigmaPx->GetValue().y);
+
+    //res->sigB0 =    -1.0515;
+    //res->sigB1 =    0.0905;
+    //res->onNeedleDopplerLUTPath = PATH_CAT("Trial2/Insertion/pdopoverneedle.dat");
+    //res->offNeedleDopplerLUTPath = PATH_CAT("Trial2/Insertion/pdopnotoverneedle.dat");
+    //res->offFrameB0 = -5;
+    //res->offFrameB1 = 5;
+
     //res->particleSigmaPos =
 
-    return res;
+    return m_pfParams;
   }
 
   void ParticleFilterVisualizer::Initialize()
@@ -242,12 +238,12 @@ namespace Nf
     std::tr1::shared_ptr < PFParams > params = GetParams(-1);
     if(m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
       m_pf = std::tr1::shared_ptr < ParticleFilter > (new ParticleFilterFullState(m_nParticles->GetValue(), 
-        std::tr1::shared_ptr < Distribution > (new LUTDist(params->onNeedleDopplerLUTPath.c_str())), 
-        std::tr1::shared_ptr < Distribution > (new LUTDist(params->offNeedleDopplerLUTPath.c_str())), params.get()));
+        std::tr1::shared_ptr < Distribution > (new LUTDist(params->onNeedleDopplerLUTPath->GetValue().c_str())), 
+        std::tr1::shared_ptr < Distribution > (new LUTDist(params->offNeedleDopplerLUTPath->GetValue().c_str())), params.get()));
     } else {
       m_pf = std::tr1::shared_ptr < ParticleFilter > (new ParticleFilterMarginalized(m_nParticles->GetValue(), 
-        std::tr1::shared_ptr < Distribution > (new LUTDist(params->onNeedleDopplerLUTPath.c_str())), 
-        std::tr1::shared_ptr < Distribution > (new LUTDist(params->offNeedleDopplerLUTPath.c_str())), params.get()));
+        std::tr1::shared_ptr < Distribution > (new LUTDist(params->onNeedleDopplerLUTPath->GetValue().c_str())), 
+        std::tr1::shared_ptr < Distribution > (new LUTDist(params->offNeedleDopplerLUTPath->GetValue().c_str())), params.get()));
     }
     m_init = false;
   }
@@ -276,7 +272,8 @@ namespace Nf
   {
     std::vector < Measurement > res;
     std::tr1::shared_ptr < PFParams > p = GetParams(frame);
-    while(m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end() && res.size() < (s32)(p->n*1.5+0.5)) {
+    s32 n = p->n->GetValue();
+    while(m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end() && res.size() < (s32)(n*1.5+0.5)) {
       res.push_back(m_pfFramesProcessed[frame].m);
       frame--;
     }
@@ -288,7 +285,8 @@ namespace Nf
   {
     std::vector < NSCommand > res;
     std::tr1::shared_ptr < PFParams > p = GetParams(frame);
-    while(m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end() && res.size() < p->n) {
+    s32 n = p->n->GetValue();
+    while(m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end() && res.size() < n) {
       res.push_back(m_pfFramesProcessed[frame].u);
       frame--;
     }
@@ -358,7 +356,7 @@ namespace Nf
   static void SaveParticleFilterState(const std::vector <NSCommand> &us, const arma::vec &dts, 
     const std::vector < Measurement > &meas, const PartMethod1 &parts)
   {
-    const char *basePath = "C:/Users/Joey/Documents/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testCMeasure";
+    const char *basePath = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testCMeasure";
 
     saveCommands(basePath, us);
     saveTimes(basePath, dts);
@@ -413,7 +411,7 @@ namespace Nf
     m_pfFramesProcessed[frame] = AssemblePFData(np, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), *rp, m_roc->GetValue());
 
     std::tr1::shared_ptr < PFParams > params = GetParams(frame);
-    if(!m_init && NumberOfMeasurementsUpToAndIncludingFrame(frame) >= params->minimumMeasurements) {
+    if(!m_init && NumberOfMeasurementsUpToAndIncludingFrame(frame) >= params->minimumMeasurements->GetValue()) {
       //We are not initialized, but we can initialize now
       m_pf->InitializeParticleFilter(AssembleTipHistory(frame), params.get());
       m_init = true;
@@ -444,7 +442,7 @@ namespace Nf
 
       // Resample if effective number of particles drops below threshold
       f64 nParts = m_pf->EffectiveSampleSize();
-      if(nParts < params->neff*m_pf->GetNumberOfParticles())
+      if(nParts < params->neff->GetValue()*m_pf->GetNumberOfParticles())
         m_pf->Resample(m_pf->GetNumberOfParticles(), params.get());
 
       //NTrace("Frame %d, dt %f, u.v %f\n", frame, (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0, m_pfFramesProcessed[frame].u.v);
@@ -466,8 +464,8 @@ namespace Nf
   //END PFVisualizer
   /////////////////////////////////////////////////////////////////////////////////
 
-  EstimatorFileWidget::EstimatorFileWidget(QWidget *parent)
-    : RPFileWidget(parent, (USVisualizer *)new PFVisualizer(parent))
+  EstimatorFileWidget::EstimatorFileWidget(QWidget *parent, const char *name)
+    : RPFileWidget(parent, (USVisualizer *)new PFVisualizer(parent), name)
     , m_state(EFS_READY)
     , m_resultsAvailable(ERA_NONE)
     , m_pfVisualizer(new ParticleFilterVisualizer(this))
@@ -877,8 +875,8 @@ namespace Nf
   //////////////////////////////////////////////////////////////////
   // BEGIN ESTIMATORSTREAMINGWIDGET BASE
   //////////////////////////////////////////////////////////////////
-  EstimatorStreamingWidget::EstimatorStreamingWidget(QWidget *parent)
-    : RPStreamingWidget(parent, (USVisualizer *)new PFVisualizer(parent))
+  EstimatorStreamingWidget::EstimatorStreamingWidget(QWidget *parent, const char *name)
+    : RPStreamingWidget(parent, (USVisualizer *)new PFVisualizer(parent), name)
     , m_state(ES_READY)
     , m_hwWidget(new RobotHardwareWidget(parent))
     , m_saveDataWidget(new SaveDataWidget(parent))

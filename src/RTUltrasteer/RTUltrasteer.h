@@ -354,9 +354,10 @@ namespace Nf
     {
       SBContainer *item = (SBContainer *)m_element;
       assert(item->nsbs == 3);
-      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
-      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
-      QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
+      QSpinBox *x = (QSpinBox *)item->obj[0];
+      QSpinBox *y = (QSpinBox *)item->obj[1];
+      QSpinBox *z = (QSpinBox *)item->obj[2];
+
       x->setValue(val.x);
       y->setValue(val.y);
       z->setValue(val.z);
@@ -554,9 +555,11 @@ namespace Nf
     {
       SBContainer *item = (SBContainer *)m_element;
       assert(item->nsbs == 2);
-      QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
-      QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      QSpinBox *x = (QSpinBox *)item->obj[0];
+      QSpinBox *y = (QSpinBox *)item->obj[1];
+
       x->setValue(val.x);
+
       y->setValue(val.y);
     }
 
@@ -614,6 +617,7 @@ namespace Nf
     void SetValue(const s32 &val)
     {
       QComboBox *combo = (QComboBox *)m_element;
+      bool old = combo->blockSignals(true);
       const QMetaObject &mo = QtEnums::staticMetaObject;
       QMetaEnum meta = mo.enumerator(mo.indexOfEnumerator(m_enumName.c_str()));
       for(s32 ky=0; ky<meta.keyCount(); ky++) {
@@ -622,6 +626,7 @@ namespace Nf
           break;
         }
       }
+      combo->blockSignals(old);
     }
 
     s32 GetValue()

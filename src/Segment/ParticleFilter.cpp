@@ -8,76 +8,76 @@ namespace Nf
   using ::s32;
   using ::u8;
 
-  PFParams::PFParams(Vec2d mpp)
+  PFParams::PFParams(Vec2d mpp, const char *name)
+    : ParameterCollection(name)
   {
-    vec dd;
 
-    dd << PI << PI << PI << endr;
-    initOrientationSigma = (mat33)diagmat(1e-4*dd);
-    initOrientationMu = zeros<vec>(3);
-
-    dd.clear(); dd << 5 << 5 << 5 << endr;
-    initPosSigma = (mat33)diagmat(dd);
-    initPosMu = zeros<vec>(3);
-
-    initRhoSigma = 0;
-    initRhoMu = 0;
+    ADD_VEC3D_PARAMETER(initPosMu, "Init Pos Mu", NULL, NULL, Vec3d(0,0,0), Vec3d(0,0,0), Vec3d(1e4, 1e4, 1e4), Vec3d(1,1,1));
+    ADD_VEC3D_PARAMETER(initPosSigma, "Init Pos Sigma", NULL, NULL, Vec3d(1,1,1), Vec3d(0,0,0), Vec3d(1e4, 1e4, 1e4), Vec3d(1,1,1));
     
-    particleMuPos = zeros<vec>(3);
-    dd.clear(); dd << 1 << 1 << 1 << endr;
-    particleSigmaPos = (mat33)diagmat(dd/10.0);
+    ADD_VEC3D_PARAMETER(initOrientationMu, "Init Orientation Mu", NULL, NULL, Vec3d(0,0,0), Vec3d(0,0,0), Vec3d(1e4, 1e4, 1e4), Vec3d(1,1,1));
+    ADD_VEC3D_PARAMETER(initOrientationSigma, "Init Orientation Sigma", NULL, NULL, Vec3d(1e-4,1e-4,1e-4), Vec3d(0,0,0), Vec3d(1e4, 1e4, 1e4), Vec3d(1e-4,1e-4,1e-4));
+    
+    ADD_FLOAT_PARAMETER(initRhoMu, "Init Rho Mu", NULL, NULL, 0, 0, 1e4, 1e-2);
+    ADD_FLOAT_PARAMETER(initRhoSigma, "Init Rho Sigma", NULL, NULL, 0, 0, 1e4, 1e-2);
+    
+    ADD_VEC3D_PARAMETER(particleMuPos, "Particle Mu Pos", NULL, NULL, Vec3d(0,0,0), Vec3d(0,0,0), Vec3d(1e4, 1e4, 1e4), Vec3d(1,1,1));
+    ADD_VEC3D_PARAMETER(particleSigmaPos, "Particle Sigma Pos", NULL, NULL, Vec3d(1.0/20,1.0/20,1.0/20), Vec3d(0,0,0), Vec3d(1e4, 1e4, 1e4), Vec3d(1e-4,1e-4,1e-4));
+    
+    ADD_VEC3D_PARAMETER(particleMuOr, "Particle Mu Orientation", NULL, NULL, Vec3d(0,0,0), Vec3d(0,0,0), Vec3d(1e4, 1e4, 1e4), Vec3d(1,1,1));
+    ADD_VEC3D_PARAMETER(particleSigmaOr, "Particle Sigma Orientation", NULL, NULL, Vec3d(PI/5000.0,PI/5000.0,PI/5000.0), Vec3d(0,0,0), Vec3d(1e4, 1e4, 1e4), Vec3d(1e-4,1e-4,1e-4));
 
-    particleMuOr = zeros<vec>(3);
-    dd.clear(); dd << PI << PI << PI << endr;
-    particleSigmaOr = (mat33)diagmat(1.0/5000.0*dd);
+    ADD_FLOAT_PARAMETER(particleSigmaVel, "Particle Sigma Vel", NULL, NULL, 1, 0, 1e4, 1e-2);
+    ADD_FLOAT_PARAMETER(particleMuVel, "Particle Mu Vel", NULL, NULL, 0, 0, 1e4, 1e-2);
 
-    particleSigmaVel = 5;
-    particleMuVel = 0;
-
-    particleSigmaRho = 3;
-    particleMuRho = 0;
+    ADD_FLOAT_PARAMETER(particleSigmaRho, "Particle Sigma Rho", NULL, NULL, 3, 0, 1e4, 1e-2);
+    ADD_FLOAT_PARAMETER(particleMuRho, "Particle Mu Rho", NULL, NULL, 0, 0, 1e4, 1e-2);
 
     this->mpp = mpp;
 
-    measurementOffsetSigma << mpp.x*5*1e-3 << endr << mpp.y*5*1e-3;
+    ADD_VEC2D_PARAMETER(measurementOffsetSigmaPx, "Measurement Offset Sigma (Px)", NULL,  NULL, Vec2d(20, 20), Vec2d(0,0), Vec2d(1000, 1000), Vec2d(1,1));
+    
+    this->measurementOffsetSigma = Vec2d(measurementOffsetSigmaPx->GetValue().x*mpp.x*1e-3, measurementOffsetSigmaPx->GetValue().y*mpp.y*1e-3);
 
-    offNeedleDopplerMu = 0.56;                                           
-    offNeedleDopplerSigma = 0.75;                                        
-    onNeedleDopplerMu = 2.33;                                            
-    onNeedleDopplerSigma = 0.098;  
+    ADD_FLOAT_PARAMETER(offNeedleDopplerMu, "Off Needle Doppler Mu", NULL, NULL, 0.56, 0, 1e4, 1e-2);
+    ADD_FLOAT_PARAMETER(offNeedleDopplerSigma, "Off Needle Doppler Sigma", NULL, NULL, 0.75, 0, 1e4, 1e-2);
 
-    minimumMeasurements = 1;
+    ADD_FLOAT_PARAMETER(onNeedleDopplerMu, "On Needle Doppler Mu", NULL, NULL, 2.33, 0, 1e4, 1e-2);
+    ADD_FLOAT_PARAMETER(onNeedleDopplerSigma, "On Needle Doppler Sigma", NULL, NULL, 0.098, 0, 1e4, 1e-2);
 
+    ADD_INT_PARAMETER(minimumMeasurements, "Minimum Measurements", NULL, NULL, 1, 1, 1000, 1);
+    
     usw = mpp.x*630*1e-3;
     ush = mpp.y*480*1e-3;
+    
+    ADD_FLOAT_PARAMETER(sigB0, "Doppler Sigmoid B0", NULL, NULL, -2.37901785297659, -1e4, 1e4, 1e-2);
+    ADD_FLOAT_PARAMETER(sigB1, "Doppler Sigmoid B1", NULL, NULL, 0.0534736687985484, -1e4, 1e4, 1e-2);
 
-    sigB0 = -2.37901785297659;
-    sigB1 = 0.0534736687985484;
-    offFrameB0 = -5;
-    offFrameB1 = 20;
+    ADD_FLOAT_PARAMETER(offFrameB0, "Off Frame B0", NULL, NULL, -5, -1e4, 1e4, 1e-2);
+    ADD_FLOAT_PARAMETER(offFrameB1, "Off Frame B1", NULL, NULL, 20, -1e4, 1e4, 1e-2);
 
-    n = 50;
-    neff = 0.5;
+    ADD_INT_PARAMETER(n, "n", NULL, NULL, 50, 5, 1000, 1);
 
-    onNeedleDopplerLUTPath = std::string(PATH_CAT("Trial3/Insertion/pdopoverneedle.dat"));
-    offNeedleDopplerLUTPath = std::string(PATH_CAT("Trial3/Insertion/pdopnotoverneedle.dat"));
+    ADD_FLOAT_PARAMETER(neff, "neff", NULL, NULL, 0.5, 0, 1, 1e-2);
+
+    ADD_OPEN_FILE_PARAMETER(onNeedleDopplerLUTPath, "onNeedleLUTPath", NULL, NULL, PATH_CAT("Trial3/Insertion/pdopoverneedle.dat"), "*.dat");
+    ADD_OPEN_FILE_PARAMETER(offNeedleDopplerLUTPath, "offNeedleLUTPath", NULL, NULL, PATH_CAT("Trial3/Insertion/pdopnotoverneedle.dat"), "*.dat");
   }
 
-  PFFullStateParams::PFFullStateParams(Vec2d mpp)
-    : PFParams(mpp)
+  PFFullStateParams::PFFullStateParams(Vec2d mpp, const char *name)
+    : PFParams(mpp, name)
   {
   }
 
-  PFMarginalizedParams::PFMarginalizedParams(Vec2d mpp)
-    : PFParams(mpp)
+  PFMarginalizedParams::PFMarginalizedParams(Vec2d mpp, const char *name)
+    : PFParams(mpp, name)
   {
-    minimumMeasurements = 15;
-    vec3 dd; dd << 5e-3 << 5e-3 << 0.5 << endr;
-    measurementSigma = (mat33)diagmat(dd);
-
-    distanceThreshSq = 5*5;
-    subsetSize = 15;
-    procrustesIt = 3;
+    minimumMeasurements->SetValue(15);
+    ADD_VEC3D_PARAMETER(measurementSigma, "Measurement Sigma", NULL, NULL, Vec3d(5e-3, 5e-3, 0.5), Vec3d(0, 0, 0), Vec3d(1e4, 1e4, 1e4), Vec3d(1,1,1));
+    measurementSigma->SetValue(Vec3d(5e-3, 5e-3, 0.5));
+    ADD_FLOAT_PARAMETER(distanceThreshSq, "Distance Thresh Sq", NULL, NULL, 5*5, 5, 1e5, 1);
+    ADD_INT_PARAMETER(subsetSize, "Procrustes Subset Size", NULL, NULL, 15, 5, 1e5, 1);
+    ADD_INT_PARAMETER(procrustesIt, "Procrustes Iteraitons", NULL, NULL, 3, 1, 1e5, 1);
   }
 
   TipState TipState::PropagateLength(const NSCommand &u, f64 dl, const PFParams *p)
@@ -122,11 +122,15 @@ namespace Nf
     //res[0] = current state
     res.push_back(*this);
 
+    f64 minLength = 25;
+
     //u[0] = current control input
     NSCommand uc = u[0];
     uc.dtheta = 0;
 
     f64 dt = dts(0);
+
+    f64 length = 0;
 
     TipState xc;
     for(s32 i=1; i<u.size(); i++) {
@@ -138,9 +142,27 @@ namespace Nf
 
       xc.R = (mat33)(xc.R*Ry(PI));
       res.push_back(xc);
+      length += uc.v*dt;
       uc = u[i];
       uc.dtheta = u[i-1].dtheta;
       dt = dts(i);
+    }
+
+    s32 i = res.size();
+    dt = 0.2;
+    uc.v = 1;
+    uc.dtheta = 0;
+    while(length < minLength) {
+      xc = res[i-1]; 
+      // reverse for propagating backward in time
+      xc.R = (mat33)(xc.R*Ry(PI));
+
+      xc = xc.Propagate(uc,dt,p);
+
+      xc.R = (mat33)(xc.R*Ry(PI));
+      res.push_back(xc);
+      length += uc.v*dt;
+      i++;
     }
 
     return res;
@@ -246,7 +268,7 @@ namespace Nf
     mat D,U,V,X,Y,XYt,dR;
     vec S, minD;
     s32 mm = 0;
-    for(s32 i=0; i<pfm->procrustesIt; i++) {
+    for(s32 i=0; i<pfm->procrustesIt->GetValue(); i++) {
       //D_ij = distanceSq(measurements(i), cTemplate(j))
 #if 1
       D = distanceMatrix(measurements,cTemplate);
@@ -256,8 +278,8 @@ namespace Nf
       for(s32 r=0; r<D.n_rows; r++) {
         minTemplate = join_vert(minTemplate,find(D.row(r) == minD(r)));
       }
-      goodDs = find(minD < pfm->distanceThreshSq);
-      goodDs = sample(goodDs, MIN(pfm->subsetSize, goodDs.n_rows));
+      goodDs = find(minD < pfm->distanceThreshSq->GetValue());
+      goodDs = sample(goodDs, MIN(pfm->subsetSize->GetValue(), goodDs.n_rows));
       //goodDs = goodDs.subvec(span(0,MAX(MIN(pfm->subsetSize-1, goodDs.n_rows-1),0)));
       //goodDs = sort(goodDs);
 
@@ -295,6 +317,7 @@ namespace Nf
   //////////////////////////////////////////////////////////////////////////////////////////
   LUTDist::LUTDist(const char *path)
   {
+    s32 yep = strlen(path);
     arma::mat temp;
     temp.load(path);
 
@@ -381,9 +404,11 @@ namespace Nf
     const PFFullStateParams *pp = (const PFFullStateParams *)p;
 
     TipState xc = hist[0];
-    Gaussian<vec3,mat33> posNoise((vec3)(xc.R*p->initPosMu), p->initPosSigma);
-    Gaussian<vec,mat> rhoNoise(vec(&p->initRhoMu,1), mat(&p->initRhoSigma,1,1));
-    Gaussian<vec3,mat33> orNoise(p->initOrientationMu, p->initOrientationSigma);
+    Gaussian<vec3,mat33> posNoise((vec3)(xc.R*p->initPosMu->GetValue().ToArmaVec()), Matrix33d::Diagonal(p->initPosSigma->GetValue()).ToArmaMat());
+
+    f64 initRhoMu = p->initRhoMu->GetValue(); f64 initRhoSigma = p->initRhoSigma->GetValue();
+    Gaussian<vec,mat> rhoNoise(vec(&initRhoMu,1), mat(&initRhoSigma,1,1));
+    Gaussian<vec3,mat33> orNoise(p->initOrientationMu->GetValue().ToArmaVec(), Matrix33d::Diagonal(p->initOrientationSigma->GetValue()).ToArmaMat());
 
     m_rho = xc.rho*ones(1,m_nParticles);
     m_rho = m_rho+rhoNoise.Sample(m_nParticles);
@@ -404,10 +429,13 @@ namespace Nf
     //All orientations changes can be combined into one matrix multiply for all particles, etc.
 
     PFFullStateParams *pp = (PFFullStateParams *)p;
-    Gaussian<vec3, mat33> noisePos(p->particleMuPos, p->particleSigmaPos);
-    Gaussian<vec3, mat33> noiseOrientation(p->particleMuOr, p->particleSigmaOr);
-    Gaussian<vec, mat> noiseRho(vec(&p->particleMuRho,1), mat(&p->particleSigmaRho,1,1));
-    Gaussian<vec, mat> noiseVel(vec(&p->particleMuVel,1), mat(&p->particleSigmaVel,1,1));
+    Gaussian<vec3, mat33> noisePos(p->particleMuPos->GetValue().ToArmaVec(), Matrix33d::Diagonal(p->particleSigmaPos->GetValue()).ToArmaMat());
+    Gaussian<vec3, mat33> noiseOrientation(p->particleMuOr->GetValue().ToArmaVec(), Matrix33d::Diagonal(p->particleSigmaOr->GetValue()).ToArmaMat());
+
+    f64 particleMuRho = p->particleMuRho->GetValue(); f64 particleSigmaRho = p->particleSigmaRho->GetValue();
+    Gaussian<vec, mat> noiseRho(vec(&particleMuRho,1), mat(&particleSigmaRho,1,1));
+    f64 particleMuVel = p->particleMuVel->GetValue(); f64 particleSigmaVel = p->particleSigmaVel->GetValue();
+    Gaussian<vec, mat> noiseVel(vec(&particleMuVel,1), mat(&particleSigmaVel,1,1));
 
     mat noiseP = noisePos.Sample(m_nParticles);
     mat noiseO = noiseOrientation.Sample(m_nParticles);
@@ -464,15 +492,22 @@ namespace Nf
 
     f64 minVal, maxVal, minAbsVal;
     uword minAbsIdx;
+    
 
+    f64 ush = params->ush; f64 usw = params->usw;
     vec usFrameParams;
-    usFrameParams << params->usw << endr << params->ush << endr;
+    usFrameParams << usw << endr << ush << endr;
 
     mat pw = zeros(1,m_nParticles);
 
     // For projecting particle position onto ultrasound frame
     A.col(0) = m[0].fbx; A.col(1) = m[0].fby; A.col(2) = cross(m[0].fbx, m[0].fby);
     invA = (mat33)inv(A);
+
+    f64 offFrameB0 = p->offFrameB0->GetValue(); f64 offFrameB1 = p->offFrameB1->GetValue();
+    f64 sigB0 = p->sigB0->GetValue(); f64 sigB1 = p->sigB1->GetValue();
+
+    vec2 measurementOffsetSigma = p->measurementOffsetSigma.ToArmaVec(); 
 
     s32 sum1, sum2;
 
@@ -524,7 +559,7 @@ namespace Nf
           minAbsVal = 0;
 
         // p(off frame | distance of projection)
-        p_offFrame = sigmoid(minAbsVal, params->offFrameB0, params->offFrameB1);
+        p_offFrame = sigmoid(minAbsVal, offFrameB0, offFrameB1);
 
         // gaussian centered at measurement intersections
         suv = (vec2)(ds.submat(span(0,1), span(minAbsIdx,minAbsIdx)));
@@ -538,12 +573,12 @@ namespace Nf
         duv = suv-m[0].uv.col(0);
 
         // calculate p(frame interesects with flagella|doppler)
-        pin = sigmoid(m[0].doppler(0,0), params->sigB0, params->sigB1);
-        p_uvxOnFrame = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), params->measurementOffsetSigma, a, b)+
-          (1-pin)*(1/(params->ush*params->usw));
+        pin = sigmoid(m[0].doppler(0,0), sigB0, sigB1);
+        p_uvxOnFrame = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), measurementOffsetSigma, a, b)+
+          (1-pin)*(1/(ush*usw));
       }
 
-      p_uvxOffFrame = 1/(params->ush*params->usw);
+      p_uvxOffFrame = 1/(ush*usw);
 
       //p(doppler | over needle)
       p_dxOnFrame  = m_pDopOverNeedle->P(dop);
@@ -631,16 +666,18 @@ namespace Nf
     const PFFullStateParams *pp = (const PFFullStateParams *)p;
 
     TipState xc = hist[0];
-    Gaussian<vec3,mat33> posNoise((vec3)(xc.R*p->initPosMu), p->initPosSigma);
-    Gaussian<vec,mat> rhoNoise(vec(&p->initRhoMu,1), mat(&p->initRhoSigma,1,1));
+    Gaussian<vec3,mat33> posNoise((vec3)(xc.R*p->initPosMu->GetValue().ToArmaVec()), Matrix33d::Diagonal(p->initPosSigma->GetValue()).ToArmaMat());
+    f64 initRhoMu = p->initRhoMu->GetValue(); f64 initRhoSigma = p->initRhoSigma->GetValue();
+    Gaussian<vec,mat> rhoNoise(vec(&initRhoMu,1), mat(&initRhoSigma,1,1));
 
     m_rho = xc.rho*ones(1,m_nParticles)+rhoNoise.Sample(m_nParticles);
     m_rho = max(PF_MIN_RHO*ones(1,m_nParticles), m_rho);
 
     m_pos = repmat(xc.pos, 1, m_nParticles)+posNoise.Sample(m_nParticles);
 
+    mat33 initOrientationSigma = Matrix33d::Diagonal(p->initOrientationSigma->GetValue()).ToArmaMat();
     for(s32 i=0; i<m_nParticles; i++) {
-      m_R.push_back(OrientationKF(xc.R, p->initOrientationSigma));
+      m_R.push_back(OrientationKF(xc.R, initOrientationSigma));
     }
   }
 
@@ -651,9 +688,12 @@ namespace Nf
     //All orientations changes can be combined into one matrix multiply for all particles, etc.
 
     const PFMarginalizedParams *pp = (const PFMarginalizedParams *)p;
-    Gaussian<vec3, mat33> noisePos(p->particleMuPos, p->particleSigmaPos);
-    Gaussian<vec, mat> noiseRho(vec(&p->particleMuRho,1), mat(&p->particleSigmaRho,1,1));
-    Gaussian<vec, mat> noiseVel(vec(&p->particleMuVel,1), mat(&p->particleSigmaVel,1,1));
+    Gaussian<vec3, mat33> noisePos(p->particleMuPos->GetValue().ToArmaVec(), Matrix33d::Diagonal(p->particleSigmaPos->GetValue()).ToArmaMat());
+
+    f64 particleMuRho = p->particleMuRho->GetValue(); f64 particleSigmaRho = p->particleSigmaRho->GetValue();
+    Gaussian<vec, mat> noiseRho(vec(&particleMuRho,1), mat(&particleSigmaRho,1,1));
+    f64 particleMuVel = p->particleMuVel->GetValue(); f64 particleSigmaVel = p->particleSigmaVel->GetValue();
+    Gaussian<vec, mat> noiseVel(vec(&particleMuVel,1), mat(&particleSigmaVel,1,1));
 
     mat noiseP = noisePos.Sample(m_nParticles);
     mat noiseR = noiseRho.Sample(m_nParticles);
@@ -663,7 +703,7 @@ namespace Nf
     NSCommand uc; memcpy(&uc, u, sizeof(NSCommand));
     mat velocities = u->v*ones(1,m_nParticles)+noiseV;
 
-    mat33 sigma1 = p->particleSigmaOr;
+    mat33 sigma1 = Matrix33d::Diagonal(p->particleSigmaOr->GetValue()).ToArmaMat();
     mat33 sigma0;
 
     f64 phi;
@@ -731,8 +771,19 @@ namespace Nf
     f64 minVal, maxVal, minAbsVal;
     uword minAbsIdx;
 
+    f64 offFrameB0 = p->offFrameB0->GetValue(); f64 offFrameB1 = p->offFrameB1->GetValue();
+    f64 sigB0 = p->sigB0->GetValue(); f64 sigB1 = p->sigB1->GetValue();
+
+    vec2 measurementOffsetSigma = p->measurementOffsetSigma.ToArmaVec(); 
+
+    f64 ush = params->ush; f64 usw = params->usw;
+
+    mat33 measurementSigma = Matrix33d::Diagonal(params->measurementSigma->GetValue()).ToArmaMat();
+
+    s32 minimumMeasurements = params->minimumMeasurements->GetValue();
+
     vec usFrameParams;
-    usFrameParams << params->usw << endr << params->ush << endr;
+    usFrameParams << usw << endr << ush << endr;
 
     mat pw = zeros(1,m_nParticles);
     mat meas = measurementToPointMat(m);
@@ -748,17 +799,17 @@ namespace Nf
       // rotate history by Rdelta
       cModelHist = Rdelta*zModelHist;
 
-      assert(m.size() >= params->minimumMeasurements);
+      assert(m.size() >= minimumMeasurements);
       
       Rmeas = optimalRotationForModel(cModelHist, meas, m_pos.col(i), p);
       Rmeas = (mat33)(Rmeas*m_R[i].mu);
 
-      if(det(params->measurementSigma) < 1e-6) {
+      if(det(measurementSigma) < 1e-6) {
         // zero measurement noise? just use measurement then
         m_R[i].mu = Rmeas;
         m_R[i].sigma.zeros();
       } else {
-        measSigma = params->measurementSigma;
+        measSigma = measurementSigma;
         K = (mat33)(m_R[i].sigma*inv(m_R[i].sigma+measSigma));
         sigmaC = (mat33)((eye(3,3)-K)*m_R[i].sigma);
         v = SO3Log(Rprior.t()*Rmeas);
@@ -805,7 +856,7 @@ namespace Nf
           minAbsVal = 0;
 
         // p(off frame | distance of projection)
-        p_offFrame = sigmoid(minAbsVal, params->offFrameB0, params->offFrameB1);
+        p_offFrame = sigmoid(minAbsVal, offFrameB0, offFrameB1);
 
         // gaussian centered at measurement intersections
         suv = (vec2)(ds.submat(span(0,1), span(minAbsIdx,minAbsIdx)));
@@ -819,12 +870,12 @@ namespace Nf
         duv = suv-m[0].uv.col(0);
 
         // calculate p(frame interesects with flagella|doppler)
-        pin = sigmoid(m[0].doppler(0,0), params->sigB0, params->sigB1);
-        p_uvxOnFrame = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), params->measurementOffsetSigma, a, b)+
-          (1-pin)*(1/(params->ush*params->usw));
+        pin = sigmoid(m[0].doppler(0,0), sigB0, sigB1);
+        p_uvxOnFrame = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), measurementOffsetSigma, a, b)+
+          (1-pin)*(1/(ush*usw));
       }
 
-      p_uvxOffFrame = 1/(params->ush*params->usw);
+      p_uvxOffFrame = 1/(ush*usw);
 
       //p(doppler | over needle)
       p_dxOnFrame  = m_pDopOverNeedle->P(dop);

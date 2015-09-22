@@ -61,6 +61,8 @@ namespace Nf
     std::tr1::shared_ptr < NeedleSegmenter > m_segmenter;
     std::map < s32, PFData > m_pfFramesProcessed;
     std::tr1::shared_ptr < PointCloudVisualizer > m_measurementPoints;
+    std::tr1::shared_ptr < PFParams > m_pfParams;
+
     Updateable *m_update;
     s32 m_lastFrame;
     bool m_init;
@@ -104,8 +106,6 @@ namespace Nf
     void onNVisSkipChanged();
     CLASS_CALLBACK(onNVisSkipChanged, ParticleFilterVisualizer);
 
-    std::tr1::shared_ptr < Nf::FloatParameter > m_measurementNoise;
-
     std::tr1::shared_ptr < Nf::BoolParameter > m_showParticlePos;
     std::tr1::shared_ptr < Nf::BoolParameter > m_showExpectedPos;
     std::tr1::shared_ptr < Nf::BoolParameter > m_showExpectedOrientation;
@@ -137,7 +137,7 @@ namespace Nf
     vtkSmartPointer < vtkAxesActor > m_calibTipFrame;
 
   public:
-    EstimatorFileWidget(QWidget *parent);
+    EstimatorFileWidget(QWidget *parent, const char *name = "Estimator File Widget");
     virtual ~EstimatorFileWidget();
 
     std::tr1::shared_ptr < Nf::FileParameter > m_tipCalibPath;
@@ -208,7 +208,7 @@ namespace Nf
     std::vector < Vec3d > m_pastTipPoints;
 
   public:
-    EstimatorStreamingWidget(QWidget *parent);
+    EstimatorStreamingWidget(QWidget *parent, const char *name = "Estimator Streaming Widget");
     virtual ~EstimatorStreamingWidget();
     virtual void Initialize(bool init);
     virtual void SetRobot(NeedleSteeringRobot *robot);

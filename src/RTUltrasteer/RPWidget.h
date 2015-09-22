@@ -27,7 +27,7 @@ namespace Nf
     Matrix44d m_cal;
 
   public:
-    RPWidget(QWidget *parent, USVisualizer *vis);
+    RPWidget(QWidget *parent, USVisualizer *vis, const char *name = "RP Widget");
     ~RPWidget();
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
@@ -48,7 +48,7 @@ namespace Nf
     RPFileReaderCollection *m_rpReaders;
 
   public:
-    RPFileWidget(QWidget *parent, USVisualizer *vis = NULL);
+    RPFileWidget(QWidget *parent, USVisualizer *vis = NULL, const char *name = "RP File Widget");
     virtual ~RPFileWidget();
 
     //Filename
@@ -132,7 +132,7 @@ namespace Nf
     RPPushReceiver *m_receiver;
 
   public:
-    RPStreamingWidget(QWidget *parent, USVisualizer *vis = NULL);
+    RPStreamingWidget(QWidget *parent, USVisualizer *vis = NULL, const char *name = "RP Streaming Widget");
     virtual ~RPStreamingWidget();
 
     void InitializeAssets();

@@ -14,6 +14,7 @@ params.drawExpectedPos = 1;
 params.drawExpectedOrientation = 1;
 params.mpp = 163;
 params.p1.uvOffsetSigma = diag([params.mpp*5*1e-3 params.mpp*5*1e-3]);  %5 pixels of measurement noise
+params.LUTDistributionBasePath = 'C:/Joey/Data/8_24_15/Trial3/Insertion/'
 
 params.sigB0 = -2.3790178529765900;
 params.sigB1 = 0.053473668798548403;
@@ -39,6 +40,8 @@ particleHandles = drawParticles(1, xp, xpe, [], params, []);
 daspect([1 1 1]);
 view(-109, 32);
 campos(yep);
+
+params.n = 500;
 
 xpa = measureParticles(xp, us, [], dts, measurements, params);
 

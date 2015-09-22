@@ -2,8 +2,8 @@
 
 namespace Nf
 {
-  RPWidget::RPWidget(QWidget *parent, USVisualizer *vis)
-    : Nf::ParameterCollection("RP Image Viewer")
+  RPWidget::RPWidget(QWidget *parent, USVisualizer *vis, const char *name)
+    : Nf::ParameterCollection(name)
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
   {
     ADD_ENUM_PARAMETER(m_displayMode, "Display Modality", CALLBACK_POINTER(onSetDisplayMode, RPWidget), this, QtEnums::DisplayModality::DM_BPOST8, "DisplayModality");
@@ -63,8 +63,8 @@ namespace Nf
   }
 
   
-  RPFileWidget::RPFileWidget(QWidget *parent, USVisualizer *vis)
-    : RPWidget(parent, vis) 
+  RPFileWidget::RPFileWidget(QWidget *parent, USVisualizer *vis, const char *name)
+    : RPWidget(parent, vis, name) 
     , m_rpReaders(NULL)
   {
 
@@ -173,9 +173,9 @@ namespace Nf
   {
     ADD_STRING_PARAMETER(m_rpIp, "Ulterius IP", NULL, this, "192.168.1.129");
     ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, RPPushReceiver), this, false);
-    ADD_FLOAT_PARAMETER(m_mpp, "Microns Per Pixel", CALLBACK_POINTER(onFrameInfoChanged, RPPushReceiver), this, 297, 20, 500, 1.0);
+    ADD_FLOAT_PARAMETER(m_mpp, "Microns Per Pixel", CALLBACK_POINTER(onFrameInfoChanged, RPPushReceiver), this, 119, 20, 500, 1.0);
     ADD_FLOAT_PARAMETER(m_sos, "Speed of Sound", CALLBACK_POINTER(onFrameInfoChanged, RPPushReceiver), this, 1540, 1300, 1800, 1.0);
-    ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onFrameInfoChanged, RPPushReceiver), this, Vec2d(330, -103), Vec2d(-500,-500), Vec2d(10000, 10000), Vec2d(1,1));
+    ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onFrameInfoChanged, RPPushReceiver), this, Vec2d(330, 76), Vec2d(-500,-500), Vec2d(10000, 10000), Vec2d(1,1));
     ADD_BOOL_PARAMETER(m_rcvDoppler, "Receive Doppler", CALLBACK_POINTER(onDataToAcquireChanged, RPPushReceiver), this, false);
     ADD_BOOL_PARAMETER(m_rcvGps2, "Receive GPS2", CALLBACK_POINTER(onDataToAcquireChanged, RPPushReceiver), this, true);
     
@@ -247,8 +247,8 @@ namespace Nf
   //////////////////////////////////////////////////////////////////
 
   
-  RPStreamingWidget::RPStreamingWidget(QWidget *parent, USVisualizer *vis)
-    : RPWidget(parent, vis) 
+  RPStreamingWidget::RPStreamingWidget(QWidget *parent, USVisualizer *vis, const char *name)
+    : RPWidget(parent, vis, name) 
     , m_isInit(false)
     , m_receiver(new RPPushReceiver((RPFrameHandler *)this))
   {

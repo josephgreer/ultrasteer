@@ -305,6 +305,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
     child->setText(0, floats[i]->GetName());
 
     QDoubleSpinBox *sb = new QDoubleSpinBox(m_params);
+    sb->setDecimals(50);
     sb->setMinimum(floats[i]->GetMin());
     sb->setMaximum(floats[i]->GetMax());
     sb->setSingleStep(floats[i]->GetStep());
@@ -336,6 +337,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
       grandChild->setText(0, labels[jj]);
 
       QDoubleSpinBox *sb = new QDoubleSpinBox(m_params);
+      sb->setDecimals(50);
       sb->setMinimum(EL_VALUE2(vec3ds[i]->GetMin(),jj));
       sb->setMaximum(EL_VALUE2(vec3ds[i]->GetMax(),jj));
       sb->setSingleStep(EL_VALUE2(vec3ds[i]->GetStep(),jj));
@@ -369,6 +371,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
       grandChild->setText(0, labels[jj]);
 
       QDoubleSpinBox *sb = new QDoubleSpinBox(m_params);
+      sb->setDecimals(50);
       sb->setMinimum(EL_VALUE2(vec3fs[i]->GetMin(),jj));
       sb->setMaximum(EL_VALUE2(vec3fs[i]->GetMax(),jj));
       sb->setSingleStep(EL_VALUE2(vec3fs[i]->GetStep(),jj));
@@ -435,6 +438,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
       grandChild->setText(0, labels[jj]);
 
       QDoubleSpinBox *sb = new QDoubleSpinBox(m_params);
+      sb->setDecimals(50);
       sb->setMinimum(EL_VALUE2(vec2ds[i]->GetMin(),jj));
       sb->setMaximum(EL_VALUE2(vec2ds[i]->GetMax(),jj));
       sb->setSingleStep(EL_VALUE2(vec2ds[i]->GetStep(),jj));
@@ -468,6 +472,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
       grandChild->setText(0, labels[jj]);
 
       QDoubleSpinBox *sb = new QDoubleSpinBox(m_params);
+      sb->setDecimals(50);
       sb->setMinimum(EL_VALUE2(vec2fs[i]->GetMin(),jj));
       sb->setMaximum(EL_VALUE2(vec2fs[i]->GetMax(),jj));
       sb->setSingleStep(EL_VALUE2(vec2fs[i]->GetStep(),jj));
@@ -541,7 +546,7 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
       enums[i]->GetCallback(), enums[i]->GetContext(), (QObject *)combo, repainters, NULL));
     m_params->setItemWidget(child, 1, combo); 
     enums[i]->SetUIElement(std::tr1::shared_ptr< Nf::UIElement < s32 > >(uiElem));
-    QObject::connect((QObject *)combo, SIGNAL(currentIndexChanged(int)), (QObject *)&(*uiElem), SLOT(changeForward()));
+    QObject::connect((QObject *)combo, SIGNAL(currentIndexChanged(int)), (QObject *)&(*uiElem), SLOT(changeForward()), Qt::QueuedConnection);
   }
 
   //Child parameters
@@ -612,7 +617,7 @@ void RTUltrasteer::SaveSettings(Nf::ParameterCollection *collection, FILE *f, co
     throw std::runtime_error("Invalid settings file\n");
   std::string appended;
   if(strlen(nameAppend) > 0)
-    appended = std::string(nameAppend) + "." + collection->GetName();
+    appended = std::string(nameAppend) + "++" + collection->GetName();
   else
     appended = collection->GetName();
 
@@ -722,8 +727,10 @@ void RTUltrasteer::SetValue(Nf::ParameterCollection *collection, std::string lin
       if(idx < 0)
         throw std::runtime_error("Cannot parses string\n");
 
-      ofiles[idx]->SetValue(std::string(inputStrings[2]));
-      ofiles[idx]->GetCallback()(ofiles[idx]->GetContext());
+      std::string temp = inputStrings[2];
+      temp = temp.substr(0,temp.length()-1);
+      ofiles[idx]->SetValue(temp);
+      //ofiles[idx]->GetCallback()(ofiles[idx]->GetContext());
     } else if(strcmpi("SaveFile", inputStrings[1]) == 0) {
       std::vector < std::tr1::shared_ptr < Nf::FileParameter > > sfiles = collection->GetSaveFileParameters();
       s32 idx = -1;
@@ -736,9 +743,11 @@ void RTUltrasteer::SetValue(Nf::ParameterCollection *collection, std::string lin
 
       if(idx < 0)
         throw std::runtime_error("Cannot parses string\n");
-
-      sfiles[idx]->SetValue(std::string(inputStrings[2]));
-      sfiles[idx]->GetCallback()(sfiles[idx]->GetContext());
+      
+      std::string temp = inputStrings[2];
+      temp = temp.substr(0,temp.length()-1);
+      sfiles[idx]->SetValue(temp);
+      //sfiles[idx]->GetCallback()(sfiles[idx]->GetContext());
     } else if(strcmpi("Bool", inputStrings[1]) == 0) {
       std::vector < std::tr1::shared_ptr < Nf::BoolParameter > > bparams = collection->GetBoolParameters();
       s32 idx = -1;
@@ -754,7 +763,7 @@ void RTUltrasteer::SetValue(Nf::ParameterCollection *collection, std::string lin
         throw std::runtime_error("Cannot parses string\n");
 
       bparams[idx]->SetValue((bool)val);
-      bparams[idx]->GetCallback()(bparams[idx]->GetContext());
+      //bparams[idx]->GetCallback()(bparams[idx]->GetContext());
     } else if(strcmpi("Int", inputStrings[1]) == 0) {
       std::vector < std::tr1::shared_ptr < Nf::IntParameter > > iparams = collection->GetIntParameters();
       s32 idx = -1;
@@ -770,7 +779,7 @@ void RTUltrasteer::SetValue(Nf::ParameterCollection *collection, std::string lin
         throw std::runtime_error("Cannot parses string\n");
 
       iparams[idx]->SetValue(val);
-      iparams[idx]->GetCallback()(iparams[idx]->GetContext());
+      //iparams[idx]->GetCallback()(iparams[idx]->GetContext());
     } else if(strcmpi("Float", inputStrings[1]) == 0) {
       std::vector < std::tr1::shared_ptr < Nf::FloatParameter > > fparams = collection->GetFloatParameters();
       s32 idx = -1;
@@ -782,11 +791,11 @@ void RTUltrasteer::SetValue(Nf::ParameterCollection *collection, std::string lin
       }
 
       f32 val = 0;
-      if(idx < 0 || sscanf(inputStrings[2], "%d", &val) != 1)
+      if(idx < 0 || sscanf(inputStrings[2], "%f", &val) != 1)
         throw std::runtime_error("Cannot parses string\n");
 
       fparams[idx]->SetValue(val);
-      fparams[idx]->GetCallback()(fparams[idx]->GetContext());
+      //fparams[idx]->GetCallback()(fparams[idx]->GetContext());
     } else if(strcmpi("Vec3d", inputStrings[1]) == 0) {
       std::vector < std::tr1::shared_ptr < Nf::Vec3dParameter > > vparams = collection->GetVec3dParameters();
       s32 idx = -1;
@@ -798,11 +807,11 @@ void RTUltrasteer::SetValue(Nf::ParameterCollection *collection, std::string lin
       }
 
       Vec3d val(0,0,0);
-      if(idx < 0 || sscanf(inputStrings[2], "%f %f %f", &val.x, &val.y, &val.z) != 3)
+      if(idx < 0 || sscanf(inputStrings[2], "%lf %lf %lf", &val.x, &val.y, &val.z) != 3)
         throw std::runtime_error("Cannot parses string\n");
 
       vparams[idx]->SetValue(val);
-      vparams[idx]->GetCallback()(vparams[idx]->GetContext());
+      //vparams[idx]->GetCallback()(vparams[idx]->GetContext());
     } else if(strcmpi("Vec3f", inputStrings[1]) == 0) {
       std::vector < std::tr1::shared_ptr < Nf::Vec3fParameter > > vparams = collection->GetVec3fParameters();
       s32 idx = -1;
@@ -818,7 +827,7 @@ void RTUltrasteer::SetValue(Nf::ParameterCollection *collection, std::string lin
         throw std::runtime_error("Cannot parses string\n");
 
       vparams[idx]->SetValue(val);
-      vparams[idx]->GetCallback()(vparams[idx]->GetContext());
+      //vparams[idx]->GetCallback()(vparams[idx]->GetContext());
     } else if(strcmpi("Vec3i", inputStrings[1]) == 0) {
       std::vector < std::tr1::shared_ptr < Nf::Vec3iParameter > > vparams = collection->GetVec3iParameters();
       s32 idx = -1;
@@ -834,7 +843,7 @@ void RTUltrasteer::SetValue(Nf::ParameterCollection *collection, std::string lin
         throw std::runtime_error("Cannot parses string\n");
 
       vparams[idx]->SetValue(val);
-      vparams[idx]->GetCallback()(vparams[idx]->GetContext());
+      //vparams[idx]->GetCallback()(vparams[idx]->GetContext());
     } else if(strcmpi("Vec2d", inputStrings[1]) == 0) {
       std::vector < std::tr1::shared_ptr < Nf::Vec2dParameter > > vparams = collection->GetVec2dParameters();
       s32 idx = -1;
@@ -846,11 +855,11 @@ void RTUltrasteer::SetValue(Nf::ParameterCollection *collection, std::string lin
       }
 
       Vec2d val(0,0);
-      if(idx < 0 || sscanf(inputStrings[2], "%f %f", &val.x, &val.y) != 2)
+      if(idx < 0 || sscanf(inputStrings[2], "%lf %lf", &val.x, &val.y) != 2)
         throw std::runtime_error("Cannot parses string\n");
 
       vparams[idx]->SetValue(val);
-      vparams[idx]->GetCallback()(vparams[idx]->GetContext());
+      //vparams[idx]->GetCallback()(vparams[idx]->GetContext());
     } else if(strcmpi("Vec2f", inputStrings[1]) == 0) {
       std::vector < std::tr1::shared_ptr < Nf::Vec2fParameter > > vparams = collection->GetVec2fParameters();
       s32 idx = -1;
@@ -866,7 +875,7 @@ void RTUltrasteer::SetValue(Nf::ParameterCollection *collection, std::string lin
         throw std::runtime_error("Cannot parses string\n");
 
       vparams[idx]->SetValue(val);
-      vparams[idx]->GetCallback()(vparams[idx]->GetContext());
+      //vparams[idx]->GetCallback()(vparams[idx]->GetContext());
     } else if(strcmpi("Vec2i", inputStrings[1]) == 0) {
       std::vector < std::tr1::shared_ptr < Nf::Vec2iParameter > > vparams = collection->GetVec2iParameters();
       s32 idx = -1;
@@ -882,7 +891,7 @@ void RTUltrasteer::SetValue(Nf::ParameterCollection *collection, std::string lin
         throw std::runtime_error("Cannot parses string\n");
 
       vparams[idx]->SetValue(val);
-      vparams[idx]->GetCallback()(vparams[idx]->GetContext());
+      //vparams[idx]->GetCallback()(vparams[idx]->GetContext());
     } else if(strcmpi("Enum", inputStrings[1]) == 0) {
       std::vector < std::tr1::shared_ptr < Nf::EnumParameter > > eparams = collection->GetEnumParameters();
       s32 idx = -1;
@@ -898,7 +907,7 @@ void RTUltrasteer::SetValue(Nf::ParameterCollection *collection, std::string lin
         throw std::runtime_error("Cannot parses string\n");
 
       eparams[idx]->SetValue(val);
-      eparams[idx]->GetCallback()(eparams[idx]->GetContext());
+      //eparams[idx]->GetCallback()(eparams[idx]->GetContext());
     }
   } else {
     collName = paramName.substr(0, paramName.find_first_of("++"));

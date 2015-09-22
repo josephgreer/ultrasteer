@@ -105,6 +105,7 @@ namespace Nf
     {
       if(m_element != NULL)
         m_element->SetValue(val);
+      m_val = val;
     }
 
     virtual const char * GetName()
