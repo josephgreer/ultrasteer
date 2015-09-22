@@ -35,10 +35,10 @@ namespace Nf
     m_fiducialMeasurementsInFref = arma::zeros<arma::mat>(3,4);
     m_fiducialsInFrobot = arma::zeros<arma::mat>(3,4);
     arma::vec3 p1, p2, p3, p4;
-    p1 << -27.05 << -82.10 << -6.19;
-    p2 << -9.52 << -117.72 << -3.02;
-    p3 << 0.00 << -119.31 << -11.75;
-    p4 << 9.53 << -16.31 << -11.75;
+    p1 << 13.335 << -15.24 << -0.635;
+    p2 << 24.51119 << -82.10035 << -0.635;
+    p3 << -24.51081 << -82.10035 << -0.635;
+    p4 << 9.52519 << -116.13635 << -5.34249;
     m_fiducialsInFrobot.col(0) = p1;
     m_fiducialsInFrobot.col(1) = p2;
     m_fiducialsInFrobot.col(2) = p3;
@@ -53,6 +53,7 @@ namespace Nf
     // add framework params
     ADD_BOOL_PARAMETER(m_inStylusCalibration, "Calibrate Stylus", CALLBACK_POINTER(onCalibrateStylus, EMCalibrationWidget), this, false);
     ADD_BOOL_PARAMETER(m_inRobotCalibration, "Calibrate Robot", CALLBACK_POINTER(onCalibrateRobot, EMCalibrationWidget), this, false);
+    ADD_BOOL_PARAMETER(m_inStylusPointSelection, "Record Stylus Point", CALLBACK_POINTER(onStylusPointSelection, EMCalibrationWidget), this, false);
     ADD_INT_PARAMETER(m_robotFiducialNumber, "Robot Fiducial", CALLBACK_POINTER(onUpdateFiducial, EMCalibrationWidget), this, 1, 1, 4, 1);
   }
 
@@ -159,11 +160,30 @@ namespace Nf
         m_robotCalibrationComplete = false;
       }else{ // If finished collecting data, solve the robot calibration
         arma::mat mu = mean(m_currentFiducialMeasurements,1);
-        m_fiducialMeasurementsInFref.col(m_robotFiducialNumber->GetValue()-1) = mu;
+        int fidNum = m_robotFiducialNumber->GetValue()-1;
+        char strbuff[100];
+        sprintf(strbuff, "fiducialMeasurements %d.m",fidNum);
+        m_currentFiducialMeasurements.save(strbuff);
+        m_fiducialMeasurementsInFref.col(fidNum) = mu;
         RenderTargetPoints(true,mu);
         solveRobotRegistration();
       }
     }
+  }
+
+  void EMCalibrationWidget::onStylusPointSelection(void)
+  {
+    if( m_inStylusPointSelection->GetValue() ){ // if starting to collect data
+        m_currentFiducialMeasurements.reset();
+      }else{ // If finished collecting current
+        QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), QString("D:/ultrasteer/currentPoint"), "*.m");
+        if(fileName.length() <= 0) {
+          return;
+        }
+        std::string fname = fileName.toStdString();
+        m_currentFiducialMeasurements.save(fname);
+    }
+
   }
 
   void EMCalibrationWidget::onUpdateFiducial(void)
@@ -178,6 +198,12 @@ namespace Nf
     // check that we have recorded a point for all four robot fiducials
     if( all(vectorise(m_fiducialMeasurementsInFref)) )
     {
+      // save the raw datasets for validation
+      std::string fname1("fiducialsInFref.m");
+      std::string fname2("fiducialsInFrobot.m");
+      m_fiducialMeasurementsInFref.save(fname1);
+      m_fiducialsInFrobot.save(fname2);
+
       // copy the datasets 
       mat A = m_fiducialMeasurementsInFref;
       mat B = m_fiducialsInFrobot;
@@ -339,6 +365,15 @@ namespace Nf
       
       // update the display
       QVTKWidget::update();
+    }
+
+    if( m_inStylusPointSelection->GetValue() && m_stylusCalibration->isComplete() ) // if we are recording the tip of the calibrated stylus
+    {
+      // calculate the relative position of the stylus tip at the current time
+      mat p_tip = R_i*m_stylusCalibration->getCalibrationVector() + p_i;
+
+      // add the current frame to a matrix of measurements
+      m_currentFiducialMeasurements.insert_cols(m_currentFiducialMeasurements.n_cols,p_tip);
     }
   }
 

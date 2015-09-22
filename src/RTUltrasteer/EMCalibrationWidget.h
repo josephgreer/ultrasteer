@@ -36,6 +36,11 @@ namespace Nf
     void onCalibrateRobot();
     CLASS_CALLBACK(onCalibrateRobot, EMCalibrationWidget);
 
+    //In stylus point selection
+    std::tr1::shared_ptr < Nf::BoolParameter > m_inStylusPointSelection;
+    void onStylusPointSelection();
+    CLASS_CALLBACK(onStylusPointSelection, EMCalibrationWidget);
+
     //Robot fiducial number
     std::tr1::shared_ptr < Nf::IntParameter > m_robotFiducialNumber;
     void onUpdateFiducial();
