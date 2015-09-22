@@ -68,6 +68,7 @@ namespace Nf
 
     vtkSmartPointer < vtkRenderer > m_renderer;
     vtkSmartPointer < vtkRenderWindowInteractor > m_interactor;
+    vtkSmartPointer<vtkTextActor> m_textActor;
     
     // stylus calibration object
     StylusCalibration *m_stylusCalibration;

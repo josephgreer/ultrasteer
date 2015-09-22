@@ -392,12 +392,21 @@ namespace Nf {
     m_stylusCalibrationComplete = false;
   }
 
-  void StylusCalibration::solveCalibration(void)
+  f32 StylusCalibration::solveCalibration(void)
   {
+    using namespace arma;
     arma::mat x = arma::solve(m_A,m_b);
     m_vcal = x.rows(0,2);
     m_c = x.rows(3,5);
     m_stylusCalibrationComplete = true;
+
+    arma::mat error = m_A*x - m_b;
+    m_e = 0.0;
+    int Npts = m_A.n_rows/3;
+    for( int i = 0; i < Npts; i+=3 ){
+      m_e += norm(error.rows(i,i+2),2)/double(Npts);
+    }    
+    return m_e;
   }
 
   arma::mat StylusCalibration::getCalibrationVector(void)

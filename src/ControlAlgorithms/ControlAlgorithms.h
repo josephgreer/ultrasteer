@@ -98,7 +98,7 @@ namespace Nf {
     ~StylusCalibration();
     void addMeasurement(arma::mat, arma::mat);
     void clearMeasurements(void);
-    void solveCalibration(void);
+    f32 solveCalibration(void);
     arma::mat getCalibrationVector(void);
     arma::mat getCenter(void);
     bool isComplete(void);
@@ -108,6 +108,7 @@ namespace Nf {
     arma::mat m_b;
     arma::mat m_vcal;
     arma::mat m_c;
+    f32 m_e;
     bool m_stylusCalibrationComplete;
   };
 

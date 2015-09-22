@@ -30,6 +30,14 @@ namespace Nf
     m_robotAxes = vtkSmartPointer<vtkAxesActor>::New();
     m_EMrobotAxes = vtkSmartPointer<vtkAxesActor>::New();
     m_stylusAxes = vtkSmartPointer<vtkAxesActor>::New();
+    m_textActor = vtkSmartPointer<vtkTextActor>::New();
+    
+    // initialize display text
+    m_textActor->GetTextProperty()->SetFontSize ( 24 );
+    m_textActor->SetPosition( 10, 10 );
+    m_renderer->AddActor2D ( m_textActor );
+    m_textActor->SetInput ( " " );
+    m_textActor->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
 
     // initialize robot calibration matrices
     m_fiducialMeasurementsInFref = arma::zeros<arma::mat>(3,4);
@@ -145,7 +153,10 @@ namespace Nf
       RenderMeasuredPoints(false);
       m_stylusCalibration->clearMeasurements();
     }else{ // If finished collecting data, solve the stylus calibration
-      m_stylusCalibration->solveCalibration();
+      f32 e = m_stylusCalibration->solveCalibration();
+      char str[100];
+      int n = sprintf(str,"Pivot FRE = %.3f mm\n",e);
+      m_textActor->SetInput ( str );
       RenderTargetPoints(true,m_stylusCalibration->getCenter());
     }
   }
@@ -160,10 +171,15 @@ namespace Nf
         m_robotCalibrationComplete = false;
       }else{ // If finished collecting data, solve the robot calibration
         arma::mat mu = mean(m_currentFiducialMeasurements,1);
+        arma::mat var = cov(m_currentFiducialMeasurements.t());
+        char str[100];
+        int n = sprintf(str,"var = {%.2f, %.2f, %.2f} mm\n",var.at(0,0), var.at(1,1), var.at(2,2));
+        m_textActor->SetInput ( str );
+
         int fidNum = m_robotFiducialNumber->GetValue()-1;
         char strbuff[100];
         sprintf(strbuff, "fiducialMeasurements %d.m",fidNum);
-        m_currentFiducialMeasurements.save(strbuff);
+        m_currentFiducialMeasurements.save(strbuff, arma::arma_ascii);
         m_fiducialMeasurementsInFref.col(fidNum) = mu;
         RenderTargetPoints(true,mu);
         solveRobotRegistration();
@@ -181,7 +197,7 @@ namespace Nf
           return;
         }
         std::string fname = fileName.toStdString();
-        m_currentFiducialMeasurements.save(fname);
+        m_currentFiducialMeasurements.save(fname, arma::arma_ascii);
     }
 
   }
@@ -201,8 +217,8 @@ namespace Nf
       // save the raw datasets for validation
       std::string fname1("fiducialsInFref.m");
       std::string fname2("fiducialsInFrobot.m");
-      m_fiducialMeasurementsInFref.save(fname1);
-      m_fiducialsInFrobot.save(fname2);
+      m_fiducialMeasurementsInFref.save(fname1, arma_ascii);
+      m_fiducialsInFrobot.save(fname2, arma_ascii);
 
       // copy the datasets 
       mat A = m_fiducialMeasurementsInFref;
@@ -227,6 +243,16 @@ namespace Nf
       // Find optimal translation
       vec t = -R*c_a + c_b;
 
+      // Find the average FRE
+      double fre_avg = 0.0;
+      for(int i = 0; i < A.n_cols; i++){
+        fre_avg += norm( B.col(i)-(R*A.col(i)+t) , 2 );
+      }
+      fre_avg = fre_avg/double(A.n_cols);
+      char str[100];
+      int n = sprintf(str,"Average FRE = %.3f mm\n",fre_avg);
+      m_textActor->SetInput ( str );
+
       // Combine into a 4x4 transform
       m_Tref2robot = mat(4,4,fill::eye);
       m_Tref2robot.submat(0,0,2,2) = R;
@@ -238,7 +264,7 @@ namespace Nf
         return;
       }
       std::string fname = fileName.toStdString();
-      m_Tref2robot.save(fname);
+      m_Tref2robot.save(fname, arma_ascii);
 
       // Visualize the fiducial targets and registered measurements
       mat fiducialMeasurementsRegistered(3,m_fiducialsInFrobot.n_cols,fill::zeros);
