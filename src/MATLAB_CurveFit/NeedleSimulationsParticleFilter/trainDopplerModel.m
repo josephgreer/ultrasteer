@@ -7,7 +7,7 @@ end
 
 addpath('../LabelData/');
 
-basePath = 'C:\Joey\Data\8_24_15\Trial2\Insertion\';
+basePath = 'C:\Joey\Data\9_18_15\3mm\Trial5\';
 dop = fopen(strcat(basePath,'scan.b32'));
 dopHeader = ReadHeader(dop);
 
@@ -16,12 +16,12 @@ tol = 0.05;
 for i=size(data,1)+1:dopHeader.nframes
     im = RPreadframeindex(dop,dopHeader,i);
     im = im/255;
-    imshow(im(:,:,1:3));
-    title(sprintf('Frame %d of %d', i, dopHeader.nframes));
-    set(gcf, 'Units', 'pixels');
-    [x y button] = ginput(2);
-    x = round(x); y = round(y);
-    im = im(y(1):y(2),x(1):x(2),:);
+    %imshow(im(:,:,1:3));
+    display(sprintf('Frame %d of %d\n', i, dopHeader.nframes));
+    %set(gcf, 'Units', 'pixels');
+%     [x y button] = ginput(1);
+%     x = round(x); y = round(y);
+    %im = im(y(1):y(2),x(1):x(2),:);
     r = im(:,:,1);
     g = im(:,:,2);
     b = im(:,:,3);
@@ -32,15 +32,17 @@ for i=size(data,1)+1:dopHeader.nframes
     b(bwcoords) = 0;
     imbw = 0.2126*r+0.7152*g+0.0722*b;
     
-    isDop = 1;
-    if(button(1) == 3 || button(2) == 3)
-        isDop = 0;
-    end
+    isDop = 0;
+%     isDop = 1;
+%     if(button(1) == 3)% || button(2) == 3)
+%         isDop = 0;
+%     end
     data = vertcat(data, [sum(imbw(:)) isDop]); 
 end
 
-save(strcat(basePath, 'data.mat'), 'data');
+pause;
 
+save(strcat(basePath, 'data.mat'), 'data');
 
 nBagging = 5;
 offNeedles = find(data(:,2) == 0);
@@ -68,13 +70,13 @@ plot([-10:.1:100],vals);%/sum(vals(:,1)));
 %data(offNeedles,1) = 1;
 
 figure;
-[Fpos Xipos] = ksdensity(data(onNeedles,1),'bandwidth',30);
+[Fpos Xipos] = ksdensity(data(onNeedles,1),'bandwidth',80);
 plot(Xipos, Fpos)
 title('p(d | on needle)');
 res = [Xipos; Fpos];
 save(strcat(basePath, 'pdopoverneedle.dat'), 'res', '-ascii');
 hold on;
-[Fneg Xineg] = ksdensity(data(offNeedles,1), 'bandwidth',5);
+[Fneg Xineg] = ksdensity(data(offNeedles,1), 'bandwidth',100);
 plot(Xineg, Fneg, 'r');
 title('p(d | off needle)');
 save(strcat(basePath, 'pdopnotoverneedle.dat'), 'res', '-ascii');
