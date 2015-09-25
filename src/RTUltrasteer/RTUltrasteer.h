@@ -119,7 +119,9 @@ namespace Nf
     void SetValue(const s32 &val)
     {
       QSpinBox *sb = (QSpinBox *)m_element;
+      bool old = sb->blockSignals(true);
       sb->setValue(val);
+      sb->blockSignals(old);
     }
 
     void SetMin(s32 min)
@@ -161,7 +163,9 @@ namespace Nf
     void SetValue(const f32 &val)
     {
       QDoubleSpinBox *sb = (QDoubleSpinBox *)m_element;
+      bool old = sb->blockSignals(true);
       return sb->setValue(val);
+      sb->blockSignals(old);
     }
 
     void SetMin(f32 min)
@@ -211,9 +215,16 @@ namespace Nf
       QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
       QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
+
+      bool old = x->blockSignals(true);
       x->setValue(val.x);
+      x->blockSignals(old);
+      old = y->blockSignals(true);
       y->setValue(val.y);
+      y->blockSignals(old);
+      old = z->blockSignals(true);
       z->setValue(val.z);
+      z->blockSignals(old);
     }
 
     void SetMin(Vec3d min)
@@ -284,9 +295,16 @@ namespace Nf
       QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
       QDoubleSpinBox *z = (QDoubleSpinBox *)item->obj[2];
+
+      bool old = x->blockSignals(true);
       x->setValue(val.x);
+      x->blockSignals(old);
+      old = y->blockSignals(true);
       y->setValue(val.y);
+      y->blockSignals(old);
+      old = z->blockSignals(true);
       z->setValue(val.z);
+      z->blockSignals(old);
     }
 
     void SetMin(Vec3f min)
@@ -358,9 +376,15 @@ namespace Nf
       QSpinBox *y = (QSpinBox *)item->obj[1];
       QSpinBox *z = (QSpinBox *)item->obj[2];
 
+      bool old = x->blockSignals(true);
       x->setValue(val.x);
+      x->blockSignals(old);
+      old = y->blockSignals(true);
       y->setValue(val.y);
+      y->blockSignals(old);
+      old = z->blockSignals(true);
       z->setValue(val.z);
+      z->blockSignals(old);
     }
 
     void SetMin(Vec3i min)
@@ -429,8 +453,13 @@ namespace Nf
       assert(item->nsbs == 2);
       QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      
+      bool old = x->blockSignals(true);
       x->setValue(val.x);
+      x->blockSignals(old);
+      old = y->blockSignals(true);
       y->setValue(val.y);
+      y->blockSignals(old);
     }
 
     void SetMin(Vec2d min)
@@ -493,8 +522,13 @@ namespace Nf
       assert(item->nsbs == 2);
       QDoubleSpinBox *x = (QDoubleSpinBox *)item->obj[0];
       QDoubleSpinBox *y = (QDoubleSpinBox *)item->obj[1];
+      
+      bool old = x->blockSignals(true);
       x->setValue(val.x);
+      x->blockSignals(old);
+      old = y->blockSignals(true);
       y->setValue(val.y);
+      y->blockSignals(old);
     }
 
     void SetMin(Vec2f min)
@@ -557,10 +591,13 @@ namespace Nf
       assert(item->nsbs == 2);
       QSpinBox *x = (QSpinBox *)item->obj[0];
       QSpinBox *y = (QSpinBox *)item->obj[1];
-
+      
+      bool old = x->blockSignals(true);
       x->setValue(val.x);
-
+      x->blockSignals(old);
+      old = y->blockSignals(true);
       y->setValue(val.y);
+      y->blockSignals(old);
     }
 
     void SetMin(Vec2i min)

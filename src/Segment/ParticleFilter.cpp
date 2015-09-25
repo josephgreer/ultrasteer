@@ -317,7 +317,6 @@ namespace Nf
   //////////////////////////////////////////////////////////////////////////////////////////
   LUTDist::LUTDist(const char *path)
   {
-    s32 yep = strlen(path);
     arma::mat temp;
     temp.load(path);
 

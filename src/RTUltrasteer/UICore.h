@@ -294,6 +294,7 @@ namespace Nf
       EOM_CALIB_CURVATURE_GPS = 2,
       EOM_CALIB_CURVATURE_US = 3,
       EOM_ESTIMATE = 4,
+      EOM_ESTIMATE_SEQUENTIAL = 5,
     };
 
     enum ParticleFilterMethod
