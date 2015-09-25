@@ -233,9 +233,21 @@ namespace Nf
     return m_pfParams;
   }
 
-  void ParticleFilterVisualizer::Initialize()
+  void ParticleFilterVisualizer::Initialize(const char *basePath)
   {
     std::tr1::shared_ptr < PFParams > params = GetParams(-1);
+
+    //Check if we can use the baseNeedlePath
+    std::string overNeedlePath = (std::string(basePath)+std::string("/")+std::string("pdopoverneedle.dat"));
+    std::string offNeedlePath = (std::string(basePath)+std::string("/")+std::string("pdopnotoverneedle.dat"));
+    QFileInfo onp(overNeedlePath.c_str());
+    QFileInfo ofp(offNeedlePath.c_str());
+
+    if(onp.exists() && onp.isReadable() && ofp.exists() && ofp.isReadable()) {
+      params->onNeedleDopplerLUTPath->SetValue(overNeedlePath);
+      params->offNeedleDopplerLUTPath->SetValue(offNeedlePath);
+    }
+
     if(m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
       m_pf = std::tr1::shared_ptr < ParticleFilter > (new ParticleFilterFullState(m_nParticles->GetValue(), 
         std::tr1::shared_ptr < Distribution > (new LUTDist(params->onNeedleDopplerLUTPath->GetValue().c_str())), 
@@ -496,6 +508,8 @@ namespace Nf
     m_pfVisualizer->AddActorsToRenderer(m_planeVis->GetRenderer());
 
     onUpdateFile();
+
+    connect(this, SIGNAL(updateFrame()), this, SLOT(onUpdateFrame()), Qt::QueuedConnection);
   }
 
   EstimatorFileWidget::~EstimatorFileWidget()
@@ -539,6 +553,19 @@ namespace Nf
         m_pfVisualizer->Update(&m_data, m_frame->GetValue());
         break;
       }
+    case EFS_ESTIMATE_SCAN:
+      {
+        m_pfVisualizer->Update(&m_data, m_frame->GetValue());
+        if(m_frame->GetValue() < m_frame->GetMax()) {
+          m_frame->SetValue(m_frame->GetValue()+1);
+          emit updateFrame();
+        } else {
+          this->onDoNeedleCalibrationPushed();
+          m_state = EFS_PRIMED;
+          m_operationMode->SetValue(QtEnums::EOM_NONE);
+        }
+        break;
+      }
     default: 
       {
         throw std::runtime_error("EstimatorFileWidget: unknown state\n");
@@ -558,6 +585,12 @@ namespace Nf
   void EstimatorFileWidget::onUpdateFile()
   {
     RPFileWidget::onUpdateFile();
+
+    QFileInfo fi(m_rpFile->GetValue().c_str());
+    QFileInfo tpth(m_tipCalibPath->GetValue().c_str());
+
+    this->m_tipCalibPath->SetValue(fi.dir().path().toStdString()+std::string("/")+tpth.fileName().toStdString());
+    this->m_tipCalibPathLoad->SetValue(fi.dir().path().toStdString()+std::string("/TipCalib.mat"));
     
     bool validFile = m_frame->GetMax() > 0;
     switch(m_state) {
@@ -567,6 +600,7 @@ namespace Nf
     case EFS_NEEDLE_CURVATURE_CALIB_GPS:
     case EFS_NEEDLE_CURVATURE_CALIB_US:
     case EFS_ESTIMATE:
+    case EFS_ESTIMATE_SCAN:
       {
         if(validFile)
           m_state = EFS_PRIMED;
@@ -575,8 +609,11 @@ namespace Nf
 
         onClearCalibrationData();
 
+        this->m_operationMode->SetValue(QtEnums::EOM_NONE);
+
+        this->onRepaint();
+
         m_resultsAvailable = ERA_NONE;
-        m_planeVis->repaint();
         break;
       }
     default: 
@@ -585,6 +622,10 @@ namespace Nf
         break;
       }
     }
+
+    fi = QFileInfo(m_tipCalibPathLoad->GetValue().c_str());
+    if(fi.isFile() && fi.isReadable())
+      this->onTipCalibPathChanged();
   }
 
   void EstimatorFileWidget::onUpdate()
@@ -629,6 +670,7 @@ namespace Nf
 
   void EstimatorFileWidget::onSetOperationMode()
   {
+
     switch(m_state)
     {
     case EFS_READY: 
@@ -639,6 +681,7 @@ namespace Nf
     case EFS_NEEDLE_CURVATURE_CALIB_GPS:
     case EFS_NEEDLE_CURVATURE_CALIB_US:
     case EFS_ESTIMATE:
+    case EFS_ESTIMATE_SCAN:
       {
         m_state = EFS_NEEDLE_TIP_CALIB;
 
@@ -684,8 +727,18 @@ namespace Nf
           }
         case QtEnums::EstimatorOperationMode::EOM_ESTIMATE: 
           {
-            m_pfVisualizer->Initialize();
+            QFileInfo fi(m_rpFile->GetValue().c_str());
+            m_pfVisualizer->Initialize(fi.dir().path().toStdString().c_str());
             m_state = EFS_ESTIMATE;
+            break;
+          }
+        case QtEnums::EstimatorOperationMode::EOM_ESTIMATE_SEQUENTIAL:
+          {
+            QFileInfo fi(m_rpFile->GetValue().c_str());
+            m_pfVisualizer->Initialize(fi.dir().path().toStdString().c_str());
+            m_state = EFS_ESTIMATE_SCAN;
+            m_frame->SetValue(m_frame->GetMin());
+            emit updateFrame();
             break;
           }
         default:
@@ -739,6 +792,7 @@ namespace Nf
         break;
       }
     case EFS_ESTIMATE:
+    case EFS_ESTIMATE_SCAN:
       {
         std::string fl = m_rpFile->GetValue();
         fl = fl.substr(0, fl.find_last_of("/")+1);
@@ -815,6 +869,7 @@ namespace Nf
         break;
       }
     case EFS_ESTIMATE:
+    case EFS_ESTIMATE_SCAN:
       {
         break;
       }

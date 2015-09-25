@@ -29,6 +29,7 @@ namespace Nf
     EFS_NEEDLE_CURVATURE_CALIB_GPS,
     EFS_NEEDLE_CURVATURE_CALIB_US,
     EFS_ESTIMATE,
+    EFS_ESTIMATE_SCAN,
   };
 
   enum EstimatorResultsAvailable
@@ -77,7 +78,7 @@ namespace Nf
     void SetVisiblity(bool visible);
     virtual void DoSegmentation(RPData *rp, NeedleFrame &doppler, NeedleFrame &bmode);
     virtual void Update(RPData *rp, s32 frame); 
-    virtual void Initialize();
+    virtual void Initialize(const char *basePath = "");
     virtual s32 NumberOfMeasurementsUpToAndIncludingFrame(s32 frame);
     virtual void UpdateVisualizations(s32 frame);
     std::tr1::shared_ptr < PFParams > GetParams(s32 frame);
@@ -174,10 +175,18 @@ namespace Nf
     virtual void onRepaint();
 
     virtual void onUpdateFile();
-    virtual void onUpdateFrame();
     virtual void UpdateCalibTipVis();
 
     virtual void onPointPushed(Vec2d point);
+
+    signals:
+    void updateFrame();
+
+    public slots:
+    virtual void onUpdateFrame();
+
+
+
   };
 
   enum EstimatorState {

@@ -1,6 +1,6 @@
 clear; clc; close all;
 
-path = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\8_24_15\Trial3\Insertion\scan_backup.dat';
+path = 'C:\Joey\Data\9_18_15\05mm\PreInsertGPS\TipHistory.mat';
 
 TipHistory = load(path, '-ascii')
 
