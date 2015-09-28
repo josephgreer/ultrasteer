@@ -6,6 +6,8 @@
 
 #pragma once
 
+#define RECORDING_MEASUREMENT_NOISE
+
 #include <time.h>
 #include "RTCore.h"
 #include "RPFileReader.h"
@@ -89,6 +91,10 @@ namespace Nf {
     RPData m_data;    
     STrigger* m_insTrigger;
     STrigger* m_rotTrigger;
+#ifdef RECORDING_MEASUREMENT_NOISE
+    int m_scan;
+    int m_step;
+#endif
   };
 
   class StylusCalibration

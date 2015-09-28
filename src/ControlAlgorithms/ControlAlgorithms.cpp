@@ -20,6 +20,12 @@ namespace Nf {
     , m_robot(NULL)
     , m_insertionMMatLastManualScan(0.0)
   {
+
+#ifdef RECORDING_MEASUREMENT_NOISE
+    m_scan = 0;
+    m_step = 0;
+#endif
+
     m_insTrigger = new STrigger();
     m_rotTrigger = new STrigger();
     m_insTrigger->setThresholds(0.01);
@@ -136,12 +142,28 @@ namespace Nf {
     GetIncrementalInputVector(u);
     m_UKF.fullUpdateUKF(u, m_z);
     m_UKF.getCurrentStateEstimate(m_x);
+
+#ifdef RECORDING_MEASUREMENT_NOISE
+    arma::mat z = m_z.ToArmaMatrix4x4();
+    char strbuff[100];
+    sprintf(strbuff, "step_%d_measurement_%d.m",m_step,m_scan);
+    z.save(strbuff, arma::arma_ascii);
+    m_scan++;
+    if( m_scan == 10 ){
+      m_scan = 0;
+      m_step++;
+      m_insertionMMatLastManualScan = m_robot->getInsMM(); 
+      if( m_inTaskSpaceControl ){        
+        m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
+      }   
+    }
+#else
     m_insertionMMatLastManualScan = m_robot->getInsMM(); 
     if( m_inTaskSpaceControl ){        
       m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
-    }
+    }   
+#endif
   }
-
 
   Vec3d ControlAlgorithms::ImagePtToRobotPt(Vec2d p_im)
   {
