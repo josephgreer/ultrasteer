@@ -479,8 +479,8 @@ namespace Nf
     ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, EMCalibrationStreamingWidget), this, false);
     ADD_BOOL_PARAMETER(m_addFrames, "Add Frames", CALLBACK_POINTER(onAddFramesToggle, EMCalibrationStreamingWidget), this, false);
     ADD_INT_PARAMETER(m_framerate, "Ulterius Framerate", CALLBACK_POINTER(onFramerateChanged, EMCalibrationStreamingWidget), this, 11, 1, 30, 1);
-    ADD_FLOAT_PARAMETER(m_mpp, "MPP", CALLBACK_POINTER(onInitializeToggle, EMCalibrationStreamingWidget), this, 60, 20, 150, 1.0);
-    ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onInitializeToggle, EMCalibrationStreamingWidget), this, Vec2d(330, 42), Vec2d(0,0), Vec2d(10000, 10000), Vec2d(1,1));
+    ADD_FLOAT_PARAMETER(m_mpp, "MPP", CALLBACK_POINTER(onInitializeToggle, EMCalibrationStreamingWidget), this, 233, 20, 150, 1.0);
+    ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onInitializeToggle, EMCalibrationStreamingWidget), this, Vec2d(330, -153), Vec2d(0,0), Vec2d(10000, 10000), Vec2d(1,1));
 
     onInitializeToggle();
     onAddFramesToggle();
