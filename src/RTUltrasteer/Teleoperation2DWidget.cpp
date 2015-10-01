@@ -70,6 +70,7 @@ namespace Nf
     // add framework params
     ADD_ENUM_PARAMETER(m_transducerType, "Transducer", CALLBACK_POINTER(onSetTransducerType, Teleoperation2DWidget), this, QtEnums::Transducer::CONVEX, "Transducer");
     ADD_BOOL_PARAMETER(m_initializeEstimator, "Initialize Estimator", CALLBACK_POINTER(onInitializeEstimator, Teleoperation2DWidget), this, false);
+    ADD_BOOL_PARAMETER(m_recordingData, "Record Data", CALLBACK_POINTER(onRecordingData, Teleoperation2DWidget), this, false);
     ADD_CHILD_COLLECTION(m_imageViewer.get());
     ADD_CHILD_COLLECTION(m_teleoperationVisualizer.get());
   }
@@ -267,6 +268,12 @@ namespace Nf
       }
     }
   }
+
+  void Teleoperation2DWidget::onRecordingData()
+  {
+    m_recordingData->SetValue(m_control->startStopRecordingData());
+  }
+
 
   Teleoperation2DFileWidget::Teleoperation2DFileWidget(QWidget *parent, NeedleSteeringRobot* robot, ControlAlgorithms* control, Mouse3DInput* mouse)
     : Teleoperation2DWidget(parent, robot, control, mouse) 

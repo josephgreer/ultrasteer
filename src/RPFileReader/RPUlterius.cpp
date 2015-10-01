@@ -89,7 +89,12 @@ namespace Nf {
     res.origin = m_origin;
     res.mpp = m_mpp;
     res.gps = m_gps.gps;
+#ifndef GPS3_SAVING
     res.gps2 = m_gps2.gps2;
+#else
+    res.gps3 = m_gps2.gps2;
+    res.gps2 = GPS_Data::eye();
+#endif
     return res;
   }
 

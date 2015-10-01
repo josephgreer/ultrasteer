@@ -9,6 +9,8 @@
 
 #define NOMINAL_SOS 1540.0
 
+#define GPS3_SAVING
+
 namespace Nf
 {
   struct NSCommand
@@ -115,6 +117,13 @@ namespace Nf
       this->tick = rhs.tick;
       return *this;
     }
+
+    static GPS_Data eye(void) 
+    {
+      GPS_Data retVal;
+      retVal.pose = cv::Mat::eye(4, 4, CV_64F);
+      return retVal;
+    }
   };
 
   inline Vec3d rpImageCoordToWorldCoord3(const Vec2d &image, const Matrix44d &posePos, const Matrix44d &calibration, const Vec2d &start, const Vec2d &scale)
@@ -169,6 +178,9 @@ namespace Nf
     IplImage *dis;
     GPS_Data gps;
     GPS_Data gps2;
+#ifdef GPS3_SAVING
+    GPS_Data gps3;
+#endif
     Vec2d mpp;
     Vec2d origin;
     Squarei roi;
@@ -184,6 +196,9 @@ namespace Nf
       mpp = Vec2d(0,0);
       gps.valid = 0;
       gps2.valid = 0;
+#ifdef GPS3_SAVING
+      gps3.valid = 0;
+#endif
       origin = Vec2d(0,0);
       u = NSCommand();
     }
@@ -198,6 +213,9 @@ namespace Nf
       this->mpp = rp.mpp;
       this->gps = rp.gps;
       this->gps2 = rp.gps2;
+#ifdef GPS3_SAVING
+      this->gps3 = rp.gps3;
+#endif
       this->origin = rp.origin;
       this->roi = rp.roi;
       this->u = rp.u;
@@ -213,6 +231,9 @@ namespace Nf
       this->mpp = rhs.mpp;
       this->gps = rhs.gps;
       this->gps2 = rhs.gps2;
+#ifdef GPS3_SAVING
+      this->gps3 = rhs.gps3;
+#endif
       this->origin = rhs.origin;
       this->u = rhs.u;
       this->roi = rhs.roi;
@@ -307,6 +328,9 @@ namespace Nf
 
       rv.gps = this->gps;
       rv.gps2 = this->gps2;
+#ifdef GPS3_SAVING
+      rv.gps3 = this->gps3;
+#endif
       rv.mpp = this->mpp;
       rv.origin = this->origin;
       rv.u = this->u;

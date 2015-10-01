@@ -10,6 +10,7 @@ namespace Nf {
       m_inTaskSpaceControl(false)
     , m_inJointSpaceControl(false)
     , m_inManualScanning(false)
+    , m_recordingData(false)
     , m_t(0.0, 0.0, 0.0)
     , m_x(Matrix44d::Zero())
     , m_z(Matrix44d::Zero())
@@ -71,6 +72,26 @@ namespace Nf {
     }
 
     return m_inTaskSpaceControl;
+  }
+
+  // toggle recording data
+  bool ControlAlgorithms::startStopRecordingData()
+  {
+    using namespace arma;
+
+    if( m_recordingData ){ // if we have been recording, save the data
+      m_recordingData = false;
+
+      char strbuff[100];
+      m_xest_record.save("C:/Troy/Data/xest.m", arma_ascii);
+      m_xact_record.save("C:/Troy/Data/xact.m", arma_ascii);
+      m_z_record.save("C:/Troy/Data/z.m", arma_ascii);
+      m_t_record.save("C:/Troy/Data/t.m", arma_ascii);
+
+      if(m_UKF.isInitialized()){ //don't change the state if UKF is not initialized
+        m_recordingData = !m_recordingData;
+      }
+    }
   }
 
   // initialize the Unscented Kalman Filter based on joint values
@@ -224,7 +245,6 @@ namespace Nf {
         m_robot->SetInsertionVelocity(0.0);
         m_robot->SetRotationVelocity(0.0);
       }
-
     }
   }
 

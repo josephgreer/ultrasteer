@@ -6,7 +6,7 @@
 
 #pragma once
 
-#define RECORDING_MEASUREMENT_NOISE
+//#define RECORDING_MEASUREMENT_NOISE
 
 #include <time.h>
 #include "RTCore.h"
@@ -38,6 +38,7 @@ namespace Nf {
     void startStopManualScanning(bool start);
     bool startStopTaskSpaceControl();
     bool startStopJointSpaceControl();
+    bool startStopRecordingData();
     bool inTaskSpaceControl();
     bool inJointSpaceControl();
     bool inManualScanning();
@@ -82,6 +83,7 @@ namespace Nf {
     bool m_inManualScanning;
     bool m_inTaskSpaceControl;
     bool m_inJointSpaceControl;
+    bool m_recordingData;
     double m_insertionMMatLastManualScan;
     InPlaneSegmentation m_segmentation; 
     UnscentedKalmanFilter m_UKF;
@@ -91,6 +93,10 @@ namespace Nf {
     RPData m_data;    
     STrigger* m_insTrigger;
     STrigger* m_rotTrigger;
+    arma::mat m_xest_record;
+    arma::mat m_xact_record;
+    arma::mat m_z_record;
+    arma::mat m_t_record;
 #ifdef RECORDING_MEASUREMENT_NOISE
     int m_scan;
     int m_step;
