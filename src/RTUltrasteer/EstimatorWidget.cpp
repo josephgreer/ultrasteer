@@ -100,6 +100,7 @@ namespace Nf
     , m_pf(NULL)
   {
     m_pfParams = std::tr1::shared_ptr < PFParams > ((PFParams *)new PFFullStateParams());
+    m_pfParamsMarg = std::tr1::shared_ptr < PFParams > ((PFParams *)new PFMarginalizedParams());
 
     ADD_FLOAT_PARAMETER(m_roc, "Expected ROC (mm)", NULL, this, 76.8, 20, 1000, 0.1);
     ADD_ACTION_PARAMETER(m_clearEstimatorData, "Clear Estimator Data", CALLBACK_POINTER(onClearEstimatorData, ParticleFilterVisualizer), this, false);
@@ -113,6 +114,7 @@ namespace Nf
     ADD_ENUM_PARAMETER(m_pfMethod, "Particle Filter Method", CALLBACK_POINTER(onPFMethodChanged, ParticleFilterVisualizer), this, QtEnums::ParticleFilterMethod::PFM_FULL_STATE, "ParticleFilterMethod");
     ADD_CHILD_COLLECTION(m_segmenter.get());
     ADD_CHILD_COLLECTION(m_pfParams.get());
+    ADD_CHILD_COLLECTION(m_pfParamsMarg.get());
 
     m_pfExpectedOrientation = vtkSmartPointer <vtkAxesActor>::New();
     m_pfExpectedOrientation->SetTotalLength(5,5,5);
@@ -199,7 +201,7 @@ namespace Nf
   void ParticleFilterVisualizer::onPFMethodChanged()
   {
     onClearEstimatorData();
-    Initialize();
+    Initialize(m_basePath.c_str());
   }
 
   void ParticleFilterVisualizer::onNumParticlesChanged()
@@ -220,6 +222,12 @@ namespace Nf
     m_pfParams->ush = norm(pd.m.ful-pd.m.fbl);
     m_pfParams->mpp = pd.mpp;
     m_pfParams->measurementOffsetSigma = Vec2d(pd.mpp.x/1000.0*m_pfParams->measurementOffsetSigmaPx->GetValue().x, pd.mpp.y/1000.0*m_pfParams->measurementOffsetSigmaPx->GetValue().y);
+    
+
+    m_pfParamsMarg->usw = norm(pd.m.fur-pd.m.ful);
+    m_pfParamsMarg->ush = norm(pd.m.ful-pd.m.fbl);
+    m_pfParamsMarg->mpp = pd.mpp;
+    m_pfParamsMarg->measurementOffsetSigma = Vec2d(pd.mpp.x/1000.0*m_pfParams->measurementOffsetSigmaPx->GetValue().x, pd.mpp.y/1000.0*m_pfParams->measurementOffsetSigmaPx->GetValue().y);
 
     //res->sigB0 =    -1.0515;
     //res->sigB1 =    0.0905;
@@ -230,7 +238,7 @@ namespace Nf
 
     //res->particleSigmaPos =
 
-    return m_pfParams;
+    return m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE ? m_pfParams : m_pfParamsMarg;
   }
 
   void ParticleFilterVisualizer::Initialize(const char *basePath)
@@ -396,7 +404,7 @@ namespace Nf
     DoSegmentation(rp, doppler, bmode);
 
     if(m_pf == NULL)
-      Initialize();
+      Initialize(m_basePath.c_str());
 
     // If we've already run this data through our particle filter, bail.
     if(m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end()) {
@@ -588,6 +596,8 @@ namespace Nf
 
     QFileInfo fi(m_rpFile->GetValue().c_str());
     QFileInfo tpth(m_tipCalibPath->GetValue().c_str());
+    
+    m_pfVisualizer->SetBasePath(fi.dir().path().toStdString().c_str());
 
     this->m_tipCalibPath->SetValue(fi.dir().path().toStdString()+std::string("/")+tpth.fileName().toStdString());
     this->m_tipCalibPathLoad->SetValue(fi.dir().path().toStdString()+std::string("/TipCalib.mat"));
@@ -1064,6 +1074,7 @@ namespace Nf
 
   void EstimatorStreamingWidget::HandleFrame(RPData &rp)
   { 
+    m_u.tick = rp.b8->BorderMode[0];
     rp.u = m_u;
     switch(m_state) {
     case ES_READY:

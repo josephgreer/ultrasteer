@@ -1,7 +1,7 @@
 clear; clc; close all;
 
 addpath('../../LabelData');
-basePath = 'C:\Joey\Data\9_18_15\05mm\Trial2\scan';
+basePath = 'C:\Joey\Data\9_18_15\05mm\Trial4\scan';
 
 fgps = fopen(strcat(basePath,'.gps2'));
 header = ReadHeader(fgps);
@@ -27,4 +27,4 @@ figure;
 scatter3(pos(:,1), pos(:,2), pos(:,3));
 daspect([1 1 1])
 
-save(strcat(basePath, 'smoothed.dat'), 'pos', '-ascii'); 
+%save(strcat(basePath, 'smoothed.dat'), 'pos', '-ascii'); 

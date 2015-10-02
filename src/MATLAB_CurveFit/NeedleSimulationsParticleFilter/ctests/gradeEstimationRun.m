@@ -1,13 +1,16 @@
 clearvars -except 'truePosB' 'estPosB'; clc; close all;
 
-estBasePath = 'C:\Joey\Data\8_24_15\Trial3\Insertion\Estimated';
-truthBasePath = 'C:\Joey\Data\8_24_15\Trial3\Insertion\GroundTruth';
+estBasePath = 'C:\Joey\Data\9_18_15\2mm\Trial1\Estimated';
+truthBasePath = 'C:\Joey\Data\9_18_15\2mm\Trial1\GroundTruth';
 
 estPos = load(strcat(estBasePath, 'Pos.dat'));
 truePos = load(strcat(truthBasePath, 'Pos.dat'));
 
 estRs = loadOrientations(strcat(estBasePath, 'Rs.dat'));
 trueRs = loadOrientations(strcat(truthBasePath, 'Rs.dat'));
+
+estRhos = load(strcat(estBasePath, 'Rho.dat'));
+trueRhos = load(strcat(truthBasePath, 'Rho.dat'));
 
 startId = 20;
 endId = size(estPos,1)-1;

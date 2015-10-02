@@ -1,8 +1,8 @@
 clear; clc; close all;
 
-path = 'C:\Joey\Data\9_18_15\05mm\PreInsertGPS\TipHistory.mat';
+path = 'C:\Joey\Data\9_18_15\3mm\Trial1\PreInsertionGPS.mat';
 
-TipHistory = load(path, '-ascii')
+TipHistory = load(path, '-ascii');
 
 scatter3(TipHistory(:,1), TipHistory(:,2), TipHistory(:,3));
 daspect([1 1 1]);

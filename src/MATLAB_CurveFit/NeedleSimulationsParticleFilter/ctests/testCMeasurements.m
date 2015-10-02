@@ -2,22 +2,23 @@ clear; clc; close all;
 addpath('../');
 
 yep =   [-615.74299609414          222.274648570614        522.582079556706];
+
 params = initParamsForSimulation();
-params.useLUTDistribution = 1;
+params.useLUTDistribution = 0;
 params.drawTipFrame = 1;
 params.drawUSFrame = 1;
 params.drawTruePos = 0;
-params.drawParticlesNs = 5;
-params.drawParticlePos = 0;
-params.drawParticleOrientation = 1;
+params.drawParticlesNs = 1;
+params.drawParticlePos = 1;
+params.drawParticleOrientation = 0;
 params.drawExpectedPos = 1;
 params.drawExpectedOrientation = 1;
-params.mpp = 163;
-params.p1.uvOffsetSigma = diag([params.mpp*5*1e-3 params.mpp*5*1e-3]);  %5 pixels of measurement noise
+params.mpp = 119;
+params.p1.uvOffsetSigma = diag([params.mpp*15*1e-3 params.mpp*15*1e-3]);  %5 pixels of measurement noise
 params.LUTDistributionBasePath = 'C:/Joey/Data/8_24_15/Trial3/Insertion/'
 
-params.sigB0 = -2.3790178529765900;
-params.sigB1 = 0.053473668798548403;
+params.sigB0 = -1.6679;
+params.sigB1 = 0.0594;
 
 rng('default');
 rng(1);
@@ -34,6 +35,16 @@ params.usw = norm(measurements{1}.fur-measurements{1}.ful);
 params.ush = norm(measurements{1}.fur-measurements{1}.fbr);
 
 xpe = expectedValueOfParticles(xp, params);
+
+% Re = QuatToRotationMatrix(xpe.q);
+% projScatter = zeros(length(xp),3);
+% for i=1:length(xp)
+%     projScatter(i,1) = (xp{i}.pos-xpe.pos)'*Re(:,3);
+%     projScatter(i,2) = xp{i}.w;
+%     projScatter(i,3) = i;
+% end
+% scatter(projScatter(:,1), projScatter(:,2));
+
 usFrameHandles = drawUSFrame(measurements{1}, params, []);
 particleHandles = drawParticles(1, xp, xpe, [], params, []);
 %tipFrameHandles = drawFrame(xpe, 1, []);
@@ -60,6 +71,8 @@ end
 scatter(projScatter(:,1), projScatter(:,2));
 indices = sortrows(projScatter);
 indices = indices(find(indices(:,1) > 2.5),:);
+
+dot((xpea.pos-xpe.pos),Re(:,3))
 % campos(yep);
 % daspect([1 1 1]);
 %tipFrameHandles = drawFrame(1, xpea, 5, params, tipFrameHandles);

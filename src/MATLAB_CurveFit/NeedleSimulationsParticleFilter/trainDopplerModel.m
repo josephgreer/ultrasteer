@@ -7,7 +7,7 @@ end
 
 addpath('../LabelData/');
 
-basePath = 'C:\Joey\Data\9_18_15\3mm\Trial5\';
+basePath = 'C:\Joey\Data\9_18_15\3mm\Trial1\';
 dop = fopen(strcat(basePath,'scan.b32'));
 dopHeader = ReadHeader(dop);
 
@@ -63,6 +63,23 @@ end
 B = mean(Bs,2)
 figure;
 vals = mnrval(B,[-10:.1:100]');
+plot([-10:.1:100],vals);%/sum(vals(:,1)));
+
+Bs = [];
+Bsp = [];
+for i=1:nBagging
+    cOnNeedles = datasample(onNeedles, numObs);
+    cOffNeedles = offNeedles;
+    
+    X = vertcat(data(cOnNeedles,1), data(cOffNeedles,1));
+    Y = vertcat(ones(size(cOnNeedles)), zeros(size(cOffNeedles)));
+    ws = vertcat(ones(size(cOnNeedles)),10*ones(size(cOffNeedles)));
+    B = glmfit(X,Y,'binomial','weights',ws);
+    Bs = horzcat(Bs,B);
+end
+Boutli = mean(Bs,2)
+figure;
+vals = glmval(B,[-10:.1:100]','logit');
 plot([-10:.1:100],vals);%/sum(vals(:,1)));
 
 %fsolve(@(x)(log((1-x)/x)+B(1)), 0.5)

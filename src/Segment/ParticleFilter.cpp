@@ -84,10 +84,19 @@ namespace Nf
   {
     TipState res;
 
+    mat33 R = this->R;
+    bool backward = false;
+    if(dl < 0) {
+      backward = true;
+      // reverse for propagating backward
+      R = (mat33)(R*Ry(PI));
+      dl = -dl;
+    }
+
     //k' coordinate system expressed in global coordinates.
     // note rotation order is flipped because using intrinsic rotations with
     // extrinisc rotation matrices
-    mat33 kp = this->R*Rz(u.dtheta);
+    mat33 kp = R*Rz(u.dtheta);
 
     // location of tip expressed in Rk' coordinates
     f64 phi = dl/this->rho;
@@ -106,6 +115,9 @@ namespace Nf
     res.pos = kp*kp_x+this->pos;
     // pass through rho
     res.rho = this->rho;
+
+    if(backward)
+      res.R = (mat33)(res.R*Ry(PI));
 
     return res;
   }
@@ -415,6 +427,8 @@ namespace Nf
 
     m_pos = repmat(xc.pos, 1, m_nParticles)+posNoise.Sample(m_nParticles);
 
+    m_R.clear();
+
     for(s32 i=0; i<m_nParticles; i++) {
       m_R.push_back((mat33)(xc.R*SO3Exp(orNoise.Sample())));
     }
@@ -572,7 +586,7 @@ namespace Nf
         duv = suv-m[0].uv.col(0);
 
         // calculate p(frame interesects with flagella|doppler)
-        pin = sigmoid(m[0].doppler(0,0), sigB0, sigB1);
+        pin = m[0].doppler(0,0) > 0 ?  sigmoid(m[0].doppler(0,0), sigB0, sigB1) : 0;
         p_uvxOnFrame = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), measurementOffsetSigma, a, b)+
           (1-pin)*(1/(ush*usw));
       }
@@ -580,12 +594,12 @@ namespace Nf
       p_uvxOffFrame = 1/(ush*usw);
 
       //p(doppler | over needle)
-      p_dxOnFrame  = m_pDopOverNeedle->P(dop);
+      p_dxOnFrame  = sigmoid(m[0].doppler(0,0), sigB0, sigB1);//m_pDopOverNeedle->P(dop);
 
       //p(doppler | not over needle)
-      p_dxOffFrame = m_pDopNotOverNeedle->P(dop);
+      p_dxOffFrame = 1-p_dxOnFrame;//m_pDopNotOverNeedle->P(dop);
 
-      pw(0,i) = (p_uvxOnFrame*p_dxOnFrame)*(1-p_offFrame)+(p_uvxOffFrame*p_dxOffFrame*p_offFrame);
+      pw(0,i) = (p_uvxOnFrame*p_dxOnFrame)*(1-p_offFrame)+(p_uvxOnFrame*p_dxOffFrame*p_offFrame);
     }
 
     ApplyWeights(pw);
@@ -877,12 +891,12 @@ namespace Nf
       p_uvxOffFrame = 1/(ush*usw);
 
       //p(doppler | over needle)
-      p_dxOnFrame  = m_pDopOverNeedle->P(dop);
+      p_dxOnFrame  = sigmoid(m[0].doppler(0,0), sigB0, sigB1);;//m_pDopOverNeedle->P(dop);
 
       //p(doppler | not over needle)
-      p_dxOffFrame = m_pDopNotOverNeedle->P(dop);
+      p_dxOffFrame = 1-p_dxOnFrame;//m_pDopNotOverNeedle->P(dop);
 
-      pw(0,i) = (p_uvxOnFrame*p_dxOnFrame)*(1-p_offFrame)+(p_uvxOffFrame*p_dxOffFrame*p_offFrame);
+      pw(0,i) = (p_uvxOnFrame*p_dxOnFrame)*(1-p_offFrame)+(p_uvxOnFrame*p_dxOffFrame*p_offFrame);
     }
     mat sm = sum(pw, 1);
     pw = pw/sm(0,0);

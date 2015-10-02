@@ -115,3 +115,36 @@ TEST(GPS, Smooth)
   delete writer;
   delete gpsReader;
 }
+
+TEST(Command, CorrectTick)
+{
+  using ::s32;
+
+  f32 aveTimeMs = 180;
+
+  std::string basePath = PATH_CAT("3mm/Trial1/scan");
+
+  char temp[200] = {0};
+  sprintf(temp, "%s.gps2", basePath.c_str());
+
+  RPGPSReader *gpsReader = new RPGPSReader(temp);
+  RPFileHeader header = gpsReader->GetHeader();
+  
+  sprintf(temp, "%s.u", basePath.c_str());
+  NSCommandReader *commandReader = new NSCommandReader(temp);
+
+  sprintf(temp, "%s_corrected.u", basePath.c_str());
+  NSCommandWriter *writer = new NSCommandWriter(temp);
+
+  for(s32 i=0; i<header.frames; i++) {
+    NSCommand u = commandReader->GetNextNSCommand();
+    u.tick = (u32)(i*aveTimeMs+0.5f);
+    writer->WriteNextNSCommand(&u);
+  }
+
+  writer->Cleanup();
+
+  delete writer;
+  delete gpsReader;
+  delete commandReader;
+}

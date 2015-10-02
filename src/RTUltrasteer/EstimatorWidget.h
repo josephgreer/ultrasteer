@@ -63,6 +63,8 @@ namespace Nf
     std::map < s32, PFData > m_pfFramesProcessed;
     std::tr1::shared_ptr < PointCloudVisualizer > m_measurementPoints;
     std::tr1::shared_ptr < PFParams > m_pfParams;
+    std::tr1::shared_ptr < PFParams > m_pfParamsMarg;
+    std::string m_basePath;
 
     Updateable *m_update;
     s32 m_lastFrame;
@@ -78,7 +80,7 @@ namespace Nf
     void SetVisiblity(bool visible);
     virtual void DoSegmentation(RPData *rp, NeedleFrame &doppler, NeedleFrame &bmode);
     virtual void Update(RPData *rp, s32 frame); 
-    virtual void Initialize(const char *basePath = "");
+    virtual void Initialize(const char *basePath);
     virtual s32 NumberOfMeasurementsUpToAndIncludingFrame(s32 frame);
     virtual void UpdateVisualizations(s32 frame);
     std::tr1::shared_ptr < PFParams > GetParams(s32 frame);
@@ -87,6 +89,7 @@ namespace Nf
     std::vector < NSCommand > AssembleCommands(s32 frame);
     arma::vec AssembleDts(s32 frame);
     void SaveParticleFilterResults(s32 frame, const char *basePath);
+    void SetBasePath(const char *basePath) { m_basePath = std::string(basePath); }
 
     //Parameters
     std::tr1::shared_ptr < Nf::FloatParameter > m_roc;
