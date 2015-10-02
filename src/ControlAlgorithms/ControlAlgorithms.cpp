@@ -167,10 +167,10 @@ namespace Nf {
 #ifdef RECORDING_MEASUREMENT_NOISE
     arma::mat z = m_z.ToArmaMatrix4x4();
     char strbuff[100];
-    sprintf(strbuff, "step_%d_measurement_%d.m",m_step,m_scan);
+    sprintf(strbuff, "C:/Troy/Data/step_%d_measurement_%d.m",m_step,m_scan);
     z.save(strbuff, arma::arma_ascii);
     m_scan++;
-    if( m_scan == 10 ){
+    if( m_scan == 5 ){
       m_scan = 0;
       m_step++;
       m_insertionMMatLastManualScan = m_robot->getInsMM(); 
