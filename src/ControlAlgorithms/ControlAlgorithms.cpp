@@ -17,6 +17,7 @@ namespace Nf {
     , m_usCalibrationMatrix(Matrix44d::Zero())
     , m_Tref2robot(Matrix44d::Zero())
     , m_Tem2robot(Matrix44d::Zero())
+    , m_Tneedletip2robot(Matrix44d::Zero())
     , m_transducerType(0)
     , m_robot(NULL)
     , m_insertionMMatLastManualScan(0.0)
@@ -26,7 +27,6 @@ namespace Nf {
     m_scan = 0;
     m_step = 0;
 #endif
-
     m_insTrigger = new STrigger();
     m_rotTrigger = new STrigger();
     m_insTrigger->setThresholds(0.01);
@@ -79,18 +79,24 @@ namespace Nf {
   {
     using namespace arma;
 
-    if( m_recordingData ){ // if we have been recording, save the data
-      m_recordingData = false;
-
-      char strbuff[100];
-      m_xest_record.save("C:/Troy/Data/xest.m", arma_ascii);
-      m_xact_record.save("C:/Troy/Data/xact.m", arma_ascii);
-      m_z_record.save("C:/Troy/Data/z.m", arma_ascii);
-      m_t_record.save("C:/Troy/Data/t.m", arma_ascii);
-
-      if(m_UKF.isInitialized()){ //don't change the state if UKF is not initialized
+    if(m_UKF.isInitialized()){ //don't change the state if UKF is not initialized
+      if( m_recordingData ){ // if we have been recording, save the data
+        m_recordingData = false;
+        char strbuff[100];
+        m_xest_record.save("C:/Troy/Data/xest.m", arma_ascii);
+        m_xact_record.save("C:/Troy/Data/xact.m", arma_ascii);
+        m_z_record.save("C:/Troy/Data/z.m", arma_ascii);
+        m_t_record.save("C:/Troy/Data/t.m", arma_ascii);
+        m_u_record.save("C:/Troy/Data/u.m", arma_ascii);
+      }else{ 
+        m_xest_record.reset();
+        m_xact_record.reset();
+        m_z_record.reset();
+        m_t_record.reset();
+        m_u_record.reset();
         m_recordingData = !m_recordingData;
       }
+      return m_recordingData;
     }
   }
 
@@ -163,6 +169,7 @@ namespace Nf {
     GetIncrementalInputVector(u);
     m_UKF.fullUpdateUKF(u, m_z);
     m_UKF.getCurrentStateEstimate(m_x);
+    recordDataPoint(m_x, m_Tneedletip2robot, m_z, m_t, u);
 
 #ifdef RECORDING_MEASUREMENT_NOISE
     arma::mat z = m_z.ToArmaMatrix4x4();
@@ -254,6 +261,7 @@ namespace Nf {
     GetIncrementalInputVector(u);
     m_UKF.processUpdateUKF(u);
     m_UKF.getCurrentStateEstimate(x);
+    recordDataPoint(x, m_Tneedletip2robot, Matrix44d::Zero(), m_t, u);
   }
 
   void ControlAlgorithms::updateTransducerPose()
@@ -268,8 +276,30 @@ namespace Nf {
       m_Ttrans2robot = m_Tref2robot*Tref2em.Inverse()*Ttrans2em;
       m_Tem2robot = m_Ttrans2robot*Ttrans2em.Inverse();
 
+#ifdef GPS3_SAVING
+      Matrix44d Tneedletip2em = Matrix44d::FromCvMat(m_data.gps3.pose);
+      Vec3d tipOffset(NEEDLE_GPS_OFFSET,0.0,0.0);
+      Tneedletip2em.SetPosition(m_data.gps3.pos + Tneedletip2em.GetOrientation()*tipOffset);
+      m_Tneedletip2robot = m_Tem2robot*Tneedletip2em;
+#endif
+
       m_frameBoundaries = m_data.GetFrameBoundariesInRobotFrame(m_usCalibrationMatrix, m_Tref2robot);
     }
+  }
+
+  void ControlAlgorithms::recordDataPoint(Matrix44d x_est, Matrix44d x_act, Matrix44d z, Vec3d t, Vec3d u)
+  {
+    m_xest_record.insert_cols(m_xest_record.n_cols,x_est.ToArmaMatrix4x4());
+    m_xact_record.insert_cols(m_xact_record.n_cols,x_act.ToArmaMatrix4x4());
+    m_z_record.insert_cols(m_z_record.n_cols,z.ToArmaMatrix4x4());
+
+    arma::vec3 t_; 
+    t_ << t.x << t.y << t.z;
+    arma::vec3 u_; 
+    u_ << u.x << u.y << u.z;
+    
+    m_t_record.insert_cols(m_t_record.n_cols,t_);
+    m_u_record.insert_cols(m_u_record.n_cols,u_);
   }
 
   bool ControlAlgorithms::CheckCompletion(void)
@@ -384,7 +414,7 @@ namespace Nf {
   }
 
   void ControlAlgorithms::getVisualizerValues(Vec3d &t, Matrix44d &x, Matrix44d &z, Matrix44d &Tref2robot,
-    Matrix44d &Ttrans2robot, s32 &transducerType, Cubed &frameBoundaries, Matrix44d &Tem2robot)
+    Matrix44d &Ttrans2robot, s32 &transducerType, Cubed &frameBoundaries, Matrix44d &Tem2robot, Matrix44d &Tneedletip2robot)
   {
     t = m_t;
     x = m_x;
@@ -393,6 +423,7 @@ namespace Nf {
     Ttrans2robot = m_Ttrans2robot;
     frameBoundaries = m_frameBoundaries;
     Tem2robot = m_Tem2robot;
+    Tneedletip2robot = m_Tneedletip2robot;
     transducerType = m_transducerType;
   }
 

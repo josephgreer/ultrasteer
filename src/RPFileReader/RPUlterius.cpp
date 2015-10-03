@@ -94,6 +94,7 @@ namespace Nf {
 #else
     res.gps3 = m_gps2.gps2;
     res.gps2 = GPS_Data::eye();
+    res.gps2.valid = 1;
 #endif
     return res;
   }

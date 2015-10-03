@@ -395,6 +395,9 @@ namespace Nf
 
     if( m_inStylusPointSelection->GetValue() && m_stylusCalibration->isComplete() ) // if we are recording the tip of the calibrated stylus
     {
+#ifdef GPS3_SAVING
+      rp.GetGPS1Relative3(R_i,p_i);
+#endif
       // calculate the relative position of the stylus tip at the current time
       mat p_tip = R_i*m_stylusCalibration->getCalibrationVector() + p_i;
 

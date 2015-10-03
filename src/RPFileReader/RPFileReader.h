@@ -122,6 +122,7 @@ namespace Nf
     {
       GPS_Data retVal;
       retVal.pose = cv::Mat::eye(4, 4, CV_64F);
+      retVal.pos = Vec3d(0,0,0);
       return retVal;
     }
   };
@@ -290,6 +291,30 @@ namespace Nf
       // get position and orientation of GPS2 frame
       Vec3d p_GPS2 = this->gps2.pos;
       Matrix44d pose_GPS2 = Matrix44d::FromCvMat(this->gps2.pose);
+      pose_GPS2.SetPosition(p_GPS2); // current implementation of rp.gps.pose does not include position in 4x4
+      mat44 T_GPS2 = pose_GPS2.ToArmaMatrix4x4();
+
+      // get relative position and orientation
+      mat44 T_rel = inv( T_GPS2 )*T_GPS1;    
+
+      // pass position and orientation to the stylus calibration object
+      R1_rel = T_rel.submat(0,0,2,2);
+      p1_rel = T_rel.submat(0,3,2,3);
+    }
+
+    void GetGPS1Relative3(arma::mat33 &R1_rel, arma::vec3 &p1_rel) const
+    {
+      using namespace arma;
+
+      // get position and orientation of GPS1 frame 
+      Vec3d p_GPS1 = this->gps.pos;
+      Matrix44d pose_GPS1 = Matrix44d::FromCvMat(this->gps.pose);
+      pose_GPS1.SetPosition(p_GPS1); // current implementation of rp.gps.pose does not include position in 4x4
+      mat44 T_GPS1 = pose_GPS1.ToArmaMatrix4x4();
+
+      // get position and orientation of GPS2 frame
+      Vec3d p_GPS2 = this->gps3.pos;
+      Matrix44d pose_GPS2 = Matrix44d::FromCvMat(this->gps3.pose);
       pose_GPS2.SetPosition(p_GPS2); // current implementation of rp.gps.pose does not include position in 4x4
       mat44 T_GPS2 = pose_GPS2.ToArmaMatrix4x4();
 

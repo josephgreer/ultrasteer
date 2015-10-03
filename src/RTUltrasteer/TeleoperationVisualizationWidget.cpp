@@ -170,12 +170,12 @@ namespace Nf
   {
     // define matrices and vectors for target and axes
     Vec3d t;
-    Matrix44d x, z, Tref2robot, Ttrans2robot, Tem2robot;
+    Matrix44d x, z, Tref2robot, Ttrans2robot, Tem2robot, Tneedletip2robot;
     Cubed framePoints;
     s32 transducerType;
 
     // get values and update display
-    m_control->getVisualizerValues(t, x, z, Tref2robot, Ttrans2robot, transducerType, framePoints, Tem2robot);
+    m_control->getVisualizerValues(t, x, z, Tref2robot, Ttrans2robot, transducerType, framePoints, Tem2robot, Tneedletip2robot);
    
     if( !t.isZero() ){
       m_targetSource->SetCenter(t.x,t.y,t.z);
@@ -209,6 +209,13 @@ namespace Nf
 
     if( !Tref2robot.isZero() ){
       m_referenceAxes->PokeMatrix(Tref2robot.GetVTKMatrix());
+      m_referenceAxes->VisibilityOn();
+    }else{
+      m_referenceAxes->VisibilityOff();
+    }
+
+    if( !Tneedletip2robot.isZero() ){ // override the reference axes if we have GPS3
+      m_referenceAxes->PokeMatrix(Tneedletip2robot.GetVTKMatrix());
       m_referenceAxes->VisibilityOn();
     }else{
       m_referenceAxes->VisibilityOff();
