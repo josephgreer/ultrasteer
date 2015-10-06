@@ -23,7 +23,7 @@ end
 
 % gridSz = 2 cm;
 gridSz = 20;
-nParticlesPerDim = 50;
+nParticlesPerDim = 150;
 
 
 xcurr.q = RotationMatrixToQuat(Ry(pi/2));
@@ -92,7 +92,7 @@ params.drawMeasurement = 0;
 ts = [2 2.75 2.9];
 figHandle = figure;
 
-zaspects = [1/2000; 1/1000; 1/350];
+zaspects = 1/10*[1/2000; 1/1000; 1/350];
 xhist = cell2mat(xs); xhist = [xhist.pos]';
 xhist(find(xhist(:,1) > max(posx)+1),:) = [];
 ztop = zeros(3,1);
@@ -109,7 +109,7 @@ for i=1:3
 %     fakeMeas.uv = [fakeMeas.bx fakeMeas.by]\(fakeMeas.pos-fakeMeas.ful);
     
     
-    particles = measureParticles(particles, u, xcurr, {fakeMeas}, params);
+    particles = measureParticles(particles, u, xcurr, ones(size(u))*params.dt, {fakeMeas}, params);
     partsW = zeros(size(positionsx));
     
     subplot(1,3,i);
@@ -117,8 +117,8 @@ for i=1:3
         [r c] = ind2sub(size(positionsx), j);
         partsW(r,c) = particles{j}.w;
     end
-%     gauss = fspecial('gaussian', [10 10], 2);
-%     partsW = imfilter(partsW, gauss);
+    gauss = fspecial('gaussian', [10 10], 2);
+    partsW = imfilter(partsW, gauss);
     h = surf(posx, posy, partsW, 'EdgeColor', 'none', 'LineStyle', 'none');
     cmap = colormap;
     
@@ -142,7 +142,8 @@ for i=1:3
     caxis([clims(1) clims(2)]);
     
     
-    set(gca, 'FontSize', 12, 'FontName', 'Times New Roman');
+    %set(gca, 'FontSize', 12, 'FontName', 'Times New Roman');
+    set(gca, 'visible', 'off');
     xlim([min(positionsxx) max(positionsxx)]);
     ylim([min(positionsyy) max(positionsyy)]);
     zlim([0 ztop(i)]);
@@ -169,8 +170,8 @@ set(figHandle, 'Position', [100 100 3000 500]);
 
 basePath = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Papers\NeedleEstimationJournal\Figures\';
 
-path = strcat(basePath, 'measurement_prob1.png');
-%export_fig('-transparent', path);
+path = strcat(basePath, 'measurement_prob2.png');
+export_fig('-transparent', path);
 
 % for x=center(1)-gridSz/2:gridSz/nParticlesPerDim:center(1)+gridSz/2
 %     for y=center(2)-gridSz/2:gridSz/nParticlesPerDim:center(2)+gridSz/2

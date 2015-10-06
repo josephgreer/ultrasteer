@@ -1,6 +1,6 @@
 clear; clc; close all;
 
-flat = 0;
+flat = 1;
 
 b1 = [1;0;0];
 b2 = [0;1;0];
@@ -23,16 +23,23 @@ end
 colormap(cmap);
 caxis([0 1]);
 
-sigma = diag([0.001; 0.001]);
+cmap = 0.25*ones(size(cmap));
+colormap(cmap);
+caxis([0 1]);
+
+sigma = diag([0.01; 0.01]);
 mu = [-0.1 -0.2];
 [u v] = meshgrid([-aspect/2:1/npix:aspect/2],[-1/2:1/npix:1/2]);
 
-im = reshape(mvnpdf([u(:) v(:)], mu, sigma), size(u))+1;
+im = 0.25*ones(size(u));%reshape(mvnpdf([u(:) v(:)], mu, sigma), size(u))+0.5;
+im = im/max(im(:));
+
 c = [1:linespacing:size(im,2)];
 r = [1:linespacing:size(im,1)];
 
 if(flat)
-    ima = (im/max(im(:)))*0.0+1;
+    ima = 0.25*ones(size(im));%(im/max(im(:)))*0.6+0.2;
+    %ima = (im/max(im(:)))*0.0+1;
 else
     ima = (im/max(im(:)))*0.6+0.2;
 end
