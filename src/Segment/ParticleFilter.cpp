@@ -1245,7 +1245,7 @@ namespace Nf
     }
     sprintf(path, "%sRs.dat", basePath);
     saveOrientations(orientationMus, path);
-    sprintf(path, "%ssigmas.dat", basePath);
+    sprintf(path, "%sSigmas.dat", basePath);
     saveOrientations(orientationSigmas, path);
   }
 

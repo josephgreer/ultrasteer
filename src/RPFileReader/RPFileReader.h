@@ -9,7 +9,7 @@
 
 #define NOMINAL_SOS 1540.0
 
-#define GPS3_SAVING
+//#define GPS3_SAVING
 
 namespace Nf
 {
@@ -302,6 +302,7 @@ namespace Nf
       p1_rel = T_rel.submat(0,3,2,3);
     }
 
+#ifdef GPS3_SAVING
     void GetGPS1Relative3(arma::mat33 &R1_rel, arma::vec3 &p1_rel) const
     {
       using namespace arma;
@@ -325,6 +326,7 @@ namespace Nf
       R1_rel = T_rel.submat(0,0,2,2);
       p1_rel = T_rel.submat(0,3,2,3);
     }
+#endif
 
     void GetGPS1RelativeT(arma::mat44 &T1_rel)
     {

@@ -65,6 +65,9 @@ namespace Nf
     return res;
   }
 
+#define CLAMP(x,y,z) ((x) < (y) ? (y) : ( (x) > (z) ? (z) : (x) ))
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
   //taken from http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
   vec3 SO3Log(const mat33 &m)
   {
@@ -135,7 +138,8 @@ namespace Nf
     if (abs(s) < 0.001) s=1; 
     // prevent divide by zero, should not happen if matrix is orthogonal and should be
     // caught by singularity test above, but I've left it in just in case
-    angle = acos(( m(0,0) + m(1,1) + m(2,2) - 1)/2);
+    f64 mag = ( m(0,0) + m(1,1) + m(2,2) - 1)/2;
+    angle = acos(CLAMP(mag,-1,1));
     x = (m(2,1) - m(1,2))/s;
     y = (m(0,2) - m(2,0))/s;
     z = (m(1,0) - m(0,1))/s;

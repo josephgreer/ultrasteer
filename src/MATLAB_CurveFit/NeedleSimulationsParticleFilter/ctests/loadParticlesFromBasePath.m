@@ -31,7 +31,7 @@ else
         Rc = reshape(Rs(:,i),3,3);
         sigmac = reshape(sigmas(:,i),3,3);
         xc.qdist = SO3Gaussian(Rc, sigmac);
-        xc.w = 1;
+        xc.w = ws(i);
         xp = vertcat(xp, {xc});
     end
 end

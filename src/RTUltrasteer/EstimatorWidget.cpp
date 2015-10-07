@@ -384,6 +384,17 @@ namespace Nf
     saveParticlesMethod1(basePath, parts);
   }
 
+  static void SaveParticleFilterState(const std::vector <NSCommand> &us, const arma::vec &dts, 
+    const std::vector < Measurement > &meas, const PartMethod3 &parts)
+  {
+    const char *basePath = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testCMeasure";
+
+    saveCommands(basePath, us);
+    saveTimes(basePath, dts);
+    saveMeasurements(basePath, meas);
+    saveParticlesMethod3(basePath, parts);
+  }
+
   static PartMethod1 AssembleParticles(const std::tr1::shared_ptr < ParticleFilterFullState > pf, const PFParams *p)
   {
     PartMethod1 res;
@@ -392,6 +403,25 @@ namespace Nf
     res.rhos = pf->GetParticleRhos(p);
     res.Rs = pf->GetParticleOrientations(p);
     res.ws = pf->GetWeights();
+
+    return res;
+  }
+
+  static PartMethod3 AssembleParticles(const std::tr1::shared_ptr < ParticleFilterMarginalized > pf, const PFParams *p)
+  {
+    PartMethod3 res;
+
+    res.pos = pf->GetParticlePositions(p);
+    res.rhos = pf->GetParticleRhos(p);
+    res.ws = pf->GetWeights();
+    
+    std::vector < arma::mat33 > Rs = pf->GetParticleOrientations(p);
+    std::vector < arma::mat33 > sigmas = pf->GetParticleOrientationSigmas(p);
+    res.Rs = std::vector < OrientationKF >(sigmas.size());
+
+    for(s32 i=0; i<Rs.size(); i++) {
+      res.Rs[i] = OrientationKF(Rs[i], sigmas[i]);
+    }
 
     return res;
   }
@@ -447,8 +477,13 @@ namespace Nf
         (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0, params.get());
 
       if(false) {
-        SaveParticleFilterState(AssembleCommands(frame), AssembleDts(frame), AssembleMeasurements(frame),
-          AssembleParticles(std::tr1::shared_ptr < ParticleFilterFullState > ((ParticleFilterFullState *)m_pf.get()), GetParams(-1).get()));
+        if(this->m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
+          SaveParticleFilterState(AssembleCommands(frame), AssembleDts(frame), AssembleMeasurements(frame),
+            AssembleParticles(std::tr1::shared_ptr < ParticleFilterFullState > ((ParticleFilterFullState *)m_pf.get()), GetParams(-1).get()));
+        } else {
+          SaveParticleFilterState(AssembleCommands(frame), AssembleDts(frame), AssembleMeasurements(frame),
+            AssembleParticles(std::tr1::shared_ptr < ParticleFilterMarginalized > ((ParticleFilterMarginalized *)m_pf.get()), GetParams(-1).get()));
+        }
       }
 
       m_pf->ApplyMeasurement(AssembleMeasurements(frame), AssembleCommands(frame), AssembleDts(frame), params.get());
