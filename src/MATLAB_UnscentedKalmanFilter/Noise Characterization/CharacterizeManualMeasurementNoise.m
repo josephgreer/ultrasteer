@@ -16,7 +16,7 @@ Nsteps = {2,8,5,2,7,4,6,6};
 Nruns = 8;
 scans = 1:Nscans;
 runs = 1:Nruns;
-basedir = 'C:\Troy\Data\2015-09-29 Manual Scan Measurement Noise\';
+basedir = 'F:\Dropbox\Troy Adebar Research Folder\1 - Kalman Filter\2015-09-29 Manual Scan Measurement Noise';
 utilpath = '..\Matlab Model\Utility Functions';
 addpath(utilpath);
 
@@ -49,6 +49,12 @@ end
 display(Pall)
 N = length(Eall);
 display(N)
+
+%% Save matrix of errors
+for i = 1:N
+    Wm(:,i) = Eall(1:3,:,i);
+end
+save('MeasurementNoise','Wm');
 
 %% Visualize measurements, errors
 
