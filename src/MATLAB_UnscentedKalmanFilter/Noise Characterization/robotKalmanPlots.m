@@ -16,33 +16,35 @@ function [  ] = robotKalmanPlots(act,kal,grd,t,x,x_hat,z,u)
 if( act )
     % Format the plot
     hfig = figure(1); clf; format3Dplot;
-    title('Needle Steering Simulation - Actual State');
+    title('Needle Path');
+    % Highlight the entry position and target
+    hold on;
+%     plot3(x(1,4,1),x(3,4,1),x(2,4,1),'ko','MarkerSize',10,...
+%         'MarkerFaceColor','k');
+%     plot3(t(1),t(3),t(2),'k^','MarkerSize',10,'MarkerFaceColor','k');
+%     hold off;
+    % Plot the state vectors
+%     for t = 1:size(x,3)
+%         plotstate(x(:,:,t),hfig,2);
+%     end
+plot3(squeeze(x(1,4,:)),squeeze(x(3,4,:)),squeeze(x(2,4,:)),'b');
+plot3(squeeze(x_hat(1,4,:)),squeeze(x_hat(3,4,:)),squeeze(x_hat(2,4,:)),'r');
+legend('actual','estimator');
+end
+%% Plot needle pose as estimated by either Kalman filter or sensors
+if( kal )
+    % Format the plot
+    hfig = figure(2); clf; format3Dplot;
+    title('GPS Output');
     % Highlight the entry position and target
     hold on;
     plot3(x(1,4,1),x(3,4,1),x(2,4,1),'ko','MarkerSize',10,...
         'MarkerFaceColor','k');
     plot3(t(1),t(3),t(2),'k^','MarkerSize',10,'MarkerFaceColor','k');
     hold off;
-    % Plot the state vectors
+%     Plot the state vectors
     for t = 1:size(x,3)
         plotstate(x(:,:,t),hfig,2);
-    end
-end
-%% Plot needle pose as estimated by either Kalman filter or sensors
-if( kal )
-    % Format the plot
-    hfig = figure(2); clf; format3Dplot;
-    title('Needle Steering Simulation - Estimated State');
-    % Highlight the entry position and target
-    hold on;
-    plot3(x_hat(1,4,1),x_hat(3,4,1),x_hat(2,4,1),'ko','MarkerSize',10,...
-        'MarkerFaceColor','k');
-    plot3(t(1),t(3),t(2),'k^','MarkerSize',10,'MarkerFaceColor','k');
-    hold off;
-    % Plot the state vectors
-    for t = 1:size(x_hat,3)
-        plotstate(x_hat(:,:,t),hfig,2);
-        % plotarc(c(:,1,t),x_est(1:3,1,t),p,hfig);
     end
 end
 %% Plot actual, measured, and Kalman filtered position, along with commands
@@ -50,8 +52,8 @@ if( grd )
     hfig = figure(3);
     clf;
     tits = {'p1','p2','p3','r1','r2','r3',...
-        '\delta\theta','u','l','t1','t2','t3'};
-    cmds = {'rad','mm','mm'};
+        '\theta','u','l','t1','t2','t3'};
+    cmds = {'deg','mm','mm'};
     % Plot position of tip
     for o = 1:3
         subplot(3,3,o);
@@ -74,7 +76,7 @@ if( grd )
         hold on;
         % Convert to rotation vector
         for k = 1:size(x,3)
-            xr(:,1,k) = mat2vec(x(1:3,1:3,k));
+            xr(:,1,k) = real(mat2vec(x(1:3,1:3,k)));
             x_hatr(:,1,k) = mat2vec(x_hat(1:3,1:3,k));
             zr(:,1,k) = mat2vec(z(1:3,1:3,k));
         end        
@@ -99,7 +101,15 @@ if( grd )
         subplot(3,3,o);
         hold on;
         % Plot the command value
+        if o == 7
+        plot(squeeze(u(o-6,:,:)).*180/pi,'k-','LineWidth',5);
+        end
+        if o == 9
+        plot(cumsum(squeeze(u(o-6,:,:))),'k-','LineWidth',5);
+        end
+        if o == 8
         plot(squeeze(u(o-6,:,:)),'k-','LineWidth',5);
+        end
         ylabel(cmds(o-6));
         % Format the plot
         grid on;

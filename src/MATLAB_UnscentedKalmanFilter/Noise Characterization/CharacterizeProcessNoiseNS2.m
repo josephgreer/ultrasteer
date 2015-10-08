@@ -16,7 +16,6 @@ clc; clear all; close all;
 % Nruns = 8;
 % scans = 1:Nscans;
 % runs = 1:Nruns;
-% basedir = 'C:\Troy\Data\2015-09-29 Manual Scan Measurement Noise\';
 basedir = 'C:\Troy\Data\'
 utilpath = '..\Matlab Model\Utility Functions';
 addpath(utilpath);
@@ -52,11 +51,11 @@ temp = importdata(path, ' ', 2);
 u = temp.data;
 u = reshape(u,3,1,[]);
 
-%% Correct initial registration error between estimate and in-needle GPS
-Te = xact(:,:,3)^-1*xest(:,:,3);
-for i = 1:length(xact)
-    xact(:,:,i) = xact(:,:,i)*Te;
-end
+% %% Correct initial registration error between estimate and in-needle GPS
+% Te = xact(:,:,3)^-1*xest(:,:,3);
+% for i = 1:length(xact)
+%     xact(:,:,i) = xact(:,:,i)*Te;
+% end
 
 %% Remove non-measurements
 for i = 1:length(z)
@@ -64,6 +63,18 @@ for i = 1:length(z)
         z(:,:,i) = nan;
     end
 end
+% 
+% for i = length(xest):-1:1
+%     if(u(3,:,i) == 0)
+%         xact(:,:,i) = [];
+%         xest(:,:,i) = [];
+%         u(:,:,i) = [];
+%         z(:,:,i) = [];
+%     end
+% end
+
 
 %% Plot results
-robotKalmanPlots(false, false, true, t, xact, xest, z, u);
+robotKalmanPlots(true, false, true, t, xact, xest, z, u);
+
+error = norm(t(:,:,1)-xact(1:3,4,end))
