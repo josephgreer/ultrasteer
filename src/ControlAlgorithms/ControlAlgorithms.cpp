@@ -164,7 +164,7 @@ namespace Nf {
   {
     Vec3d p = ImagePtToRobotPt(p_im);
     Matrix33d R = m_x.GetOrientation();
-    Matrix44d m_z = Matrix44d::FromOrientationAndTranslation(R,p);
+    m_z = Matrix44d::FromOrientationAndTranslation(R,p);
     Vec3d u;
     GetIncrementalInputVector(u);
     m_UKF.fullUpdateUKF(u, m_z);
@@ -202,6 +202,13 @@ namespace Nf {
       Matrix44d Tref2em = Matrix44d::FromCvMat(m_data.gps2.pose);
       Tref2em.SetPosition(m_data.gps2.pos);
       Vec2d scale(m_data.mpp.x/1000.0, m_data.mpp.y/1000.0);
+//#ifdef GPS3_SAVING
+//      Vec3d ImPtInGPSFrame = rpImageCoordToWorldCoord3(p_im, Ttrans2em, m_usCalibrationMatrix, m_data.origin, scale);
+//      Matrix44d Tneedletip2em = Matrix44d::FromCvMat(m_data.gps3.pose);
+//      Vec3d tipOffset(NEEDLE_GPS_OFFSET,0.0,0.0);
+//      Vec3d GPS2Pt = m_data.gps3.pos + Tneedletip2em.GetOrientation()*tipOffset;
+//      int i = 1;
+//#endif
       return rpImageCoordToRobotCoord3(p_im, Ttrans2em, Tref2em, m_Tref2robot, m_usCalibrationMatrix, m_data.origin, scale);
     }else{
       return Vec3d(0.0, 0.0, 0.0);
@@ -259,9 +266,12 @@ namespace Nf {
   {
     Vec3d u;
     GetIncrementalInputVector(u);
-    m_UKF.processUpdateUKF(u);
-    m_UKF.getCurrentStateEstimate(x);
-    recordDataPoint(x, m_Tneedletip2robot, Matrix44d::Zero(), m_t, u);
+
+    if( abs(u.x) > 1e-6 || abs(u.z) > 1e-6){
+      m_UKF.processUpdateUKF(u);
+      m_UKF.getCurrentStateEstimate(x);
+      recordDataPoint(x, m_Tneedletip2robot, Matrix44d::Zero(), m_t, u);
+    }
   }
 
   void ControlAlgorithms::updateTransducerPose()
@@ -279,6 +289,7 @@ namespace Nf {
 #ifdef GPS3_SAVING
       Matrix44d Tneedletip2em = Matrix44d::FromCvMat(m_data.gps3.pose);
       Vec3d tipOffset(NEEDLE_GPS_OFFSET,0.0,0.0);
+      //Vec3d tipOffset(0.0,0.0,0.0);
       Tneedletip2em.SetPosition(m_data.gps3.pos + Tneedletip2em.GetOrientation()*tipOffset);
       m_Tneedletip2robot = m_Tem2robot*Tneedletip2em;
 #endif
@@ -325,9 +336,13 @@ namespace Nf {
       double l = currentInsMM - m_lastInsMM;
       
       double currentRollDeg = m_robot->getRollAngle();
-      double d_th = (currentRollDeg - m_lastRollDeg)*PI/180.0;
+      double d_th = (currentRollDeg - m_lastRollDeg)*PI/180.0;   
 
-      u = Vec3d(d_th,RHO,l);
+      if( currentInsMM > INTRODUCER_LENGTH ){
+        u = Vec3d(d_th,RHO,l);
+      }else{
+        u = Vec3d(d_th,1000,l);
+      }
 
       m_lastInsMM = currentInsMM;
       m_lastRollDeg = currentRollDeg;
@@ -411,6 +426,10 @@ namespace Nf {
     py_img = RobotPtToImagePt(py_world);
     mmToNextScan = max(MAX_OPEN_LOOP_INSERTION-insertionSinceLastManualScan(),0.0);
     targetDepthReached = CheckCompletion();
+
+#ifdef GPS3_SAVING
+    Sxyz = m_Tneedletip2robot.GetPosition(); 
+#endif
   }
 
   void ControlAlgorithms::getVisualizerValues(Vec3d &t, Matrix44d &x, Matrix44d &z, Matrix44d &Tref2robot,

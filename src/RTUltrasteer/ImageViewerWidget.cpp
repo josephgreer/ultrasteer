@@ -566,13 +566,23 @@ namespace Nf
     Vec3d p = x.GetPosition();
     Matrix33d R = x.GetOrientation();
     char str [1000];
+   
+#ifdef GPS3_SAVING
+    int n = sprintf(str, "x = \n%.2f, %.2f, %.2f, %.2f\n%.2f, %.2f, %.2f, %.2f\n%.2f, %.2f, %.2f, %.2f\n\n p_gps = %.2f, %.2f, %.2f", 
+      R.m_data[0][0], R.m_data[0][1], R.m_data[0][2], p.x, 
+      R.m_data[1][0], R.m_data[1][1], R.m_data[1][2], p.y, 
+      R.m_data[2][0], R.m_data[2][1], R.m_data[2][2], p.z,
+      Sxyz.x, Sxyz.y, Sxyz.z);
+#else
     int n = sprintf(str, "x = \n%.2f, %.2f, %.2f, %.2f\n%.2f, %.2f, %.2f, %.2f\n%.2f, %.2f, %.2f, %.2f\n\n Sxyz = %.2f, %.2f, %.2f", 
       R.m_data[0][0], R.m_data[0][1], R.m_data[0][2], p.x, 
       R.m_data[1][0], R.m_data[1][1], R.m_data[1][2], p.y, 
       R.m_data[2][0], R.m_data[2][1], R.m_data[2][2], p.z,
       Sxyz.x, Sxyz.y, Sxyz.z);
-    m_estimateTextActor->SetInput(str);
+#endif
 
+    
+    m_estimateTextActor->SetInput(str);
     int* size = m_renderer->GetSize();
     m_estimateTextActor->SetPosition( 10, int(size[1]/2) );
     
