@@ -342,10 +342,16 @@ namespace Nf
     std::reverse(trueStates.begin(), trueStates.end());
     std::reverse(estimatedStates.begin(), estimatedStates.end());
 
+    std::string method;
+    if(this->m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE)
+      method = "FullState";
+    else
+      method = "Marginalized";
+
     char temp[200] = {0};
-    sprintf(temp, "%sGroundTruth", basePath);
+    sprintf(temp, "%s%sGroundTruth", basePath, method.c_str());
     saveTipHistory(temp, trueStates);
-    sprintf(temp, "%sEstimated", basePath);
+    sprintf(temp, "%s%sEstimated", basePath,  method.c_str());
     saveTipHistory(temp, estimatedStates);
   }
 

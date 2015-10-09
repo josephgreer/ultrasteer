@@ -426,3 +426,13 @@ TEST(Math, LUTDist)
   poverneedle.save("C:/Joey/Data/probDist/testPOverNeedle.mat", raw_ascii);
   pnotoverneedle.save("C:/Joey/Data/probDist/testPNotOverNeedle.mat", raw_ascii);
 }
+
+TEST(Math, CurveFit)
+{
+  std::string dir[100] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
+
+  arma::mat xpt,ypt,zpt;
+  xpt.load((dir+"xpt.dat").c_str());
+  ypt.load((dir+"ypt.dat").c_str());
+  zpt.load((dir+"zpt.dat").c_str());
+}
