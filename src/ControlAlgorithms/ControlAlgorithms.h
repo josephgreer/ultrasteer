@@ -72,7 +72,7 @@ namespace Nf {
     void GetPoseEstimate(Matrix44d &x);
     bool CheckCompletion();
     double insertionSinceLastManualScan();
-    void recordDataPoint(Matrix44d x_est, Matrix44d x_act, Matrix44d z, Vec3d t, Vec3d u); 
+    void recordDataPoint(Matrix44d x_est, Matrix44d x_act, Matrix44d z, Vec3d t, Vec3d u, Matrix66d K, Matrix66d P); 
 
   private:
     Vec3d m_t;
@@ -103,6 +103,8 @@ namespace Nf {
     arma::mat m_z_record;
     arma::mat m_t_record;
     arma::mat m_u_record;
+    arma::mat m_K_record;
+    arma::mat m_P_record;
 #ifdef RECORDING_MEASUREMENT_NOISE
     int m_scan;
     int m_step;

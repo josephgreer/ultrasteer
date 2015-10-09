@@ -24,6 +24,7 @@ namespace Nf
     void resetEstimate();    
     void zeroRotationEstimate();
     Matrix66d getCurrentCovariance();
+    Matrix66d getCurrentGain();
     Matrix44d getCurrentEstimate();
     Vec3d getCurrentXYZVariance();
     Matrix33d vec2mat(Vec3d r);
@@ -49,6 +50,7 @@ namespace Nf
     Matrix44d x_hat;
     Matrix66d P_hat, Q, R;
     bool m_initialized;
+    Matrix66d m_K;
   };
 }
 

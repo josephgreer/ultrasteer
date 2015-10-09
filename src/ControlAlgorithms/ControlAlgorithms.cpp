@@ -88,12 +88,16 @@ namespace Nf {
         m_z_record.save("C:/Troy/Data/z.m", arma_ascii);
         m_t_record.save("C:/Troy/Data/t.m", arma_ascii);
         m_u_record.save("C:/Troy/Data/u.m", arma_ascii);
+        m_K_record.save("C:/Troy/Data/K.m", arma_ascii);
+        m_P_record.save("C:/Troy/Data/P.m", arma_ascii);
       }else{ 
         m_xest_record.reset();
         m_xact_record.reset();
         m_z_record.reset();
         m_t_record.reset();
         m_u_record.reset();
+        m_K_record.reset();
+        m_P_record.reset();
         m_recordingData = !m_recordingData;
       }
       return m_recordingData;
@@ -168,8 +172,11 @@ namespace Nf {
     Vec3d u;
     GetIncrementalInputVector(u);
     m_UKF.fullUpdateUKF(u, m_z);
+    Matrix66d P, K;
     m_UKF.getCurrentStateEstimate(m_x);
-    recordDataPoint(m_x, m_Tneedletip2robot, m_z, m_t, u);
+    P  = m_UKF.getCurrentCovariance();
+    K = m_UKF.getCurrentGain();
+    recordDataPoint(m_x, m_Tneedletip2robot, m_z, m_t, u, K, P);
 
 #ifdef RECORDING_MEASUREMENT_NOISE
     arma::mat z = m_z.ToArmaMatrix4x4();
@@ -270,7 +277,8 @@ namespace Nf {
     if( abs(u.x) > 1e-6 || abs(u.z) > 1e-6){
       m_UKF.processUpdateUKF(u);
       m_UKF.getCurrentStateEstimate(x);
-      recordDataPoint(x, m_Tneedletip2robot, Matrix44d::Zero(), m_t, u);
+      Matrix66d P = m_UKF.getCurrentCovariance();
+      recordDataPoint(x, m_Tneedletip2robot, Matrix44d::Zero(), m_t, u, Matrix66d::Zero(), P);
     }
   }
 
@@ -298,17 +306,19 @@ namespace Nf {
     }
   }
 
-  void ControlAlgorithms::recordDataPoint(Matrix44d x_est, Matrix44d x_act, Matrix44d z, Vec3d t, Vec3d u)
+  void ControlAlgorithms::recordDataPoint(Matrix44d x_est, Matrix44d x_act, Matrix44d z, Vec3d t, Vec3d u, Matrix66d K, Matrix66d P)
   {
     m_xest_record.insert_cols(m_xest_record.n_cols,x_est.ToArmaMatrix4x4());
     m_xact_record.insert_cols(m_xact_record.n_cols,x_act.ToArmaMatrix4x4());
     m_z_record.insert_cols(m_z_record.n_cols,z.ToArmaMatrix4x4());
+    m_K_record.insert_cols(m_K_record.n_cols,K.ToArmaMatrix6x6());
+    m_P_record.insert_cols(m_P_record.n_cols,P.ToArmaMatrix6x6());
 
     arma::vec3 t_; 
     t_ << t.x << t.y << t.z;
     arma::vec3 u_; 
     u_ << u.x << u.y << u.z;
-    
+
     m_t_record.insert_cols(m_t_record.n_cols,t_);
     m_u_record.insert_cols(m_u_record.n_cols,u_);
   }

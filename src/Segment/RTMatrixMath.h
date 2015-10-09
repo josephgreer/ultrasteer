@@ -1252,6 +1252,19 @@ namespace Nf
       return Matrix66d(data);
     }
 
+    arma::mat ToArmaMatrix6x6() const
+    {
+      using namespace arma;
+      mat A(6, 6);
+
+      for(int i = 0; i < 6; i++)
+      {
+        for(int j = 0; j < 6; j++){
+          A(i,j) = this->m_data[i][j];}
+      }
+      return A;
+    }
+
     static Matrix66d Diagonal(Vec6d values)
     {
       f64 data[6][6] = {0};
