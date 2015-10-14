@@ -366,7 +366,8 @@ namespace Nf
     m_mapTransparency = vtkSmartPointer<vtkImageMapToColors>::New();
     m_maskActor = vtkSmartPointer<vtkImageActor>::New();
     m_lookUpTable = vtkSmartPointer<vtkLookupTable>::New();
-
+ 
+    ADD_BOOL_PARAMETER(m_showTextOverlay, "Show Text Overlay", CALLBACK_POINTER(onShowTextOverlay, ImageViewer2DTeleoperationWidget), this, true);
   }
 
   ImageViewer2DTeleoperationWidget::~ImageViewer2DTeleoperationWidget()
@@ -424,7 +425,7 @@ namespace Nf
       m_targetTextActor->GetTextProperty()->SetFontSize ( 24 );
       m_targetTextActor->SetPosition( 10, 10 );
       m_renderer->AddActor2D ( m_targetTextActor );
-      m_targetTextActor->SetInput ( "Initialized" );
+      m_targetTextActor->SetInput ( "" );
       m_targetTextActor->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
 
       // Add text overlay for user instructions
@@ -471,6 +472,13 @@ namespace Nf
     QVTKWidget::update();
   } 
 
+  void ImageViewer2DTeleoperationWidget::onShowTextOverlay(void)
+  {
+    m_targetTextActor->SetVisibility(m_showTextOverlay->GetValue());    
+    m_estimateTextActor->SetVisibility(m_showTextOverlay->GetValue());
+    m_measurementTextActor->SetVisibility(m_showTextOverlay->GetValue());
+  }
+
   void ImageViewer2DTeleoperationWidget::SetTeleoperation2DWidget(Teleoperation2DWidget *widget)
   { 
     m_teleoperationWidget = widget;
@@ -504,18 +512,18 @@ namespace Nf
       }
     }
 
-    // update estimate
-    if( !x.isZero() ){
-      SetEstimateText(x,Sxyz);
-      DrawTipIcon(p_img, pz_img, py_img);
-    }
+      // update estimate
+      if( !x.isZero() ){
+        SetEstimateText(x,Sxyz);
+        DrawTipIcon(p_img, pz_img, py_img);
+      }
 
-    // update measurement
-    if( !z.isZero() ){
-      SetMeasurementText(z);
-    }
+      // update measurement
+      if( !z.isZero()  ){
+        SetMeasurementText(z);
+      }
 
-    // update instructions if scan needed
+      // update instructions if scan needed
     if( (!m_inCountdownToManualScan) && (!m_control->inManualScanning()) && m_control->inTaskSpaceControl() ){
       char str [100];
       if( mmToNextScan == 0.0 ){
@@ -531,7 +539,6 @@ namespace Nf
         int n = sprintf(str, "Target depth reached.");
         SetInstructionText(str);
       }
-
     }
   }
 
@@ -546,7 +553,7 @@ namespace Nf
     int* size = m_renderer->GetSize();
     m_instructionTextActor->SetPosition( 10, size[1]-40 );
     m_instructionTextActor->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
-    //this->repaint();
+
   }
 
   void ImageViewer2DTeleoperationWidget::SetTargetText(Vec2d t_img, Vec3d t_wld)
@@ -554,10 +561,7 @@ namespace Nf
     // Format the click position and print over image
     char str [1000];
     int n = sprintf(str, "t_img = {%.1f, %.1f}\nt_wld = {%.2f, %.2f, %.2f}", t_img.x, t_img.y, t_wld.x, t_wld.y, t_wld.z);
-    m_targetTextActor->SetInput(str);
-
-    // Update the VTK rendering
-    //this->repaint();
+    m_targetTextActor->SetInput(str);    
   }
 
   void ImageViewer2DTeleoperationWidget::SetEstimateText(Matrix44d x, Vec3d Sxyz)
@@ -581,12 +585,9 @@ namespace Nf
       Sxyz.x, Sxyz.y, Sxyz.z);
 #endif
 
-    
     m_estimateTextActor->SetInput(str);
     int* size = m_renderer->GetSize();
     m_estimateTextActor->SetPosition( 10, int(size[1]/2) );
-    
-    //this->repaint();
   }
 
   void ImageViewer2DTeleoperationWidget::SetMeasurementText(Matrix44d z)
@@ -603,8 +604,7 @@ namespace Nf
 
     int* size = m_renderer->GetSize();
     m_measurementTextActor->SetPosition( 10, int(size[1]/4) );
-
-    //this->repaint();
+    
   }
 
   void ImageViewer2DTeleoperationWidget::DrawTargetIcon(Vec3d t)

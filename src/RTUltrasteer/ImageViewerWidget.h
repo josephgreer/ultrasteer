@@ -148,6 +148,11 @@ namespace Nf
     void onUpdateOverlay();
     virtual void SetDataSpacing(const RPData *rp);    
     void SetInCountdownToManualScan(bool input);
+
+    // text overlay
+    std::tr1::shared_ptr < Nf::BoolParameter > m_showTextOverlay;
+    void onShowTextOverlay();
+    CLASS_CALLBACK(onShowTextOverlay, ImageViewer2DTeleoperationWidget);
   };
 }
 

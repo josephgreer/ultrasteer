@@ -95,6 +95,8 @@ namespace Nf {
     NeedleSteeringRobot* m_robot;
     double m_lastInsMM;
     double m_lastRollDeg;
+    double m_l;
+    double m_th;
     RPData m_data;    
     STrigger* m_insTrigger;
     STrigger* m_rotTrigger;

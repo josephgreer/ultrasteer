@@ -2,8 +2,6 @@
 #include "math.h"
 #include <time.h>
 
-
-
 namespace Nf {
 
   ControlAlgorithms::ControlAlgorithms():    
@@ -21,6 +19,8 @@ namespace Nf {
     , m_transducerType(0)
     , m_robot(NULL)
     , m_insertionMMatLastManualScan(0.0)
+    , m_th(0.0)
+    , m_l(0.0)
   {
 
 #ifdef RECORDING_MEASUREMENT_NOISE
@@ -193,7 +193,7 @@ namespace Nf {
       }   
     }
 #else
-    m_insertionMMatLastManualScan = m_robot->getInsMM(); 
+    m_insertionMMatLastManualScan = m_l; 
     if( m_inTaskSpaceControl ){        
       m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
     }   
@@ -209,13 +209,6 @@ namespace Nf {
       Matrix44d Tref2em = Matrix44d::FromCvMat(m_data.gps2.pose);
       Tref2em.SetPosition(m_data.gps2.pos);
       Vec2d scale(m_data.mpp.x/1000.0, m_data.mpp.y/1000.0);
-//#ifdef GPS3_SAVING
-//      Vec3d ImPtInGPSFrame = rpImageCoordToWorldCoord3(p_im, Ttrans2em, m_usCalibrationMatrix, m_data.origin, scale);
-//      Matrix44d Tneedletip2em = Matrix44d::FromCvMat(m_data.gps3.pose);
-//      Vec3d tipOffset(NEEDLE_GPS_OFFSET,0.0,0.0);
-//      Vec3d GPS2Pt = m_data.gps3.pos + Tneedletip2em.GetOrientation()*tipOffset;
-//      int i = 1;
-//#endif
       return rpImageCoordToRobotCoord3(p_im, Ttrans2em, Tref2em, m_Tref2robot, m_usCalibrationMatrix, m_data.origin, scale);
     }else{
       return Vec3d(0.0, 0.0, 0.0);
@@ -246,8 +239,13 @@ namespace Nf {
     m_data = data.Clone();
     updateTransducerPose();
 
+    if( m_robot && m_robot->isRollInitialized() && m_robot->isInsertionInitialized() ){
+      m_th = m_robot->getRollAngle();
+      m_l = m_robot->getInsMM();
+    }
+
     if( inManualScanning() ) // if manually scanning
-    {
+    { 
       m_segmentation.addManualScanFrame(data);
     }
 
@@ -342,20 +340,16 @@ namespace Nf {
   void ControlAlgorithms::GetIncrementalInputVector(Vec3d &u)
   {
     if( m_robot && m_robot->isRollInitialized() && m_robot->isInsertionInitialized() ){
-      double currentInsMM = m_robot->getInsMM();
-      double l = currentInsMM - m_lastInsMM;
-      
-      double currentRollDeg = m_robot->getRollAngle();
-      double d_th = (currentRollDeg - m_lastRollDeg)*PI/180.0;   
+      double d_l = m_l - m_lastInsMM;
+      double d_th = (m_th - m_lastRollDeg)*PI/180.0;   
 
-      if( currentInsMM > INTRODUCER_LENGTH ){
-        u = Vec3d(d_th,RHO,l);
+      if( m_l > INTRODUCER_LENGTH ){
+        u = Vec3d(d_th,RHO,d_l);
       }else{
-        u = Vec3d(d_th,1000,l);
+        u = Vec3d(d_th,1000,d_l);
       }
-
-      m_lastInsMM = currentInsMM;
-      m_lastRollDeg = currentRollDeg;
+      m_lastInsMM = m_l;
+      m_lastRollDeg = m_th;
     }else{
       u = Vec3d(0.0,RHO,0.0);
     }
@@ -383,8 +377,10 @@ namespace Nf {
   void ControlAlgorithms::setRobot(NeedleSteeringRobot* robot)
   {
     m_robot = robot;
-    m_lastInsMM = m_robot->getInsMM();
-    m_lastRollDeg = m_robot->getRollAngle();
+    m_l = m_robot->getInsMM();
+    m_th = m_robot->getRollAngle();
+    m_lastInsMM = m_l;
+    m_lastRollDeg = m_th;
   }
 
 
@@ -459,7 +455,7 @@ namespace Nf {
   double ControlAlgorithms::insertionSinceLastManualScan()
   {
     if( m_robot && m_robot->isInsertionInitialized() ){
-      double currentInsMM = m_robot->getInsMM();
+      double currentInsMM = m_l;
       return currentInsMM - m_insertionMMatLastManualScan;
     }else{
       return 0.0;

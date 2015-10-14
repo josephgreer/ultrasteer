@@ -3,7 +3,7 @@
 #define		N					      6.0				        // length of state vector
 #define   SQN             2.4495            // sqrt(N)
 
-#define		P_POS_I   			5.0				        // prior covariance of position
+#define		P_POS_I   			20.0				      // prior covariance of position
 #define		P_ROT_I   			1e-2			        // prior covariance of orientation
 
 #define   PI              3.141             // pi
