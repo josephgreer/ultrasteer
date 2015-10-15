@@ -17,7 +17,7 @@ noise = mvnrnd(zeros(3,1), diag([1 1 1]), npoints);
 scatter3(xpt+noise(:,1), ypt+noise(:,2), zpt+noise(:,3));
 
 save('./data/xpt.dat', 'xpt', '-ascii');
-save('./data/xpt.dat', 'xpt', '-ascii');
-save('./data/xpt.dat', 'xpt', '-ascii');
+save('./data/ypt.dat', 'ypt', '-ascii');
+save('./data/zpt.dat', 'zpt', '-ascii');
 xlabel('x'); ylabel('y'); zlabel('z');
 daspect([1 1 1]);
