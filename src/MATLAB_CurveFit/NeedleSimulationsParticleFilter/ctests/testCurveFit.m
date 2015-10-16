@@ -21,3 +21,16 @@ save('./data/ypt.dat', 'ypt', '-ascii');
 save('./data/zpt.dat', 'zpt', '-ascii');
 xlabel('x'); ylabel('y'); zlabel('z');
 daspect([1 1 1]);
+
+polyval(polyX, 1)
+polyval(polyY, 1)
+
+polyval(polyX, -1)
+polyval(polyY, -1)
+
+polyval(polyX, 5e-3)
+polyval(polyY, 5e-3)
+
+load('./data/uniform_pts.dat');
+hold on;
+scatter3(uniform_pts(:,1), uniform_pts(:,2), uniform_pts(:,3), 'r');

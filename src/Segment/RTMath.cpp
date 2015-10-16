@@ -250,5 +250,84 @@ namespace Nf
     return res;
   }
 
+  ////////////////////////////////////////////////////////////
+  //BEGIN POLYNOMIAL
+  ////////////////////////////////////////////////////////////
+  Polynomial::Polynomial(const arma::mat &coeffs)
+  {
+    m_coeffs = coeffs;
+  }
+
+  Polynomial::Polynomial(const arma::mat &pts, s32 degree, s32 coord)
+  {
+    mat vander;
+    vec pps = pts.col(coord);
+    for(s32 deg=degree; deg>=0; deg--) {
+      vander = arma::join_horiz(vander,pow(pps,deg));
+    }
+    for(s32 i=0; i<coord; i++) 
+      m_coeffs = join_vert(m_coeffs, solve(vander, pts.col(i)).t());
+    m_coeffs = join_vert(m_coeffs, zeros(1,degree+1));
+    for(s32 i=coord+1; i<pps.n_cols; i++) 
+      m_coeffs = join_vert(m_coeffs, solve(vander, pts.col(i)).t());
+
+    m_coeffs(coord, degree-1) = 1;
+  }
+
+  arma::vec Polynomial::operator()(f64 t)
+  {
+    arma::vec evalPt = zeros(m_coeffs.n_cols, 1);
+
+    f64 curr = 1;
+    for(s32 i=0; i<m_coeffs.n_cols; i++)  {
+      evalPt(m_coeffs.n_cols-1-i) = curr;
+      curr = curr*t;
+    }
+
+    return m_coeffs*evalPt;
+  }
+  
+  void Polynomial::Print(std::string preamble)
+  {
+    m_coeffs.print(preamble);
+  }
+
+  arma::mat Polynomial::UniformlySpacedPoints(f64 a, f64 b, f64 ds, s32 nTries)
+  {
+    mat res;
+
+    vec lastPt = (*this)(a);
+
+    res = join_vert(res, lastPt.t());
+
+    
+    f64 currT = (b-a)/2+a;
+    f64 lastT = a;
+    f64 dist = norm((*this)(currT)-lastPt);
+    f64 delta = 0;
+
+    f64 tol = 1.0/10.0;
+
+    s32 it = 0;
+    while(currT < b) {
+      while(it++ < nTries && abs(dist-ds)/ds > tol) {
+        currT = ds/dist*(currT-lastT)+lastT;
+        dist = norm((*this)(currT)-lastPt);
+      }
+      lastPt = (*this)(currT);
+      res = join_vert(res, lastPt.t());
+      delta = currT-lastT;
+      currT = currT+delta;
+      lastT = lastT+delta;
+      dist = norm((*this)(currT)-lastPt);
+      it = 0;
+    }
+
+    return res;
+  }
+  ////////////////////////////////////////////////////////////
+  //END POLYNOMIAL
+  ////////////////////////////////////////////////////////////
+
 
 }

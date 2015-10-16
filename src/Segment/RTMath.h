@@ -127,4 +127,30 @@ namespace Nf
 
   arma::uvec Sample(const arma::vec &dist, s32 n);
 
+  class Polynomial
+  {
+  protected:
+    arma::mat m_coeffs;
+
+  public:
+    // Assume coeffs \in R^(dxn)
+    // n is the dimensionality of the polynomial curve
+    // d is the degree of the polynomial
+    Polynomial(const arma::mat &coeffs);
+
+    // Generate least squares fit polynomial for points
+    // pts \in R^(mxn) m = number of samples, n = dimensionality of points
+    // degree = degree of polynomial to fit
+    // coord = coordinate to use for parameter (i.e. coord == 0 is x, coord == 1 is y, etc.)
+    Polynomial(const arma::mat &pts, s32 degree, s32 coord);
+
+    //Evaluate polynomial at point t
+    arma::vec operator()(f64 t);
+
+    //Print coefficients of polynomial with preamble
+    void Print(std::string preamble);
+
+    // Generate uniformly spaced points from a to b separated by ds
+    arma::mat UniformlySpacedPoints(f64 a, f64 b, f64 ds, s32 nTries);
+  };
 }

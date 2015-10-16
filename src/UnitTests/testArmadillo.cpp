@@ -429,10 +429,53 @@ TEST(Math, LUTDist)
 
 TEST(Math, CurveFit)
 {
-  std::string dir[100] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
+  using ::s32; 
+  //std::string dir[100] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
+  std::string dir = "C:/Users/Joey/Documents/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
 
   arma::mat xpt,ypt,zpt;
   xpt.load((dir+"xpt.dat").c_str());
   ypt.load((dir+"ypt.dat").c_str());
   zpt.load((dir+"zpt.dat").c_str());
+
+  arma::mat vander;
+  s32 degree = 3;
+  for(s32 deg=degree; deg>=0; deg--) {
+    vander = arma::join_horiz(vander,pow(zpt,deg));
+  }
+
+  arma::vec xcoeff = solve(vander, xpt);
+  arma::vec ycoeff = solve(vander, ypt);
+
+  xcoeff.print("xcoeff:  ");
+  ycoeff.print("ycoeff:  ");
+}
+
+TEST(Math, Polynomial)
+{
+  using ::s32; 
+  //std::string dir[100] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
+  std::string dir = "C:/Users/Joey/Documents/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
+
+  arma::mat xpt,ypt,zpt;
+  xpt.load((dir+"xpt.dat").c_str());
+  ypt.load((dir+"ypt.dat").c_str());
+  zpt.load((dir+"zpt.dat").c_str());
+
+  arma::mat pts = join_horiz(xpt, join_horiz(ypt, zpt));
+
+  Polynomial p(pts, 3, 2);
+  p.Print("Coefficients:  ");
+
+  p(1).print("p(1): ");
+  p(-1).print("p(-1):  ");
+  p(5e-3).print("p(5e-3):  ");
+
+  mat points = p.UniformlySpacedPoints(-10, 10, 0.33, 6);
+  for(s32 i=0; i<points.n_rows-1; i++) {
+    f64 dist = norm(points.row(i+1)-points.row(i));
+    printf("Dist %d: %f\n", i, dist);
+  }
+
+  points.save((dir+"uniform_pts.dat").c_str(), arma::raw_ascii);
 }
