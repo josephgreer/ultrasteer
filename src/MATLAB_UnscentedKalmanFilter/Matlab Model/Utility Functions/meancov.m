@@ -30,7 +30,7 @@ while(flag)
     Rm_old = Rm_;
     Rm_ = vec2mat((1/k).*sum(Er,3))*Rm_;
     % Break on convergence
-    flag = norm(mat2vec(Rm_*inv(Rm_old))) > 1e-12;
+    flag = norm(mat2vec(Rm_*inv(Rm_old))) > 1e-5;
 end
 mu(1:3,1:3) = Rm_;
 for i = 1:k

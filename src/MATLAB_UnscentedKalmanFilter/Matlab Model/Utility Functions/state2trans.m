@@ -3,13 +3,13 @@ function [ T ] = state2trans( x )
 %transform
 
 % Quaternion
-q = rot2quat(x(4:6));
+r = x(4:6);
 
 % Direction cosine matrix
-R = quat2dcm(q);
+R = vec2mat(r);
    
 % Combine into transformation matrix
-T = [ R'         x(1:3); 
+T = [ R         x(1:3); 
       zeros(1,3) 1; ];
 end
 

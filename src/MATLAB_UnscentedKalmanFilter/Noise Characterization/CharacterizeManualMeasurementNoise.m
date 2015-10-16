@@ -16,7 +16,7 @@ Nsteps = {2,8,5,2,7,4,6,6};
 Nruns = 8;
 scans = 1:Nscans;
 runs = 1:Nruns;
-basedir = 'F:\Dropbox\Troy Adebar Research Folder\1 - Kalman Filter\2015-09-29 Manual Scan Measurement Noise';
+basedir = 'F:\Dropbox\Troy Adebar Research Folder\1 - Kalman Filter\Data\2015-09-29 Manual Scan Measurement Noise';
 utilpath = '..\Matlab Model\Utility Functions';
 addpath(utilpath);
 
@@ -52,23 +52,23 @@ display(N)
 
 %% Save matrix of errors
 for i = 1:N
-    Wm(:,i) = Eall(1:3,:,i);
+    V(:,i) = Eall(1:3,:,i);
 end
-save('MeasurementNoise','Wm');
+mu_ve = mean(V,2);
+Re = cov(V');
+save('Results\MeasurementNoise','V','mu_ve','Re');
 
-%% Visualize measurements, errors
-
-% Measurements
-figure(1); clf; hold on;
-plot3(squeeze(Zall(1,4,:)),squeeze(Zall(2,4,:)),squeeze(Zall(3,4,:)),'ro');
-plot3(squeeze(muall(1,4,:)),squeeze(muall(2,4,:)),squeeze(muall(3,4,:)),'bx');
-set(gcf,'color','w');
-axis equal; grid on;
-xlabel('x'); ylabel('y'); zlabel('z');
+%% Visualize errors
 
 % Errors
 figure(2); clf; hold on;
-plot3(squeeze(Eall(1,1,:)),squeeze(Eall(2,1,:)),squeeze(Eall(3,1,:)),'g^');
+plot3(squeeze(Eall(1,1,:)),squeeze(Eall(2,1,:)),squeeze(Eall(3,1,:)),'k.');
 set(gcf,'color','w');
-axis equal; grid on;
-xlabel('x'); ylabel('y'); zlabel('z');
+axis equal; grid on; box on;
+xlabel('x direction (mm)'); 
+ylabel('y direction (mm)'); 
+zlabel('z direction (mm)');
+view(50,20);
+axis([-6 6 -6 6 -6 6]);
+set(findall(gcf,'-property','FontSize'),'FontSize',14,...
+    'fontName','Times New Roman')
