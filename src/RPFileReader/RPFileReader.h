@@ -10,7 +10,7 @@
 #define NOMINAL_SOS 1540.0
 #define TRANSDUCER_OFFSET 3.5  // measured offset to correct transducer misalignment with curvalinear probe
 
-#define GPS3_SAVING
+//#define GPS3_SAVING
 
 namespace Nf
 {

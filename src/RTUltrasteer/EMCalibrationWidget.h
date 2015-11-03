@@ -80,7 +80,7 @@ namespace Nf
     arma::mat m_Tref2robot;
 
   public:
-    EMCalibrationWidget(QWidget *parent);
+    EMCalibrationWidget(QWidget *parent, const char *name = "EMCalibration");
     virtual ~EMCalibrationWidget();
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
@@ -105,7 +105,7 @@ namespace Nf
     RPFileReaderCollection *m_rpReaders;
 
   public:
-    EMCalibrationFileWidget(QWidget *parent);
+    EMCalibrationFileWidget(QWidget *parent, const char *name = "EMCalibrationFile");
     virtual ~EMCalibrationFileWidget();
 
     //Filename
@@ -128,7 +128,7 @@ namespace Nf
     QMutex m_lock;
 
   public:
-    EMCalibrationStreamingWidget(QWidget *parent);
+    EMCalibrationStreamingWidget(QWidget *parent, const char *name = "EMCalibrationStreamingWidget");
     virtual ~EMCalibrationStreamingWidget();
 
     //IP

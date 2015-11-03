@@ -4,8 +4,8 @@
 
 namespace Nf
 {
-  EMCalibrationWidget::EMCalibrationWidget(QWidget *parent) 
-    : Nf::ParameterCollection("EM Calibration")
+  EMCalibrationWidget::EMCalibrationWidget(QWidget *parent, const char *name) 
+    : Nf::ParameterCollection(name)
     , ResizableQVTKWidget(parent, QSize(VIS_WIDTH, VIS_HEIGHT))
     , m_viewportInit(false)
     , m_robotCalibrationComplete(false)
@@ -406,8 +406,8 @@ namespace Nf
     }
   }
 
-  EMCalibrationFileWidget::EMCalibrationFileWidget(QWidget *parent)
-    : EMCalibrationWidget(parent) 
+  EMCalibrationFileWidget::EMCalibrationFileWidget(QWidget *parent, const char *name)
+    : EMCalibrationWidget(parent, name) 
     , m_rpReaders(NULL)
   {
     ADD_OPEN_FILE_PARAMETER(m_rpFile, "RP Filename", CALLBACK_POINTER(onUpdateFile, EMCalibrationFileWidget), this, "F:/NeedleScan/8_18_15/TroyData/scan.gps1", "Any File (*.*)");
@@ -475,8 +475,8 @@ namespace Nf
 
   }
 
-  EMCalibrationStreamingWidget::EMCalibrationStreamingWidget(QWidget *parent)
-    : EMCalibrationWidget(parent) 
+  EMCalibrationStreamingWidget::EMCalibrationStreamingWidget(QWidget *parent, const char *name)
+    : EMCalibrationWidget(parent, name) 
   {
     ADD_STRING_PARAMETER(m_rpIp, "Ulterius IP", NULL, this, "192.168.1.129");
     ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, EMCalibrationStreamingWidget), this, false);

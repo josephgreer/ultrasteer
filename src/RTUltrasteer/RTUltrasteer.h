@@ -23,6 +23,7 @@
 #include "PFVisualizerWidget.h"
 #include "EstimatorWidget.h"
 #include "ControlAlgorithms.h"
+#include "FSExperimentWidget.h"
 
 namespace Nf
 {
@@ -740,6 +741,10 @@ public:
     
     std::tr1::shared_ptr < Nf::BoolParameter > m_emCalibrationStreamWidgetVisible;
 
+    std::tr1::shared_ptr < Nf::BoolParameter > m_fsExperimentFileWidgetVisible;
+    
+    std::tr1::shared_ptr < Nf::BoolParameter > m_fsExperimentStreamWidgetVisible;
+
     void onSetDocksVisible();
     CLASS_CALLBACK(onSetDocksVisible, RTUltrasteer);
 
@@ -784,6 +789,12 @@ private:
     QDockWidget *m_EMCalibrationStreamDock;
     Nf::EMCalibrationStreamingWidget *m_EMCalibrationStreamWidget;
 
+    QDockWidget *m_FSExperimentFileDock;
+    Nf::FSExperimentFileWidget *m_fsExperimentFileWidget;
+
+    QDockWidget *m_FSExperimentStreamDock;
+    Nf::FSExperimentStreamingWidget *m_fsExperimentStreamWidget;
+
     NeedleSteeringRobot m_robot;
     Nf::ControlAlgorithms m_control;
     Mouse3DInput m_mouse;
@@ -799,6 +810,8 @@ private:
     void CreateTeleoperation2DStreamDock();
     void CreateEMCalibrationFileDock();
     void CreateEMCalibrationStreamDock();
+    void CreateFSExperimentFileDock();
+    void CreateFSExperimentStreamDock();
     void resizeEvent(QResizeEvent *event);
     void Resize();
 
