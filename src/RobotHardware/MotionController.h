@@ -105,4 +105,5 @@ private:
 	int m_posNotifyCounter;					//Position counter for number of times notify has been requested
 	bool m_isCalibrated;					//Motor has been calibrated
 	AnswerMode m_currentAnswerMode;			//Current answer mode set on the MCDC 
+  long m_lastPos;               //Cached position of the motion controller for error handling
 };

@@ -17,16 +17,16 @@
 #include <QtGui/QFileDialog>
 #include <cmath>
 
-#define   RHO                     85.0    // radius of curvature for 12-mm needle in gelatin (mm)
+//#define   RHO                     85.0    // radius of curvature for 12-mm needle in gelatin (mm)
+#define   RHO                     75.0    // radius of curvature for 12-mm needle in liver (mm)
 #define   INS_AUTO_SPEED          1.0     // insertions peed during task-space teleoperation  (mm/s)
 #define   INS_SPEED               20.0    // insertion speed during joint-space teleoperation (mm/s) 
 #define   ROT_SPEED               200.0   // rotation speed during joint-space teleoperation (RPM)
-//#define   NEEDLE_DEAD_LENGTH      60.0  // offset of needle tip at zero insertion due to extra needle length 
-#define   NEEDLE_DEAD_LENGTH      90.0    // offset of needle tip at zero insertion due to extra needle length 
+#define   NEEDLE_DEAD_LENGTH      115.0   // offset of needle tip at zero insertion due to extra needle length 
 #define   MAX_OPEN_LOOP_INSERTION 10.0    // maximum open-loop insertion distance before a new scan is needed (mm)
 #define   PI                      3.14159265359
 #define   NEEDLE_GPS_OFFSET       14.0    // x-axis distance from GPS transducer to needle "tip" point (mm)
-#define   INTRODUCER_LENGTH       10.0    // insertion length where the tip is inside the introducermm
+#define   INTRODUCER_LENGTH       30.0    // insertion length where the tip is inside the introducer (mm)
 
 namespace Nf {
 

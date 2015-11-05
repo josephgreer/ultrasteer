@@ -7,13 +7,16 @@
 #include "qdebug.h"
 #include <Windows.h>
 
+#define MAX_QUERY_TRIES 10
+
 /// \brief	Default constructor
 MotionController::MotionController(int deviceID) : 
 	DEVICE_ID(deviceID),
 	m_limitsEnabled(false),			//Limits are initialy disabled
 	m_isCalibrated(false),			//Initially not at home location
 	m_velNotifyCounter(0),			//Set velocity and position counter to zero, increment by one for each 
-	m_posNotifyCounter(0)			// associated notification request
+	m_posNotifyCounter(0),			//associated notification request
+  m_lastPos(-1)               //Previous position 
 {
 	m_currentState = NotInitialized;	//Initially uninitialized	
 	m_currentAnswerMode = NotKnown;
@@ -498,7 +501,13 @@ long MotionController::GetPosition(void)
 
 	while(true)
 	{
-		while( !m_serial.IsInputAvailable() ) Sleep(1);
+    int nTries = 0;
+		while( !m_serial.IsInputAvailable() && nTries++ < MAX_QUERY_TRIES ) Sleep(1);
+
+    if(nTries >= MAX_QUERY_TRIES) {
+      printf("Failed stupid\n");
+      return m_lastPos;
+    }
 		
 		//Input is now available...just read it	
 		if(m_serial.Read_N(szRecvData, 1, -1) != S_OK)
@@ -531,10 +540,11 @@ long MotionController::GetPosition(void)
 		}
 
 		if(breakFromLoop) break;	//Break from loop if ending char was recv'd
-	}
+  }
 	
 	bool ok;
 	long pos = position.toLong(&ok, 10); 
+  m_lastPos = pos;
 	return pos;
 }
 

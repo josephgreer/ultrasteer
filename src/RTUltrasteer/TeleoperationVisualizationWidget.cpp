@@ -214,12 +214,14 @@ namespace Nf
       m_referenceAxes->VisibilityOff();
     }
 
+#ifdef GPS3_SAVING
     if( !Tneedletip2robot.isZero() ){ // override the reference axes if we have GPS3
       m_referenceAxes->PokeMatrix(Tneedletip2robot.GetVTKMatrix());
       m_referenceAxes->VisibilityOn();
     }else{
       m_referenceAxes->VisibilityOff();
     }
+#endif
     
     if( !Ttrans2robot.isZero() ){
       m_transducerAxes->PokeMatrix(Ttrans2robot.GetVTKMatrix());
