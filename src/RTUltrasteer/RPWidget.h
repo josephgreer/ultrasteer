@@ -107,6 +107,12 @@ namespace Nf
     void onFrameInfoChanged();
     CLASS_CALLBACK(onFrameInfoChanged, RPPushReceiver);
 
+    //Bmode
+    std::tr1::shared_ptr < Nf::BoolParameter > m_rcvBmode;
+
+    //GPS
+    std::tr1::shared_ptr < Nf::BoolParameter > m_rcvGps;
+
     //Doppler
     std::tr1::shared_ptr < Nf::BoolParameter > m_rcvDoppler;
     void onDataToAcquireChanged();

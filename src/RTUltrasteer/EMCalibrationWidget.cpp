@@ -477,72 +477,15 @@ namespace Nf
 
   EMCalibrationStreamingWidget::EMCalibrationStreamingWidget(QWidget *parent, const char *name)
     : EMCalibrationWidget(parent, name) 
+    , m_receiver(new RPPushReceiver((RPFrameHandler *)this))
   {
-    ADD_STRING_PARAMETER(m_rpIp, "Ulterius IP", NULL, this, "192.168.1.129");
-    ADD_BOOL_PARAMETER(m_init, "Initialize", CALLBACK_POINTER(onInitializeToggle, EMCalibrationStreamingWidget), this, false);
-    ADD_BOOL_PARAMETER(m_addFrames, "Add Frames", CALLBACK_POINTER(onAddFramesToggle, EMCalibrationStreamingWidget), this, false);
-    ADD_INT_PARAMETER(m_framerate, "Ulterius Framerate", CALLBACK_POINTER(onFramerateChanged, EMCalibrationStreamingWidget), this, 11, 1, 30, 1);
-    ADD_FLOAT_PARAMETER(m_mpp, "MPP", CALLBACK_POINTER(onInitializeToggle, EMCalibrationStreamingWidget), this, 233, 20, 150, 1.0);
-    ADD_VEC2D_PARAMETER(m_origin, "Frame Origin", CALLBACK_POINTER(onInitializeToggle, EMCalibrationStreamingWidget), this, Vec2d(330, -153), Vec2d(0,0), Vec2d(10000, 10000), Vec2d(1,1));
-
-    onInitializeToggle();
-    onAddFramesToggle();
-
-    m_rpReaders = std::tr1::shared_ptr<RPUlteriusReaderCollectionPush>((RPUlteriusReaderCollectionPush *)NULL);
-
-    connect(this, SIGNAL(frameSignal()), SLOT(onFrame()), Qt::QueuedConnection);
+    ADD_CHILD_COLLECTION((ParameterCollection *)m_receiver);
   }
 
-  void EMCalibrationStreamingWidget::onInitializeToggle()
+  void EMCalibrationStreamingWidget::HandleFrame(RPData &rp)
   {
-    if(m_init->GetValue()) {
-      //TODO: TAKE INTO ACCOUNT SOS
-      Vec2d mpp(m_mpp->GetValue(), m_mpp->GetValue());
-      m_rpReaders = std::tr1::shared_ptr < RPUlteriusReaderCollectionPush >(new RPUlteriusReaderCollectionPush(m_rpIp->GetValue().c_str(), mpp, m_origin->GetValue()));
-      m_rpReaders->SetRPCallbackReceiver(this);
-      u32 mask = RPF_GPS|RPF_BPOST8|RPF_GPS2;
-      m_rpReaders->EnableMask(mask);
-      Sleep(30);
-    }
-  }
-
-  void EMCalibrationStreamingWidget::onAddFramesToggle()
-  {
-    //Don't do anything if we're not initialized
-    if(!m_init->GetValue())
-      return;
-  }
-
-  void EMCalibrationStreamingWidget::onFrame()
-  {
-    if(!m_init->GetValue() || !m_lock.tryLock(30))
-      return;
-
-    RPData rp = m_data.Clone();
-    m_lock.unlock();
-
-    if(m_addFrames->GetValue()) {
-      addFrame(rp);
-    }
-
+    addFrame(rp);
     rp.Release();
-  }
-
-  void EMCalibrationStreamingWidget::Callback(const RPData *rp)
-  {
-    if(rp && m_lock.tryLock(30)) {
-      m_data.Release();
-      m_data = *rp;
-      m_lock.unlock();
-      emit frameSignal();
-      //QMetaObject::invokeMethod(this, "onFrame", Qt::QueuedConnection);
-    }
-  }
-
-  void EMCalibrationStreamingWidget::onFramerateChanged()
-  {
-    if(!m_init->GetValue())
-      return;
   }
 
   EMCalibrationStreamingWidget::~EMCalibrationStreamingWidget()

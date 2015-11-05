@@ -17,6 +17,7 @@
 #include <vtkProperty.h>
 #include <QtGui/QFileDialog>
 #include <vtkAxesActor.h>
+#include "RPWidget.h"
 
 namespace Nf
 {
@@ -85,7 +86,7 @@ namespace Nf
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
     std::vector < QVTKWidget * > GetChildWidgets();
-    void addFrame(RPData &rp);
+    virtual void addFrame(RPData &rp);
     void initializeStylusCal();
     void resetView();
     void RenderTargetPoints(bool, arma::mat = arma::mat());
@@ -119,50 +120,18 @@ namespace Nf
     void onUpdateFrame();    
   };
 
-  class EMCalibrationStreamingWidget : public EMCalibrationWidget, public RPCallbackReceiver
+  class EMCalibrationStreamingWidget : public EMCalibrationWidget, public RPFrameHandler
   {
     Q_OBJECT 
 
   protected:
-    std::tr1::shared_ptr < RPUlteriusReaderCollectionPush > m_rpReaders;
-    QMutex m_lock;
+    RPPushReceiver *m_receiver;
 
   public:
     EMCalibrationStreamingWidget(QWidget *parent, const char *name = "EMCalibrationStreamingWidget");
     virtual ~EMCalibrationStreamingWidget();
 
-    //IP
-    std::tr1::shared_ptr < Nf::StringParameter > m_rpIp;
-
-    //Stream
-    std::tr1::shared_ptr < Nf::BoolParameter > m_init;
-    void onInitializeToggle();
-    CLASS_CALLBACK(onInitializeToggle, EMCalibrationStreamingWidget);
-
-    //Add Frames
-    std::tr1::shared_ptr < Nf::BoolParameter > m_addFrames;
-    void onAddFramesToggle();
-    CLASS_CALLBACK(onAddFramesToggle, EMCalibrationStreamingWidget);
-
-    //Framerate
-    std::tr1::shared_ptr < Nf::IntParameter > m_framerate;
-    void onFramerateChanged();
-    CLASS_CALLBACK(onFramerateChanged, EMCalibrationStreamingWidget);
-
-    //MPP
-    std::tr1::shared_ptr < Nf::FloatParameter > m_mpp;
-
-    //Origin
-    std::tr1::shared_ptr < Nf::Vec2dParameter > m_origin;
-
-    virtual void Callback(const RPData *rp);
-
-    public slots:
-      virtual void onFrame();
-
-  signals:
-    void frameSignal();
-
+    virtual void HandleFrame(RPData &rp);
   };
 
 }

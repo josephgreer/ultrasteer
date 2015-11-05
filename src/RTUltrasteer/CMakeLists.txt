@@ -36,6 +36,7 @@ INCLUDE_DIRECTORIES(
   ../3DMouse
   ${UlteriusDir}/inc
   ${CMAKE_CURRENT_SOURCE_DIR}/../../external/armadillo/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/nano17/include
 ) 
 
 SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp USVisualizerWidget.cpp VTKTransferFunctionWidget.cpp FileWidget.cpp Resizable.cpp ImageViewerWidget.cpp RPWidget.cpp RobotHardwareWidget.cpp RobotControlsWidget.cpp Teleoperation2DWidget.cpp
@@ -81,5 +82,6 @@ SET_TARGET_PROPERTIES(RTUltrasteer PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:wind
 
 
 TARGET_LINK_LIBRARIES(RTUltrasteer Segment VolumeCreator ControlAlgorithms 3DMouse RPFileReader RobotHardware RPFileWriter alglib ${OpenCV_LIBS} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${UlteriusDir}/lib/ulterius_old.lib
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/liblapack.lib ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/libblas.lib winmm.lib)
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/liblapack.lib ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/libblas.lib ${CMAKE_CURRENT_SOURCE_DIR}/../../external/nano17/libs/NIDAQMX.lib
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/nano17/libs/Force_Sensor_2010.lib winmm.lib)
 
