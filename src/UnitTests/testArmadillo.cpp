@@ -427,7 +427,6 @@ TEST(Math, LUTDist)
   pnotoverneedle.save("C:/Joey/Data/probDist/testPNotOverNeedle.mat", raw_ascii);
 }
 
-<<<<<<< HEAD
 TEST(Math, CurveFit)
 {
   using ::s32; 
@@ -481,12 +480,12 @@ TEST(Math, Polynomial)
   points.save((dir+"uniform_pts.dat").c_str(), arma::raw_ascii);
 }
 
-TEST(Math, CurveFit)
-{
-  std::string dir[100] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
-
-  arma::mat xpt,ypt,zpt;
-  xpt.load((dir+"xpt.dat").c_str());
-  ypt.load((dir+"ypt.dat").c_str());
-  zpt.load((dir+"zpt.dat").c_str());
-}
+//TEST(Math, CurveFit)
+//{
+//  std::string dir[100] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
+//
+//  arma::mat xpt,ypt,zpt;
+//  xpt.load((dir+"xpt.dat").c_str());
+//  ypt.load((dir+"ypt.dat").c_str());
+//  zpt.load((dir+"zpt.dat").c_str());
+//}
