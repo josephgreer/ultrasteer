@@ -29,12 +29,12 @@ namespace Nf
 
     //In stylus calibration
     std::tr1::shared_ptr < Nf::BoolParameter > m_inStylusCalibration;
-    void onCalibrateStylus();
+    virtual void onCalibrateStylus();
     CLASS_CALLBACK(onCalibrateStylus, EMCalibrationWidget);
 
     //In robot calibration
     std::tr1::shared_ptr < Nf::BoolParameter > m_inRobotCalibration;
-    void onCalibrateRobot();
+    virtual void onCalibrateRobot();
     CLASS_CALLBACK(onCalibrateRobot, EMCalibrationWidget);
 
     //In stylus point selection

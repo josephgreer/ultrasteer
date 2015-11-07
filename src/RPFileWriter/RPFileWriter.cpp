@@ -129,6 +129,48 @@ namespace Nf
     return 0;
   }
 
+  static int writeForceData(FILE *f, const ForceData *ff)
+  {
+    assert(f != NULL);
+
+    if(fwrite(ff, 1, sizeof(ForceData), f) != sizeof(ForceData)) 
+      printf("writeNSCommand, Failed to write command correctly\n");
+
+    return 0;
+  }
+
+
+  ForceWriter::ForceWriter(const char *path)
+  {
+    m_bytesPerDatum = sizeof(ForceWriter);
+    m_file = fopen(path, "wb");
+    if(m_file == NULL)
+      throw std::runtime_error("ForceWriter::ForceWriter(): Error opening file.\n");
+  }
+    
+  ForceWriter::~ForceWriter()
+  {
+    if(m_file != NULL)
+      fclose(m_file);
+  }
+
+  s32 ForceWriter::Cleanup()
+  {
+    if(m_file != NULL)
+      fclose(m_file);
+    return 0;
+  }
+
+  s32 ForceWriter::WriteNextForceData(const ForceData *f)
+  {
+    if(m_file == NULL)
+      throw std::runtime_error("NSCommandWriter::WriteNextNSCommand(): Invalid file.\n");
+
+    writeForceData(m_file, f);
+
+    return 0;
+  }
+
   RPFileWriter::RPFileWriter(const char *path, const RPFileHeader *header, int type)
   {
     if(type != RPF_BPOST8 && type != RPF_BPOST32 && type != RPF_COLOR) {
@@ -433,6 +475,54 @@ namespace Nf
     return 0;
   }
 
+  
+  s32 RPFileWriterCollection::AddForceWriter()
+  {
+    char filename[100];
+    sprintf(filename, "%s.%s", m_path, "force");
+    
+
+    FILE *temp = fopen(filename, "rb");
+    if(temp && !m_writeOver) {
+      printf("File %s already exists.  Do you want to open? (Y/N)\n", filename);
+
+
+      bool writeOver = false;
+      bool run = true;
+      while(run) {
+        if(kbhit()) {
+          char input = getch();
+          switch(input) {
+        case 'y':
+        case 'Y':
+          writeOver = true;
+          break;
+        case 'n':
+        case 'N':
+          writeOver = false;
+          break;
+        default:
+          break;
+          }
+          run = false;
+        }
+      }
+      if(!writeOver) {
+        return  -1;
+      } else {
+        m_writeOver = true;
+      }
+    }
+    if(temp)
+      fclose(temp);
+
+
+    m_f = new ForceWriter(filename);
+    if(m_f == NULL)
+      throw std::runtime_error("RPFileWriterCollection::AddNSCommandWriter():  Error opening file for writing\n");
+    return 0;
+  }
+
 
   s32 RPFileWriterCollection::WriteNextRPData(const RPData *data)
   {
@@ -456,6 +546,8 @@ namespace Nf
       m_gps2->WriteNextGPSDatum(&data->gps2);
     if(m_u)
       m_u->WriteNextNSCommand(&data->u);
+    if(m_f)
+      m_f->WriteNextForceData(&data->force);
 
     return 0;
   }
@@ -481,6 +573,9 @@ namespace Nf
     }
     if(m_u) {
       m_u->Cleanup();
+    }
+    if(m_f) {
+      m_f->Cleanup();
     }
 
     return 0;

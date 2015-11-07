@@ -17,9 +17,6 @@ namespace Nf
     m_yx.clear();
     m_c.clear();
     m_tipFrame.clear();
-
-    m_c << 0 << endr << 0 << endr << 1;
-    m_tipFrame = eye(3,3);
   }
 
   void EMNeedleTipCalibrator::ClearPoints()
@@ -86,6 +83,11 @@ namespace Nf
     m_c.clear();
     m_tipFrame.clear();
   }
+
+  bool EMNeedleTipCalibrator::IsCalibrated()
+  {
+    return m_c.n_elem > 0 && m_tipFrame.n_elem > 0;
+  }
   ////////////////////////////////////////////////////////////////
   //// END EMNeedleTipCalibrator
   ////////////////////////////////////////////////////////////////
@@ -115,7 +117,69 @@ namespace Nf
   {
     m_pts.clear();
   }
+
+  bool NeedleCurvatureCalibrator::IsCalibrated()
+  {
+    return m_pts.n_elem > 0;
+  }
   ////////////////////////////////////////////////////////////////
   //// END NeedleCurvatureCalibrator
+  ////////////////////////////////////////////////////////////////
+  
+  ////////////////////////////////////////////////////////////////
+  //// BEGIN PlaneCalibrator
+  ////////////////////////////////////////////////////////////////
+  PlaneCalibrator::PlaneCalibrator()
+  {
+    m_pts.clear();
+    m_plane = Plane();
+  }
+
+  void PlaneCalibrator::AddPoint(const Vec3d &point)
+  {
+    m_pts = join_vert(m_pts, point.ToArmaVec().t());
+  }
+  void PlaneCalibrator::SetSolution(const arma::mat &solution)
+  {
+    m_plane = solution;
+  }
+
+  void PlaneCalibrator::ClearPoints()
+  {
+    m_pts.clear();
+    m_plane = Plane();
+  }
+
+  void PlaneCalibrator::DoCalibration()
+  {
+    arma::mat origin = mean(m_pts,0).t();
+    arma::mat pts = m_pts.t() - repmat(origin, 1, m_pts.n_rows);
+    arma::mat U, V;
+    arma::vec s;
+    svd(U, s, V, pts);
+
+    arma::vec n = U.col(2);
+    f64 d = -dot(n,origin);
+    f64 normn = norm(n);
+    d = d/normn;
+    n = n/normn;
+    arma::mat abcd = zeros(4,1);
+    abcd.submat(arma::span(0,2), arma::span(0,0)) = n;
+    abcd(3) = d;
+    m_plane = Plane(abcd);
+  }
+
+  void PlaneCalibrator::ResetSolution()
+  {
+    m_pts.clear();
+    m_plane = Plane();
+  }
+
+  bool PlaneCalibrator::IsCalibrated()
+  {
+    return !m_plane.IsZero();
+  }
+  ////////////////////////////////////////////////////////////////
+  //// END PlaneCalibrator
   ////////////////////////////////////////////////////////////////
 }

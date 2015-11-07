@@ -521,6 +521,12 @@ namespace Nf {
   {
     return m_stylusCalibrationComplete;
   }
+
+  void StylusCalibration::SetOffset(arma::mat c)
+  {
+    m_stylusCalibrationComplete = true;
+    m_vcal = c;
+  }
   
   /// ----------------------------------------------------
   /// STrigger Class

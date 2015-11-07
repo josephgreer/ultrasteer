@@ -329,5 +329,91 @@ namespace Nf
   //END POLYNOMIAL
   ////////////////////////////////////////////////////////////
 
+  ////////////////////////////////////////////////////////////
+  // BEGIN PLANE
+  ////////////////////////////////////////////////////////////
+  Plane::Plane(arma::mat abcd)
+  {
+    m_abcd = abcd;
+    m_abcd = m_abcd/norm(m_abcd);
+  }
+
+  f64 Plane::PlanePointDistance(Vec3d point)
+  {
+    return PlanePointDistance(point.ToArmaVec());
+  }
+
+  f64 Plane::PlanePointDistance(arma::vec3 point)
+  {
+    m_abcd = m_abcd/norm(m_abcd.submat(span(0,2),span(0,0)));
+    return dot(m_abcd.submat(span(0,2),span(0,0)), point)+m_abcd(3,0);
+  }
+
+  Vec3d Plane::ProjectPointOntoPlane(Vec3d point)
+  {
+    arma::mat n = m_abcd.submat(span(0,2), span(0,0));
+    n = n/norm(n);
+
+    arma::vec center = Vec3d(0,0,-m_abcd(3,0)/m_abcd(2,0)).ToArmaVec();
+
+    arma::vec pt = point.ToArmaVec();
+
+    f64 dist = dot((pt-center),n);
+    arma::vec result = pt-dist*n;
+    return Vec3d::FromArmaVec(result);
+  }
+
+  void Plane::GetCenterAndAxisVectors(Vec3d &center, Vec3d &axis1, Vec3d &axis2, Vec3d corner1, Vec3d corner2, Vec3d corner3)
+  {
+    center = Vec3d(0,0, -m_abcd(3,0)/m_abcd(2,0));
+
+    corner1 = ProjectPointOntoPlane(corner1);
+    corner2 = ProjectPointOntoPlane(corner2);
+    corner3 = ProjectPointOntoPlane(corner3);
+    
+    axis1 = corner2-corner1;
+    axis2 = corner3-corner1;
+
+    Vec3d n = Vec3d::FromArmaVec((vec3)(m_abcd.rows(arma::span(0,2))));
+    n = n.normalized();
+
+    axis2 = n.cross(axis1.normalized());
+    axis2 = axis2*(corner3-corner1).magnitude();
+    if((corner3-(corner1+axis2)).magnitude() > (corner3-(corner1-axis2)).magnitude())
+      axis2 = axis2*-1.0;
+    center = corner1+(axis1)/2.0+(axis2)/2.0;
+  }
+
+  void Plane::GetCornerAndAxisVectors(Vec3d &corner, Vec3d &axis1, Vec3d &axis2, Vec3d corner1, Vec3d corner2, Vec3d corner3)
+  {
+    corner1 = ProjectPointOntoPlane(corner1);
+    corner2 = ProjectPointOntoPlane(corner2);
+    corner3 = ProjectPointOntoPlane(corner3);
+    
+    axis1 = corner2-corner1;
+    axis2 = corner3-corner1;
+    
+    axis1 = corner2-corner1;
+    axis2 = corner3-corner1;
+
+    Vec3d n = Vec3d::FromArmaVec((vec3)(m_abcd.rows(arma::span(0,2))));
+    n = n.normalized();
+
+    axis2 = n.cross(axis1.normalized());
+    axis2 = axis2*(corner3-corner1).magnitude();
+    if((corner3-(corner1+axis2)).magnitude() > (corner3-(corner1-axis2)).magnitude())
+      axis2 = axis2*-1.0;
+    corner = corner1;
+  }
+  
+  bool Plane::IsZero()
+  {
+    return norm(m_abcd) < 1e-5;
+  }
+
+  ////////////////////////////////////////////////////////////
+  // END PLANE
+  ////////////////////////////////////////////////////////////
+
 
 }

@@ -39,6 +39,19 @@ namespace Nf
     s32 WriteNextNSCommand(const NSCommand *u);
   };
 
+  class ForceWriter {
+  private:
+    FILE *m_file;
+    int m_bytesPerDatum;
+
+  public:
+    ForceWriter(const char *path);
+    virtual ~ForceWriter();
+    s32 Cleanup();
+
+    s32 WriteNextForceData(const ForceData *u);
+  };
+
   class RPFileWriter {
   private:
     FILE *m_file;
@@ -65,6 +78,7 @@ namespace Nf
     s32 AddGPSWriter();
     s32 AddGPSWriter2();
     s32 AddNSCommandWriter();
+    s32 AddForceWriter();
 
     s32 WriteNextRPData(const RPData *data);
     s32 Cleanup(const RPFileHeader *header);
@@ -76,6 +90,7 @@ namespace Nf
     RPGPSWriter *m_gps;
     RPGPSWriter *m_gps2;
     NSCommandWriter *m_u;
+    ForceWriter *m_f;
     RPFileHeader m_header;
     char m_path[100];
     bool m_writeOver;

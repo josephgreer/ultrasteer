@@ -124,6 +124,7 @@ namespace Nf
     rpw->AddGPSWriter();
     rpw->AddGPSWriter2();
     rpw->AddNSCommandWriter();
+    rpw->AddForceWriter();
 
     header.frames = m_dataToSave.size();
     header.sf = (s32)(m_dataToSave[0].mpp.y/m_dataToSave[0].mpp.x*NOMINAL_SOS+0.5);

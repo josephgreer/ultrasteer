@@ -10,6 +10,7 @@
 #include <vtkPoints.h>
 #include <vtkAxesActor.h>
 #include <vtkGlyph3D.h>
+#include <vtkPlaneSource.h>
 
 #include "RTCore.h"
 
@@ -72,6 +73,16 @@ namespace Nf {
     SphereVisualizer(const Vec3d &cen, f64 radius);
     void SetCenter(const Vec3d &cen);
     void SetRadius(f64 rad);
+  };
+
+  class PlaneVisualizer : public GeometryVisualizer
+  {
+  protected:
+    vtkSmartPointer < vtkPlaneSource > m_planeSource;
+
+  public:
+    PlaneVisualizer(Vec3d corner, Vec3d normal);
+    void SetPlane(Vec3d corner, Vec3d axis1, Vec3d axis2);
   };
 
   class SphereContainer

@@ -1101,6 +1101,8 @@ void RTUltrasteer::CreateFSExperimentStreamDock()
   
   m_fsExperimentStreamWidget = new Nf::FSExperimentStreamingWidget(m_FSExperimentStreamDock);
   m_FSExperimentStreamDock->setWidget(m_fsExperimentStreamWidget);
+
+  m_fsExperimentStreamWidget->SetRobot(&m_robot);
     
   m_FSExperimentStreamDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }

@@ -153,4 +153,22 @@ namespace Nf
     // Generate uniformly spaced points from a to b separated by ds
     arma::mat UniformlySpacedPoints(f64 a, f64 b, f64 ds, s32 nTries);
   };
+
+  class Plane
+  {
+  protected:
+    arma::mat m_abcd;
+
+  public:
+    Plane() { m_abcd = arma::zeros(4,1); }
+    Plane(arma::mat abcd);
+
+    f64 PlanePointDistance(Vec3d point);
+    f64 PlanePointDistance(arma::vec3 point);
+    void GetCenterAndAxisVectors(Vec3d &center, Vec3d &axis1, Vec3d &axis2, Vec3d corner1, Vec3d corner2, Vec3d corner3);
+    void GetCornerAndAxisVectors(Vec3d &corner, Vec3d &axis1, Vec3d &axis2, Vec3d corner1, Vec3d corner2, Vec3d corner3);
+    Vec3d ProjectPointOntoPlane(Vec3d point);
+    arma::mat GetABCD() { return m_abcd; }
+    bool IsZero();
+  };
 }

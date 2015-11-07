@@ -105,6 +105,8 @@ namespace Nf
       : pose(4,4,CV_64F)
     {
       this->valid = 0;
+
+      pose = cv::Mat::eye(4,4,CV_64F);
     }
 
     GPS_Data operator=(const GPS_Data &rhs)
@@ -127,6 +129,27 @@ namespace Nf
       return retVal;
     }
   };
+
+  struct ForceData
+  {
+    Vec3d force;
+    Vec3d torque;
+    f64 slidePosition;
+    ForceData() 
+      : force(0,0,0)
+      , torque(0,0,0)
+      , slidePosition(0)
+    {}
+
+    ForceData operator=(const ForceData &rhs)
+    {
+      this->force = rhs.force;
+      this->torque = rhs.torque;
+      this->slidePosition = rhs.slidePosition;
+      return *this;
+    }
+  };
+
 
   inline Vec3d rpImageCoordToWorldCoord3(const Vec2d &image, const Matrix44d &posePos, const Matrix44d &calibration, const Vec2d &start, const Vec2d &scale)
   {
@@ -187,6 +210,7 @@ namespace Nf
     Vec2d origin;
     Squarei roi;
     NSCommand u;
+    ForceData force;
 
     RPData() 
     {
@@ -203,6 +227,7 @@ namespace Nf
 #endif
       origin = Vec2d(0,0);
       u = NSCommand();
+      force = ForceData();
     }
 
     RPData(const RPData &rp)
@@ -221,6 +246,7 @@ namespace Nf
       this->origin = rp.origin;
       this->roi = rp.roi;
       this->u = rp.u;
+      this->force = rp.force;
     }
 
     RPData operator=(const RPData &rhs)
@@ -239,6 +265,7 @@ namespace Nf
       this->origin = rhs.origin;
       this->u = rhs.u;
       this->roi = rhs.roi;
+      this->force = rhs.force;
       return *this;
     }
 
@@ -464,6 +491,21 @@ namespace Nf
     NSCommand GetNSCommand(s32 frame);
   };
 
+  class ForceReader
+  {
+  private:
+    int m_idx;
+    FILE *m_file;
+    int m_bytesPerDatum;
+  public:
+    ForceReader(const char *path);
+    virtual ~ForceReader();
+
+    ForceData GetNextForceData();
+    ForceData GetPreviousForceData();
+    ForceData GetForceData(s32 frame);
+  };
+
   class RPFileReader : RPReader {
   private:
     int m_idx;
@@ -499,6 +541,7 @@ namespace Nf
     void AddGPSReader(RPGPSReaderBasic *gps);
     void AddGPSReader2(RPGPSReaderBasic *gps2);
     void AddNSCommandReader(NSCommandReader *u);
+    void AddForceReader(ForceReader *f);
 
     RPData GetNextRPData();
     RPData GetPreviousRPData();
@@ -515,6 +558,7 @@ namespace Nf
     RPGPSReader *m_gps;
     RPGPSReader *m_gps2;
     NSCommandReader *m_u;
+    ForceReader *m_f;
   };
 
 };

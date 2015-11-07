@@ -124,6 +124,7 @@ namespace Nf {
     arma::mat getCalibrationVector(void);
     arma::mat getCenter(void);
     bool isComplete(void);
+    void SetOffset(arma::mat c);
 
   protected:
     arma::mat m_A;

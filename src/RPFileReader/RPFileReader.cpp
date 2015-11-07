@@ -189,6 +189,63 @@ namespace Nf
     readNSCommandDatum(m_file, &u);
     return u;
   }
+  
+
+  static int readForceDatum(FILE *f, ForceData *ff)
+  {
+    if(f == NULL)
+      throw std::runtime_error("Bad file\n");
+
+    if(fread(ff, 1, sizeof(ForceData), f) != sizeof(ForceData))
+      throw std::runtime_error("Error reading file\n");
+
+    return sizeof(ForceData);
+  }
+
+  ForceReader::ForceReader(const char *path)
+    : m_idx(0)
+  {
+    m_file = fopen(path, "rb");
+    if(!m_file)
+      return;
+
+    m_bytesPerDatum = sizeof(ForceData);
+  }
+
+  ForceReader::~ForceReader()
+  {
+    fclose(m_file);
+
+    m_file = NULL;
+  }
+
+  ForceData ForceReader::GetNextForceData()
+  {
+    ForceData f;
+    readForceDatum(m_file, &f);
+    m_idx++;
+    return f;
+  }
+
+  ForceData ForceReader::GetPreviousForceData()
+  {
+    ForceData f;
+    m_idx--;
+    if(m_idx < 0)
+      throw std::runtime_error("NSCommand reader: invalid time index\n");
+    fseek(m_file, m_bytesPerDatum*m_idx, SEEK_SET);
+    readForceDatum(m_file, &f);
+    return f;
+  }
+
+  ForceData ForceReader::GetForceData(s32 frame)
+  {
+    ForceData f;
+    m_idx = frame;
+    fseek(m_file, m_bytesPerDatum*m_idx, SEEK_SET);
+    readForceDatum(m_file, &f);
+    return f;
+  }
 
   RPGPSReader::RPGPSReader(const char *path)
     : m_idx(0)
@@ -329,6 +386,7 @@ namespace Nf
     , m_gps(NULL)
     , m_gps2(NULL)
     , m_u(NULL)
+    , m_f(NULL)
   {
   }
 
@@ -338,6 +396,10 @@ namespace Nf
     for(std::map < RP_TYPE, RPFileReader * >::iterator i = m_readers.begin(); i != m_readers.end(); i++) {
       delete i->second;
     }
+    delete m_gps;
+    delete m_gps2;
+    delete m_u;
+    delete m_f;
   }
 
 
@@ -367,6 +429,11 @@ namespace Nf
   void RPFileReaderCollection::AddNSCommandReader(NSCommandReader *u)
   {
     m_u = u;
+  }
+
+  void RPFileReaderCollection::AddForceReader(ForceReader *f)
+  {
+    m_f = f;
   }
 
   s32 RPFileReaderCollection::GetCurrentFrame()
@@ -422,6 +489,10 @@ namespace Nf
       rv.u = m_u->GetNextNSCommand();
     else
       rv.u = NSCommand();
+    if(m_f)
+      rv.force = m_f->GetNextForceData();
+    else
+      rv.force = ForceData();
 
     RPFileHeader header;
     if(m_readers.find(RPF_BPOST8) != m_readers.end())
@@ -489,6 +560,10 @@ namespace Nf
       rv.u = m_u->GetPreviousNSCommand();
     else
       rv.u = NSCommand();
+    if(m_f)
+      rv.force = m_f->GetPreviousForceData();
+    else
+      rv.force = ForceData();
 
     RPFileHeader header;
     if(m_readers.find(RPF_BPOST8) != m_readers.end())
@@ -557,6 +632,10 @@ namespace Nf
       rv.u = m_u->GetNSCommand(frame);
     else
       rv.u = NSCommand();
+    if(m_f)
+      rv.force = m_f->GetForceData(frame);
+    else
+      rv.force = ForceData();
 
     RPFileHeader header;
     if(m_readers.find(RPF_BPOST8) != m_readers.end())

@@ -203,6 +203,72 @@ namespace Nf {
   ////////////////////////////////////////////////////////
   //End AxesVisualizer Class
   ///////////////////////////////////////////////////////
+  
+  //////////////////////////////////////////////////////
+  //Begin PlaneVisualizer Class
+  //////////////////////////////////////////////////////
+  PlaneVisualizer::PlaneVisualizer(Vec3d center, Vec3d normal)
+  {
+    m_mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+
+    vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+    actor->SetMapper(m_mapper);
+
+    m_actor = actor;
+   
+  }
+
+  void PlaneVisualizer::SetPlane(Vec3d corner, Vec3d axis1, Vec3d axis2)
+  {
+
+    s32 nHorz = 6;
+    s32 nVert = 6;
+    vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
+    vtkSmartPointer<vtkCellArray> lines = vtkSmartPointer<vtkCellArray>::New();
+    s32 nPoints = 0;
+
+    Vec3d ul = corner;
+    Vec3d ll = corner+axis2;
+    Vec3d lr = corner+axis1+axis2;
+    Vec3d ur = corner+axis1;
+
+    Vec3d startEndPoint1 = ul;
+    Vec3d startEndPoint2 = ll;
+    Vec3d delta = (ur-ul)/(f64)nVert;
+    for(s32 j=0; j<=nVert; j++) {
+      vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
+      Vec3d p1 = startEndPoint1+delta*j;
+      Vec3d p2 = startEndPoint2+delta*j;
+      pts->InsertNextPoint(p1.x, p1.y, p1.z);
+      line->GetPointIds()->SetId(0,nPoints++);
+      pts->InsertNextPoint(p2.x, p2.y, p2.z);
+      line->GetPointIds()->SetId(1,nPoints++);
+      lines->InsertNextCell(line);
+    } 
+
+    startEndPoint1 = ul;
+    startEndPoint2 = ur;
+    delta = (ll-ul)/(f64)nHorz;
+    for(s32 j=0; j<=nHorz; j++) {
+      vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
+      Vec3d p1 = startEndPoint1+delta*j;
+      Vec3d p2 = startEndPoint2+delta*j;
+      pts->InsertNextPoint(p1.x, p1.y, p1.z);
+      line->GetPointIds()->SetId(0,nPoints++);
+      pts->InsertNextPoint(p2.x, p2.y, p2.z);
+      line->GetPointIds()->SetId(1,nPoints++);
+      lines->InsertNextCell(line);
+    } 
+
+    vtkSmartPointer<vtkPolyData> linesPolyData = vtkSmartPointer<vtkPolyData>::New();
+    linesPolyData->SetPoints(pts);
+    linesPolyData->SetLines(lines);
+
+    m_mapper->SetInputData(linesPolyData);
+  }
+  ////////////////////////////////////////////////////////
+  //End PlaneVisualizer Class
+  ///////////////////////////////////////////////////////
 
   //////////////////////////////////////////////////////
   //Begin SphereVisualizer Class
