@@ -44,6 +44,14 @@ namespace Nf
       void StopInsertion(void);
       void HomeInsertion(void);
 
+      double GetInsertion(void);
+      double GetRoll(void);
+      double GetArticulationAngle(void);
+      
+      bool isRollInitialized(void) { return m_robot->isRollInitialized(); }
+      bool isInsertionInitialized(void) { return m_robot->isInsertionInitialized(); }
+      bool isArticulationInitialized(void) { return m_robot->isArticulationInitialized(); }
+
       void SetArticulationAngle(int);
 
       void onDisplayQuery(void);

@@ -356,7 +356,7 @@ namespace Nf
     }
 #endif
 
-    void GetGPS1RelativeT(arma::mat44 &T1_rel)
+    void GetGPS1RelativeT(arma::mat44 &T1_rel) const
     {
       using namespace arma;
       mat33 R1_rel;

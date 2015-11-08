@@ -111,6 +111,21 @@ namespace Nf
     }
   }
 
+  double RobotControlsWidget::GetInsertion()
+  {
+    return ui.insertion_pos->value();
+  }
+
+  double RobotControlsWidget::GetRoll()
+  {
+    return ui.roll_pos->value();
+  }
+
+  double RobotControlsWidget::GetArticulationAngle()
+  {
+    return ui.articulation_pos->value();
+  }
+
   void RobotControlsWidget::InsertPosInc(void)
   {
     m_robot->InsertIncremental(10.0);

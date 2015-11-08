@@ -86,7 +86,7 @@ namespace Nf
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
     std::vector < QVTKWidget * > GetChildWidgets();
-    virtual void addFrame(RPData &rp);
+    virtual void addFrame(RPData rp);
     void initializeStylusCal();
     void resetView();
     void RenderTargetPoints(bool, arma::mat = arma::mat());

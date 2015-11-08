@@ -342,7 +342,7 @@ namespace Nf
     m_renderer->SetActiveCamera(cam);
   }
   
-  void EMCalibrationWidget::addFrame(RPData &rp)
+  void EMCalibrationWidget::addFrame(RPData rp)
   {
     using namespace arma;
 

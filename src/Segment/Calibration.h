@@ -64,6 +64,7 @@ namespace Nf
     virtual void DoCalibration();
     virtual void ResetSolution();
     virtual bool IsCalibrated();
+    virtual void SetPoints(arma::mat pts) { m_pts = pts; }
     virtual Plane GetSolution() const { return m_plane; }
     arma::mat GetPoints() { return m_pts; }
   };

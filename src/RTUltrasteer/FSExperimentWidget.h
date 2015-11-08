@@ -18,6 +18,7 @@ namespace Nf
     arma::mat m_baseFrame;
     arma::vec m_baseOffset;
     arma::mat m_corners;
+    arma::mat m_lastGPS2;
 
   public:
     ExperimentCalibrationData();
@@ -54,12 +55,13 @@ namespace Nf
     void SaveCalibrationData();
     CLASS_CALLBACK(SaveCalibrationData, ExperimentCalibrationData);
 
-    void addFrame(RPData &rp);
+    void addFrame(RPData rp);
     void SetBaseFrameData(arma::mat baseFrame, arma::mat baseOffset);
     void SetStylusCalibration(std::tr1::shared_ptr < EMNeedleTipCalibrator > stylusCalib);
     void SetPlaneCalibration(std::tr1::shared_ptr < PlaneCalibrator > calib) { m_planeCalibration = calib; }
     void SetTipCalibration(std::tr1::shared_ptr < EMNeedleTipCalibrator > tipCalib) { m_tipCalibration = tipCalib; }
     void SetCorners(arma::mat corners) { m_corners = corners; }
+    void SetLastGPS2(arma::mat gps2) { m_lastGPS2 = gps2; }
     std::tr1::shared_ptr < PlaneCalibrator > GetPlaneCalibration() { return m_planeCalibration; }
     std::tr1::shared_ptr < EMNeedleTipCalibrator > GetTipCalibration() { return m_tipCalibration; }
     arma::mat GetCorners() { return m_corners; }
@@ -72,7 +74,7 @@ namespace Nf
   public:
     FSExperimentCalibrationFileWidget(QWidget *parent);
     virtual ~FSExperimentCalibrationFileWidget();
-    virtual void addFrame(RPData &rp);
+    virtual void addFrame(RPData rp);
   };
 
   class FSExperimentCalibrationStreamingWidget : public EMCalibrationStreamingWidget, public SphereContainer
@@ -87,14 +89,18 @@ namespace Nf
     std::tr1::shared_ptr < PointCloudVisualizer > m_cornerPointVis;
     std::tr1::shared_ptr < PlaneVisualizer > m_planeVis;
     vtkSmartPointer < vtkAxesActor > m_planeAxis;
+    std::tr1::shared_ptr < SphereVisualizer > m_needleTipVis;
+    std::tr1::shared_ptr < RobotHardwareWidget > m_hwWidget;
+    arma::mat m_lastGPS2;
 
   public:
     FSExperimentCalibrationStreamingWidget(QWidget *parent);
     virtual ~FSExperimentCalibrationStreamingWidget();
-    virtual void addFrame(RPData &rp);
+    virtual void addFrame(RPData rp);
     virtual void SetSaveDataWidget(std::tr1::shared_ptr < SaveDataWidget > saveDataWidget) { m_saveDataWidget = saveDataWidget; }
     virtual void onCalibrateRobot();
     virtual void onCalibrateStylus();
+    virtual void SetRobotHW(std::tr1::shared_ptr < RobotHardwareWidget > hwWidget) { m_hwWidget = hwWidget; }
     virtual RPData ResetDataRelativeToRobotFrame(const RPData &rp);
     
     std::tr1::shared_ptr < Nf::BoolParameter > m_loadCalib;

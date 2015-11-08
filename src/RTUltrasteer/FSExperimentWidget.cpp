@@ -69,9 +69,12 @@ namespace Nf
       std::string fname = fi.baseName().toStdString();
 
       if(m_planeCalibration->IsCalibrated()) {
-        Plane puncturePlane = m_planeCalibration->GetSolution();
-        puncturePlane.GetABCD().save(dir+fname+std::string("_plane.m"), arma::raw_ascii);
+        m_planeCalibration->GetPoints().save(dir+fname+std::string("_plane.m"), arma::raw_ascii);
         m_corners.save(dir+fname+std::string("_corners.m"), arma::raw_ascii);
+        m_lastGPS2.save(dir+fname+std::string("_GPS2.m"), arma::raw_ascii);
+
+        //save this for matlab
+        m_planeCalibration->GetSolution().GetABCD().save(dir+fname+std::string("_abcd.m"), arma::raw_ascii);
       }
 
       if(m_tipCalibration->IsCalibrated()) {
@@ -99,8 +102,10 @@ namespace Nf
     }
   }
 
-  void ExperimentCalibrationData::addFrame(RPData &rp)
+  void ExperimentCalibrationData::addFrame(RPData rp)
   {
+    m_lastGPS2 = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(rp.gps2.pose).GetOrientation(), rp.gps2.pos).ToArmaMatrix4x4();
+
     if(m_addCornerPoints->GetValue()) {
       if(!m_stylusCalibration) {
         QMessageBox mb;
@@ -125,7 +130,10 @@ namespace Nf
         mb.setText("Robot coordinate frame has not been specified");
         mb.exec();
       } else {
-        m_tipCalibration->AddPoint(rp.gps.pos, Matrix33d::FromArmaMatrix3x3(m_baseFrame), Vec3d::FromArmaVec(m_baseOffset));
+        //Everything is relative to robot coordinate frame and rp.gps has been compensated to that frame already
+        Vec3d tipOffset; Matrix33d tipFrame;
+        m_stylusCalibration->GetSolution(tipOffset, tipFrame, rp.gps.pos, Matrix44d::FromCvMat(rp.gps.pose).GetOrientation());
+        m_tipCalibration->AddPoint(Vec3d(0,0,0), Matrix33d::I(), tipOffset);
       }
     }
   }
@@ -152,7 +160,7 @@ namespace Nf
   {
   }
 
-  void FSExperimentCalibrationFileWidget::addFrame(RPData &rp)
+  void FSExperimentCalibrationFileWidget::addFrame(RPData rp)
   {
     EMCalibrationFileWidget::addFrame(rp);
   }
@@ -175,6 +183,8 @@ namespace Nf
     , m_styCalib(NULL)
     , m_cornerPointVis(std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(5, Vec3d(1,1,1))))
     , m_planeVis(std::tr1::shared_ptr < PlaneVisualizer > (new PlaneVisualizer(Vec3d(0,0,0), Vec3d(1,0,0))))
+    , m_needleTipVis(std::tr1::shared_ptr < SphereVisualizer >(new SphereVisualizer(Vec3d(0,0,0), 5)))
+    , m_hwWidget(NULL)
   {
     ADD_CHILD_COLLECTION((ParameterCollection *)m_experimentCalib.get());
     
@@ -186,6 +196,15 @@ namespace Nf
     m_planeAxis->SetVisibility(0);
 
     m_renderer->AddActor(m_planeAxis);
+    m_renderer->AddActor(m_needleTipVis->GetActor());
+    m_renderer->AddActor(m_cornerPointVis->GetActor());
+    m_renderer->AddActor(m_planeVis->GetActor());
+
+    m_needleTipVis->GetActor()->SetVisibility(0);
+    m_needleTipVis->SetColor(Vec3d(1,0,0));
+    m_cornerPointVis->GetActor()->SetVisibility(0);
+    m_planeAxis->SetVisibility(0);
+    m_planeVis->GetActor()->SetVisibility(0);
 
     CreateSphere(Vec3d(0,0,0), 5);
   }
@@ -193,7 +212,12 @@ namespace Nf
   RPData FSExperimentCalibrationStreamingWidget::ResetDataRelativeToRobotFrame(const RPData &rp)
   {
     RPData res = rp;
-    Matrix44d gpsPosePos = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(rp.gps.pose).GetOrientation(), rp.gps.pos);
+    
+    arma::mat44 agpsPosePos;
+    rp.GetGPS1RelativeT(agpsPosePos);
+    Matrix44d gpsPosePos = Matrix44d::FromArmaMatrix4x4(agpsPosePos);
+
+    //Matrix44d gpsPosePos = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(rp.gps.pose).GetOrientation(), rp.gps.pos);
     gpsPosePos = Matrix44d::FromArmaMatrix4x4(m_Tref2robot)*gpsPosePos;
     res.gps.pose = Matrix44d::FromOrientationAndTranslation(gpsPosePos.GetOrientation(), Vec3d(0,0,0)).ToCvMat();
     res.gps.pos = gpsPosePos.GetPosition();
@@ -202,27 +226,12 @@ namespace Nf
 
   void FSExperimentCalibrationStreamingWidget::onLoadCalib()
   {
-    
     QString filename = QFileDialog::getOpenFileName(NULL, "Open File", BASE_PATH_CAT(""), "*.m");
     if(filename.length() > 0) {
       QFileInfo fi(filename);
       std::string dir = fi.dir().absolutePath().toStdString()+"/";
       std::string fname = fi.baseName().toStdString();
       fname = fname.substr(0,fname.find_last_of("_"));
-
-      fi = QFileInfo(QString::fromStdString(dir+fname+std::string("_plane.m")));
-      if(fi.exists()) {
-        arma::mat abcd; abcd.load(dir+fname+std::string("_plane.m"));
-        std::tr1::shared_ptr < PlaneCalibrator > planeCalib(new PlaneCalibrator());
-        planeCalib->SetSolution(abcd);
-        m_experimentCalib->SetPlaneCalibration(planeCalib);
-      }
-
-      fi = QFileInfo(QString::fromStdString(dir+fname+std::string("_corners.m")));
-      if(fi.exists()) {
-        arma::mat corners; corners.load(dir+fname+std::string("_corners.m"));
-        m_experimentCalib->SetCorners(corners);
-      }
       
       fi = QFileInfo(QString::fromStdString(dir+fname+std::string("_tipOffset.m")));
       if(fi.exists()) {
@@ -267,6 +276,53 @@ namespace Nf
           bounds[5]);
         m_renderer->GetActiveCamera()->Zoom(1.3);
       }
+      
+
+      fi = QFileInfo(QString::fromStdString(dir+fname+std::string("_plane.m")));
+      bool planeDataExists = fi.exists(); 
+      fi = QFileInfo(QString::fromStdString(dir+fname+std::string("_GPS2.m")));
+      bool frameDataExists = fi.exists();
+      
+      fi = QFileInfo(QString::fromStdString(dir+fname+std::string("_corners.m")));
+      bool cornersExist = fi.exists();
+      if(planeDataExists && frameDataExists && cornersExist && m_robotCalibrationComplete) {
+        //pts are \in [p1^T; ...; p_m^T] \in R^{mx3}
+        arma::mat pts; pts.load(dir+fname+std::string("_plane.m"));
+        // convert pts to [p1 p2 ... p_m]  \in R^{3xm} for batch transformation
+        pts = pts.t();
+        //augment with ones for homogenous 
+        pts = arma::join_vert(pts, arma::ones(1,pts.n_cols));
+
+        //load frame these points were expressed in
+        arma::mat F1; F1.load(dir+fname+std::string("_GPS2.m"));
+
+        //transform pts to current frame
+        pts = m_Tref2robot*inv(m_lastGPS2)*F1*inv(m_Tref2robot)*pts;
+        
+        // now convert back to preferred format
+        pts = pts.rows(arma::span(0,2));
+        pts = pts.t();
+
+        std::tr1::shared_ptr < PlaneCalibrator > planeCalib(new PlaneCalibrator());
+
+        arma::mat corners; corners.load(dir+fname+std::string("_corners.m"));
+        //corners are in format [p1 p2 p3 p4] \in R^{3x4}
+        //augment with ones for homogenous
+        corners = arma::join_vert(corners, arma::ones(1, corners.n_cols));
+        // convert to current coordinate system
+        corners = m_Tref2robot*inv(m_lastGPS2)*F1*inv(m_Tref2robot)*corners;
+
+        //now strip ones
+        corners = corners.rows(arma::span(0,2));
+
+        m_experimentCalib->SetCorners(corners);
+
+        //Set the points
+        planeCalib->SetPoints(pts);
+        //recalculate plane
+        planeCalib->DoCalibration();
+        m_experimentCalib->SetPlaneCalibration(planeCalib);
+      }
     }
   }
   
@@ -300,17 +356,20 @@ namespace Nf
   }
 
 
-  void FSExperimentCalibrationStreamingWidget::addFrame(RPData &rp)
+  void FSExperimentCalibrationStreamingWidget::addFrame(RPData rp)
   {
     EMCalibrationStreamingWidget::addFrame(rp);
 
-    RPData spoofed = rp;
     if(m_robotCalibrationComplete)
-      spoofed = ResetDataRelativeToRobotFrame(rp);
+      rp = ResetDataRelativeToRobotFrame(rp);
 
-    m_experimentCalib->addFrame(spoofed);
+    // save off lastGPS2 so that we know base frame. 
+    // this isn eeded for calibration. For things like a plane that don't move with the coordinate system
+    m_lastGPS2 = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(rp.gps2.pose).GetOrientation(), rp.gps2.pos).ToArmaMatrix4x4();
 
-    m_saveDataWidget->SaveDataFrame(spoofed);
+    m_experimentCalib->addFrame(rp);
+
+    m_saveDataWidget->SaveDataFrame(rp);
 
     if(true) {//m_experimentCalib->m_addCornerPoints->GetValue()) {
       arma::mat pts = m_experimentCalib->GetPlaneCalibration()->GetPoints();
@@ -318,11 +377,9 @@ namespace Nf
       for(s32 i=0; i<pts.n_rows; i++) 
         points.push_back(Vec3d::FromArmaVec((arma::vec3)(pts.row(i).t())));
       m_cornerPointVis->SetPoints(points);
-      if(!m_renderer->HasViewProp(m_cornerPointVis->GetActor()))
-        m_renderer->AddActor(m_cornerPointVis->GetActor());
+      m_cornerPointVis->GetActor()->SetVisibility(1);
     } else {
-      if(m_renderer->HasViewProp(m_cornerPointVis->GetActor()))
-        m_renderer->RemoveActor(m_cornerPointVis->GetActor());
+      m_cornerPointVis->GetActor()->SetVisibility(0);
     }
 
     if(m_experimentCalib->GetPlaneCalibration()->IsCalibrated()) {
@@ -332,8 +389,7 @@ namespace Nf
       plane.GetCornerAndAxisVectors(corner, axis1, axis2, Vec3d::FromArmaVec((arma::vec3)corners.col(0)), 
         Vec3d::FromArmaVec((arma::vec3)corners.col(1)), Vec3d::FromArmaVec((arma::vec3)corners.col(2)));
       m_planeVis->SetPlane(corner,axis1,axis2);
-      if(!m_renderer->HasViewProp(m_planeVis->GetActor())) 
-        m_renderer->AddActor(m_planeVis->GetActor());
+      m_planeVis->GetActor()->SetVisibility(1);
 
       Vec3d xx = axis1.normalized();
       Vec3d yy = axis2.normalized();
@@ -341,9 +397,24 @@ namespace Nf
       m_planeAxis->PokeMatrix(Matrix44d::FromOrientationAndTranslation(Matrix33d::FromCols(xx,yy,zz), corner+(axis1+axis2)/2.0).GetVTKMatrix());
       m_planeAxis->SetVisibility(0);
     } else if(m_renderer->HasViewProp(m_planeVis->GetActor())) {
-      m_renderer->RemoveActor(m_planeVis->GetActor());
+      m_planeVis->GetActor()->SetVisibility(0);
       m_planeAxis->SetVisibility(0);
     } 
+
+    if(m_experimentCalib->GetTipCalibration()->IsCalibrated()) {
+      f64 ins = 0;
+      if(m_hwWidget->GetRCWidget()->isInsertionInitialized())
+        ins = m_hwWidget->GetRCWidget()->GetInsertion();
+      std::tr1::shared_ptr < EMNeedleTipCalibrator > tipCalib = m_experimentCalib->GetTipCalibration();
+
+      Vec3d tipPos; Vec3d emPos(0,0,0); Matrix33d tipFrame; Matrix33d emFrame = Matrix33d::I();
+      tipCalib->GetSolution(tipPos, tipFrame, emPos, emFrame);
+      tipPos=tipPos+Vec3d(0,0,1)*ins;
+      m_needleTipVis->SetCenter(tipPos);
+      m_needleTipVis->GetActor()->SetVisibility(1);
+    } else {
+      m_needleTipVis->GetActor()->SetVisibility(0);
+    }
     QVTKWidget::update();
   }
 
@@ -470,6 +541,7 @@ namespace Nf
   {
     m_robot = robot;
     m_hwWidget->setRobot(robot);
+    m_calibWidget->SetRobotHW(m_hwWidget);
   }
   
 
