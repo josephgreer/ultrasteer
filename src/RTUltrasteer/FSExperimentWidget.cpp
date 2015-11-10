@@ -153,78 +153,43 @@ namespace Nf
   ////////////////////////////////////////////////////////////////////////////////
 
   ////////////////////////////////////////////////////////////////////////////////
-  /// BEGIN FSExperimentCalibrationFILEWidget CLASS
+  /// BEGIN FSExperimentVisualization CLASS
   ////////////////////////////////////////////////////////////////////////////////
-  FSExperimentCalibrationFileWidget::FSExperimentCalibrationFileWidget(QWidget *parent) 
-    : EMCalibrationFileWidget(parent, "FSExperimentCalibrationFile")
-  {
-  }
-
-  void FSExperimentCalibrationFileWidget::addFrame(RPData rp)
-  {
-    EMCalibrationFileWidget::addFrame(rp);
-  }
-
-  FSExperimentCalibrationFileWidget::~FSExperimentCalibrationFileWidget()
-  {
-  }
-  ////////////////////////////////////////////////////////////////////////////////
-  /// END FSExperimentCalibrationFILEWidget CLASS
-  ////////////////////////////////////////////////////////////////////////////////
-
-  
-  ////////////////////////////////////////////////////////////////////////////////
-  /// BEGIN FSExperimentCalibrationFILEWidget CLASS
-  ////////////////////////////////////////////////////////////////////////////////
-  FSExperimentCalibrationStreamingWidget::FSExperimentCalibrationStreamingWidget(QWidget *parent)
-    : EMCalibrationStreamingWidget(parent, "FSExperimentCalibrationFile") 
-    , m_experimentCalib(new ExperimentCalibrationData())
-    , m_forceSensor(std::tr1::shared_ptr < cForceSensor > (new cForceSensor()))
-    , m_styCalib(NULL)
+  FSExperimentVisualization::FSExperimentVisualization(EMCalibrationWidget *em, std::tr1::shared_ptr < ExperimentCalibrationData > experimentCalib)
+    : ParameterCollection("Experiment Visualization")
+    , m_em(em)
     , m_cornerPointVis(std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(5, Vec3d(1,1,1))))
     , m_planeVis(std::tr1::shared_ptr < PlaneVisualizer > (new PlaneVisualizer(Vec3d(0,0,0), Vec3d(1,0,0))))
     , m_needleTipVis(std::tr1::shared_ptr < SphereVisualizer >(new SphereVisualizer(Vec3d(0,0,0), 5)))
-    , m_hwWidget(NULL)
+    , m_robotVis(std::tr1::shared_ptr < STLVisualizer > (new STLVisualizer(STL_PATH_CAT("NeedleSteeringRobot.STL"))))
+    , m_experimentCalib(experimentCalib)
   {
-    ADD_CHILD_COLLECTION((ParameterCollection *)m_experimentCalib.get());
-    
-    ADD_ACTION_PARAMETER(m_loadCalib, "Load Calibration Files", CALLBACK_POINTER(onLoadCalib, FSExperimentCalibrationStreamingWidget), this, false);
-    ADD_ACTION_PARAMETER(m_alignCamToPlane, "Align Cam To Plane", CALLBACK_POINTER(onAlignCamToPlane, FSExperimentCalibrationStreamingWidget), this, false);
+    ADD_ACTION_PARAMETER(m_loadCalib, "Load Calibration Files", CALLBACK_POINTER(onLoadCalib, FSExperimentVisualization), this, false);
+    ADD_ACTION_PARAMETER(m_alignCamToPlane, "Align Cam To Plane", CALLBACK_POINTER(onAlignCamToPlane, FSExperimentVisualization), this, false);
 
     m_planeAxis = vtkSmartPointer < vtkAxesActor >::New();
     m_planeAxis->SetTotalLength(20,20,20);
     m_planeAxis->SetVisibility(0);
 
-    m_renderer->AddActor(m_planeAxis);
-    m_renderer->AddActor(m_needleTipVis->GetActor());
-    m_renderer->AddActor(m_cornerPointVis->GetActor());
-    m_renderer->AddActor(m_planeVis->GetActor());
+    m_em->GetRenderer()->AddActor(m_planeAxis);
+    m_em->GetRenderer()->AddActor(m_needleTipVis->GetActor());
+    m_em->GetRenderer()->AddActor(m_cornerPointVis->GetActor());
+    m_em->GetRenderer()->AddActor(m_planeVis->GetActor());
+    m_em->GetRenderer()->AddActor(m_robotVis->GetActor());
 
     m_needleTipVis->GetActor()->SetVisibility(0);
     m_needleTipVis->SetColor(Vec3d(1,0,0));
     m_cornerPointVis->GetActor()->SetVisibility(0);
     m_planeAxis->SetVisibility(0);
     m_planeVis->GetActor()->SetVisibility(0);
-
-    CreateSphere(Vec3d(0,0,0), 5);
+    m_robotVis->GetActor()->SetVisibility(0);
   }
 
-  RPData FSExperimentCalibrationStreamingWidget::ResetDataRelativeToRobotFrame(const RPData &rp)
+  FSExperimentVisualization::~FSExperimentVisualization()
   {
-    RPData res = rp;
-    
-    arma::mat44 agpsPosePos;
-    rp.GetGPS1RelativeT(agpsPosePos);
-    Matrix44d gpsPosePos = Matrix44d::FromArmaMatrix4x4(agpsPosePos);
-
-    //Matrix44d gpsPosePos = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(rp.gps.pose).GetOrientation(), rp.gps.pos);
-    gpsPosePos = Matrix44d::FromArmaMatrix4x4(m_Tref2robot)*gpsPosePos;
-    res.gps.pose = Matrix44d::FromOrientationAndTranslation(gpsPosePos.GetOrientation(), Vec3d(0,0,0)).ToCvMat();
-    res.gps.pos = gpsPosePos.GetPosition();
-    return res;
   }
 
-  void FSExperimentCalibrationStreamingWidget::onLoadCalib()
+  void FSExperimentVisualization::onLoadCalib()
   {
     QString filename = QFileDialog::getOpenFileName(NULL, "Open File", BASE_PATH_CAT(""), "*.m");
     if(filename.length() > 0) {
@@ -244,37 +209,17 @@ namespace Nf
       fi = QFileInfo(QString::fromStdString(dir+fname+std::string("_styOffset.m")));
       if(fi.exists()) {
         arma::mat sty; sty.load(dir+fname+std::string("_styOffset.m"));
-        m_styCalib = std::tr1::shared_ptr < EMNeedleTipCalibrator >(new EMNeedleTipCalibrator());
-        m_styCalib->SetSolution(sty);
-        m_experimentCalib->SetStylusCalibration(m_styCalib);
-        m_stylusCalibration->SetOffset(sty.submat(arma::span(3,3), arma::span(0,2)).t());
+        std::tr1::shared_ptr < EMNeedleTipCalibrator > styCalib(new EMNeedleTipCalibrator());
+        styCalib->SetSolution(sty);
+        m_experimentCalib->SetStylusCalibration(styCalib);
+        m_em->SetStylusCalibrationOffset(sty.submat(arma::span(3,3), arma::span(0,2)).t());
       }
       
       fi = QFileInfo(QString::fromStdString(dir+fname+std::string("_robotFrame.m")));
       if(fi.exists()) {
         arma::mat robotFrame; robotFrame.load(dir+fname+std::string("_robotFrame.m"));
-        m_Tref2robot = robotFrame;
-        m_experimentCalib->SetBaseFrameData(m_Tref2robot.submat(arma::span(0,2), arma::span(0,2)), m_Tref2robot.submat(arma::span(0,2), arma::span(3,3)));
-        m_robotCalibrationComplete = true;
-        m_robotAxes->VisibilityOn();
-        m_EMrobotAxes->VisibilityOn();
-        m_stylusAxes->VisibilityOn();
-        RenderTargetPoints(true, m_fiducialsInFrobot);
-
-        // Align camera view with robot frame
-        vtkSmartPointer <vtkCamera> camera = vtkSmartPointer<vtkCamera>::New();
-        Vec3d up(-1,0,0);
-        Vec3d focal(0,0,1);
-        camera->SetPosition(0,0,0);
-        camera->SetFocalPoint(focal.x, focal.y, focal.z);
-        camera->SetViewUp(up.x, up.y, up.z);
-        m_renderer->SetActiveCamera(camera);
-
-        // Set the view bounds
-        f64 *bounds = m_targetActor->GetBounds();
-        m_renderer->ResetCamera(bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], 
-          bounds[5]);
-        m_renderer->GetActiveCamera()->Zoom(1.3);
+        m_em->SetRobotCalibration(robotFrame);
+        m_experimentCalib->SetBaseFrameData(robotFrame.submat(arma::span(0,2), arma::span(0,2)), robotFrame.submat(arma::span(0,2), arma::span(3,3)));
       }
       
 
@@ -285,7 +230,7 @@ namespace Nf
       
       fi = QFileInfo(QString::fromStdString(dir+fname+std::string("_corners.m")));
       bool cornersExist = fi.exists();
-      if(planeDataExists && frameDataExists && cornersExist && m_robotCalibrationComplete) {
+      if(planeDataExists && frameDataExists && cornersExist && m_em->RobotCalibrationComplete()) {
         //pts are \in [p1^T; ...; p_m^T] \in R^{mx3}
         arma::mat pts; pts.load(dir+fname+std::string("_plane.m"));
         // convert pts to [p1 p2 ... p_m]  \in R^{3xm} for batch transformation
@@ -295,9 +240,11 @@ namespace Nf
 
         //load frame these points were expressed in
         arma::mat F1; F1.load(dir+fname+std::string("_GPS2.m"));
+        
+        arma::mat tRef2Robot = m_em->GetRobotCalibration();
 
         //transform pts to current frame
-        pts = m_Tref2robot*inv(m_lastGPS2)*F1*inv(m_Tref2robot)*pts;
+        pts = tRef2Robot*inv(m_lastGPS2)*F1*inv(tRef2Robot)*pts;
         
         // now convert back to preferred format
         pts = pts.rows(arma::span(0,2));
@@ -310,7 +257,7 @@ namespace Nf
         //augment with ones for homogenous
         corners = arma::join_vert(corners, arma::ones(1, corners.n_cols));
         // convert to current coordinate system
-        corners = m_Tref2robot*inv(m_lastGPS2)*F1*inv(m_Tref2robot)*corners;
+        corners = tRef2Robot*inv(m_lastGPS2)*F1*inv(tRef2Robot)*corners;
 
         //now strip ones
         corners = corners.rows(arma::span(0,2));
@@ -326,7 +273,7 @@ namespace Nf
     }
   }
   
-  void FSExperimentCalibrationStreamingWidget::onAlignCamToPlane()
+  void FSExperimentVisualization::onAlignCamToPlane()
   {
     if(m_experimentCalib->GetPlaneCalibration()->IsCalibrated()) {
       Plane plane = m_experimentCalib->GetPlaneCalibration()->GetSolution();
@@ -341,35 +288,44 @@ namespace Nf
 
       // Align camera view with robot frame
       vtkSmartPointer <vtkCamera> camera = vtkSmartPointer<vtkCamera>::New();
-      Vec3d up(xx.x, xx.y, xx.z);
-      Vec3d focal(zz.x, zz.y, zz.z);
+      Vec3d up(-zz.x, -zz.y, -zz.z);
+      Vec3d focal(xx.x, xx.y, xx.z);
       camera->SetPosition(0,0,0);
       camera->SetFocalPoint(focal.x, focal.y, focal.z);
       camera->SetViewUp(up.x, up.y, up.z);
-      m_renderer->SetActiveCamera(camera);
+      m_em->GetRenderer()->SetActiveCamera(camera);
 
       // Set the view bounds
       f64 bounds[6] = {0};
-      m_renderer->ComputeVisiblePropBounds(bounds);
-      m_renderer->ResetCamera(bounds);
+      m_em->GetRenderer()->ComputeVisiblePropBounds(bounds);
+      m_em->GetRenderer()->ResetCamera(bounds);
     }
   }
-
-
-  void FSExperimentCalibrationStreamingWidget::addFrame(RPData rp)
+  
+  RPData FSExperimentVisualization::ResetDataRelativeToRobotFrame(const RPData &rp)
   {
-    EMCalibrationStreamingWidget::addFrame(rp);
+    RPData res = rp;
+    
+    arma::mat44 agpsPosePos;
+    rp.GetGPS1RelativeT(agpsPosePos);
+    Matrix44d gpsPosePos = Matrix44d::FromArmaMatrix4x4(agpsPosePos);
 
-    if(m_robotCalibrationComplete)
-      rp = ResetDataRelativeToRobotFrame(rp);
+    //Matrix44d gpsPosePos = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(rp.gps.pose).GetOrientation(), rp.gps.pos);
+    gpsPosePos = Matrix44d::FromArmaMatrix4x4(m_em->GetRobotCalibration())*gpsPosePos;
+    res.gps.pose = Matrix44d::FromOrientationAndTranslation(gpsPosePos.GetOrientation(), Vec3d(0,0,0)).ToCvMat();
+    res.gps.pos = gpsPosePos.GetPosition();
+    return res;
+  }
+
+  void FSExperimentVisualization::addFrame(RPData rp)
+  {
+    if(m_em->RobotCalibrationComplete()) {
+      m_robotVis->GetActor()->SetVisibility(1);
+    }
 
     // save off lastGPS2 so that we know base frame. 
     // this isn eeded for calibration. For things like a plane that don't move with the coordinate system
     m_lastGPS2 = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(rp.gps2.pose).GetOrientation(), rp.gps2.pos).ToArmaMatrix4x4();
-
-    m_experimentCalib->addFrame(rp);
-
-    m_saveDataWidget->SaveDataFrame(rp);
 
     if(true) {//m_experimentCalib->m_addCornerPoints->GetValue()) {
       arma::mat pts = m_experimentCalib->GetPlaneCalibration()->GetPoints();
@@ -386,8 +342,21 @@ namespace Nf
       Plane plane = m_experimentCalib->GetPlaneCalibration()->GetSolution();
       arma::mat corners = m_experimentCalib->GetCorners();
       Vec3d corner, axis1, axis2;
+      //project corner points onto plane (since they are noisey), then calculate axes from projected corner points
+      //i.e. corner1 = corner+axis1, corner2 = corner+axis2
       plane.GetCornerAndAxisVectors(corner, axis1, axis2, Vec3d::FromArmaVec((arma::vec3)corners.col(0)), 
         Vec3d::FromArmaVec((arma::vec3)corners.col(1)), Vec3d::FromArmaVec((arma::vec3)corners.col(2)));
+
+      //extend the plane
+      f64 length = 500; //50 cm plane exten
+      Vec3d center = corner+axis1*0.5+axis2*0.5;
+      axis1 = axis1.normalized();
+      axis2 = axis2.normalized();
+
+      corner = corner-axis1*length-axis2*length;
+      axis1 = axis1*2*length;
+      axis2 = axis2*2*length;
+
       m_planeVis->SetPlane(corner,axis1,axis2);
       m_planeVis->GetActor()->SetVisibility(1);
 
@@ -396,15 +365,14 @@ namespace Nf
       Vec3d zz = axis1.cross(axis2);
       m_planeAxis->PokeMatrix(Matrix44d::FromOrientationAndTranslation(Matrix33d::FromCols(xx,yy,zz), corner+(axis1+axis2)/2.0).GetVTKMatrix());
       m_planeAxis->SetVisibility(0);
-    } else if(m_renderer->HasViewProp(m_planeVis->GetActor())) {
+    } else if(m_em->GetRenderer()->HasViewProp(m_planeVis->GetActor())) {
       m_planeVis->GetActor()->SetVisibility(0);
       m_planeAxis->SetVisibility(0);
     } 
-
+    
+    f64 ins = 0;
     if(m_experimentCalib->GetTipCalibration()->IsCalibrated()) {
-      f64 ins = 0;
-      if(m_hwWidget->GetRCWidget()->isInsertionInitialized())
-        ins = m_hwWidget->GetRCWidget()->GetInsertion();
+      ins = rp.force.slidePosition;
       std::tr1::shared_ptr < EMNeedleTipCalibrator > tipCalib = m_experimentCalib->GetTipCalibration();
 
       Vec3d tipPos; Vec3d emPos(0,0,0); Matrix33d tipFrame; Matrix33d emFrame = Matrix33d::I();
@@ -415,6 +383,117 @@ namespace Nf
     } else {
       m_needleTipVis->GetActor()->SetVisibility(0);
     }
+  }
+  ////////////////////////////////////////////////////////////////////////////////
+  /// END FSExperimentVisualization CLASS
+  ////////////////////////////////////////////////////////////////////////////////
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /// BEGIN FSExperimentCalibrationFILEWidget CLASS
+  ////////////////////////////////////////////////////////////////////////////////
+  FSExperimentCalibrationFileWidget::FSExperimentCalibrationFileWidget(QWidget *parent) 
+    : EMCalibrationFileWidget(parent, "FSExperimentCalibrationFile")
+    , m_experimentCalib(new ExperimentCalibrationData())
+    , m_experimentVis(std::tr1::shared_ptr < FSExperimentVisualization >(new FSExperimentVisualization(this, m_experimentCalib)))
+  {
+    ADD_CHILD_COLLECTION((ParameterCollection *)m_experimentCalib.get());
+    ADD_CHILD_COLLECTION((ParameterCollection *)m_experimentVis.get());
+  }
+
+  void FSExperimentCalibrationFileWidget::addFrame(RPData rp)
+  {
+    EMCalibrationFileWidget::addFrame(rp);
+    
+    if(m_robotCalibrationComplete) {
+      rp = m_experimentVis->ResetDataRelativeToRobotFrame(rp);
+    }
+    
+    m_experimentVis->addFrame(rp);
+    m_experimentCalib->addFrame(rp);
+    QVTKWidget::update();
+  }
+
+  FSExperimentCalibrationFileWidget::~FSExperimentCalibrationFileWidget()
+  {
+  }
+  ////////////////////////////////////////////////////////////////////////////////
+  /// END FSExperimentCalibrationFILEWidget CLASS
+  ////////////////////////////////////////////////////////////////////////////////
+
+  
+  ////////////////////////////////////////////////////////////////////////////////
+  /// BEGIN FSExperimentCalibrationFILEWidget CLASS
+  ////////////////////////////////////////////////////////////////////////////////
+  FSExperimentCalibrationStreamingWidget::FSExperimentCalibrationStreamingWidget(QWidget *parent)
+    : EMCalibrationStreamingWidget(parent, "FSExperimentCalibrationFile") 
+    , m_experimentCalib(new ExperimentCalibrationData())
+    , m_forceSensor(std::tr1::shared_ptr < cForceSensor > (new cForceSensor()))
+    , m_hwWidget(NULL)
+    , m_experimentVis(std::tr1::shared_ptr < FSExperimentVisualization >(new FSExperimentVisualization(this, m_experimentCalib)))
+  {
+    ADD_CHILD_COLLECTION((ParameterCollection *)m_experimentCalib.get());
+    ADD_CHILD_COLLECTION((ParameterCollection *)m_experimentVis.get());
+    
+    ADD_BOOL_PARAMETER(m_forceSensorInitialized, "Initialize Force Sensor", CALLBACK_POINTER(onInitializeForceSensor, FSExperimentCalibrationStreamingWidget), this, false);
+    ADD_ACTION_PARAMETER(m_zeroForceSensor, "Zero Force Sensor", CALLBACK_POINTER(onZeroForceSensor, FSExperimentCalibrationStreamingWidget), this, false);
+
+    CreateSphere(Vec3d(0,0,0), 5);
+  }
+
+  void FSExperimentCalibrationStreamingWidget::onInitializeForceSensor()
+  {
+    m_forceSensor->Set_Calibration_File_Loc("C:/Joey/ultrasteer/src/Nano17/FT14057.cal"); 
+    s32 rv = m_forceSensor->Initialize_Force_Sensor("Dev1/ai0:5");
+    if(rv != 0) {
+      NTrace("error initializign force sensor\n");
+      throw std::runtime_error("Error intializing force sensor");
+    }
+    Sleep(50);
+    m_forceSensorInitialized->SetValue(true);
+    rv = m_forceSensor->Zero_Force_Sensor();
+    if(rv != 0) {
+      NTrace("error zeroing force sensor\n");
+      throw std::runtime_error("Error zeroing force sensor");
+    }
+    m_saveDataWidget->SetEnabled(true);
+  }
+
+  void FSExperimentCalibrationStreamingWidget::onZeroForceSensor()
+  {
+    if(!m_forceSensorInitialized->GetValue())
+      return;
+
+    s32 rv = m_forceSensor->Zero_Force_Sensor();
+  }
+
+
+  void FSExperimentCalibrationStreamingWidget::addFrame(RPData rp)
+  {
+    EMCalibrationStreamingWidget::addFrame(rp);
+    
+    if(m_forceSensorInitialized->GetValue()) {
+      s32 rv = m_forceSensor->AcquireFTData();
+      if(rv != 0)
+        throw std::runtime_error("Error acquiring force data");
+      f64 force[3] = {0};
+      m_forceSensor->GetForceReading(force);
+      rp.force.force = Vec3d(force[0], force[1], force[2]);
+      f64 torque[3] = {0};
+      m_forceSensor->GetTorqueReading(torque);
+      rp.force.torque = Vec3d(torque[0], torque[1], torque[2]);
+    }
+    if(m_hwWidget->GetRCWidget()->isInsertionInitialized())
+      rp.force.slidePosition = m_hwWidget->GetRCWidget()->GetInsertion();
+
+    m_saveDataWidget->SaveDataFrame(rp);
+
+    if(m_robotCalibrationComplete) {
+      rp = m_experimentVis->ResetDataRelativeToRobotFrame(rp);
+    }
+
+    m_experimentVis->addFrame(rp);
+
+    m_experimentCalib->addFrame(rp);
     QVTKWidget::update();
   }
 
@@ -438,13 +517,13 @@ namespace Nf
     //Done calibrating stylus
     if(m_stylusCalibration && m_stylusCalibration->isComplete()) {
       arma::mat offset = m_stylusCalibration->getCalibrationVector();
-      m_styCalib = std::tr1::shared_ptr < EMNeedleTipCalibrator >(new EMNeedleTipCalibrator());
+      std::tr1::shared_ptr < EMNeedleTipCalibrator > styCalib(new EMNeedleTipCalibrator());
 
       arma::mat soln = arma::eye(4,4);
       soln.submat(arma::span(3,3), arma::span(0,2)) = offset.t();
-      m_styCalib->SetSolution(soln);
+      styCalib->SetSolution(soln);
 
-      m_experimentCalib->SetStylusCalibration(m_styCalib);
+      m_experimentCalib->SetStylusCalibration(styCalib);
     }
   }
   

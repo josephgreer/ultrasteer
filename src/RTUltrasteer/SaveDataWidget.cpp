@@ -24,6 +24,13 @@ namespace Nf
   {
   }
 
+  void SaveDataWidget::onSaveDataClicked()
+  {
+    RPFileHeader header = {0};
+    SaveData(header);
+  }
+
+
   void SaveDataWidget::SetEnabled(bool enabled)
   {
     ui.progressBar->setEnabled(enabled);
@@ -118,7 +125,8 @@ namespace Nf
 
     //TODO: Save The Data
     std::tr1::shared_ptr < RPFileWriterCollection > rpw(new RPFileWriterCollection(std::string(dir+std::string("/")+name).c_str(), &header));
-    rpw->AddWriter(RPF_BPOST8);
+    if(m_dataToSave.size() > 0 && m_dataToSave.front().b8 != NULL)
+      rpw->AddWriter(RPF_BPOST8);
     if(m_dataToSave.size() > 0 && m_dataToSave.front().color != NULL)
       rpw->AddWriter(RPF_BPOST32);
     rpw->AddGPSWriter();

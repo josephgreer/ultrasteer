@@ -67,9 +67,43 @@ namespace Nf
     arma::mat GetCorners() { return m_corners; }
   };
 
+  class FSExperimentVisualization : public ParameterCollection
+  {
+  protected:
+    std::tr1::shared_ptr < PointCloudVisualizer > m_cornerPointVis;
+    std::tr1::shared_ptr < PlaneVisualizer > m_planeVis;
+    vtkSmartPointer < vtkAxesActor > m_planeAxis;
+    std::tr1::shared_ptr < SphereVisualizer > m_needleTipVis;
+    std::tr1::shared_ptr < STLVisualizer > m_robotVis;
+    std::tr1::shared_ptr < ExperimentCalibrationData > m_experimentCalib;
+    EMCalibrationWidget *m_em;
+    arma::mat m_lastGPS2;
+
+  public:
+    FSExperimentVisualization(EMCalibrationWidget *em, std::tr1::shared_ptr < ExperimentCalibrationData > experimentCalib);
+    ~FSExperimentVisualization();
+
+    RPData ResetDataRelativeToRobotFrame(const RPData &rp);
+
+    void addFrame(RPData rp);
+    
+    std::tr1::shared_ptr < Nf::BoolParameter > m_loadCalib;
+    void onLoadCalib();
+    CLASS_CALLBACK(onLoadCalib, FSExperimentVisualization);
+    
+    std::tr1::shared_ptr < Nf::BoolParameter > m_alignCamToPlane;
+    void onAlignCamToPlane();
+    CLASS_CALLBACK(onAlignCamToPlane, FSExperimentVisualization);
+
+  };
+
   class FSExperimentCalibrationFileWidget : public EMCalibrationFileWidget
   {
     Q_OBJECT 
+
+  protected:
+    std::tr1::shared_ptr < ExperimentCalibrationData > m_experimentCalib;
+    std::tr1::shared_ptr < FSExperimentVisualization > m_experimentVis;
 
   public:
     FSExperimentCalibrationFileWidget(QWidget *parent);
@@ -85,13 +119,8 @@ namespace Nf
     std::tr1::shared_ptr < cForceSensor > m_forceSensor;
     std::tr1::shared_ptr < ExperimentCalibrationData > m_experimentCalib;
     std::tr1::shared_ptr < SaveDataWidget > m_saveDataWidget;
-    std::tr1::shared_ptr < EMNeedleTipCalibrator > m_styCalib;
-    std::tr1::shared_ptr < PointCloudVisualizer > m_cornerPointVis;
-    std::tr1::shared_ptr < PlaneVisualizer > m_planeVis;
-    vtkSmartPointer < vtkAxesActor > m_planeAxis;
-    std::tr1::shared_ptr < SphereVisualizer > m_needleTipVis;
     std::tr1::shared_ptr < RobotHardwareWidget > m_hwWidget;
-    arma::mat m_lastGPS2;
+    std::tr1::shared_ptr < FSExperimentVisualization > m_experimentVis;
 
   public:
     FSExperimentCalibrationStreamingWidget(QWidget *parent);
@@ -101,15 +130,14 @@ namespace Nf
     virtual void onCalibrateRobot();
     virtual void onCalibrateStylus();
     virtual void SetRobotHW(std::tr1::shared_ptr < RobotHardwareWidget > hwWidget) { m_hwWidget = hwWidget; }
-    virtual RPData ResetDataRelativeToRobotFrame(const RPData &rp);
     
-    std::tr1::shared_ptr < Nf::BoolParameter > m_loadCalib;
-    void onLoadCalib();
-    CLASS_CALLBACK(onLoadCalib, FSExperimentCalibrationStreamingWidget);
+    std::tr1::shared_ptr < Nf::BoolParameter > m_forceSensorInitialized;
+    void onInitializeForceSensor();
+    CLASS_CALLBACK(onInitializeForceSensor, FSExperimentCalibrationStreamingWidget);
     
-    std::tr1::shared_ptr < Nf::BoolParameter > m_alignCamToPlane;
-    void onAlignCamToPlane();
-    CLASS_CALLBACK(onAlignCamToPlane, FSExperimentCalibrationStreamingWidget);
+    std::tr1::shared_ptr < Nf::BoolParameter > m_zeroForceSensor;
+    void onZeroForceSensor();
+    CLASS_CALLBACK(onZeroForceSensor, FSExperimentCalibrationStreamingWidget);
   };
 
   class FSExperimentFileWidget : public ResizableQWidget, public ParameterCollection
@@ -125,8 +153,6 @@ namespace Nf
     virtual ~FSExperimentFileWidget();
     std::vector < QVTKWidget * > GetChildWidgets();
     virtual void UpdateSize(QSize sz);
-
-
   };
 
   class FSExperimentStreamingWidget : public ResizableQWidget, public ParameterCollection

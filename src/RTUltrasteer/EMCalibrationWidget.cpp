@@ -202,6 +202,21 @@ namespace Nf
 
   }
 
+  void EMCalibrationWidget::SetRobotCalibration(arma::mat frame)
+  {
+    m_Tref2robot = frame;
+    m_robotCalibrationComplete = true;
+    m_robotAxes->VisibilityOn();
+    m_EMrobotAxes->VisibilityOn();
+    m_stylusAxes->VisibilityOn();
+    RenderTargetPoints(true, m_fiducialsInFrobot);
+  }
+
+  void EMCalibrationWidget::SetStylusCalibrationOffset(arma::vec offset)
+  {
+    m_stylusCalibration->SetOffset(offset);
+  }
+
   void EMCalibrationWidget::onUpdateFiducial(void)
   {
     // do nothing; empty for framework
@@ -455,6 +470,12 @@ namespace Nf
 
     m_frame->SetMax(nframes);
     m_frame->SetValue(1);
+
+    QFileInfo fi(QString::fromStdString(fname+".force"));
+    if(fi.exists()) {
+      ForceReader *freader = new ForceReader((fname+".force").c_str());
+      m_rpReaders->AddForceReader(freader);
+    }
 
     onUpdateFrame();
   }

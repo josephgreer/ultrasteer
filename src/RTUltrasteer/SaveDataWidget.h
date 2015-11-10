@@ -40,6 +40,7 @@ namespace Nf
 
   public slots:
     void onStartRecordingClicked();
+    void onSaveDataClicked();
 
   protected:
     bool m_isRecording;

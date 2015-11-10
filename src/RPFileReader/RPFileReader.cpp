@@ -652,7 +652,6 @@ namespace Nf
       rv.origin = Vec2d(320.0, 0.0);
     if(rv.mpp.x == 0 || rv.mpp.y == 0) {
       rv.mpp = Vec2d(83, 83);
-      rv.gps.pose = rv.gps.pose.t();
     }
     
     return rv;

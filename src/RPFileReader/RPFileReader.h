@@ -390,6 +390,7 @@ namespace Nf
       rv.origin = this->origin;
       rv.u = this->u;
       rv.roi = this->roi;
+      rv.force = this->force;
 
       return rv;
     }

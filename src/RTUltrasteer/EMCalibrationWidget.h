@@ -93,6 +93,11 @@ namespace Nf
     void RenderMeasuredPoints(bool, arma::mat = arma::mat());
     void initViewport();
     void solveRobotRegistration();
+    vtkSmartPointer < vtkRenderer > GetRenderer() { return m_renderer; }
+    void SetRobotCalibration(arma::mat frame);
+    void SetStylusCalibrationOffset(arma::vec offset);
+    bool RobotCalibrationComplete() { return m_robotCalibrationComplete; }
+    arma::mat GetRobotCalibration() { return m_Tref2robot; }
 
   //public slots:
   //  void onStartManualNeedleScan();
@@ -117,7 +122,7 @@ namespace Nf
     //Frame index
     std::tr1::shared_ptr < Nf::IntParameter > m_frame;
     CLASS_CALLBACK(onUpdateFrame, EMCalibrationFileWidget);
-    void onUpdateFrame();    
+    virtual void onUpdateFrame();    
   };
 
   class EMCalibrationStreamingWidget : public EMCalibrationWidget, public RPFrameHandler

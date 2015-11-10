@@ -1010,6 +1010,7 @@ namespace Nf
 
     ADD_CHILD_COLLECTION(m_hwWidget.get());
 
+    disconnect(m_saveDataWidget->ui.saveDataButton, SIGNAL(clicked()), 0, 0);
     Connect(m_saveDataWidget->ui.saveDataButton, SIGNAL(clicked()), SLOT(onSaveDataClicked()));
   }
 

@@ -11,6 +11,7 @@
 #include <vtkAxesActor.h>
 #include <vtkGlyph3D.h>
 #include <vtkPlaneSource.h>
+#include <vtkSTLReader.h>
 
 #include "RTCore.h"
 
@@ -53,6 +54,15 @@ namespace Nf {
     void SavePoints(const char *path);
     void SetPoints(const std::vector < Vec3d > &points);
     void SetPoints(const std::vector < Vec3d > & points, const std::vector < f64 > & weights);
+  };
+
+  class STLVisualizer : public GeometryVisualizer 
+  {
+  protected:
+    vtkSmartPointer < vtkSTLReader > m_stlReader;
+
+  public:
+    STLVisualizer(const char *stlPath);
   };
 
   class AxesVisualizer : public GeometryVisualizer

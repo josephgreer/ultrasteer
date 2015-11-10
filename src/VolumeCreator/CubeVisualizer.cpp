@@ -204,6 +204,24 @@ namespace Nf {
   //End AxesVisualizer Class
   ///////////////////////////////////////////////////////
   
+  ////////////////////////////////////////////////////////
+  //BEGIN STLVisualizer Class
+  ///////////////////////////////////////////////////////
+  STLVisualizer::STLVisualizer(const char *path)
+  {
+    m_stlReader = vtkSmartPointer < vtkSTLReader >::New();
+    m_stlReader->SetFileName(STL_PATH_CAT("NeedleSteeringRobot.STL"));
+    m_stlReader->Update();
+    m_mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    m_mapper->SetInputConnection(m_stlReader->GetOutputPort());
+    m_actor = vtkSmartPointer < vtkActor >::New();
+    m_actor->SetMapper(m_mapper);
+    m_actor->GetProperty()->SetColor(0.8, 0.8, 0.8);
+  }
+  ////////////////////////////////////////////////////////
+  //END STLVisualizer Class
+  ///////////////////////////////////////////////////////
+  
   //////////////////////////////////////////////////////
   //Begin PlaneVisualizer Class
   //////////////////////////////////////////////////////
