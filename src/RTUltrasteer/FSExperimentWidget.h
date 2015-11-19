@@ -6,6 +6,7 @@
 #include "Calibration.h"
 #include "cForceSensor.h"
 #include <vtkAxesActor.h>
+#include <vtkTextActor.h>
 namespace Nf
 {
   class ExperimentCalibrationData : public ParameterCollection
@@ -75,6 +76,7 @@ namespace Nf
     vtkSmartPointer < vtkAxesActor > m_planeAxis;
     std::tr1::shared_ptr < SphereVisualizer > m_needleTipVis;
     std::tr1::shared_ptr < STLVisualizer > m_robotVis;
+    vtkSmartPointer < vtkTextActor > m_forceText;
     std::tr1::shared_ptr < ExperimentCalibrationData > m_experimentCalib;
     EMCalibrationWidget *m_em;
     arma::mat m_lastGPS2;
@@ -130,6 +132,11 @@ namespace Nf
     virtual void onCalibrateRobot();
     virtual void onCalibrateStylus();
     virtual void SetRobotHW(std::tr1::shared_ptr < RobotHardwareWidget > hwWidget) { m_hwWidget = hwWidget; }
+
+    std::tr1::shared_ptr < Nf::IntParameter > m_insVel;
+    std::tr1::shared_ptr < Nf::BoolParameter > m_insertNeedle;
+    void onInsertNeedle();
+    CLASS_CALLBACK(onInsertNeedle, FSExperimentCalibrationStreamingWidget);
     
     std::tr1::shared_ptr < Nf::BoolParameter > m_forceSensorInitialized;
     void onInitializeForceSensor();

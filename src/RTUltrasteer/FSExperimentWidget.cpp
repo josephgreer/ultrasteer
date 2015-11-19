@@ -167,6 +167,10 @@ namespace Nf
     ADD_ACTION_PARAMETER(m_loadCalib, "Load Calibration Files", CALLBACK_POINTER(onLoadCalib, FSExperimentVisualization), this, false);
     ADD_ACTION_PARAMETER(m_alignCamToPlane, "Align Cam To Plane", CALLBACK_POINTER(onAlignCamToPlane, FSExperimentVisualization), this, false);
 
+    m_forceText = vtkSmartPointer < vtkTextActor >::New();
+    m_forceText->SetPosition(10,10);
+    m_forceText->GetTextProperty()->SetColor(1,1,1);
+
     m_planeAxis = vtkSmartPointer < vtkAxesActor >::New();
     m_planeAxis->SetTotalLength(20,20,20);
     m_planeAxis->SetVisibility(0);
@@ -176,6 +180,7 @@ namespace Nf
     m_em->GetRenderer()->AddActor(m_cornerPointVis->GetActor());
     m_em->GetRenderer()->AddActor(m_planeVis->GetActor());
     m_em->GetRenderer()->AddActor(m_robotVis->GetActor());
+    m_em->GetRenderer()->AddActor2D(m_forceText);
 
     m_needleTipVis->GetActor()->SetVisibility(0);
     m_needleTipVis->SetColor(Vec3d(1,0,0));
@@ -271,6 +276,7 @@ namespace Nf
         m_experimentCalib->SetPlaneCalibration(planeCalib);
       }
     }
+    onAlignCamToPlane();
   }
   
   void FSExperimentVisualization::onAlignCamToPlane()
@@ -322,6 +328,11 @@ namespace Nf
     if(m_em->RobotCalibrationComplete()) {
       m_robotVis->GetActor()->SetVisibility(1);
     }
+
+    char forceString[200];
+    sprintf(forceString, "Force: {%f, %f, %f}, Torque: {%f, %f, %f}, Insertion: %f", rp.force.force.x, rp.force.force.x, rp.force.force.x,
+      rp.force.torque.x, rp.force.torque.y, rp.force.torque.z, rp.force.slidePosition);
+    m_forceText->SetInput(forceString);
 
     // save off lastGPS2 so that we know base frame. 
     // this isn eeded for calibration. For things like a plane that don't move with the coordinate system
@@ -436,6 +447,8 @@ namespace Nf
     
     ADD_BOOL_PARAMETER(m_forceSensorInitialized, "Initialize Force Sensor", CALLBACK_POINTER(onInitializeForceSensor, FSExperimentCalibrationStreamingWidget), this, false);
     ADD_ACTION_PARAMETER(m_zeroForceSensor, "Zero Force Sensor", CALLBACK_POINTER(onZeroForceSensor, FSExperimentCalibrationStreamingWidget), this, false);
+    ADD_ACTION_PARAMETER(m_insertNeedle, "Insert Needle", CALLBACK_POINTER(onInsertNeedle, FSExperimentCalibrationStreamingWidget), this, false);
+    ADD_INT_PARAMETER(m_insVel, "Insertion Velocity (mm/s)", NULL, this, 2, 0, 10, 1);
 
     CreateSphere(Vec3d(0,0,0), 5);
   }
@@ -456,6 +469,11 @@ namespace Nf
       throw std::runtime_error("Error zeroing force sensor");
     }
     m_saveDataWidget->SetEnabled(true);
+  }
+
+  void FSExperimentCalibrationStreamingWidget::onInsertNeedle()
+  {
+    m_hwWidget->GetRCWidget()->InsertPosVel(m_insVel->GetValue());
   }
 
   void FSExperimentCalibrationStreamingWidget::onZeroForceSensor()

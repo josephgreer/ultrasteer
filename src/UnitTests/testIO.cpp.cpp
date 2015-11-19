@@ -3,6 +3,8 @@
 #include "RPFileReader.h"
 #include "RPFileWriter.h"
 #include "RPUlterius.h"
+#include "Calibration.h"
+#include <memory>
 #include <iostream>
 #include <cv.h>
 #include <cxcore.h>
@@ -147,4 +149,97 @@ TEST(Command, CorrectTick)
   delete writer;
   delete gpsReader;
   delete commandReader;
+}
+
+static std::tr1::shared_ptr < PlaneCalibrator > recalculatePlanePointsForNewCoordinateFrame(arma::mat pts, arma::mat F1, arma::mat tRef2Robot, arma::mat fgps2, arma::mat &corners)
+{
+  //pts are \in [p1^T; ...; p_m^T] \in R^{mx3}
+  // convert pts to [p1 p2 ... p_m]  \in R^{3xm} for batch transformation
+  pts = pts.t();
+  //augment with ones for homogenous 
+  pts = arma::join_vert(pts, arma::ones(1,pts.n_cols));
+
+  //F1 is frame these points are expressed in
+  //tRef2Robot is coordinate frame calibration
+
+  //transform pts to current frame
+  pts = tRef2Robot*inv(fgps2)*F1*inv(tRef2Robot)*pts;
+
+  // now convert back to preferred format
+  pts = pts.rows(arma::span(0,2));
+  pts = pts.t();
+
+  std::tr1::shared_ptr < PlaneCalibrator > planeCalib(new PlaneCalibrator());
+
+  //Set the points
+  planeCalib->SetPoints(pts);
+  //recalculate plane
+  planeCalib->DoCalibration();
+
+  //corners are in format [p1 p2 p3 p4] \in R^{3x4}
+  //augment with ones for homogenous
+  corners = arma::join_vert(corners, arma::ones(1, corners.n_cols));
+  // convert to current coordinate system
+  corners = tRef2Robot*inv(fgps2)*F1*inv(tRef2Robot)*corners;
+
+  //now strip ones
+  corners = corners.rows(arma::span(0,2));
+
+  return planeCalib;
+}
+
+TEST(IO, ForceData)
+{
+  std::string basePath = "C:/Joey/Data/ForceData/WithWrap/Orientation2/Trial";
+  s32 numTrials = 10;
+
+  std::string calibrationPath = "C:/Joey/Data/ForceData/WithWrap/Orientation3/Calibration/calib";
+
+  for(s32 i=1; i<=numTrials; i++) {
+    RPFileReaderCollection *rpReaders = new RPFileReaderCollection();
+
+    std::tr1::shared_ptr < ForceReader > forceReader(new ForceReader((basePath+std::to_string((_Longlong)i)+std::string("/scan.force")).c_str()));
+    rpReaders->AddForceReader(forceReader.get());
+    std::tr1::shared_ptr < RPGPSReader > gpsReader1(new RPGPSReader((basePath+std::to_string((_Longlong)i)+std::string("/scan.gps1")).c_str()));
+    rpReaders->AddGPSReader((RPGPSReaderBasic *)gpsReader1.get());
+    std::tr1::shared_ptr < RPGPSReader > gpsReader2(new RPGPSReader((basePath+std::to_string((_Longlong)i)+std::string("/scan.gps2")).c_str()));
+    rpReaders->AddGPSReader2((RPGPSReaderBasic *)gpsReader2.get());
+
+    arma::mat needlePos;
+    arma::mat forces;
+    arma::mat torques;
+    
+    arma::mat tip; tip.load(calibrationPath+std::string("_tipOffset.m"));
+    std::tr1::shared_ptr < EMNeedleTipCalibrator > tipCalib(new EMNeedleTipCalibrator());
+    tipCalib->SetSolution(tip);
+
+    RPFileHeader header = gpsReader1->GetHeader();
+    for(s32 frame=1; frame<=header.frames; frame++) {
+      RPData rp = rpReaders->GetRPData(frame);
+
+      //Reset plane points into coordinate system attached to robot
+      if(frame == 1) {
+        arma::mat planePoints; planePoints.load(calibrationPath+std::string("_plane.m"));
+        arma::mat fgps2 = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(rp.gps2.pose).GetOrientation(), rp.gps2.pos).ToArmaMatrix4x4();
+        arma::mat tRef2Robot; tRef2Robot.load(calibrationPath+std::string("_robotFrame.m"));
+        arma::mat f1; f1.load(calibrationPath+std::string("_GPS2.m"));
+        arma::mat corners; corners.load(calibrationPath+std::string("_corners.m"));
+        std::tr1::shared_ptr < PlaneCalibrator > planeCalib = recalculatePlanePointsForNewCoordinateFrame(planePoints, f1, tRef2Robot, fgps2, corners);
+
+        corners.save(basePath+std::to_string((_Longlong)i)+std::string("/corners.m"), arma::raw_ascii);
+        planeCalib->GetSolution().GetABCD().save(basePath+std::to_string((_Longlong)i)+std::string("/abcd.m"),arma::raw_ascii);
+      }
+      Vec3d tipPos; Vec3d emPos(0,0,0); Matrix33d tipFrame; Matrix33d emFrame = Matrix33d::I();
+      tipCalib->GetSolution(tipPos, tipFrame, emPos, emFrame);
+      tipPos=tipPos+Vec3d(0,0,1)*rp.force.slidePosition;
+
+      needlePos = join_vert(needlePos, tipPos.ToArmaVec().t());
+      forces = join_vert(forces, rp.force.force.ToArmaVec().t());
+      torques = join_vert(torques, rp.force.torque.ToArmaVec().t());
+    }
+
+    arma::mat forceTorques = join_horiz(forces, torques);
+    forceTorques.save(basePath+std::to_string((_Longlong)i)+std::string("/forceTorques.m"), arma::raw_ascii);
+    needlePos.save(basePath+std::to_string((_Longlong)i)+std::string("/needlePos.m"), arma::raw_ascii);
+  }
 }

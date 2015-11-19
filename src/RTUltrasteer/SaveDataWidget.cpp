@@ -3,7 +3,7 @@
 
 namespace Nf
 {
-#define MAX_TIMESTEPS 800
+#define MAX_TIMESTEPS 2000
   SaveDataWidget::SaveDataWidget(QWidget *parent, Qt::WFlags flags)
     : ResizableQFrame(parent, QSize(VIS_WIDTH, VIS_HEIGHT))
     , m_memB8(NULL)
