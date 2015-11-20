@@ -3,6 +3,7 @@
 #include <cxcore.h>
 #include <highgui.h>
 
+#include "UICore.h"
 #include <vtkActor.h>
 #include <vtkSmartPointer.h>
 #include <vtkPolyDataMapper.h>
@@ -12,6 +13,9 @@
 #include <vtkGlyph3D.h>
 #include <vtkPlaneSource.h>
 #include <vtkSTLReader.h>
+#include <vtkWindowToImageFilter.h>
+#include <vtkAVIWriter.h>
+#include <vtkRenderWindow.h>
 
 #include "RTCore.h"
 
@@ -114,5 +118,25 @@ namespace Nf {
     AxisContainer();
     virtual void CreateAxis(const Matrix44d &posePos, s32 scale);
     virtual void UpdateAxis(const Matrix44d &posePos);
+  };
+ 
+  class ScreenWriter : public ParameterCollection
+  {
+  protected:
+    vtkSmartPointer < vtkWindowToImageFilter > m_windowFilter;
+    vtkSmartPointer < vtkAVIWriter > m_aviWriter;
+    vtkSmartPointer < vtkRenderWindow > m_renderWindow;
+
+  public:
+    ScreenWriter(vtkSmartPointer < vtkRenderWindow > renderWindow);
+    s32 WriteLatest();
+
+    std::tr1::shared_ptr < BoolParameter > m_write;
+    void onWrite();
+    CLASS_CALLBACK(onWrite, ScreenWriter);
+
+    std::tr1::shared_ptr < FloatParameter > m_fps;
+
+    std::tr1::shared_ptr < FileParameter > m_file;
   };
 };

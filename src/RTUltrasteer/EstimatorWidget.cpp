@@ -530,7 +530,9 @@ namespace Nf
     , m_state(EFS_READY)
     , m_resultsAvailable(ERA_NONE)
     , m_pfVisualizer(new ParticleFilterVisualizer(this))
+    , m_screenWriter(std::tr1::shared_ptr < ScreenWriter >(new ScreenWriter(m_planeVis->GetRenderWindow())))
   {
+
     ADD_ACTION_PARAMETER(m_doNeedleCalib, "Do Needle Calibration", CALLBACK_POINTER(onDoNeedleCalibrationPushed, EstimatorFileWidget), this, false);
     ADD_ENUM_PARAMETER(m_operationMode, "Operation Mode", CALLBACK_POINTER(onSetOperationMode, EstimatorFileWidget), this, QtEnums::EstimatorOperationMode::EOM_NONE, "EstimatorOperationMode");
     ADD_SAVE_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Save Path", NULL, this, BASE_PATH_CAT("TipCalibration/ShallowInsertion/tipCalib.mat"), "(*.mat)");
@@ -540,6 +542,7 @@ namespace Nf
     ADD_ACTION_PARAMETER(m_clearCalibrationData, "Clear Calibration Data", CALLBACK_POINTER(onClearCalibrationData, EstimatorFileWidget), this, false);
     ADD_ACTION_PARAMETER(m_clearTipCalibration, "Clear Tip Calibration", CALLBACK_POINTER(onClearTipCalibration, EstimatorFileWidget), this, false);
     ADD_CHILD_COLLECTION(m_pfVisualizer.get());
+    ADD_CHILD_COLLECTION(m_screenWriter.get());
 
     m_calibrationPointsTip = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(0, 1, 0)));
     m_calibrationPointsCurvature = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 1, 0)));
@@ -629,6 +632,8 @@ namespace Nf
       m_usVis->AddRPData(m_data);
     else
       m_planeVis->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
+
+    m_screenWriter->WriteLatest();
   }
 
   void EstimatorFileWidget::onUpdateFile()

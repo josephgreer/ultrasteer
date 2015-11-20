@@ -139,6 +139,7 @@ namespace Nf
 
     std::tr1::shared_ptr < SphereVisualizer > m_calibTip;
     vtkSmartPointer < vtkAxesActor > m_calibTipFrame;
+    std::tr1::shared_ptr < ScreenWriter > m_screenWriter;
 
   public:
     EstimatorFileWidget(QWidget *parent, const char *name = "Estimator File Widget");

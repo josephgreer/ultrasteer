@@ -9,6 +9,7 @@
 #include <vtkProperty.h>
 #include <vtkPointData.h>
 #include <vtkMath.h>
+#include <vtkWindow.h>
 
 namespace Nf {
 
@@ -471,6 +472,57 @@ namespace Nf {
   }
   ////////////////////////////////////////////////////////
   //End AxisContainer Class
+  ///////////////////////////////////////////////////////
+  
+  ////////////////////////////////////////////////////////
+  //Begin ScreenWriter Class
+  ///////////////////////////////////////////////////////
+  ScreenWriter::ScreenWriter(vtkSmartPointer < vtkRenderWindow > renderWindow)
+    : ParameterCollection("Screen Writer")
+    , m_renderWindow(renderWindow)
+  {
+    ADD_SAVE_FILE_PARAMETER(m_file, "Filename", NULL, this, BASE_PATH_CAT("video.avi"), "*.avi");
+    ADD_BOOL_PARAMETER(m_write, "Write Video", CALLBACK_POINTER(onWrite, ScreenWriter), this, false);
+    ADD_FLOAT_PARAMETER(m_fps, "FPS", NULL, this, 30.0f, 5.0f, 100.0f, 1.0f);
+  }
+
+  void ScreenWriter::onWrite()
+  {
+    if(m_write->GetValue()) {
+      m_windowFilter = vtkSmartPointer < vtkWindowToImageFilter >::New();
+      //vtkWindow *window = (vtkWindow *)(&(*m_renderWindow));
+      m_windowFilter->SetInput(m_renderWindow);
+      m_windowFilter->SetInputBufferTypeToRGB();
+      m_windowFilter->SetMagnification(1);
+      m_windowFilter->ReadFrontBufferOff();
+      m_renderWindow->Modified();
+      m_windowFilter->Modified();
+      m_windowFilter->Update();
+      m_aviWriter = vtkSmartPointer < vtkAVIWriter >::New();
+      m_aviWriter->SetInputData(m_windowFilter->GetOutput());
+      m_aviWriter->SetFileName(m_file->GetValue().c_str());
+      m_aviWriter->SetRate(m_fps->GetValue());
+      m_aviWriter->SetCompressorFourCC("DIB ");
+      m_aviWriter->Start();
+    } else {
+      if(m_aviWriter) {
+        m_aviWriter->End();
+      }
+    }
+  }
+
+  s32 ScreenWriter::WriteLatest()
+  {
+    if(m_write->GetValue()) {
+      m_renderWindow->Modified();
+      m_windowFilter->Update();
+      m_windowFilter->Modified();
+      m_aviWriter->Write();
+    }
+    return 0;
+  }
+  ////////////////////////////////////////////////////////
+  //End ScreenWriter Class
   ///////////////////////////////////////////////////////
 
 };
