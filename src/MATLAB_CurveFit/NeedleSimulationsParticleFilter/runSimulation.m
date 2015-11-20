@@ -20,7 +20,7 @@ results.us = [];
 % initial state of needle
 xcurr.pos = [0; 0; 0];
 xcurr.q = RotationMatrixToQuat(eye(3));
-xcurr.rho = 60;        % 10 cm roc
+xcurr.rho = 80;        % 10 cm roc
 xcurr.w = 1;           % not a particle but using the same propagation routine.
 
 % historic states
@@ -35,8 +35,12 @@ u = repmat(u,params.n,1);
 
 % simulation
 figure(1);
-ylim([-10 150]);
-zlim([-40 100]);
+if(params.drawFloatingFrame)
+    subplot(2,2,1:2);
+    title('Simulated Insertion');
+end
+ylim([-40 150]);
+zlim([-40 150]);
 xlim([-50 50]);
 xlabel('x');
 ylabel('y');
@@ -48,13 +52,15 @@ grid on;
 
 writerObj = [];
 if(params.writeVideo)
-    writerObj = VideoWriter(params.videoFile);
+    writerObj = VideoWriter(params.videoFile,'MPEG-4');
     open(writerObj);
 end
 
 particleHandles = [];
 tipFrameHandles = [];
 usFrameHandles = [];
+floatingFrameHandles1 = [];
+floatingFrameHandles2 = [];
 
 % list of measurements
 measurements = {};
@@ -140,20 +146,33 @@ for t=0:params.dt:params.simulationTime
     if(params.particlesInit)
         particleHandles = drawParticles(1,xp, xpe,xcurr,params, particleHandles);
     end
+    if(params.particlesInit && params.drawFloatingFrame)
+        subplot(2,2,3);
+        floatingFrameHandles1 = drawFloatingFrame(1,{xcurr}, 20, params, floatingFrameHandles1);
+        view(90,0);
+        title('True Orientation of Tip');
+        subplot(2,2,4);
+        floatingFrameHandles2 = drawFloatingFrame(1,{xpe}, 20, params, floatingFrameHandles2);
+        view(90,0);
+        title('Estimated Orientation of Tip (With Kalman Filter)');
+        subplot(2,2,1:2);
+    end
     
     if(~isempty(measurement))
         usFrameHandles = drawUSFrame(measurement,params, usFrameHandles);
     end
     
     if(~isempty(writerObj))
-    	% if we're writing a video, make it big.
+    	%if we're writing a video, make it big.
         if(t == 0)
             pos = get(1, 'position');
             set(1, 'position', [pos(1)-150 pos(2)-150 1.5*pos(3) 1.5*pos(4)]);
         end
-        frame = getframe;
-        writeVideo(writerObj, frame);
-        writeVideo(writerObj, frame);
+        if(params.particlesInit)
+            frame = getframe(1);
+            writeVideo(writerObj, frame);
+        end
+        %writeVideo(writerObj, frame);
     end
     %pause(params.dt/5);
 end

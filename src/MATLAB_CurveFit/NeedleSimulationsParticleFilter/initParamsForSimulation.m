@@ -132,6 +132,7 @@ params.drawParticlesNs = 1;
 params.drawExpectedPos = 1;
 params.drawExpectedOrientation = 0;
 params.drawTruePos = 1;
+params.drawFloatingFrame = 0;
 
 % output video parameters
 params.writeVideo = 0;

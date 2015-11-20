@@ -32,7 +32,7 @@ elseif(params.particleFilterMethod == 3)
 elseif(params.particleFilterMethod == 4)
     [xp,pw] = measureParticles4(xp, u, dts, measurements, params);
 else
-    xp = measureParticles100(xp, u, xtrue, dts, measurements, params);
+    xp = measureParticles100(xp, u, dts, xtrue, measurements, params);
     pw = 1;
 end
 
