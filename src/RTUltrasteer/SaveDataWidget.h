@@ -32,7 +32,9 @@ namespace Nf
     void StopRecording();
     void ResumeRecording();
     void SaveData(RPFileHeader header);
+    void SaveData(RPFileHeader header, const char *filename);
     void FreeData();
+    bool HasData() const;
 
   public:
     Ui::SaveDataWidget ui;

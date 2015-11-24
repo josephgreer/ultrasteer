@@ -330,7 +330,7 @@ namespace Nf
     }
 
     char forceString[200];
-    sprintf(forceString, "Force: {%f, %f, %f}, Torque: {%f, %f, %f}, Insertion: %f", rp.force.force.x, rp.force.force.x, rp.force.force.x,
+    sprintf(forceString, "Force: {%f, %f, %f}, Torque: {%f, %f, %f}, Insertion: %f", rp.force.force.x, rp.force.force.y, rp.force.force.z,
       rp.force.torque.x, rp.force.torque.y, rp.force.torque.z, rp.force.slidePosition);
     m_forceText->SetInput(forceString);
 
@@ -441,6 +441,7 @@ namespace Nf
     , m_forceSensor(std::tr1::shared_ptr < cForceSensor > (new cForceSensor()))
     , m_hwWidget(NULL)
     , m_experimentVis(std::tr1::shared_ptr < FSExperimentVisualization >(new FSExperimentVisualization(this, m_experimentCalib)))
+    , m_isInserting(false)
   {
     ADD_CHILD_COLLECTION((ParameterCollection *)m_experimentCalib.get());
     ADD_CHILD_COLLECTION((ParameterCollection *)m_experimentVis.get());
@@ -449,6 +450,9 @@ namespace Nf
     ADD_ACTION_PARAMETER(m_zeroForceSensor, "Zero Force Sensor", CALLBACK_POINTER(onZeroForceSensor, FSExperimentCalibrationStreamingWidget), this, false);
     ADD_ACTION_PARAMETER(m_insertNeedle, "Insert Needle", CALLBACK_POINTER(onInsertNeedle, FSExperimentCalibrationStreamingWidget), this, false);
     ADD_INT_PARAMETER(m_insVel, "Insertion Velocity (mm/s)", NULL, this, 2, 0, 10, 1);
+    ADD_INT_PARAMETER(m_numberInsertionsLeft, "Number Insertions Left", NULL, this, 10, 0, 100, 1);
+    ADD_FLOAT_PARAMETER(m_maxInsertion, "Max Insertion Length", NULL, this, 10.0, 0.0, 200.0, 0.1);
+    ADD_SAVE_FILE_PARAMETER(m_saveBaseName, "Save Base Name", NULL, this, BASE_PATH_CAT("Trial"), "*");
 
     CreateSphere(Vec3d(0,0,0), 5);
   }
@@ -473,7 +477,29 @@ namespace Nf
 
   void FSExperimentCalibrationStreamingWidget::onInsertNeedle()
   {
-    m_hwWidget->GetRCWidget()->InsertPosVel(m_insVel->GetValue());
+    m_saveDataWidget->StopRecording();
+    QMessageBox msg(QMessageBox::Icon::NoIcon, QString::fromAscii("Begin insertion"), QString::fromAscii("Begin Insertion"), QMessageBox::StandardButton::Ok|QMessageBox::StandardButton::Cancel);
+    s32 res = msg.exec();
+    if(res == QMessageBox::StandardButton::Ok) {
+      if(m_saveDataWidget->HasData()) {
+        QFileInfo fi(QString::fromAscii(m_saveBaseName->GetValue().c_str()));
+        std::string dir = fi.dir().path().toStdString()+std::string("/")+fi.baseName().toStdString()+std::to_string((_Longlong)m_numberInsertionsLeft->GetValue()+1);
+        QDir dirry(QString::fromStdString(dir));
+        if(!dirry.exists() && !dirry.mkdir(QString::fromStdString(dir))) {
+          QMessageBox errorMsg(QMessageBox::Icon::NoIcon, QString::fromAscii("Error making dir"), QString::fromAscii("Error making dir"), QMessageBox::StandardButton::Ok);
+          errorMsg.exec();
+        }
+        std::string fname = (dir+std::string("/")+std::string("scan")).c_str();
+        m_saveDataWidget->SaveData(RPFileHeader(), fname.c_str());
+      }
+      if(m_numberInsertionsLeft->GetValue() > 0) {
+        m_saveDataWidget->StartRecording();
+        m_forceSensor->Zero_Force_Sensor();
+        m_hwWidget->GetRCWidget()->InsertPosVel(m_insVel->GetValue());
+        m_isInserting = true;
+        m_numberInsertionsLeft->SetValue(m_numberInsertionsLeft->GetValue()-1);
+      }
+    }
   }
 
   void FSExperimentCalibrationStreamingWidget::onZeroForceSensor()
@@ -512,6 +538,15 @@ namespace Nf
     m_experimentVis->addFrame(rp);
 
     m_experimentCalib->addFrame(rp);
+
+    if(rp.force.slidePosition >= m_maxInsertion->GetValue() && m_isInserting) {
+      m_isInserting = false;
+      m_saveDataWidget->StopRecording();
+      m_hwWidget->GetRCWidget()->StopInsertion();
+      m_hwWidget->GetRCWidget()->HomeInsertion();
+      onInsertNeedle();
+    }
+
     QVTKWidget::update();
   }
 

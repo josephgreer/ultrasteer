@@ -123,6 +123,7 @@ namespace Nf
     std::tr1::shared_ptr < SaveDataWidget > m_saveDataWidget;
     std::tr1::shared_ptr < RobotHardwareWidget > m_hwWidget;
     std::tr1::shared_ptr < FSExperimentVisualization > m_experimentVis;
+    bool m_isInserting;
 
   public:
     FSExperimentCalibrationStreamingWidget(QWidget *parent);
@@ -141,6 +142,11 @@ namespace Nf
     std::tr1::shared_ptr < Nf::BoolParameter > m_forceSensorInitialized;
     void onInitializeForceSensor();
     CLASS_CALLBACK(onInitializeForceSensor, FSExperimentCalibrationStreamingWidget);
+
+    std::tr1::shared_ptr < Nf::FloatParameter > m_maxInsertion;
+    std::tr1::shared_ptr < Nf::IntParameter > m_numberInsertionsLeft;
+    std::tr1::shared_ptr < Nf::FileParameter > m_saveBaseName;
+
     
     std::tr1::shared_ptr < Nf::BoolParameter > m_zeroForceSensor;
     void onZeroForceSensor();

@@ -190,10 +190,10 @@ static std::tr1::shared_ptr < PlaneCalibrator > recalculatePlanePointsForNewCoor
 
 TEST(IO, ForceData)
 {
-  std::string basePath = "C:/Joey/Data/ForceData/WithWrap/Orientation2/Trial";
+  std::string basePath = "C:/Joey/Data/ForceData/SiliconePuncture/Orientation8/Trial";
   s32 numTrials = 10;
 
-  std::string calibrationPath = "C:/Joey/Data/ForceData/WithWrap/Orientation3/Calibration/calib";
+  std::string calibrationPath = "C:/Joey/Data/ForceData/SiliconePuncture/Orientation8/Calibration/calib";
 
   for(s32 i=1; i<=numTrials; i++) {
     RPFileReaderCollection *rpReaders = new RPFileReaderCollection();

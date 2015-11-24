@@ -3,7 +3,7 @@
 
 namespace Nf
 {
-#define MAX_TIMESTEPS 2000
+#define MAX_TIMESTEPS 4000
   SaveDataWidget::SaveDataWidget(QWidget *parent, Qt::WFlags flags)
     : ResizableQFrame(parent, QSize(VIS_WIDTH, VIS_HEIGHT))
     , m_memB8(NULL)
@@ -28,6 +28,11 @@ namespace Nf
   {
     RPFileHeader header = {0};
     SaveData(header);
+  }
+
+  bool SaveDataWidget::HasData() const
+  {
+    return m_dataToSave.size() > 0;
   }
 
 
@@ -110,15 +115,11 @@ namespace Nf
     m_isRecording = false;
   }
 
-  void SaveDataWidget::SaveData(RPFileHeader header)
+  void SaveDataWidget::SaveData(RPFileHeader header, const char *filename)
   {
-
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), QString("C:/Joey/Data/7_27_15"), "*.b8");
-    if(fileName.length() <= 0) {
+    if(m_dataToSave.size() <= 0)
       return;
-    }
-
-    std::string fname = fileName.toStdString();
+    std::string fname(filename);
     std::string dir = fname.substr(0,fname.find_last_of("/"));
     std::string name = fname.substr(fname.find_last_of("/")+1,std::string::npos);
     name = name.substr(0, name.find_last_of("."));
@@ -148,6 +149,17 @@ namespace Nf
     rpw->Cleanup(&header);
     FreeData();
     ui.progressBar->setValue(0);
+  }
+
+  void SaveDataWidget::SaveData(RPFileHeader header)
+  {
+
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), QString("C:/Joey/Data/7_27_15"), "*.b8");
+    if(fileName.length() <= 0) {
+      return;
+    }
+
+    SaveData(header, fileName.toStdString().c_str());
   }
 
 }
