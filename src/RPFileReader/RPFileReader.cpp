@@ -214,7 +214,8 @@ namespace Nf
 
   ForceReader::~ForceReader()
   {
-    fclose(m_file);
+    if(m_file)
+      fclose(m_file);
 
     m_file = NULL;
   }
