@@ -1,9 +1,9 @@
 clear clc; close all;
 
 figure(1);
-basePath = 'C:/Joey/Data/ForceData/WithWrap/Orientation6/Trial';
-numTrials = 1;
-calibrationPath = 'C:/Joey/Data/ForceData/WithWrap/Orientation6/Calibration/calib';
+basePath = 'C:/Joey/Data/ForceData/SiliconePuncture/Orientation8/Trial';
+numTrials = 10;
+calibrationPath = 'C:/Joey/Data/ForceData/SiliconePuncture/Orientation8/Calibration/calib';
 % for each test within folder
 for i=1:numTrials
     display(i);
@@ -38,9 +38,10 @@ for i=1:numTrials
         forceMag = norm(forceTorques(i,1:3));
         % torque magnitude
         torqueMag = norm(forceTorques(i, 4:6));
-        data(i,:) = [d forceMag torqueMag];
+        %data(i,:) = [d forceMag torqueMag];
+        data(i,:) = [d forceTorques(i,3) 0];
         % comment this to get rid of animation
-        figure(1);
+        %figure(1);
     end
     
     % plot all needle position so we can see trajectory
@@ -50,13 +51,13 @@ for i=1:numTrials
     figure(2);
     hold on;
     % estimated needle tip-plane distance
-    plot([1:nframes], data(:,1),'r', 'LineWidth', 2);
+    %plot([1:nframes], data(:,1),'r', 'LineWidth', 2);
     % force mag
-    plot([1:nframes], data(:,2),'b', 'LineWidth', 2);
+    %plot([1:nframes], data(:,2),'b', 'LineWidth', 2);
     % torque mag
-    plot([1:nframes], data(:,3),'k', 'LineWidth', 2);
-    legend('distance', 'forcemag', 'torquemag');
-    pause;
+    %plot([1:nframes], data(:,3),'k', 'LineWidth', 2);
+    plotyy(1:nframes, data(:,1), 1:nframes, data(:,2));
+    legend('distance', 'forceZ');
     
     close all;
 end
