@@ -52,6 +52,7 @@ namespace Nf
     f64 ush;                                                                    //  height of ultraosund frame in mm
     std::tr1::shared_ptr < FloatParameter > sigB0;                              //  for outlier smooth step sigmoid 1/(1+exp(-B0 - B1*x)
     std::tr1::shared_ptr < FloatParameter > sigB1;                              //  for outlier smooth step sigmoid 1/(1+exp(-B0 - B1*x)
+    std::tr1::shared_ptr < FloatParameter > lambdaDop;                          //  Regularization for p(D | x)
     std::tr1::shared_ptr < FloatParameter > offFrameB0;                         //  p(off frame | distance projection) 1/(1+exp(-B0-B1*x))
     std::tr1::shared_ptr < FloatParameter > offFrameB1;                         //  p(off frame | distance projection) 1/(1+exp(-B0-B1*x))
     std::tr1::shared_ptr < IntParameter > n;                                    //  how many points do we use for creating needle "flagella"

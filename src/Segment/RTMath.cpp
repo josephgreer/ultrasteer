@@ -85,7 +85,7 @@ namespace Nf
         if ((abs(m(0,1)+m(1,0)) < epsilon2) && (abs(m(0,2)+m(2,0)) < epsilon2)
           && (abs(m(1,2)+m(2,1)) < epsilon2) && (abs(m(0,0)+m(1,1)+m(2,2)-3) < epsilon2)) {
             // this singularity is identity matrix so angle = 0
-            zeros<vec>(3,1);
+            return zeros<vec>(3,1);
         }
 
         // otherwise this singularity is angle = 180

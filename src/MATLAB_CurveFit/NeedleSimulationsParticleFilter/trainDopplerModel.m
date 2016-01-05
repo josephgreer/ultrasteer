@@ -7,7 +7,7 @@ end
 
 addpath('../LabelData/');
 
-basePath = 'C:\Joey\Data\9_18_15\05mm\Trial3\';
+basePath = 'C:\Joey\Data\12_16_15\05mm\Trial6\';
 dop = fopen(strcat(basePath,'scan.b32'));
 dopHeader = ReadHeader(dop);
 
@@ -42,6 +42,16 @@ end
 
 pause;
 
+onOffPath = strcat(basePath, 'OnOff.txt');
+if(exist(onOffPath)) 
+    onOff = load(onOffPath, '-ascii');
+    on = 1;
+    for jj=1:length(onOff)-1
+        data(onOff(jj):onOff(jj+1)-1,end) = on;
+        on = 1-on;
+    end
+end
+
 save(strcat(basePath, 'data.mat'), 'data');
 
 nBagging = 5;
@@ -62,8 +72,8 @@ for i=1:nBagging
 end
 B = mean(Bs,2)
 figure;
-vals = mnrval(B,[-10:.1:100]');
-plot([-10:.1:100],vals);%/sum(vals(:,1)));
+vals = mnrval(B,[-10:.1:1e4]');
+plot([-10:.1:1e4],vals);%/sum(vals(:,1)));
 
 Bs = [];
 Bsp = [];
@@ -79,8 +89,8 @@ for i=1:nBagging
 end
 Boutli = mean(Bs,2)
 figure;
-vals = glmval(B,[-10:.1:100]','logit');
-plot([-10:.1:100],vals);%/sum(vals(:,1)));
+vals = glmval(B,[-10:.1:1e4]','logit');
+plot([-10:.1:1e4],vals);%/sum(vals(:,1)));
 
 %fsolve(@(x)(log((1-x)/x)+B(1)), 0.5)
 

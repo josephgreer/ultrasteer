@@ -133,8 +133,10 @@ namespace Nf
     std::tr1::shared_ptr < ParticleFilterVisualizer > m_pfVisualizer;
     std::tr1::shared_ptr < PointCloudVisualizer > m_calibrationPointsTip;
     std::tr1::shared_ptr < PointCloudVisualizer > m_calibrationPointsCurvature;
+
+    s32 m_lastFrame;
     
-    EMNeedleTipCalibrator m_ntCalibrator;
+    EMNeedleTipMultiCalibrator m_ntCalibrator;
     NeedleCurvatureCalibrator m_ncCalibrator;
 
     std::tr1::shared_ptr < SphereVisualizer > m_calibTip;
@@ -148,6 +150,8 @@ namespace Nf
     std::tr1::shared_ptr < Nf::FileParameter > m_tipCalibPath;
 
     std::tr1::shared_ptr < Nf::FileParameter > m_pointsDataPath;
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_addNewFrame;
     
     std::tr1::shared_ptr < Nf::FileParameter > m_tipCalibPathLoad;
     virtual void onTipCalibPathChanged();

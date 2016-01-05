@@ -29,11 +29,42 @@ namespace Nf
     virtual void AddPoint(const Vec3d &emPoint, const Matrix33d &emTipFrame, const Vec3d &tipPoint);
     virtual void ClearPoints();
     virtual void DoCalibration();
-    void GetSolution(Vec3d &tipOffset, Matrix33d &tipFrame) const;
-    void GetSolution(Vec3d &tipOffset, Matrix33d &tipFrame, const Vec3d &emPos, const Matrix33d &emFrame) const;
-    void SetSolution(const arma::mat &solution);
+    virtual void GetSolution(Vec3d &tipOffset, Matrix33d &tipFrame, s32 frame) const;
+    virtual void GetSolution(Vec3d &tipOffset, Matrix33d &tipFrame, const Vec3d &emPos, const Matrix33d &emFrame, s32 frame = 1) const;
+    virtual void SetSolution(const arma::mat &solution);
     virtual void ResetSolution();
     virtual bool IsCalibrated();
+  };
+
+  struct TipCalibData
+  {
+    arma::vec c;
+    arma::mat tipFrame;
+  };
+
+  TipCalibData TipCalibDataFromArmaMat(arma::mat a);
+  TipCalibData TipCalibDataFromFilename(const char *path);
+
+  class EMNeedleTipMultiCalibrator : public EMNeedleTipCalibrator
+  {
+  protected:
+    std::map < s32, TipCalibData > m_calibs;
+    std::vector < arma::mat > m_Rs;
+    std::vector < arma::mat > m_yxs;
+    std::vector < s32 > m_keyFrames;
+
+  public:
+    EMNeedleTipMultiCalibrator();
+    virtual void SetSolution(std::vector < std::string > paths, std::vector < s32 > frames);
+    virtual void ClearSolution();
+    void GetSolution(Vec3d &tipOffset, Matrix33d &tipFrame, s32 frame) const;
+    void GetSolution(Vec3d &tipOffset, Matrix33d &tipFrame, const Vec3d &emPos, const Matrix33d &emFrame, s32 frame = -1) const;
+    virtual void AddPoint(const Vec3d &emPoint, const Matrix33d &emTipFrame, const Vec3d &tipPoint, s32 frame);
+    virtual bool IsCalibrated();
+    virtual void ClearPoints();
+    virtual void DoCalibration();
+    virtual void ResetSolution();
+    virtual void SaveSolution(const char *basePath, const char *extension);
   };
 
   class NeedleCurvatureCalibrator : public Calibrator

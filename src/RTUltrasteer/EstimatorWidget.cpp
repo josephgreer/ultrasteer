@@ -1,16 +1,17 @@
 #include "EstimatorWidget.h"
 #include "NeedleTipCalibrationPP.h"
+#include <regex>
 #include <vtkProperty.h>
 #include <QKeyEvent>
 
 namespace Nf
 {
-#define INSERT_VEL 0.5 //mm/s
+#define INSERT_VEL 1 //mm/s
 
-  static void SpoofRPDataWithNeedleTipCalibration(RPData &rp, const EMNeedleTipCalibrator *em)
+  static void SpoofRPDataWithNeedleTipCalibration(RPData &rp, const EMNeedleTipCalibrator *em, s32 frame)
   {
     Vec3d tipOffset; Matrix33d tipFrame;
-    em->GetSolution(tipOffset, tipFrame, rp.gps2.pos, Matrix44d::FromCvMat(rp.gps2.pose).GetOrientation());
+    em->GetSolution(tipOffset, tipFrame, rp.gps2.pos, Matrix44d::FromCvMat(rp.gps2.pose).GetOrientation(), frame);
     rp.gps2.pos = tipOffset;
     Vec3d gps2Offset = Matrix44d::FromCvMat(rp.gps2.pose).GetPosition();
     rp.gps2.pose = Matrix44d::FromOrientationAndTranslation(tipFrame, gps2Offset).ToCvMat();
@@ -481,6 +482,7 @@ namespace Nf
       //We're initialized
       m_pf->Propagate(&m_pfFramesProcessed[frame].u, 
         (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0, params.get());
+      //NTrace("Dt %f", (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0);
 
       if(false) {
         if(this->m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
@@ -531,6 +533,7 @@ namespace Nf
     , m_resultsAvailable(ERA_NONE)
     , m_pfVisualizer(new ParticleFilterVisualizer(this))
     , m_screenWriter(std::tr1::shared_ptr < ScreenWriter >(new ScreenWriter(m_planeVis->GetRenderWindow())))
+    , m_lastFrame(1)
   {
 
     ADD_ACTION_PARAMETER(m_doNeedleCalib, "Do Needle Calibration", CALLBACK_POINTER(onDoNeedleCalibrationPushed, EstimatorFileWidget), this, false);
@@ -541,6 +544,7 @@ namespace Nf
     ADD_OPEN_FILE_PARAMETER(m_pointsDataPathLoad, "Presaved Point History", CALLBACK_POINTER(onPointsDataPathChanged, EstimatorFileWidget), this, PATH_CAT("Trial1/PreInsertionGPS/TipHistory.mat"), "(*.mat)");
     ADD_ACTION_PARAMETER(m_clearCalibrationData, "Clear Calibration Data", CALLBACK_POINTER(onClearCalibrationData, EstimatorFileWidget), this, false);
     ADD_ACTION_PARAMETER(m_clearTipCalibration, "Clear Tip Calibration", CALLBACK_POINTER(onClearTipCalibration, EstimatorFileWidget), this, false);
+    ADD_BOOL_PARAMETER(m_addNewFrame, "Add New Calib Frame", NULL, this, false);
     ADD_CHILD_COLLECTION(m_pfVisualizer.get());
     ADD_CHILD_COLLECTION(m_screenWriter.get());
 
@@ -578,7 +582,7 @@ namespace Nf
       m_data = m_rpReaders->GetRPData(m_frame->GetValue());
 
     if(m_resultsAvailable&ERA_NEEDLE_TIP_CALIB)
-      SpoofRPDataWithNeedleTipCalibration(m_data, &m_ntCalibrator);
+      SpoofRPDataWithNeedleTipCalibration(m_data, &m_ntCalibrator, m_frame->GetValue());
     
     switch(m_state) {
     case EFS_READY: 
@@ -682,6 +686,9 @@ namespace Nf
     fi = QFileInfo(m_tipCalibPathLoad->GetValue().c_str());
     if(fi.isFile() && fi.isReadable())
       this->onTipCalibPathChanged();
+
+    if(validFile)
+      m_lastFrame = m_frame->GetValue();
   }
 
   void EstimatorFileWidget::onUpdate()
@@ -712,6 +719,7 @@ namespace Nf
 
     m_planeVis->repaint();
     m_usVis->repaint();
+    m_lastFrame = 1;
   }
   
   void EstimatorFileWidget::onClearTipCalibration()
@@ -722,6 +730,7 @@ namespace Nf
 
     m_planeVis->repaint();
     m_usVis->repaint();
+    m_lastFrame = 1;
   }
 
   void EstimatorFileWidget::onSetOperationMode()
@@ -829,12 +838,8 @@ namespace Nf
         m_resultsAvailable = m_resultsAvailable|ERA_NEEDLE_TIP_CALIB;
         UpdateCalibTipVis();
 
-        Vec3d tipOffset; Matrix33d tipFrame;
-        m_ntCalibrator.GetSolution(tipOffset, tipFrame);
-
-        arma::mat total = tipFrame.ToArmaMat();
-        total = arma::join_vert(total, tipOffset.ToArmaVec().t());
-        total.save(m_tipCalibPath->GetValue(), arma::raw_ascii);
+        QFileInfo fi(QString(m_tipCalibPath->GetValue().c_str()));
+        m_ntCalibrator.SaveSolution((fi.dir().path()+"/"+fi.baseName()).toStdString().c_str(), fi.suffix().toStdString().c_str());
 
         break;
       }
@@ -865,10 +870,43 @@ namespace Nf
 
   void EstimatorFileWidget::onTipCalibPathChanged()
   {
-    arma::mat soln;
-    soln.load(m_tipCalibPathLoad->GetValue());
+    QStringList filters;
+    
+    // Find all files of form basePath*.dat in the directory
+    QFileInfo info(QString(m_tipCalibPathLoad->GetValue().c_str()));
+    QString dirpth = info.dir().path();
+    QString fname = info.baseName();
+    QString extension = info.suffix();
 
-    m_ntCalibrator.SetSolution(soln);
+    filters << fname+"*."+extension;
+    QDir dir(dirpth);
+    QStringList res = dir.entryList(filters);
+    // res now holds all calibration filenames
+
+    // need to extract calibration data and key frame from each file
+    // first one is frame 1
+    std::vector < s32 > keyframes; keyframes.push_back(1);
+    std::vector < std::string > calibs;
+    calibs.push_back(dirpth.toStdString()+"/"+res.at(0).toStdString());
+
+
+    for(s32 i=1; i<res.size(); i++) {
+      std::smatch sm;
+      std::regex rx(".*?([0-9]+)\\."+extension.toStdString());
+      std::string curr = res.at(i).toStdString();
+      std::regex_match(curr, sm, rx);
+
+      s32 frame = -1;
+      if(sm.size() > 1)
+        frame = atoi(sm[1].str().c_str());
+      else
+        throw std::runtime_error("Failed to find match\n");
+
+      keyframes.push_back(frame);
+      calibs.push_back(dirpth.toStdString()+"/"+res.at(i).toStdString());
+    }
+
+    m_ntCalibrator.SetSolution(calibs, keyframes);
 
     m_resultsAvailable = m_resultsAvailable|ERA_NEEDLE_TIP_CALIB;
     onUpdateFrame();
@@ -908,7 +946,10 @@ namespace Nf
         Vec3d y = rpImageCoordToWorldCoord3(point, posePos, m_cal, m_data.origin, mppScale);
         m_calibrationPointsTip->AddPoint(y);
         m_planeVis->repaint();
-        m_ntCalibrator.AddPoint(m_data.gps2.pos, Matrix44d::FromCvMat(m_data.gps2.pose).GetOrientation(), y);
+        
+        if(m_addNewFrame->GetValue()) 
+          m_lastFrame = m_frame->GetValue();
+        m_ntCalibrator.AddPoint(m_data.gps2.pos, Matrix44d::FromCvMat(m_data.gps2.pose).GetOrientation(), y, m_lastFrame);
       }
       break;
     case EFS_NEEDLE_CURVATURE_CALIB_GPS:
@@ -1167,7 +1208,7 @@ namespace Nf
       }
     }
 
-    SpoofRPDataWithNeedleTipCalibration(rp, &m_ntCalibrator);
+    SpoofRPDataWithNeedleTipCalibration(rp, &m_ntCalibrator, 1);
 
     if(m_collectPastTipPoints->GetValue())
       m_pastTipPoints.push_back(rp.gps2.pos);

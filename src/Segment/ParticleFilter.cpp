@@ -52,6 +52,7 @@ namespace Nf
     
     ADD_FLOAT_PARAMETER(sigB0, "Doppler Sigmoid B0", NULL, NULL, -2.37901785297659, -1e4, 1e4, 1e-2);
     ADD_FLOAT_PARAMETER(sigB1, "Doppler Sigmoid B1", NULL, NULL, 0.0534736687985484, -1e4, 1e4, 1e-2);
+    ADD_FLOAT_PARAMETER(lambdaDop, "Doppler lambda", NULL, NULL, 0, 0, 1, 0.01);
 
     ADD_FLOAT_PARAMETER(offFrameB0, "Off Frame B0", NULL, NULL, -5, -1e4, 1e4, 1e-2);
     ADD_FLOAT_PARAMETER(offFrameB1, "Off Frame B1", NULL, NULL, 20, -1e4, 1e4, 1e-2);
@@ -520,6 +521,8 @@ namespace Nf
     f64 offFrameB0 = p->offFrameB0->GetValue(); f64 offFrameB1 = p->offFrameB1->GetValue();
     f64 sigB0 = p->sigB0->GetValue(); f64 sigB1 = p->sigB1->GetValue();
 
+    f64 lambdaDop = p->lambdaDop->GetValue();
+
     vec2 measurementOffsetSigma = p->measurementOffsetSigma.ToArmaVec(); 
 
     s32 sum1, sum2;
@@ -598,6 +601,9 @@ namespace Nf
 
       //p(doppler | not over needle)
       p_dxOffFrame = 1-p_dxOnFrame;//m_pDopNotOverNeedle->P(dop);
+
+      p_dxOnFrame = lambdaDop+(1-lambdaDop)*p_dxOnFrame;
+      p_dxOffFrame = lambdaDop+(1-lambdaDop)*p_dxOffFrame;
 
       pw(0,i) = (p_uvxOnFrame*p_dxOnFrame)*(1-p_offFrame)+(p_uvxOnFrame*p_dxOffFrame*p_offFrame);
     }

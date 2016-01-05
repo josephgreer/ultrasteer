@@ -10,7 +10,7 @@
 #include <armadillo>
 #include "RTMath.h"
 
-#define PATH_CAT(x) (std::string("C:/Joey/Data/9_18_15/")+std::string(x)).c_str()
+#define PATH_CAT(x) (std::string("C:/Joey/Data/12_16_15/")+std::string(x)).c_str()
 #define BASE_PATH_CAT(x) (std::string("C:/Joey/Data/")+std::string(x)).c_str()
 #define STL_PATH_CAT(x) (std::string("C:/Troy/ultrasteer/models/")+std::string(x)).c_str()
 

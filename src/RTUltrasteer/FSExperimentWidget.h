@@ -7,6 +7,8 @@
 #include "cForceSensor.h"
 #include <vtkAxesActor.h>
 #include <vtkTextActor.h>
+
+// #define USE_FORCE_SENSOR
 namespace Nf
 {
   class ExperimentCalibrationData : public ParameterCollection
@@ -118,7 +120,9 @@ namespace Nf
     Q_OBJECT 
 
   protected:
+#ifdef USE_FORCE_SENSOR
     std::tr1::shared_ptr < cForceSensor > m_forceSensor;
+#endif
     std::tr1::shared_ptr < ExperimentCalibrationData > m_experimentCalib;
     std::tr1::shared_ptr < SaveDataWidget > m_saveDataWidget;
     std::tr1::shared_ptr < RobotHardwareWidget > m_hwWidget;

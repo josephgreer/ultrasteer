@@ -1,9 +1,9 @@
 clearvars -except 'truePosB' 'estPosB'; clc; close all;
 
-%method = 'FullState';
-method = 'Marginalized';
-estBasePath = strcat('C:\Joey\Data\9_18_15\05mm\Trial3\', method, 'Estimated');
-truthBasePath = strcat('C:\Joey\Data\9_18_15\05mm\Trial3\', method, 'GroundTruth');
+method = 'FullState';
+%method = 'Marginalized';
+estBasePath = strcat('C:\Joey\Data\9_18_15\05mm\Trial4\', method, 'Estimated');
+truthBasePath = strcat('C:\Joey\Data\9_18_15\05mm\Trial4\', method, 'GroundTruth');
 
 estPos = load(strcat(estBasePath, 'Pos.dat'));
 truePos = load(strcat(truthBasePath, 'Pos.dat'));

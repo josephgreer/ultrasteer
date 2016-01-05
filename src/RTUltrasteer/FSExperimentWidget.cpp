@@ -79,7 +79,7 @@ namespace Nf
 
       if(m_tipCalibration->IsCalibrated()) {
         Matrix33d tipFrame; Vec3d tipOffset;
-        m_tipCalibration->GetSolution(tipOffset, tipFrame);
+        m_tipCalibration->GetSolution(tipOffset, tipFrame, 1);
 
         arma::mat tipCalib = join_vert(tipFrame.ToArmaMat(), tipOffset.ToArmaVec().t());
         tipCalib.save(dir+fname+std::string("_tipOffset.m"), arma::raw_ascii);
@@ -87,7 +87,7 @@ namespace Nf
 
       if(m_stylusCalibration->IsCalibrated()) {
         Matrix33d styFrame; Vec3d styoffset;
-        m_stylusCalibration->GetSolution(styoffset, styFrame);
+        m_stylusCalibration->GetSolution(styoffset, styFrame, 1);
 
         arma::mat styCalib = join_vert(styFrame.ToArmaMat(), styoffset.ToArmaVec().t());
         styCalib.save(dir+fname+std::string("_styOffset.m"), arma::raw_ascii);
@@ -438,7 +438,9 @@ namespace Nf
   FSExperimentCalibrationStreamingWidget::FSExperimentCalibrationStreamingWidget(QWidget *parent)
     : EMCalibrationStreamingWidget(parent, "FSExperimentCalibrationFile") 
     , m_experimentCalib(new ExperimentCalibrationData())
+#ifdef USE_FORCE_SENSOR
     , m_forceSensor(std::tr1::shared_ptr < cForceSensor > (new cForceSensor()))
+#endif
     , m_hwWidget(NULL)
     , m_experimentVis(std::tr1::shared_ptr < FSExperimentVisualization >(new FSExperimentVisualization(this, m_experimentCalib)))
     , m_isInserting(false)
@@ -459,6 +461,7 @@ namespace Nf
 
   void FSExperimentCalibrationStreamingWidget::onInitializeForceSensor()
   {
+#ifdef USE_FORCE_SENSOR
     m_forceSensor->Set_Calibration_File_Loc("C:/Joey/ultrasteer/src/Nano17/FT14057.cal"); 
     s32 rv = m_forceSensor->Initialize_Force_Sensor("Dev1/ai0:5");
     if(rv != 0) {
@@ -473,6 +476,7 @@ namespace Nf
       throw std::runtime_error("Error zeroing force sensor");
     }
     m_saveDataWidget->SetEnabled(true);
+#endif
   }
 
   void FSExperimentCalibrationStreamingWidget::onInsertNeedle()
@@ -494,7 +498,9 @@ namespace Nf
       }
       if(m_numberInsertionsLeft->GetValue() > 0) {
         m_saveDataWidget->StartRecording();
+#ifdef USE_FORCE_SENSOR
         m_forceSensor->Zero_Force_Sensor();
+#endif
         m_hwWidget->GetRCWidget()->InsertPosVel(m_insVel->GetValue());
         m_isInserting = true;
         m_numberInsertionsLeft->SetValue(m_numberInsertionsLeft->GetValue()-1);
@@ -504,10 +510,12 @@ namespace Nf
 
   void FSExperimentCalibrationStreamingWidget::onZeroForceSensor()
   {
+#ifdef USE_FORCE_SENSOR
     if(!m_forceSensorInitialized->GetValue())
       return;
 
     s32 rv = m_forceSensor->Zero_Force_Sensor();
+#endif
   }
 
 
@@ -515,6 +523,7 @@ namespace Nf
   {
     EMCalibrationStreamingWidget::addFrame(rp);
     
+#ifdef USE_FORCE_SENSOR
     if(m_forceSensorInitialized->GetValue()) {
       s32 rv = m_forceSensor->AcquireFTData();
       if(rv != 0)
@@ -526,6 +535,7 @@ namespace Nf
       m_forceSensor->GetTorqueReading(torque);
       rp.force.torque = Vec3d(torque[0], torque[1], torque[2]);
     }
+#endif
     if(m_hwWidget->GetRCWidget()->isInsertionInitialized())
       rp.force.slidePosition = m_hwWidget->GetRCWidget()->GetInsertion();
 
