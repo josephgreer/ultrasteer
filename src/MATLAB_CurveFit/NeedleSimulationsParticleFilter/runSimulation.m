@@ -84,6 +84,7 @@ end
     
 for idx=1:length(ts)-1
     t = ts(idx);
+    params.dt = data.dts(idx);
     
     %current command
     uc = commandFcn(t,params);
@@ -129,7 +130,8 @@ for idx=1:length(ts)-1
             xp = propagateParticles(xp,uc,params);
             dts = repmat(params.dt, params.n);
             if(dataExists)
-               dts = data.times(idx:max(idx-params.n+1,1));
+               dts = data.dts(idx:-1:max(idx-params.n+1,1));
+               dts = [dts; zeros(params.n-length(dts),1)];
             end
             if(params.doMeasurement)
                 xp = measureParticles(xp,u,xhist,dts,measurements,params);

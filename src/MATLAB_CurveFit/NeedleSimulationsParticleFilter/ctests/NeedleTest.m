@@ -12,8 +12,8 @@ method = 'FullState';
 params = initParamsForSimulation();
 
 % custom parameters
-params.doParticleFilter = 0;
-params.doMeasurement = 0;
+params.doParticleFilter = 1;
+params.doMeasurement = 1;
 params.np = 500;
 params.n = 15;
 params.particleInitTime = 2;
@@ -21,7 +21,7 @@ params.drawParticlePos = 1;
 params.drawParticleOrientation = 0;
 params.drawExpectedOrientation = 1;
 params.drawParticlesNs = 20;
-params.drawUSFrame = 1;
+params.drawUSFrame = 0;
 params.drawMeasurement = 1;
 params.drawExpectedPos = 1;
 params.axialSigma = 10;
@@ -46,11 +46,8 @@ params.measurementOffsetSigma = diag([params.mpp*5*1e-3 params.mpp*5*1e-3])
 %params.sigmaRho = 0;
 %params.doMeasurement = 0;
 nTrials = 1;
+params = loadParams(params, basePath, method);
 
-
-if(exist(strcat(basePath, 'params.dat'), 'file'))
-    params = load(strcat(basePath, 'params.dat'));
-end
 
 commands = loadCommands(basePath);
 measurements = loadMeasurements(basePath);

@@ -369,6 +369,44 @@ namespace Nf
     return res;
   }
 
+  static void SaveParameters(const PFParams *p, FILE *f)
+  {
+    fprintf(f, "n %d\n", p->n->GetValue());
+    fprintf(f, "neff %f\n", p->neff->GetValue());
+    fprintf(f, "mpp %f, %f\n", p->mpp.x, p->mpp.y);
+    fprintf(f, "usw %f\n", p->usw);
+    fprintf(f, "ush %f\n", p->usw);
+    fprintf(f, "minimumMeasurements %d\n", p->minimumMeasurements->GetValue());
+    fprintf(f, "dopplerLambda %f\n", p->lambdaDop->GetValue());
+    fprintf(f, "dopplerSigB0 %f\n", p->sigB0->GetValue());
+    fprintf(f, "dopplerSigB1 %f\n", p->sigB1->GetValue());
+    fprintf(f, "offFrameB0 %f\n", p->offFrameB0->GetValue());
+    fprintf(f, "offFrameB1 %f\n", p->offFrameB1->GetValue());
+    fprintf(f, "measurementOffsetSigma %f, %f\n", p->measurementOffsetSigma.x, p->measurementOffsetSigma.y);
+    fprintf(f, "measurementOffsetSigmaPx %f, %f\n", p->measurementOffsetSigmaPx->GetValue().x, p->measurementOffsetSigmaPx->GetValue().y);
+    fprintf(f, "initPosSigma %f, %f, %f\n", p->initPosSigma->GetValue().x, p->initPosSigma->GetValue().y, p->initPosSigma->GetValue().z);
+    fprintf(f, "initOrientationSigma %f, %f, %f\n", p->initOrientationSigma->GetValue().x, p->initOrientationSigma->GetValue().y, p->initOrientationSigma->GetValue().z);
+    fprintf(f, "initRhoSigma %f\n", p->initRhoSigma->GetValue());
+    fprintf(f, "particleSigmaOr %f, %f, %f\n", p->particleSigmaOr->GetValue().x, p->particleSigmaOr->GetValue().y, p->particleSigmaOr->GetValue().z);
+    fprintf(f, "particleSigmaPos %f, %f, %f\n", p->particleSigmaPos->GetValue().x, p->particleSigmaPos->GetValue().y, p->particleSigmaPos->GetValue().z);
+    fprintf(f, "particleSigmaRho %f\n", p->particleSigmaRho->GetValue());
+    fprintf(f, "particleSigmaVel %f\n", p->particleSigmaVel->GetValue());
+  }
+
+  static void SaveParameters(const PFFullStateParams *p, FILE *f)
+  {
+    SaveParameters((const PFParams *)p, f);
+  }
+
+  static void SaveParameters(const PFMarginalizedParams *p, FILE *f)
+  {
+    SaveParameters((const PFParams *)p, f);
+
+    fprintf(f, "subsetSize %d\n", p->subsetSize->GetValue());
+    fprintf(f, "procrustesIt %d\n", p->procrustesIt->GetValue());
+    fprintf(f, "measurementSigma %f, %f, %f\n", p->measurementSigma->GetValue().x, p->measurementSigma->GetValue().y, p->measurementSigma->GetValue().z);
+  }
+
   void ParticleFilterVisualizer::SaveParticleFilterResults(s32 frame, const char *directory)
   {
     std::vector < TipState > trueStates;
@@ -408,6 +446,22 @@ namespace Nf
     saveCommands(temp, commands);
     saveMeasurements(temp, measurements);
     saveTimes(temp, dts);
+
+    std::tr1::shared_ptr < PFParams > params = GetParams(origFrame);
+    FILE *paramFile;
+    if(this->m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
+      sprintf(temp, "%s/paramsFullState.dat", directory);
+      paramFile = fopen(temp, "w");
+      SaveParameters((PFFullStateParams *)params.get(), paramFile);
+    }
+    else {
+      sprintf(temp, "%s/paramsMarginalized.dat", directory);
+      paramFile = fopen(temp, "w");
+      SaveParameters((PFMarginalizedParams *)params.get(), paramFile);
+    }
+    if(paramFile != NULL)
+      fclose(paramFile);
+
   }
 
   void ParticleFilterVisualizer::onNVisSkipChanged()

@@ -2,8 +2,8 @@ clearvars -except 'truePosB' 'estPosB'; clc; close all;
 
 method = 'FullState';
 %method = 'Marginalized';
-estBasePath = strcat('C:\Joey\Data\12_16_15\05mm\Trial5\', method, 'Estimated');
-truthBasePath = strcat('C:\Joey\Data\12_16_15\05mm\Trial5\', method, 'GroundTruth');
+estBasePath = strcat('C:\Joey\Data\9_18_15\05mm\Trial1\', method, 'Estimated');
+truthBasePath = strcat('C:\Joey\Data\9_18_15\05mm\Trial1\', method, 'GroundTruth');
 
 estPos = load(strcat(estBasePath, 'Pos.dat'));
 truePos = load(strcat(truthBasePath, 'Pos.dat'));
@@ -14,7 +14,7 @@ trueRs = loadOrientations(strcat(truthBasePath, 'Rs.dat'));
 estRhos = load(strcat(estBasePath, 'Rho.dat'));
 trueRhos = load(strcat(truthBasePath, 'Rho.dat'));
 
-startId = 1;
+startId = 20;
 endId = size(estPos,1)-1;
 
 estPos = estPos([startId:endId], :);

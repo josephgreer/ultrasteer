@@ -150,7 +150,7 @@ for i=1:length(xp)
     
     % p(d|x) in case particle intersects frame
     if(params.useLUTDistribution == 0)
-        p_dxOnFrame = sigmf(measurement.doppler, [params.sigB0, params.sigB1]); %lognpdf(measurement.doppler, params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
+        p_dxOnFrame = params.lambdaDop+(1-params.lambdaDop)*sigmf(measurement.doppler, [params.sigB0, params.sigB1]); %lognpdf(measurement.doppler, params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
     else
         p_dxOnFrame = lutDistributionP(measurement.doppler, params.pdopoverneedle, params);
     end
@@ -158,7 +158,7 @@ for i=1:length(xp)
     % particle doesn't intersect image frame
     %p_uvxOffFrame = 1/(params.ush*params.usw);
     if(params.useLUTDistribution == 0)
-        p_dxOffFrame = 1-p_dxOnFrame;%lognpdf(measurement.doppler, params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
+        p_dxOffFrame = params.lambdaDop+(1-params.lambdaDop)*1-p_dxOnFrame;%lognpdf(measurement.doppler, params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
     else
         p_dxOffFrame = lutDistributionP(measurement.doppler, params.pdopnotoverneedle, params);
     end

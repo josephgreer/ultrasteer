@@ -63,7 +63,9 @@ params.particleInitTime = 2;                                                %how
 params.sigB0 = -2;                                                          %for outlier smooth step sigmoid 1/(1+exp(-B0-B1*x))
 params.sigB1 = 0.5;                                                         %for outlier smooth step sigmoid 1/(1+exp(-B0-B1*x))
 params.offFrameB0 = -5;                                                     %p(off frame | distance projection) 1/(1+exp(-B0-B1*x))
-params.offFrameB1 = 20;                                                    %p(off frame | distance projection) 1/(1+exp(-B0-B1*x))        
+params.offFrameB1 = 20;  
+params.lambdaDop = 0.1;
+%p(off frame | distance projection) 1/(1+exp(-B0-B1*x))        
 
 % particle filter method specific parameters
 
