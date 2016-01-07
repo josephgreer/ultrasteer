@@ -302,6 +302,19 @@ namespace Nf
     return res;
   }
 
+  std::vector < Measurement > ParticleFilterVisualizer::AssembleAllMeasurements(s32 frame)
+  {
+    std::vector < Measurement > res;
+    while(m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end()) {
+      res.push_back(m_pfFramesProcessed[frame].m);
+      frame--;
+    }
+
+    std::reverse(res.begin(), res.end());
+
+    return res;
+  }
+
   std::vector < NSCommand > ParticleFilterVisualizer::AssembleCommands(s32 frame)
   {
     std::vector < NSCommand > res;
@@ -311,6 +324,19 @@ namespace Nf
       res.push_back(m_pfFramesProcessed[frame].u);
       frame--;
     }
+
+    return res;
+  }
+
+  std::vector < NSCommand > ParticleFilterVisualizer::AssembleAllCommands(s32 frame)
+  {
+    std::vector < NSCommand > res;
+    while(m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end()) {
+      res.push_back(m_pfFramesProcessed[frame].u);
+      frame--;
+    }
+
+    std::reverse(res.begin(), res.end());
 
     return res;
   }
@@ -329,11 +355,30 @@ namespace Nf
     return res;
   }
 
-  void ParticleFilterVisualizer::SaveParticleFilterResults(s32 frame, const char *basePath)
+  arma::vec ParticleFilterVisualizer::AssembleAllDts(s32 frame)
+  {
+    arma::vec res = arma::zeros(NumberOfMeasurementsUpToAndIncludingFrame(frame));
+    
+    s32 curIdx = 0;
+    while(m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end() && m_pfFramesProcessed.find(frame-1) != m_pfFramesProcessed.end()) {
+      res(curIdx) = (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0;
+      curIdx++;
+      frame--;
+    }
+    res = arma::flipud(res);
+    return res;
+  }
+
+  void ParticleFilterVisualizer::SaveParticleFilterResults(s32 frame, const char *directory)
   {
     std::vector < TipState > trueStates;
     std::vector < TipState > estimatedStates;
+
+    // create the results directory
+    if(!QDir(directory).exists())
+      QDir().mkdir(directory);
     
+    s32 origFrame = frame;
     while(m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end()) {
       trueStates.push_back(m_pfFramesProcessed[frame].t);
       estimatedStates.push_back(m_pfFramesProcessed[frame].est);
@@ -350,10 +395,19 @@ namespace Nf
       method = "Marginalized";
 
     char temp[200] = {0};
-    sprintf(temp, "%s%sGroundTruth", basePath, method.c_str());
+    sprintf(temp, "%s/%sGroundTruth", directory, method.c_str());
     saveTipHistory(temp, trueStates);
-    sprintf(temp, "%s%sEstimated", basePath,  method.c_str());
+    sprintf(temp, "%s/%sEstimated", directory,  method.c_str());
     saveTipHistory(temp, estimatedStates);
+
+    std::vector < NSCommand > commands = AssembleAllCommands(origFrame);
+    std::vector < Measurement > measurements = AssembleAllMeasurements(origFrame);
+    arma::vec dts = AssembleAllDts(origFrame);
+
+    sprintf(temp, "%s/", directory);
+    saveCommands(temp, commands);
+    saveMeasurements(temp, measurements);
+    saveTimes(temp, dts);
   }
 
   void ParticleFilterVisualizer::onNVisSkipChanged()
@@ -856,8 +910,9 @@ namespace Nf
     case EFS_ESTIMATE_SCAN:
       {
         std::string fl = m_rpFile->GetValue();
-        fl = fl.substr(0, fl.find_last_of("/")+1);
-        m_pfVisualizer->SaveParticleFilterResults(m_frame->GetValue(), fl.c_str());
+        QFileInfo fi(fl.c_str());
+        std::string dir = fi.dir().path().toStdString()+"/results";
+        m_pfVisualizer->SaveParticleFilterResults(m_frame->GetValue(), dir.c_str());
       break;
       }
     default: 

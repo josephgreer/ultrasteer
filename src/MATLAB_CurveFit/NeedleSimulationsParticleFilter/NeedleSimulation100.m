@@ -19,4 +19,4 @@ params.writeVideo = 1;
 params.sigmaOrientation = diag(1/5000*[pi, pi, pi]);
 
 
-[results, ~, ~] = runSimulation(params, @(t,params)(twistyCommandFcn(t, params)));
+[results, ~, ~] = runSimulation(params, @(t,params)(twistyCommandFcn(t, params)),[]);

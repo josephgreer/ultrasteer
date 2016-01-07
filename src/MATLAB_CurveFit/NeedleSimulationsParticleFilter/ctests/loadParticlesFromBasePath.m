@@ -6,7 +6,11 @@ if(params.particleFilterMethod == 1)
     pos = load(sprintf('%sPos.dat',basePath));
     rhos = load(sprintf('%sRho.dat',basePath));
     Rs = load(sprintf('%sRs.dat',basePath));
-    ws = load(sprintf('%sws.dat',basePath));
+    if(exist(sprintf('%sws.dat',basePath),'file'))
+        ws = load(sprintf('%sws.dat',basePath));
+    else
+        ws = ones(1,size(Rs,2))/size(Rs,2);
+    end
     
     xp = {};
     for i=1:size(pos,2)
@@ -22,7 +26,11 @@ else
     rhos = load(sprintf('%sRho.dat',basePath));
     Rs = load(sprintf('%sRs.dat',basePath));
     sigmas = load(sprintf('%sSigmas.dat',basePath));
-    ws = load(sprintf('%sws.dat',basePath));
+    if(exist(sprintf('%sws.dat',basePath),'file'))
+        ws = load(sprintf('%sws.dat',basePath));
+    else
+        ws = ones(1,size(Rs,2))/size(Rs,2);
+    end
     
     xp = {};
     for i=1:size(pos,2)

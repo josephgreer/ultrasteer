@@ -37,7 +37,7 @@ for trial = 1:nTrials
     params.p100.procrustesIt = 3;
     params.drawExpectedOrientation = 1;
 
-    [results, ~, ~] = runSimulation(params, @(t,params)(commandFcn(t, params)));
+    [results, ~, ~] = runSimulation(params, @(t,params)(commandFcn(t, params)),[]);
 
     Rerrors = zeros(length(results.states), 3);
     for i=1:length(results.states)

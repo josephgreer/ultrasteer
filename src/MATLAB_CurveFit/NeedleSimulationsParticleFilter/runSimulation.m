@@ -3,9 +3,11 @@
 %%% inputs:
 %%%     runs a simulation with parameters initialized in initParams
 %%%     u = commandFcn(t,params) returns commands based on the timestep
+%%%     data = optional parameter that contains measurements etc from
+%%%     actual data capture
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [results, xhist, u] = runSimulation(params, commandFcn)
+function [results, xhist, u] = runSimulation(params, commandFcn, data)
 % results structure
 results.states = {};
 results.estimatedStates = {};
@@ -33,20 +35,30 @@ uc.dtheta = 0;
 u{1} = uc;
 u = repmat(u,params.n,1);
 
+dataExists = exist('data');
+
 % simulation
 figure(1);
 if(params.drawFloatingFrame)
     subplot(2,2,1:2);
     title('Simulated Insertion');
 end
-ylim([-40 150]);
-zlim([-40 150]);
-xlim([-50 50]);
+if(~dataExists)
+    ylim([-40 150]);
+    zlim([-40 150]);
+    xlim([-50 50]);
+else
+    xcurr = data.trueStates{1};
+    expand = 30;
+    xlim([xcurr.pos(1)-expand xcurr.pos(1)+expand]);
+    ylim([xcurr.pos(2)-expand xcurr.pos(2)+expand]);
+    zlim([xcurr.pos(3)-expand xcurr.pos(3)+expand]);
+end
 xlabel('x');
 ylabel('y');
 zlabel('z');
 view(90,0);
-axis equal;
+daspect([1 1 1]);
 hold on;
 grid on;
 
@@ -65,13 +77,22 @@ floatingFrameHandles2 = [];
 % list of measurements
 measurements = {};
 
-
-for t=0:params.dt:params.simulationTime
+ts = 0:params.dt:params.simulationTime;
+if(dataExists)
+    ts = cumsum(data.dts);
+end
+    
+for idx=1:length(ts)-1
+    t = ts(idx);
+    
     %current command
     uc = commandFcn(t,params);
     
     %propagate through system dynamics
     xcurr = f(xcurr,uc,params,params);
+    if(dataExists)
+        xcurr = data.trueStates{idx};
+    end
     
     xhist = vertcat({xcurr},xhist);
     if(length(xhist) > params.n)
@@ -93,7 +114,11 @@ for t=0:params.dt:params.simulationTime
     % if we're far enough along, start generating random US measurements
     measurement = [];
     if(t > params.particleInitTime)
-        measurement = generateRandomMeasurement(xhist, u, t, params);
+        if(dataExists)
+            measurement = data.measurements{idx};
+        else
+            measurement = generateRandomMeasurement(xhist, u, t, params);
+        end
         measurements = vertcat({measurement}, measurements);
         if(~params.particlesInit)
             fakeCurr = xhist;
@@ -103,6 +128,9 @@ for t=0:params.dt:params.simulationTime
         else
             xp = propagateParticles(xp,uc,params);
             dts = repmat(params.dt, params.n);
+            if(dataExists)
+               dts = data.times(idx:max(idx-params.n+1,1));
+            end
             if(params.doMeasurement)
                 xp = measureParticles(xp,u,xhist,dts,measurements,params);
             end

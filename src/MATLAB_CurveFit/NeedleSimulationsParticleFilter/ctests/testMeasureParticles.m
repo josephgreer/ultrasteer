@@ -17,7 +17,7 @@ for method=[1,3]
     close all;
     params.simulationTime = 5;
     params.particleFilterMethod = method;
-    [results, xhist, u] = runSimulation(params, @(t,params)commandFcn(t,params));
+    [results, xhist, u] = runSimulation(params, @(t,params)commandFcn(t,params),[]);
     
     pathBase = sprintf('./data/testMeasure%d1', method);
     saveCommands(u, pathBase, params);
@@ -32,7 +32,7 @@ for method=[1,3]
     close all;
     params.simulationTime = 6;
     params.p3.subsetSize = 2000;
-    [results, xhist, u] = runSimulation(params, @(t,params)commandFcn(t,params));
+    [results, xhist, u] = runSimulation(params, @(t,params)commandFcn(t,params),[]);
     
     pathBase = sprintf('./data/testMeasure%d2', method);
     saveCommands(u, pathBase, params);

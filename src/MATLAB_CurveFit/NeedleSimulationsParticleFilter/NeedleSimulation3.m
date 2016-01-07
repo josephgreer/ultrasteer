@@ -42,7 +42,7 @@ posErrors = [];
 orErrors = [];
 for i=1:nTrials
     close all;
-    [results, ~, ~] = runSimulation(params, @(t,params)(commandFcn(t, params)));
+    [results, ~, ~] = runSimulation(params, @(t,params)(commandFcn(t, params)),[]);
     
     [cPosErrors, cOrErrors] = plotParticleFilterResults(results,2,params);
     posErrors = vertcat(posErrors, cPosErrors);

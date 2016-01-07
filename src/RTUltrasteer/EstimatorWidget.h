@@ -86,9 +86,12 @@ namespace Nf
     std::tr1::shared_ptr < PFParams > GetParams(s32 frame);
     std::vector < TipState > AssembleTipHistory(s32 frame);
     std::vector < Measurement > AssembleMeasurements(s32 frame);
+    std::vector < Measurement > AssembleAllMeasurements(s32 frame);
     std::vector < NSCommand > AssembleCommands(s32 frame);
+    std::vector < NSCommand > AssembleAllCommands(s32 frame);
     arma::vec AssembleDts(s32 frame);
-    void SaveParticleFilterResults(s32 frame, const char *basePath);
+    arma::vec AssembleAllDts(s32 frame);
+    void SaveParticleFilterResults(s32 frame, const char *directory);
     void SetBasePath(const char *basePath) { m_basePath = std::string(basePath); }
 
     //Parameters

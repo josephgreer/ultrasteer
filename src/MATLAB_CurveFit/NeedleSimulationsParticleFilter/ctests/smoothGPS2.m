@@ -1,7 +1,7 @@
 clear; clc; close all;
 
 addpath('../../LabelData');
-basePath = 'C:\Joey\Data\12_16_15\05mm\Trial6\scan';
+basePath = 'C:\Joey\Data\9_18_15\05mm\Trial1\scan';
 
 fgps = fopen(strcat(basePath,'.gps2'));
 header = ReadHeader(fgps);

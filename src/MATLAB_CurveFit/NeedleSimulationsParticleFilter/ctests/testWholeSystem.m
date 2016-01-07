@@ -21,7 +21,7 @@ for method=[3]
         close all;
         params.simulationTime = 50;
         params.particleFilterMethod = method;
-        [results, xhist, u] = runSimulation(params, @(t,params)commandFcn(t,params));
+        [results, xhist, u] = runSimulation(params, @(t,params)commandFcn(t,params),[]);
         [pE, oE] = plotParticleFilterResults(results,2,params);
         
         pathBase = sprintf('./data/testWholeSystem1%d',test);

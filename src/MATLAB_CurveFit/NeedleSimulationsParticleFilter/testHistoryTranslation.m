@@ -21,7 +21,7 @@ params.sigmaOrientation = diag(1/5*[1*pi/1000, 1*pi/1000, pi/1000]);
 params.n = 20;
 nskip = 1;
 
-[~, xhist, u] = runSimulation(params, @(t,params)(twistyCommandFcn(t, params)));
+[~, xhist, u] = runSimulation(params, @(t,params)(twistyCommandFcn(t, params)),[]);
 
 
 xref = propagateNeedleBack(xhist{1}, u, params);

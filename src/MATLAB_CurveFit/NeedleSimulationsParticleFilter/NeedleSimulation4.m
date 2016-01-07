@@ -36,6 +36,6 @@ params.measurementOffsetSigma = diag([params.mpp*5*1e-3 params.mpp*5*1e-3]);
 params.sigmaOrientation = diag(1/5000*[pi, pi, pi]);
 
 
-[results, ~, ~] = runSimulation(params, @(t,params)(commandFcn(t, params)));
+[results, ~, ~] = runSimulation(params, @(t,params)(commandFcn(t, params)),[]);
 
 plotParticleFilterResults(results,2,params);
