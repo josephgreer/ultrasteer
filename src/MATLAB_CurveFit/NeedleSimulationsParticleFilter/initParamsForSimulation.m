@@ -14,6 +14,7 @@ addpath('spheresurf');
 params.dt = 1/10;                                                           %simulation timestep (s)
 
 % process noise parameters
+params.tipOffset = [0; 0; 0];                                               %offset of physical tip from "logical" tip (in calibrated tip frame) tracked by particle filter
 params.muOrientation = [0; 0; 0];                                           %orientation process noise mean
 params.sigmaOrientation = diag(1/5*[pi/1000, pi/1000, pi/1000]);            %orientation process noise std
 params.muPos = [0; 0; 0];                                                   %position process noise mean

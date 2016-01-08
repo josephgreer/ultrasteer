@@ -26,6 +26,7 @@ namespace Nf
   class PFParams : public ParameterCollection
   {
   public:
+    std::tr1::shared_ptr < Vec3dParameter > tipOffset;                          //  offset of physical tip from "logical" tip (in calibrated tip frame) tracked by particle filter
     std::tr1::shared_ptr < IntParameter > minimumMeasurements;                  //  minimum number of measurements needed to measure particles
     std::tr1::shared_ptr < Vec3dParameter > initPosMu;                          //  pos mu for initial distribution of particles
     std::tr1::shared_ptr < Vec3dParameter > initPosSigma;                       //  pos sigma for initial distribution of particles

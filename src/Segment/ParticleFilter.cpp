@@ -11,7 +11,7 @@ namespace Nf
   PFParams::PFParams(Vec2d mpp, const char *name)
     : ParameterCollection(name)
   {
-
+    ADD_VEC3D_PARAMETER(tipOffset, "Tip Offset", NULL, NULL, Vec3d(0,0,0), Vec3d(-100, -100, 100), Vec3d(100,100,100), Vec3d(1e-2, 1e-2, 1e-2));
     ADD_VEC3D_PARAMETER(initPosMu, "Init Pos Mu", NULL, NULL, Vec3d(0,0,0), Vec3d(0,0,0), Vec3d(1e4, 1e4, 1e4), Vec3d(1,1,1));
     ADD_VEC3D_PARAMETER(initPosSigma, "Init Pos Sigma", NULL, NULL, Vec3d(1,1,1), Vec3d(0,0,0), Vec3d(1e4, 1e4, 1e4), Vec3d(1,1,1));
     
@@ -135,6 +135,12 @@ namespace Nf
     //res[0] = current state
     res.push_back(*this);
 
+    //res[1] = current state-tipOffset (e.g. the tip bevel)
+    TipState start = *this;
+    start.pos = start.pos-start.R*p->tipOffset->GetValue().ToArmaVec();
+    res.push_back(start);
+    //now {res[0], res[1]} are endpoints of tip bevel.
+
     f64 minLength = 25;
 
     //u[0] = current control input
@@ -147,7 +153,7 @@ namespace Nf
 
     TipState xc;
     for(s32 i=1; i<u.size(); i++) {
-      xc = res[i-1]; 
+      xc = res[i]; 
       // reverse for propagating backward in time
       xc.R = (mat33)(xc.R*Ry(PI));
 
@@ -456,6 +462,8 @@ namespace Nf
     mat noiseR = noiseRho.Sample(m_nParticles);
     mat noiseV = noiseVel.Sample(m_nParticles);
 
+    arma::vec tipOffset = p->tipOffset->GetValue().ToArmaVec();
+
     TipState t;
     NSCommand uc; memcpy(&uc, u, sizeof(NSCommand));
     mat velocities = u->v*ones(1,m_nParticles)+noiseV;
@@ -463,14 +471,16 @@ namespace Nf
     for(s32 i=0; i<m_nParticles; i++) {
       //perturb orientation
       uc.v = velocities(0,i);
-      t.pos = m_pos.col(i);
+      //subtract off tip offset before propagating.
+      t.pos = m_pos.col(i)-m_R[i]*tipOffset;
       t.R = (mat33)(m_R[i]*SO3Exp((vec3)noiseO.col(i)));
       t.rho = m_rho(i);
 
       //Propagate
       t = t.Propagate(uc, dt, p);
 
-      m_pos.col(i) = t.pos;
+      //Add back in tip offset
+      m_pos.col(i) = t.pos+t.R*tipOffset;
       m_rho(i) = t.rho;
       m_R[i] = t.R;
     }
@@ -718,6 +728,8 @@ namespace Nf
     mat noiseR = noiseRho.Sample(m_nParticles);
     mat noiseV = noiseVel.Sample(m_nParticles);
 
+    vec tipOffset = p->tipOffset->GetValue().ToArmaVec();
+
     TipState t;
     NSCommand uc; memcpy(&uc, u, sizeof(NSCommand));
     mat velocities = u->v*ones(1,m_nParticles)+noiseV;
@@ -732,14 +744,13 @@ namespace Nf
       Gaussian<vec3,mat33> noiseOr((vec3)zeros<vec>(3,1), m_R[i].sigma);
       //perturb orientation
       uc.v = velocities(0,i);
-      t.pos = m_pos.col(i);
+      t.pos = m_pos.col(i)-m_R[i].mu*tipOffset;
       t.R = (mat33)(m_R[i].mu*SO3Exp(noiseOr.Sample()));
       t.rho = m_rho(i);
 
       //Propagate
       t = t.Propagate(uc, dt, p);
 
-      m_pos.col(i) = t.pos;
       m_rho(i) = t.rho;
 
       phi = uc.v*dt/m_rho(i);
@@ -748,6 +759,7 @@ namespace Nf
       R10 = (mat33)(R0*R1);
 
       m_R[i] = OrientationKF(R10, sigma1+R1*m_R[i].sigma*R1.t());
+      m_pos.col(i) = t.pos+m_R[i].mu*tipOffset;
     }
 
     //now add noise

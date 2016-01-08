@@ -46,7 +46,11 @@ noiseParams.sigmaRho = params.sigmaRho;
 
 x = {};
 for i=1:length(xp)
+    % subtract off bevel before propagating
+    xp{i}.pos = xp{i}.pos-QuatToRotationMatrix(xp{i}.q)*params.tipOffset;
     x{i} = f(xp{i},u,noiseParams,params);
+    % now add it back in
+    x{i}.pos = x{i}.pos+QuatToRotationMatrix(x{i}.q)*params.tipOffset;
 end
 x = x';
 end
@@ -78,6 +82,7 @@ for i=1:length(xp)
     tangent = cross(circ.N, binormal);
     tangent = tangent/norm(tangent);
     
+    % TODO FACTOR IN TIP OFFSET
     xcurr = xp{i}.pos;
     xcurr.q = RotationMatrixToQuat([normal binormal tangent]);
     xcurr.rho = circ.r;
@@ -126,7 +131,7 @@ noiseParams.sigmaRho = params.sigmaRho;
 Rz = SO3Exp(u.dtheta*[0; 0; 1]);
 dl = u.v*params.dt;
 for i=1:length(xp)
-    xcurr.pos = xp{i}.pos;
+    xcurr.pos = xp{i}.pos-xp{i}.qdist.mu*params.tipOffset;
     xcurr.rho = xp{i}.rho;
     xcurr.q = RotationMatrixToQuat(xp{i}.qdist.mu);
     xcurr.w = xp{i}.w;
@@ -152,7 +157,7 @@ for i=1:length(xp)
     x{i}.qdist = SO3Gaussian(R10, sigma1+R1*sigma0*R1');
     x{i}.rho = xcurr.rho;
     x{i}.w = xp{i}.w;
-    x{i}.pos = xcurr.pos;
+    x{i}.pos = xcurr.pos+x{i}.qdist.mu*params.tipOffset;
 end
 x = x';
 end
@@ -193,7 +198,7 @@ Rz = SO3Exp(u.dtheta*[0; 0; 1]);
 
 %temporarily set orientation noise to 0 for state propagation.
 for i=1:length(xp)
-    xcurr.pos = xp{i}.pos;
+    xcurr.pos = xp{i}.pos-qdist.mu*params.tipOffset;
     xcurr.rho = xp{i}.rho;
     xcurr.q = RotationMatrixToQuat(qdist.mu);
     xcurr.w = xp{i}.w;
@@ -222,7 +227,7 @@ for i=1:length(xp)
     x{i}.qdist = SO3Gaussian(R10, sigma1+R1*sigma0*R1');
     x{i}.rho = xcurr.rho;
     x{i}.w = xp{i}.w;
-    x{i}.pos = xcurr.pos;
+    x{i}.pos = xcurr.pos+x{i}.qdist.mu*params.tipOffset;
 end
 x = x';
 end

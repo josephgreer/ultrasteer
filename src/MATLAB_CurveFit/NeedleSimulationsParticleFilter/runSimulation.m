@@ -35,7 +35,7 @@ uc.dtheta = 0;
 u{1} = uc;
 u = repmat(u,params.n,1);
 
-dataExists = exist('data');
+dataExists = ~isempty(data);
 
 % simulation
 figure(1);
@@ -84,7 +84,9 @@ end
     
 for idx=1:length(ts)-1
     t = ts(idx);
-    params.dt = data.dts(idx);
+    if(dataExists)
+        params.dt = data.dts(idx);
+    end
     
     %current command
     uc = commandFcn(t,params);

@@ -24,6 +24,7 @@ params.axialSigma = 10;
 params.axialMu = 0;
 params.doRandomTransducerPositioning = 0;
 params.neff = 0.5;
+params.lambdaDop = 1;
 
 %params.videoFile = 'C:/needle_particleFilter2.avi';
 %params.writeVideo = 0;

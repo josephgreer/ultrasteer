@@ -25,20 +25,25 @@ function xs = propagateNeedleBack(x, u, params)
 
 % xs{1} = current state
 xs{1} = x;
+
+% first proagate bevel
+xs{2} = x;
+xs{2}.pos = x.pos-QuatToRotationMatrix(x.q)*params.tipOffset;
+
 % uc = current control input
 uc = u{1};
 uc.dtheta = 0;
 
 for i=2:length(u)
-    xc = xs{i-1};
+    xc = xs{i};
     % reverse for propagating backward in time
     xc.q = quatmult(xc.q, AxisAngleToQuat(pi*[0; 1; 0]));
     
     xc = propagateNeedleTip(xc,uc,params);
-    xs{i} = xc;
+    xs{i+`} = xc;
     
-    xs{i}.q = quatmult(xs{i}.q, AxisAngleToQuat(pi*[0; 1; 0]));
-    xs{i}.w = x.w;
+    xs{i+1}.q = quatmult(xs{i}.q, AxisAngleToQuat(pi*[0; 1; 0]));
+    xs{i+1}.w = x.w;
     uc = u{i};
     uc.dtheta = u{i-1}.dtheta;
 end
