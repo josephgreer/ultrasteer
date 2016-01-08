@@ -6,7 +6,7 @@
 
 namespace Nf
 {
-#define INSERT_VEL 1 //mm/s
+#define INSERT_VEL 0.5 //mm/s
 
   static void SpoofRPDataWithNeedleTipCalibration(RPData &rp, const EMNeedleTipCalibrator *em, s32 frame)
   {

@@ -7,7 +7,7 @@ end
 
 addpath('../LabelData/');
 
-basePath = 'C:\Joey\Data\12_16_15\05mm\Trial6\';
+basePath = 'C:\Joey\Data\1_7_16\05mm\Trial4\';
 dop = fopen(strcat(basePath,'scan.b32'));
 dopHeader = ReadHeader(dop);
 
