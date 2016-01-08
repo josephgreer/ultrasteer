@@ -40,9 +40,9 @@ for i=2:length(u)
     xc.q = quatmult(xc.q, AxisAngleToQuat(pi*[0; 1; 0]));
     
     xc = propagateNeedleTip(xc,uc,params);
-    xs{i+`} = xc;
+    xs{i+1} = xc;
     
-    xs{i+1}.q = quatmult(xs{i}.q, AxisAngleToQuat(pi*[0; 1; 0]));
+    xs{i+1}.q = quatmult(xs{i+1}.q, AxisAngleToQuat(pi*[0; 1; 0]));
     xs{i+1}.w = x.w;
     uc = u{i};
     uc.dtheta = u{i-1}.dtheta;
