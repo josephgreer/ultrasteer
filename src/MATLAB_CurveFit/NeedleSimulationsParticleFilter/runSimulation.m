@@ -130,7 +130,7 @@ for idx=1:length(ts)-1
             params.particlesInit = params.doParticleFilter&length(measurements)>=getMinimumMeasurements(params);
         else
             xp = propagateParticles(xp,uc,params);
-            dts = repmat(params.dt, params.n);
+            dts = repmat(params.dt, params.n, 1);
             if(dataExists)
                dts = data.dts(idx:-1:max(idx-params.n+1,1));
                dts = [dts; zeros(params.n-length(dts),1)];
