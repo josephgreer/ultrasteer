@@ -5,7 +5,7 @@ rng(5);
 
 addpath('../');
 
-basePath = 'C:\Joey\Data\9_18_15\05mm\Trial1\results\';
+basePath = 'C:\Joey\Data\1_7_16\05mm\Trial4\results\';
 method = 'FullState';
 
 % init params

@@ -11,7 +11,7 @@ namespace Nf
   PFParams::PFParams(Vec2d mpp, const char *name)
     : ParameterCollection(name)
   {
-    ADD_VEC3D_PARAMETER(tipOffset, "Tip Offset", NULL, NULL, Vec3d(0,0,0), Vec3d(-100, -100, 100), Vec3d(100,100,100), Vec3d(1e-2, 1e-2, 1e-2));
+    ADD_VEC3D_PARAMETER(tipOffset, "Tip Offset", NULL, NULL, Vec3d(0,0,0), Vec3d(-100, -100, -100), Vec3d(100,100,100), Vec3d(1e-2, 1e-2, 1e-2));
     ADD_VEC3D_PARAMETER(initPosMu, "Init Pos Mu", NULL, NULL, Vec3d(0,0,0), Vec3d(0,0,0), Vec3d(1e4, 1e4, 1e4), Vec3d(1,1,1));
     ADD_VEC3D_PARAMETER(initPosSigma, "Init Pos Sigma", NULL, NULL, Vec3d(1,1,1), Vec3d(0,0,0), Vec3d(1e4, 1e4, 1e4), Vec3d(1,1,1));
     
@@ -61,6 +61,7 @@ namespace Nf
 
     ADD_FLOAT_PARAMETER(neff, "neff", NULL, NULL, 0.5, 0, 1, 1e-2);
 
+    ADD_BOOL_PARAMETER(useLut, "Use LUT", NULL, NULL, true);
     ADD_OPEN_FILE_PARAMETER(onNeedleDopplerLUTPath, "onNeedleLUTPath", NULL, NULL, PATH_CAT("Trial3/Insertion/pdopoverneedle.dat"), "*.dat");
     ADD_OPEN_FILE_PARAMETER(offNeedleDopplerLUTPath, "offNeedleLUTPath", NULL, NULL, PATH_CAT("Trial3/Insertion/pdopnotoverneedle.dat"), "*.dat");
   }
@@ -537,6 +538,8 @@ namespace Nf
 
     s32 sum1, sum2;
 
+    bool useLUT = p->useLut->GetValue();
+
     // For each particle...
     for(s32 i=0; i<m_nParticles; i++) {
       //delta rotation from particle 0 to particle i
@@ -607,10 +610,10 @@ namespace Nf
       p_uvxOffFrame = 1/(ush*usw);
 
       //p(doppler | over needle)
-      p_dxOnFrame  = sigmoid(m[0].doppler(0,0), sigB0, sigB1);//m_pDopOverNeedle->P(dop);
+      p_dxOnFrame  = useLUT ? m_pDopOverNeedle->P(dop) : sigmoid(m[0].doppler(0,0), sigB0, sigB1);//m_pDopOverNeedle->P(dop);
 
       //p(doppler | not over needle)
-      p_dxOffFrame = 1-p_dxOnFrame;//m_pDopNotOverNeedle->P(dop);
+      p_dxOffFrame = useLUT ? m_pDopNotOverNeedle->P(dop) : (1-p_dxOnFrame);//m_pDopNotOverNeedle->P(dop);
 
       p_dxOnFrame = lambdaDop+(1-lambdaDop)*p_dxOnFrame;
       p_dxOffFrame = lambdaDop+(1-lambdaDop)*p_dxOffFrame;
@@ -821,6 +824,8 @@ namespace Nf
 
     dop = m[0].doppler(0,0);
 
+    bool useLUT = params->useLut->GetValue();
+
     // For each particle...
     for(s32 i=0; i<m_nParticles; i++) {
       Rprior = m_R[i].mu;
@@ -909,10 +914,10 @@ namespace Nf
       p_uvxOffFrame = 1/(ush*usw);
 
       //p(doppler | over needle)
-      p_dxOnFrame  = sigmoid(m[0].doppler(0,0), sigB0, sigB1);;//m_pDopOverNeedle->P(dop);
+      p_dxOnFrame  = useLUT ? m_pDopOverNeedle->P(dop) : sigmoid(m[0].doppler(0,0), sigB0, sigB1);//m_pDopOverNeedle->P(dop);
 
       //p(doppler | not over needle)
-      p_dxOffFrame = 1-p_dxOnFrame;//m_pDopNotOverNeedle->P(dop);
+      p_dxOffFrame = useLUT ? m_pDopNotOverNeedle->P(dop) : (1-p_dxOnFrame);//m_pDopNotOverNeedle->P(dop);
 
       pw(0,i) = (p_uvxOnFrame*p_dxOnFrame)*(1-p_offFrame)+(p_uvxOnFrame*p_dxOffFrame*p_offFrame);
     }

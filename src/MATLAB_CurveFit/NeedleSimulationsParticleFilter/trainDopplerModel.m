@@ -7,7 +7,7 @@ end
 
 addpath('../LabelData/');
 
-basePath = 'C:\Joey\Data\1_7_16\05mm\Trial4\';
+basePath = 'C:\Joey\Data\1_7_16\05mm\Trial5\';
 dop = fopen(strcat(basePath,'scan.b32'));
 dopHeader = ReadHeader(dop);
 
@@ -106,6 +106,7 @@ hold on;
 [Fneg Xineg] = ksdensity(data(offNeedles,1), 'bandwidth',100);
 plot(Xineg, Fneg, 'r');
 title('p(d | off needle)');
+res = [Xineg; Fneg];
 save(strcat(basePath, 'pdopnotoverneedle.dat'), 'res', '-ascii');
 % load('C:/Joey/Data/probDist/testXs.mat', '-ascii');
 % load('C:/Joey/Data/probDist/testPOverNeedle.mat', '-ascii');

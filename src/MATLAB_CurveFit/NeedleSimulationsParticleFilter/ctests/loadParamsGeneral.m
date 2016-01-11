@@ -9,6 +9,15 @@ elseif(strcmpi(splits{1}, 'neff'))
 elseif(strcmpi(splits{1}, 'mpp'))
     params.mpp = str2num(splits{2});
     worked = 1;
+elseif(strcmpi(splits{1}, 'tipOffset'))
+    params.tipOffset = [str2num(splits{2}); str2num(splits{3}); str2num(splits{4})];
+    worked = 1;
+elseif(strcmpi(splits{1}, 'lutBasePath'))
+    params.LUTDistributionBasePath = splits{2};
+    worked = 1;
+elseif(strcmpi(splits{1}, 'useLUT'))
+    params.useLUTDistribution = str2num(splits{2});
+    worked = 1;
 elseif(strcmpi(splits{1}, 'usw'))
     params.usw = str2num(splits{2});
     worked = 1;

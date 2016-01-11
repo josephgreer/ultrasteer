@@ -371,11 +371,16 @@ namespace Nf
 
   static void SaveParameters(const PFParams *p, FILE *f)
   {
+    QFileInfo fi(p->onNeedleDopplerLUTPath->GetValue().c_str());
+
     fprintf(f, "n %d\n", p->n->GetValue());
     fprintf(f, "neff %f\n", p->neff->GetValue());
     fprintf(f, "mpp %f, %f\n", p->mpp.x, p->mpp.y);
     fprintf(f, "usw %f\n", p->usw);
     fprintf(f, "ush %f\n", p->usw);
+    fprintf(f, "tipOffset %f, %f, %f\n", p->tipOffset->GetValue().x, p->tipOffset->GetValue().y, p->tipOffset->GetValue().z);  
+    fprintf(f, "lutBasePath %s\n", (fi.dir().path().toStdString()+"/").c_str());
+    fprintf(f, "useLUT %d\n", p->useLut->GetValue());
     fprintf(f, "minimumMeasurements %d\n", p->minimumMeasurements->GetValue());
     fprintf(f, "dopplerLambda %f\n", p->lambdaDop->GetValue());
     fprintf(f, "dopplerSigB0 %f\n", p->sigB0->GetValue());
