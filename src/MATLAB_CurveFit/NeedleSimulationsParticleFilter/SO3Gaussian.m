@@ -18,6 +18,13 @@ classdef SO3Gaussian
             p = evaluateDensityMuSigma(R, obj.mu, obj.sigma);
         end
         
+        function samples = sampleGaussian(obj, npoints)
+            logSamples = mvnrnd(zeros(3,1), obj.sigma, npoints);
+            for i=1:npoints
+                samples{i} = SO3Exp(obj.mu)*SO3Exp(logSamples(i,:)');
+            end
+        end
+        
         % Compose SO(3) Gaussians
         % apply b then obj
         % b*obj
@@ -56,6 +63,34 @@ classdef SO3Gaussian
             
             sphere3d(ps,-pi,pi,-pi/2,pi/2,1,0.5,'surf','spline', 1e-3);
             colormap jet;
+        end
+        
+        function drawdensity(obj, f, npoints)
+            hold on;
+            if(npoints > 0)
+                samples = sampleGaussian(obj, npoints);
+                samples = cell2mat(samples);
+            end
+            [x,y,z] = sphere(100);
+            lightGrey = 0.35*[1 1 1]; % It looks better if the lines are lighter
+            %surface(x,y,z,'FaceColor', [1 1 1],'EdgeColor', 'none');
+            nskip = 10;
+            surface(x(1:nskip:end,:), y(1:nskip:end,:), z(1:nskip:end,:), 'FaceColor', 'none', 'EdgeColor',lightGrey, 'MeshStyle', 'row')
+            surface(x(:,1:nskip:end), y(:,1:nskip:end), z(:,1:nskip:end), 'FaceColor', 'none', 'EdgeColor',lightGrey, 'MeshStyle', 'column')
+            if(npoints > 0)
+                scatter3(samples(1,1:3:end)', samples(2,1:3:end)', samples(3,1:3:end)', 10,'r','filled');
+                scatter3(samples(1,2:3:end)', samples(2,2:3:end)', samples(3,2:3:end)', 10,'g','filled');
+                scatter3(samples(1,3:3:end)', samples(2,3:3:end)', samples(3,3:3:end)', 10,'b','filled');
+            end
+            mu = SO3Exp(obj.mu);
+            plot3([0 mu(1,1)], [0 mu(2,1)], [0 mu(3,1)], 'r', 'LineWidth', 2);
+            plot3([0 mu(1,2)], [0 mu(2,2)], [0 mu(3,2)], 'g', 'LineWidth', 2);
+            plot3([0 mu(1,3)], [0 mu(2,3)], [0 mu(3,3)], 'b', 'LineWidth', 2);
+            daspect([1 1 1]);
+            view([-45 45]);
+            grid on;
+            axis off;
+            
         end
     end
 end

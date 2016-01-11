@@ -139,6 +139,49 @@ namespace Nf {
   //End CubeVisualizer Class
   ///////////////////////////////////////////////////////
 
+  
+  ////////////////////////////////////////////////////////
+  //Begin CurveVisualizer Class
+  ///////////////////////////////////////////////////////
+
+  CurveVisualizer::CurveVisualizer()
+    : GeometryVisualizer()
+  {
+  }
+
+  void CurveVisualizer::SetCurve(const Polynomial *p, Vec2d range, f64 ds)
+  {
+    arma::mat pts = p->UniformlySpacedPoints(range.x, range.y, ds, 3);
+
+    vtkSmartPointer < vtkPoints > points = vtkSmartPointer < vtkPoints >::New();
+    vtkSmartPointer < vtkCellArray > lines = vtkSmartPointer < vtkCellArray >::New(); 
+    vtkSmartPointer < vtkLine > line = vtkSmartPointer < vtkLine >::New();
+    
+    points->InsertNextPoint(pts(0,0), pts(0,1), pts(0,2));
+    for(s32 i=1; i<pts.n_rows; i++) {
+      points->InsertNextPoint(pts(i,0), pts(i,1), pts(i,2));
+      line->GetPointIds()->SetId(0, i-1); line->GetPointIds()->SetId(1, i);
+      lines->InsertNextCell(line);
+    }
+    vtkSmartPointer<vtkPolyData> linesPolyData = vtkSmartPointer<vtkPolyData>::New();
+    linesPolyData->SetPoints(points);
+    linesPolyData->SetLines(lines);
+
+    vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper->SetInputData(linesPolyData);
+
+    m_mapper = mapper;
+
+    vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+    actor->SetMapper(m_mapper);
+
+    m_actor = actor;
+  }
+  
+  ////////////////////////////////////////////////////////
+  //End CurveVisualizer Class
+  ///////////////////////////////////////////////////////
+
   ////////////////////////////////////////////////////////
   //AxesVisualizer Class
   ////////////////////////////////////////////////////////

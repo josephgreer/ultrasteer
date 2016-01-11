@@ -145,13 +145,13 @@ namespace Nf
     Polynomial(const arma::mat &pts, s32 degree, s32 coord);
 
     //Evaluate polynomial at point t
-    arma::vec operator()(f64 t);
+    arma::vec operator()(f64 t) const;
 
     //Print coefficients of polynomial with preamble
     void Print(std::string preamble);
 
     // Generate uniformly spaced points from a to b separated by ds
-    arma::mat UniformlySpacedPoints(f64 a, f64 b, f64 ds, s32 nTries);
+    arma::mat UniformlySpacedPoints(f64 a, f64 b, f64 ds, s32 nTries) const;
   };
 
   class Plane

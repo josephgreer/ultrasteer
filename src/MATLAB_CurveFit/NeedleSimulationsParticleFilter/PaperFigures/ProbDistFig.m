@@ -69,7 +69,7 @@ positionsxx = positionsx(:);
 positionsyy = positionsy(:);
 for i=1:length(positionsxx)
     [yy xx] = ind2sub(size(positionsx), i);
-    particles{i}.q = xsl{lookupTableX(xx)}.q;
+    particles{i}.q = xcurr.q;%xsl{lookupTableX(xx)}.q;
     particles{i}.pos = [positionsxx(i); positionsyy(i); 0];
     particles{i}.rho = xs{1}.rho;
     particles{i}.w = 1/length(positionsxx);
@@ -87,12 +87,12 @@ params.measurementOffsetSigma = zeros(2,2);
 %params.ush = params.ush*100;
 
 params.drawUSFrame = 1;
-params.drawMeasurement = 0;
+params.drawMeasurement = 1;
 
 ts = [2 2.75 2.9];
 figHandle = figure;
 
-zaspects = 1/10*[1/2000; 1/1000; 1/350];
+zaspects = 1/5*[1/2000; 1/750; 1/500];
 xhist = cell2mat(xs); xhist = [xhist.pos]';
 xhist(find(xhist(:,1) > max(posx)+1),:) = [];
 ztop = zeros(3,1);
@@ -109,7 +109,7 @@ for i=1:3
 %     fakeMeas.uv = [fakeMeas.bx fakeMeas.by]\(fakeMeas.pos-fakeMeas.ful);
     
     
-    particles = measureParticles(particles, u, xcurr, ones(size(u))*params.dt, {fakeMeas}, params);
+    particles = measureParticles(particles, u, xcurr, ones(size(u))*params.dt, {fakeMeas}, [], params);
     partsW = zeros(size(positionsx));
     
     subplot(1,3,i);
@@ -142,8 +142,8 @@ for i=1:3
     caxis([clims(1) clims(2)]);
     
     
-    %set(gca, 'FontSize', 12, 'FontName', 'Times New Roman');
-    set(gca, 'visible', 'off');
+    set(gca, 'FontSize', 12, 'FontName', 'Times New Roman');
+    %set(gca, 'visible', 'off');
     xlim([min(positionsxx) max(positionsxx)]);
     ylim([min(positionsyy) max(positionsyy)]);
     zlim([0 ztop(i)]);
@@ -155,7 +155,7 @@ for i=1:3
     %particles = particlesBackup;
     %t = t+0.5;
 end
-measurement = generateRandomMeasurement(xs, u, ts(2), params);
+measurement = generateRandomMeasurement(xs(7:end), u, ts(2), params);
 mm = measurement;
 mm.ful = [mm.pos(1); min(positionsyy); ztop(1)];
 mm.fbl = [mm.pos(1); min(positionsyy); -ztop(1)/4];
@@ -170,8 +170,8 @@ set(figHandle, 'Position', [100 100 3000 500]);
 
 basePath = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Papers\NeedleEstimationJournal\Figures\';
 
-path = strcat(basePath, 'measurement_prob2.png');
-export_fig('-transparent', path);
+path = strcat(basePath, 'measurement_prob2.pdf');
+%export_fig('-transparent', path);
 
 % for x=center(1)-gridSz/2:gridSz/nParticlesPerDim:center(1)+gridSz/2
 %     for y=center(2)-gridSz/2:gridSz/nParticlesPerDim:center(2)+gridSz/2

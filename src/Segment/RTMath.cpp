@@ -274,7 +274,7 @@ namespace Nf
     m_coeffs(coord, degree-1) = 1;
   }
 
-  arma::vec Polynomial::operator()(f64 t)
+  arma::vec Polynomial::operator()(f64 t) const
   {
     arma::vec evalPt = zeros(m_coeffs.n_cols, 1);
 
@@ -292,7 +292,7 @@ namespace Nf
     m_coeffs.print(preamble);
   }
 
-  arma::mat Polynomial::UniformlySpacedPoints(f64 a, f64 b, f64 ds, s32 nTries)
+  arma::mat Polynomial::UniformlySpacedPoints(f64 a, f64 b, f64 ds, s32 nTries) const
   {
     mat res;
 

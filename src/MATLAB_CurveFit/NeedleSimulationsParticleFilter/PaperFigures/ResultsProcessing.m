@@ -59,21 +59,30 @@ for i=1:length(data)
     
     delta = estPos-truePos;
     
-    figure;
+    figHandle = figure;
     titles = ['x', 'y', 'z'];
-    for i=1:3
-        subplot(2,2,i);
-        plot(1:size(truePos,1), truePos(:,i),'b');
+    for j=1:3
+        subplot(1,3,j);
+        plot(1:size(truePos,1), truePos(:,j),'r', 'LineWidth', 2);
         hold on;
-        plot(1:size(estPos,1), estPos(:,i),'r--');
-        title(titles(i));
+        plot(1:size(estPos,1), estPos(:,j),'b--', 'LineWidth', 2);
+        title(titles(j));
+        if (j == 3)
+            legend('Gold Standard', 'Estimator Output');
+        end
+        xlabel('Time Step','FontSize', 10, 'FontName', 'Times New Roman');
+        ylabel(sprintf('%s Position (mm)', titles(j)),'FontSize', 10, 'FontName', 'Times New Roman');
+        grid on;
+        set(gca, 'FontSize', 10, 'FontName', 'Times New Roman');
+        %export_fig -transparent AccuracyResults.pdf
     end
+    set(figHandle, 'Position', [100 100 800 150]);
     
     results{resultBin} = vertcat(results{resultBin},mean(sqrt(sum(delta.^2,2))));
 end
 
 
-figure;
+figHandle = figure;
 hold on;
 % positon error plots
 for i=1:length(results)
@@ -82,8 +91,11 @@ for i=1:length(results)
     end
     scatter(speeds(i), mean(results{i}), 200, 'r', 'lineWidth', 1.5);
 end
-xlabel('Insertion Velocity (mm/s),','FontSize', 14, 'FontName', 'Times New Roman');
-ylabel('RMS Error (mm)','FontSize', 14, 'FontName', 'Times New Roman');
+legend('Measurement', 'Mean');
+xlabel('Insertion Velocity (mm/s),','FontSize', 10, 'FontName', 'Times New Roman');
+ylabel('RMS Error (mm)','FontSize', 10, 'FontName', 'Times New Roman');
 grid on;
-set(gca, 'FontSize', 14, 'FontName', 'Times New Roman');
+set(gca, 'FontSize', 10, 'FontName', 'Times New Roman');
 xlim([0 3.5]);
+set(figHandle, 'Position', [100 100 240 150]);
+%export_fig -transparent AccuracyResults.pdf

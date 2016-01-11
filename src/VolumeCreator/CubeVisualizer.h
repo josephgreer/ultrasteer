@@ -69,6 +69,13 @@ namespace Nf {
     STLVisualizer(const char *stlPath);
   };
 
+  class CurveVisualizer : public GeometryVisualizer
+  {
+  public:
+    CurveVisualizer();
+    void SetCurve(const Polynomial *p, Vec2d range, f64 ds = 1.0);
+  };
+
   class AxesVisualizer : public GeometryVisualizer
   {
   protected:
@@ -138,5 +145,15 @@ namespace Nf {
     std::tr1::shared_ptr < FloatParameter > m_fps;
 
     std::tr1::shared_ptr < FileParameter > m_file;
+  };
+
+  class CurveContainer
+  {
+  protected:
+    std::tr1::shared_ptr < CurveVisualizer > m_curve;
+
+  public:
+    CurveContainer() { m_curve = std::tr1::shared_ptr < CurveVisualizer > (new CurveVisualizer()); }
+    void SetPolynomial(const Polynomial *p, f64 a, f64 b, f64 ds = 1) { m_curve->SetCurve(p, Vec2d(a,b), ds); }
   };
 };
