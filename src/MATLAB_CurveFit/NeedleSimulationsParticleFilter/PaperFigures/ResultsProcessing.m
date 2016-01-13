@@ -2,10 +2,10 @@ clear; clc; close all;
 
 addpath('../ctests/');
 
-baseDir = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\9_18_15\';
+baseDir = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\JournalResults\';
 
-data = rdir(strcat(baseDir,'**\EstimatedPos.dat'))
-
+method = 'FullState';
+data = rdir(strcat(baseDir,'**\',method,'EstimatedPos.dat'))
 
 speedLabels = {'05mm', '1mm', '2mm', '3mm'};
 speeds = [0.5 1 2 3];
@@ -29,8 +29,8 @@ for i=1:length(data)
         end
     end
     
-    estBasePath = strcat(currDir,'Estimated');
-    truthBasePath = strcat(currDir,'GroundTruth');
+    estBasePath = strcat(currDir, method, 'Estimated');
+    truthBasePath = strcat(currDir,method, 'GroundTruth');
     
     estPos = load(strcat(estBasePath, 'Pos.dat'));
     truePos = load(strcat(truthBasePath, 'Pos.dat'));
@@ -38,8 +38,8 @@ for i=1:length(data)
     estRs = loadOrientations(strcat(estBasePath, 'Rs.dat'));
     trueRs = loadOrientations(strcat(truthBasePath, 'Rs.dat'));
     
-    startId = 20;
-    endId = size(estPos,1)-1;
+    startId = 40;
+    endId = size(estPos,1)-40;
     
     estPos = estPos([startId:endId], :);
     truePos = truePos([startId:endId], :);
