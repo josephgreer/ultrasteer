@@ -458,7 +458,7 @@ TEST(ParticleFilter, ApplyMeasurement)
   pffs.SetPositions(ps.pos);
   pffs.SetRhos(ps.rhos);
   pffs.SetWeights(ps.ws);
-  pffs.ApplyMeasurement(meas, us, ones(pfp.n->GetValue())*dt, &pfp);
+  pffs.ApplyMeasurement(meas, us, ones(pfp.n->GetValue())*dt, &pfp, totalLength(us, ones(pfp.n->GetValue())*dt));
   
   printf("Method 1 iteration 1:\n");
   mat tw = pffs.GetWeights();
@@ -481,7 +481,7 @@ TEST(ParticleFilter, ApplyMeasurement)
   pffs.SetPositions(ps.pos);
   pffs.SetRhos(ps.rhos);
   pffs.SetWeights(ps.ws);
-  pffs.ApplyMeasurement(meas, us, ones(pfp.n->GetValue())*dt, &pfp);
+  pffs.ApplyMeasurement(meas, us, ones(pfp.n->GetValue())*dt, &pfp, totalLength(us, ones(pfp.n->GetValue())*dt));
 
   printf("Method 1 iteration 2:\n");
   tw = pffs.GetWeights();
@@ -510,7 +510,7 @@ TEST(ParticleFilter, ApplyMeasurement)
   pfmm.SetPositions(ps3.pos);
   pfmm.SetRhos(ps3.rhos);
   pfmm.SetWeights(ps3.ws);
-  pfmm.ApplyMeasurement(meas, us, ones(pfmp.n->GetValue())*dt, &pfmp);
+  pfmm.ApplyMeasurement(meas, us, ones(pfmp.n->GetValue())*dt, &pfmp, totalLength(us, ones(pfmp.n->GetValue())*dt));
   
   printf("Method 3 iteration 1:\n");
   tw = pfmm.GetWeights();
@@ -543,7 +543,7 @@ TEST(ParticleFilter, ApplyMeasurement)
   pfmm.SetPositions(ps3.pos);
   pfmm.SetRhos(ps3.rhos);
   pfmm.SetWeights(ps3.ws);
-  pfmm.ApplyMeasurement(meas, us, ones(pfmp.n->GetValue())*dt, &pfmp);
+  pfmm.ApplyMeasurement(meas, us, ones(pfmp.n->GetValue())*dt, &pfmp, totalLength(us, ones(pfmp.n->GetValue())*dt));
 
   Rmus = pfmm.GetParticleOrientations(&pfmp);
   sigmas = pfmm.GetParticleOrientationSigmas(&pfmp);
@@ -716,7 +716,7 @@ TEST(ParticleFilter, WholeSystem)
           cmeas.pop_back();
         
         BEGIN_TIMING(ApplyMeasurement, 450)
-        pf->ApplyMeasurement(cmeas, cu, cdts.t(), pp);
+        pf->ApplyMeasurement(cmeas, cu, cdts.t(), pp, 1e6);
         END_TIMING(ApplyMeasurement, 450)
         TipState est = pf->GetExpectedValue(pp);
         estStates.push_back(est);

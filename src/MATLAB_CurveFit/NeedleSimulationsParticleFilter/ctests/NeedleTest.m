@@ -5,12 +5,13 @@ rng(5);
 
 addpath('../');
 
-basePath = 'C:\Joey\Data\1_7_16\05mm\Trial4\results\';
-method = 'FullState';
+basePath = 'C:\Joey\Data\1_7_16\05mm\Trial1\results\';
+method = 'Marginalized';
 
 % init params
 params = initParamsForSimulation();
 
+params.particleFilterMethod = 3;
 % custom parameters
 params.doParticleFilter = 1;
 params.doMeasurement = 1;

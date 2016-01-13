@@ -24,6 +24,7 @@ params.sigmaRho = 3;                                                        %nee
 params.muVelocity = 0;
 params.sigmaVelocity = 5;                                                   %velocity sigma
 params.simulationTime = 15;                                                 %simulate 10 seconds of insertion
+params.minLength = 15;                                                      %minimum length for tip history to be used in measurement model
 
 params.errorEpsilon = 1e-1;                                                 %error epsilon for checks that matrices are det(1) etc.
 

@@ -28,6 +28,7 @@ namespace Nf
   public:
     std::tr1::shared_ptr < Vec3dParameter > tipOffset;                          //  offset of physical tip from "logical" tip (in calibrated tip frame) tracked by particle filter
     std::tr1::shared_ptr < IntParameter > minimumMeasurements;                  //  minimum number of measurements needed to measure particles
+    std::tr1::shared_ptr < FloatParameter > minLength;                          //  Minimum length for tip history to be used in measurement model
     std::tr1::shared_ptr < Vec3dParameter > initPosMu;                          //  pos mu for initial distribution of particles
     std::tr1::shared_ptr < Vec3dParameter > initPosSigma;                       //  pos sigma for initial distribution of particles
     std::tr1::shared_ptr < FloatParameter > initRhoMu;                          //  rho mu for initial distribution of particles
@@ -79,6 +80,7 @@ namespace Nf
     arma::vec m_x;
     f64 max_x;
     f64 min_x;
+    bool m_init;
 
   public:
     LUTDist(const char *path);
@@ -117,6 +119,7 @@ namespace Nf
     std::tr1::shared_ptr < FloatParameter > distanceThreshSq;                      //  minimum distance squared between measurements and template for optimal rotation calculation
     std::tr1::shared_ptr < IntParameter > subsetSize;                              //  subset size for rotation measurement
     std::tr1::shared_ptr < IntParameter > procrustesIt;                            //  number of iterations to run procrustes
+    std::tr1::shared_ptr < FloatParameter > minTotalLength;                        //  minimum shaft length before starting to compute rotations
 
     PFMarginalizedParams(Vec2d mpp = Vec2d(83,83), const char *name = "Particle Filter Marginalized Params");
   };
@@ -208,7 +211,7 @@ namespace Nf
     // dts[0] = time elapsed from timestep t-1 to t
     // ...
     // dts[n] = time elapsed from t-n-1 to t-n
-    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p) = 0;
+    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p, f64 shaftLength) = 0;
 
     // Get all the particle positions
     virtual arma::mat GetParticlePositions(const PFParams *p) = 0;
@@ -276,7 +279,7 @@ namespace Nf
     // dts(0) = time elapsed from timestep t-1 to t
     // ...
     // dts(n) = time elapsed from t-n-1 to t-n
-    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p);
+    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p, f64 shaftLength);
 
     // Get all the particle positions
     // return
@@ -366,7 +369,7 @@ namespace Nf
     // dts[0] = time elapsed from timestep t-1 to t
     // ...
     // dts[n] = time elapsed from t-n-1 to t-n
-    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p);
+    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p, f64 shaftLength);
 
     // Get all the particle positions
     // return
@@ -435,4 +438,5 @@ namespace Nf
   void saveOrientations(const std::vector < arma::mat33 > &ors, const char *path);
   std::vector < arma::mat33 > loadOrientations(const char *path);
   void saveTipHistory(const char *basePath, const std::vector < TipState > &hist);
+  f64 totalLength(const std::vector < NSCommand > &u, const arma::vec &dts);
 }

@@ -34,7 +34,10 @@ xs{2}.pos = x.pos-QuatToRotationMatrix(x.q)*params.tipOffset;
 uc = u{1};
 uc.dtheta = 0;
 
-for i=2:length(u)
+length = 0;
+
+i = 2;
+while(length < params.minLength)
     xc = xs{i};
     % reverse for propagating backward in time
     xc.q = quatmult(xc.q, AxisAngleToQuat(pi*[0; 1; 0]));
@@ -44,7 +47,13 @@ for i=2:length(u)
     
     xs{i+1}.q = quatmult(xs{i+1}.q, AxisAngleToQuat(pi*[0; 1; 0]));
     xs{i+1}.w = x.w;
-    uc = u{i};
-    uc.dtheta = u{i-1}.dtheta;
+    if(i <= size(u,1))
+        uc = u{i};
+        uc.dtheta = u{i-1}.dtheta;
+    else
+        uc.v = 2;
+        uc.dtheta = 0;
+    end
+    i=i+1;
 end
 end

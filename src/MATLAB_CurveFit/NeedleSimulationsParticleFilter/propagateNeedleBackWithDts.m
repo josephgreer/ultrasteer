@@ -40,7 +40,10 @@ uc.dtheta = 0;
 
 params.dt = dts(1);
 
-for i=2:length(u)
+length = 0;
+
+i = 2;
+while(length < params.minLength)
     xc = xs{i};
     % reverse for propagating backward in time
     xc.q = quatmult(xc.q, AxisAngleToQuat(pi*[0; 1; 0]));
@@ -50,8 +53,15 @@ for i=2:length(u)
     
     xs{i+1}.q = quatmult(xs{i+1}.q, AxisAngleToQuat(pi*[0; 1; 0]));
     xs{i+1}.w = x.w;
-    uc = u{i};
-    uc.dtheta = u{i-1}.dtheta;
-    params.dt = dts(i);
+    length = length+uc.v*params.dt;
+    if(i <= size(u,1))
+        uc = u{i};
+        uc.dtheta = u{i-1}.dtheta;
+        params.dt = dts(i);
+    else
+        uc.v = 2;
+        uc.dtheta = 0;
+    end
+    i=i+1;
 end
 end

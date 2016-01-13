@@ -1,6 +1,6 @@
 clear; clc; close all;
 
-path = 'C:\Joey\Data\9_18_15\3mm\Trial1\PreInsertionGPS.mat';
+path = 'C:\Joey\Data\1_7_16\05mm\PreInsertionGPS.mat';
 
 TipHistory = load(path, '-ascii');
 

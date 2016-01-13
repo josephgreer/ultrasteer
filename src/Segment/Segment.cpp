@@ -486,7 +486,7 @@ namespace Nf
       for(s32 c=0; c<im->width; c++) {
         rsum += (u32)psrc[c];
       }
-      if(rsum >= sum/4) {
+      if(rsum >= sum/2) {
         rcen = r;
         break;
       }

@@ -46,6 +46,8 @@ namespace Nf
     ADD_FLOAT_PARAMETER(onNeedleDopplerSigma, "On Needle Doppler Sigma", NULL, NULL, 0.098, 0, 1e4, 1e-2);
 
     ADD_INT_PARAMETER(minimumMeasurements, "Minimum Measurements", NULL, NULL, 1, 1, 1000, 1);
+
+    ADD_FLOAT_PARAMETER(minLength, "Minimum Length", NULL, NULL, 15.0, 1.0, 100.0, 1.0);
     
     usw = mpp.x*630*1e-3;
     ush = mpp.y*480*1e-3;
@@ -77,9 +79,10 @@ namespace Nf
     minimumMeasurements->SetValue(15);
     ADD_VEC3D_PARAMETER(measurementSigma, "Measurement Sigma", NULL, NULL, Vec3d(5e-3, 5e-3, 0.5), Vec3d(0, 0, 0), Vec3d(1e4, 1e4, 1e4), Vec3d(1,1,1));
     measurementSigma->SetValue(Vec3d(5e-3, 5e-3, 0.5));
-    ADD_FLOAT_PARAMETER(distanceThreshSq, "Distance Thresh Sq", NULL, NULL, 5*5, 5, 1e5, 1);
+    ADD_FLOAT_PARAMETER(distanceThreshSq, "Distance Thresh Sq", NULL, NULL, 5*5, 0.1, 1e5, 1);
     ADD_INT_PARAMETER(subsetSize, "Procrustes Subset Size", NULL, NULL, 15, 5, 1e5, 1);
     ADD_INT_PARAMETER(procrustesIt, "Procrustes Iteraitons", NULL, NULL, 3, 1, 1e5, 1);
+    ADD_FLOAT_PARAMETER(minTotalLength, "Minimum Total Length", NULL, NULL, 10, 0.1, 200, 0.1);
   }
 
   TipState TipState::PropagateLength(const NSCommand &u, f64 dl, const PFParams *p)
@@ -142,7 +145,7 @@ namespace Nf
     res.push_back(start);
     //now {res[0], res[1]} are endpoints of tip bevel.
 
-    f64 minLength = 25;
+    f64 minLength = p->minLength->GetValue();
 
     //u[0] = current control input
     NSCommand uc = u[0];
@@ -288,7 +291,11 @@ namespace Nf
     mat D,U,V,X,Y,XYt,dR;
     vec S, minD;
     s32 mm = 0;
-    for(s32 i=0; i<pfm->procrustesIt->GetValue(); i++) {
+    s32 nIt = pfm->procrustesIt->GetValue();
+    bool bad = false;
+    s32 subsetSz = pfm->subsetSize->GetValue();
+    f32 distanceThreshSq = pfm->distanceThreshSq->GetValue();
+    for(s32 i=0; i<nIt; i++) {
       //D_ij = distanceSq(measurements(i), cTemplate(j))
 #if 1
       D = distanceMatrix(measurements,cTemplate);
@@ -298,8 +305,12 @@ namespace Nf
       for(s32 r=0; r<D.n_rows; r++) {
         minTemplate = join_vert(minTemplate,find(D.row(r) == minD(r)));
       }
-      goodDs = find(minD < pfm->distanceThreshSq->GetValue());
-      goodDs = sample(goodDs, MIN(pfm->subsetSize->GetValue(), goodDs.n_rows));
+      goodDs = find(minD < distanceThreshSq);
+      goodDs = sample(goodDs, MIN(subsetSz, goodDs.n_rows));
+
+      if(i == nIt-1 && goodDs.n_rows < (subsetSz/2))
+        bad = true;
+
       //goodDs = goodDs.subvec(span(0,MAX(MIN(pfm->subsetSize-1, goodDs.n_rows-1),0)));
       //goodDs = sort(goodDs);
 
@@ -325,7 +336,19 @@ namespace Nf
       cTemplate = dR*cTemplate;
       minTemplate.clear();
     }
+    if(bad)
+      return eye(3,3);
+
     return R;
+  }
+
+  static f64 calculateLength(const std::vector < NSCommand > u, const vec dts)
+  {
+    f64 length = 0;
+    for(s32 i=0; i<u.size(); i++) {
+      length += u[i].v*dts(i);
+    }
+    return length;
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -336,16 +359,23 @@ namespace Nf
   /// Begin LUT Distribution function
   //////////////////////////////////////////////////////////////////////////////////////////
   LUTDist::LUTDist(const char *path)
+    : m_init(false)
   {
     arma::mat temp;
     temp.load(path);
 
+    if(temp.n_rows == 0)
+      return;
+
     m_x = (vec)temp.row(0).t();
     m_p = (vec)temp.row(1).t();
+    m_init = true;
   }
 
   f64 LUTDist::P(f64 x) const
   {
+    if(!m_init)
+      return -1;
     vec dist = abs(m_x-ones(m_x.n_elem)*x);
     u32 minIdx = 0;
     dist.min(minIdx);
@@ -491,7 +521,7 @@ namespace Nf
     m_rho = max(m_rho+noiseR, PF_MIN_RHO*ones(1,m_nParticles));
   }
 
-  void ParticleFilterFullState::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const vec &dts, const PFParams *p)
+  void ParticleFilterFullState::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const vec &dts, const PFParams *p, f64 shaftLength)
   {
     const PFFullStateParams *params = (const PFFullStateParams *)p;
 
@@ -506,6 +536,9 @@ namespace Nf
     // backward projected points from particle 0.
     // this will be adjusted for each particle
     mat modelHist = tipHistoryToPointMatrix(ts);
+    //now downsample to appropriate number of points
+    uvec ris = linspace<uvec>(1, modelHist.n_cols, p->n->GetValue());
+    modelHist = modelHist.cols(ris);
     mat cModelHist = zeros(modelHist.n_rows, modelHist.n_cols);
     
     mat33 Rdelta;
@@ -770,7 +803,7 @@ namespace Nf
     m_rho = max(m_rho+noiseR,ones(1,m_nParticles)*PF_MIN_RHO);
   }
 
-  void ParticleFilterMarginalized::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const vec &dts, const PFParams *p)
+  void ParticleFilterMarginalized::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const vec &dts, const PFParams *p, f64 shaftLength)
   {
     const PFMarginalizedParams *params = (const PFMarginalizedParams *)p;
 
@@ -781,14 +814,18 @@ namespace Nf
     t.R = m_R[0].mu;
     t.rho = m_rho(0, 0);
     std::vector < TipState > ts = t.PropagateBack(u, dts, p);
-    
 
+    f64 minTotalLength = params->minTotalLength->GetValue();
+    
     mat33 A, invA;
     mat ds;
 
     // backward projected points from particle 0.
     // this will be adjusted for each particle
     mat modelHist = tipHistoryToPointMatrix(ts);
+    //now downsample to appropriate number of points
+    uvec ris = linspace<uvec>(1, modelHist.n_cols, p->n->GetValue());
+    modelHist = modelHist.cols(ris);
     mat cModelHist = zeros(modelHist.n_rows, modelHist.n_cols);
     //subtract off first point so we rotate about it
     mat zModelHist = modelHist-repmat(modelHist.col(0),1,modelHist.n_cols);
@@ -808,6 +845,8 @@ namespace Nf
     f64 offFrameB0 = p->offFrameB0->GetValue(); f64 offFrameB1 = p->offFrameB1->GetValue();
     f64 sigB0 = p->sigB0->GetValue(); f64 sigB1 = p->sigB1->GetValue();
 
+    f64 lambdaDop = p->lambdaDop->GetValue();
+
     vec2 measurementOffsetSigma = p->measurementOffsetSigma.ToArmaVec(); 
 
     f64 ush = params->ush; f64 usw = params->usw;
@@ -826,6 +865,8 @@ namespace Nf
 
     bool useLUT = params->useLut->GetValue();
 
+    NTrace("Shaft length %f\n", shaftLength);
+
     // For each particle...
     for(s32 i=0; i<m_nParticles; i++) {
       Rprior = m_R[i].mu;
@@ -836,9 +877,13 @@ namespace Nf
       cModelHist = Rdelta*zModelHist;
 
       assert(m.size() >= minimumMeasurements);
-      
-      Rmeas = optimalRotationForModel(cModelHist, meas, m_pos.col(i), p);
-      Rmeas = (mat33)(Rmeas*m_R[i].mu);
+
+      if(shaftLength > minTotalLength) {
+        Rmeas = optimalRotationForModel(cModelHist, meas, m_pos.col(i), p);
+        Rmeas = (mat33)(Rmeas*m_R[i].mu);
+      } else {
+        Rmeas = m_R[i].mu;
+      }
 
       if(det(measurementSigma) < 1e-6) {
         // zero measurement noise? just use measurement then
@@ -906,7 +951,7 @@ namespace Nf
         duv = suv-m[0].uv.col(0);
 
         // calculate p(frame interesects with flagella|doppler)
-        pin = sigmoid(m[0].doppler(0,0), sigB0, sigB1);
+        pin = m[0].doppler(0,0) > 0 ? sigmoid(m[0].doppler(0,0), sigB0, sigB1) : 0;
         p_uvxOnFrame = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), measurementOffsetSigma, a, b)+
           (1-pin)*(1/(ush*usw));
       }
@@ -918,6 +963,9 @@ namespace Nf
 
       //p(doppler | not over needle)
       p_dxOffFrame = useLUT ? m_pDopNotOverNeedle->P(dop) : (1-p_dxOnFrame);//m_pDopNotOverNeedle->P(dop);
+
+      p_dxOnFrame = lambdaDop+(1-lambdaDop)*p_dxOnFrame;
+      p_dxOffFrame = lambdaDop+(1-lambdaDop)*p_dxOffFrame;
 
       pw(0,i) = (p_uvxOnFrame*p_dxOnFrame)*(1-p_offFrame)+(p_uvxOnFrame*p_dxOffFrame*p_offFrame);
     }
@@ -1294,5 +1342,14 @@ namespace Nf
       res.push_back(reshape(l.col(i), 3, 3));
     }
     return res;
+  }
+
+  f64 totalLength(const std::vector < NSCommand > &u, const arma::vec &dts)
+  {
+    f64 length = 0;
+    for(s32 i=0; i<u.size(); i++)
+      length += u[i].v*dts(i);
+
+    return length;
   }
 }

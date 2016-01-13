@@ -228,7 +228,7 @@ namespace Nf
     m_pfParamsMarg->usw = norm(pd.m.fur-pd.m.ful);
     m_pfParamsMarg->ush = norm(pd.m.ful-pd.m.fbl);
     m_pfParamsMarg->mpp = pd.mpp;
-    m_pfParamsMarg->measurementOffsetSigma = Vec2d(pd.mpp.x/1000.0*m_pfParams->measurementOffsetSigmaPx->GetValue().x, pd.mpp.y/1000.0*m_pfParams->measurementOffsetSigmaPx->GetValue().y);
+    m_pfParamsMarg->measurementOffsetSigma = Vec2d(pd.mpp.x/1000.0*m_pfParamsMarg->measurementOffsetSigmaPx->GetValue().x, pd.mpp.y/1000.0*m_pfParamsMarg->measurementOffsetSigmaPx->GetValue().y);
 
     //res->sigB0 =    -1.0515;
     //res->sigB1 =    0.0905;
@@ -289,18 +289,50 @@ namespace Nf
     return res;
   }
 
+  static PFData grabDataIndex(s32 idx, const std::map < s32, PFData > &pfData)
+  {
+    std::map< s32, PFData >::const_iterator i=pfData.begin();
+    std::advance(i,idx);
+
+    return i->second;
+  }
+
+
+#if 0
   std::vector < Measurement > ParticleFilterVisualizer::AssembleMeasurements(s32 frame)
   {
     std::vector < Measurement > res;
     std::tr1::shared_ptr < PFParams > p = GetParams(frame);
     s32 n = p->n->GetValue();
-    while(m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end() && res.size() < (s32)(n*1.5+0.5)) {
-      res.push_back(m_pfFramesProcessed[frame].m);
-      frame--;
+
+    res.push_back(m_pfFramesProcessed[frame].m);
+
+    s32 N = m_pfFramesProcessed.size();
+    n = min(n*2,N);
+
+    arma::uvec idxs = arma::linspace<arma::uvec>(1, N-1, N-1);
+    idxs = arma::shuffle(idxs);
+
+    for(s32 i=0; i<min(idxs.n_rows,(u32)n); i++) {
+      res.push_back(grabDataIndex(idxs(i), m_pfFramesProcessed).m);
     }
 
     return res;
   }
+#else
+  std::vector < Measurement > ParticleFilterVisualizer::AssembleMeasurements(s32 frame)
+  {
+    std::vector < Measurement > res;
+    std::tr1::shared_ptr < PFParams > p = GetParams(frame);
+    s32 n = p->n->GetValue();
+
+    while(m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end() && res.size() < (s32)(n*2+0.5)) {
+      res.push_back(m_pfFramesProcessed[frame].m);
+      frame--;
+    }
+    return res;
+  }
+#endif
 
   std::vector < Measurement > ParticleFilterVisualizer::AssembleAllMeasurements(s32 frame)
   {
@@ -382,6 +414,7 @@ namespace Nf
     fprintf(f, "lutBasePath %s\n", (fi.dir().path().toStdString()+"/").c_str());
     fprintf(f, "useLUT %d\n", p->useLut->GetValue());
     fprintf(f, "minimumMeasurements %d\n", p->minimumMeasurements->GetValue());
+    fprintf(f, "minLength %f\n", p->minLength->GetValue());
     fprintf(f, "dopplerLambda %f\n", p->lambdaDop->GetValue());
     fprintf(f, "dopplerSigB0 %f\n", p->sigB0->GetValue());
     fprintf(f, "dopplerSigB1 %f\n", p->sigB1->GetValue());
@@ -607,7 +640,7 @@ namespace Nf
         }
       }
 
-      m_pf->ApplyMeasurement(AssembleMeasurements(frame), AssembleCommands(frame), AssembleDts(frame), params.get());
+      m_pf->ApplyMeasurement(AssembleMeasurements(frame), AssembleCommands(frame), AssembleDts(frame), params.get(), totalLength(AssembleAllCommands(frame), AssembleAllDts(frame)));
 
       // Push in estimate from particle filter
       m_pfFramesProcessed[frame].est = m_pf->GetExpectedValue(params.get());

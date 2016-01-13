@@ -78,6 +78,7 @@ pw = zeros(length(xp),1);
 % then look up the probability of this distance
 
 xsc = propagateNeedleBackWithDts(xp{1}, u, dts, params);
+xsc = xsc(round(linspace(1,length(xsc),params.n)));
 xsc = cell2mat(xsc);
 xsc = [xsc.pos];
 
@@ -279,8 +280,14 @@ end
 % x.rho = current curvature
 % x.w = weight (which is only used for particle filter)
 function [x,pw] = measureParticles3(xp, u, dts, measurements, params)
-
-
+if(params.useLUTDistribution)
+    if(params.pdopnotoverneedle == 0)
+        params.pdopnotoverneedle = load(sprintf('%spdopnotoverneedle.dat', params.LUTDistributionBasePath));
+    end
+    if(params.pdopoverneedle == 0)
+        params.pdopoverneedle = load(sprintf('%spdopoverneedle.dat', params.LUTDistributionBasePath));
+    end
+end
 R1 = xp{1}.qdist.mu;
 xcurr.q = RotationMatrixToQuat(R1);
 xcurr.pos = xp{1}.pos;
@@ -288,6 +295,7 @@ xcurr.rho = xp{1}.rho;
 xcurr.w = 1;
 
 xsc = propagateNeedleBackWithDts(xcurr, u, dts, params);
+xsc = xsc(round(linspace(1,length(xsc),params.n)));
 xsc = cell2mat(xsc);
 xsc = [xsc.pos];
 
@@ -402,11 +410,19 @@ for i=1:params.np
     p_uvxOffFrame = 1/(params.ush*params.usw);
     
     % p(d|x) in case particle intersects frame
-    p_dxOnFrame = lognpdf(measurement.doppler, params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
+    if(params.useLUTDistribution == 0)
+        p_dxOnFrame = params.lambdaDop+(1-params.lambdaDop)*sigmf(measurement.doppler, [params.sigB0, params.sigB1]); %lognpdf(measurement.doppler, params.onNeedleDopplerMu, params.onNeedleDopplerSigma);
+    else
+        p_dxOnFrame = params.lambdaDop+(1-params.lambdaDop)*lutDistributionP(measurement.doppler, params.pdopoverneedle, params);
+    end
     
     % particle doesn't intersect image frame
     %p_uvxOffFrame = 1/(params.ush*params.usw);
-    p_dxOffFrame = lognpdf(measurement.doppler, params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
+    if(params.useLUTDistribution == 0)
+        p_dxOffFrame = params.lambdaDop+(1-params.lambdaDop)*(1-p_dxOnFrame);%lognpdf(measurement.doppler, params.offNeedleDopplerMu, params.offNeedleDopplerSigma);
+    else
+        p_dxOffFrame = params.lambdaDop+(1-params.lambdaDop)*lutDistributionP(measurement.doppler, params.pdopnotoverneedle, params);
+    end
     
     % p(measurement | x)
     pw(i) = (p_uvxOnFrame*p_dxOnFrame*(1-offFrame))+p_dxOffFrame*p_uvxOffFrame*offFrame;

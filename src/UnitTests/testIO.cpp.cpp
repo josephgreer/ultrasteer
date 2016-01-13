@@ -91,7 +91,7 @@ TEST(GPS, Smooth)
 {
   using ::s32;
 
-  std::string basePath = BASE_PATH_CAT("1_7_16/05mm/Trial4/scan");
+  std::string basePath = BASE_PATH_CAT("1_7_16/05mm/Trial3/scan");
 
   char temp[200] = {0};
   sprintf(temp, "%s.gps2", basePath.c_str());

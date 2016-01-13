@@ -9,6 +9,9 @@ elseif(strcmpi(splits{1}, 'neff'))
 elseif(strcmpi(splits{1}, 'mpp'))
     params.mpp = str2num(splits{2});
     worked = 1;
+elseif(strcmpi(splits{1}, 'minLength'))
+    params.minLength = str2num(splits{2});
+    worked = 1;
 elseif(strcmpi(splits{1}, 'tipOffset'))
     params.tipOffset = [str2num(splits{2}); str2num(splits{3}); str2num(splits{4})];
     worked = 1;
