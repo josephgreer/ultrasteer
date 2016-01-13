@@ -1,8 +1,9 @@
 Build
 Build/*
 *.asv
-*.dat
 *.png
 *.pdf
 src/Nano17/*
 src/Nano17
+src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data
+src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/*
