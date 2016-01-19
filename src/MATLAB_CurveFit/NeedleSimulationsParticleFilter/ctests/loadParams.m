@@ -1,5 +1,10 @@
-function params = loadParamsFullState(params, basePath, method)
-path = strcat(basePath, 'paramsFullState.dat');
+function params = loadParams(params, basePath, method)
+isMarg = strcmpi(method, 'Marginalized');
+if(isMarg)
+    path = strcat(basePath, 'paramsMarginalized.dat');
+else
+    path = strcat(basePath, 'paramsFullState.dat');
+end
 f = fopen(path, 'r');
 while(~feof(f))
     str = fgetl(f);

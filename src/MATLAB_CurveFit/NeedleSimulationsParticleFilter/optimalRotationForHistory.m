@@ -58,9 +58,6 @@ scatter3(Y(:,1), Y(:,2), Y(:,3), 'filled','MarkerFaceColor',[0 1 0]);
 scatter3(Z(:,1), Z(:,2), Z(:,3), 'filled','MarkerFaceColor',[0 0 1]);
 
 
-ylim([-10 150]);
-zlim([-10 100]);
-xlim([-50 50]);
 xlabel('x');
 ylabel('y');
 zlabel('z');
@@ -80,4 +77,20 @@ grid on;
 % pts = [pta'; ptb'];
 % scatter3(Y(goodPts,1), Y(goodPts,2), Y(goodPts,3), 'filled','MarkerFaceColor',[1 0 0]);
 % plot3(pts(:,1), pts(:,2), pts(:,3), 'k', 'LineWidth', 2);
+end
+
+function plotMeasurements(measurements, template)
+figure(2);
+hold on
+scatter3(measurements(:,1), measurements(:,2), measurements(:,3), 'filled','MarkerFaceColor',[1 0 0]);
+scatter3(template(:,1), template(:,2), template(:,3), 'filled','MarkerFaceColor',[0 1 0]);
+
+xlabel('x');
+ylabel('y');
+zlabel('z');
+view(90,0);
+axis equal;
+hold on;
+grid on;
+
 end

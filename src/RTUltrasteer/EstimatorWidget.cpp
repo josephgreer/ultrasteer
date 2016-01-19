@@ -527,25 +527,41 @@ namespace Nf
   }
 
   static void SaveParticleFilterState(const std::vector <NSCommand> &us, const arma::vec &dts, 
-    const std::vector < Measurement > &meas, const PartMethod1 &parts)
+    const std::vector < Measurement > &meas, const PartMethod1 &parts, const PFFullStateParams *p)
   {
-    const char *basePath = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testCMeasure";
+		char *directory = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
+		char basePath[200]; 
+		strcpy(basePath, directory); strcat(basePath, "testCMeasure");
 
     saveCommands(basePath, us);
     saveTimes(basePath, dts);
     saveMeasurements(basePath, meas);
     saveParticlesMethod1(basePath, parts);
+
+		char temp[200];
+		sprintf(temp, "%sparamsFullState.dat", directory);
+		FILE *paramFile = fopen(temp, "w");
+		SaveParameters(p, paramFile);
+		fclose(paramFile);
   }
 
   static void SaveParticleFilterState(const std::vector <NSCommand> &us, const arma::vec &dts, 
-    const std::vector < Measurement > &meas, const PartMethod3 &parts)
+    const std::vector < Measurement > &meas, const PartMethod3 &parts, const PFMarginalizedParams *p)
   {
-    const char *basePath = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/testCMeasure";
+		char *directory = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
+		char basePath[200]; 
+		strcpy(basePath, directory); strcat(basePath, "testCMeasure");
 
     saveCommands(basePath, us);
     saveTimes(basePath, dts);
     saveMeasurements(basePath, meas);
     saveParticlesMethod3(basePath, parts);
+
+		char temp[200];
+		sprintf(temp, "%sparamsMarginalized.dat", directory);
+		FILE *paramFile = fopen(temp, "w");
+		SaveParameters(p, paramFile);
+		fclose(paramFile);
   }
 
   static PartMethod1 AssembleParticles(const std::tr1::shared_ptr < ParticleFilterFullState > pf, const PFParams *p)
@@ -633,10 +649,12 @@ namespace Nf
       if(false) {
         if(this->m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
           SaveParticleFilterState(AssembleCommands(frame), AssembleDts(frame), AssembleMeasurements(frame),
-            AssembleParticles(std::tr1::shared_ptr < ParticleFilterFullState > ((ParticleFilterFullState *)m_pf.get()), GetParams(-1).get()));
+            AssembleParticles(std::tr1::shared_ptr < ParticleFilterFullState > ((ParticleFilterFullState *)m_pf.get()), GetParams(-1).get()),
+						(const PFFullStateParams *)GetParams(frame).get());
         } else {
           SaveParticleFilterState(AssembleCommands(frame), AssembleDts(frame), AssembleMeasurements(frame),
-            AssembleParticles(std::tr1::shared_ptr < ParticleFilterMarginalized > ((ParticleFilterMarginalized *)m_pf.get()), GetParams(-1).get()));
+            AssembleParticles(std::tr1::shared_ptr < ParticleFilterMarginalized > ((ParticleFilterMarginalized *)m_pf.get()), GetParams(-1).get()),
+						(const PFMarginalizedParams *)GetParams(frame).get());
         }
       }
 

@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 2.8)
 
 #SET(OPENCV_DIR "default value" CACHE FILEPATH "OpenCV Base directory") 
-SET(OpenCV_Dir ${OPENCV_DIR})
-FIND_PACKAGE(OpenCV)
 Project(RealTimeUltrasteer)
 
 SET(OPENCV_NEW_LIBRARY_NAMES YES)
-FIND_PACKAGE(OPENCV)
+message(WARNING "opencv_dir: " "${OpenCV_DIR}")
+LIST(APPEND CMAKE_MODULE_PATH "${OpenCV_DIR}") 
+FIND_PACKAGE(OpenCV)
 
 SET(UlteriusDir "Default Path" CACHE FILEPATH "UlteriusBaseDir")
 

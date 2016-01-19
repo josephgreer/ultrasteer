@@ -12,8 +12,10 @@ elseif(strcmpi(splits{1}, 'particleSigmaPos'))
 elseif(strcmpi(splits{1}, 'measurementSigma'));
     params.p3.measurementSigma = diag([str2num(splits{2}) str2num(splits{3}) str2num(splits{4})]);
 elseif(strcmpi(splits{1}, 'subsetSize'));
-    params.p3.subsetSize = num2str(splits{2});
+    params.p3.subsetSize = str2num(splits{2});
 elseif(strcmpi(splits{1}, 'procrustesIt'));
-    params.p3.procrustesit = num2str(splits{2});
+    params.p3.procrustesit = str2num(splits{2});
+elseif(strcmpi(splits{1}, 'distanceThres'))
+    params.p3.distanceThresh = str2num(splits{2});
 end
 end

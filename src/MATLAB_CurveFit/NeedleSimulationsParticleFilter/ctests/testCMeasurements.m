@@ -1,31 +1,29 @@
 clear; clc; close all;
 addpath('../');
 
-yep =   [-615.74299609414          222.274648570614        522.582079556706];
-
+useMarg = 1;
+if(useMarg)
+    method = 'Marginalized';
+else
+    method = 'FullState';
+end
+baseDir = './data/';
+basePath = strcat(baseDir, 'testCMeasure');
 params = initParamsForSimulation();
-params.useLUTDistribution = 0;
-params.drawTipFrame = 1;
-params.drawUSFrame = 1;
+if(useMarg)
+    params.particleFilterMethod = 3;
+end
+params = loadParams(params, baseDir, method);
 params.drawTruePos = 0;
-params.drawParticlesNs = 1;
+params.np = 500;
 params.drawParticlePos = 1;
-params.drawParticleOrientation = 0;
-params.drawExpectedPos = 1;
-params.drawExpectedOrientation = 1;
-params.mpp = 119;
-params.p1.uvOffsetSigma = diag([params.mpp*15*1e-3 params.mpp*15*1e-3]);  %5 pixels of measurement noise
-params.LUTDistributionBasePath = 'C:/Joey/Data/8_24_15/Trial3/Insertion/'
-
-params.sigB0 = -1.6679;
-params.sigB1 = 0.0594;
+params.LUTDistributionBasePath = '/Users/Joey/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Data/NeedleScan/1_7_16/05mm/Trial1/';
 
 rng('default');
 rng(1);
 
 figure(1);
 hold on;
-basePath = './data/testCMeasure';
 measurements = loadMeasurements(basePath);
 xp = loadParticlesFromBasePath(basePath, params);
 dts = loadDts(basePath);
@@ -50,9 +48,6 @@ particleHandles = drawParticles(1, xp, xpe, [], params, []);
 %tipFrameHandles = drawFrame(xpe, 1, []);
 daspect([1 1 1]);
 view(-109, 32);
-campos(yep);
-
-params.n = 500;
 
 xpa = measureParticles(xp, us, [], dts, measurements, params);
 
