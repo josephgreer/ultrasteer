@@ -198,6 +198,27 @@ namespace Nf
     ASSERT(t.length() == x.length() && x.length() == y.length() && y.length() == z.length() && z.length() == usedPoints.size());
   }
 
+  
+
+  static s32 countInliers(const std::vector < NeedlePoint > &flat, const PolyCurveParams *params, const PolyCurve *src)
+  {
+    s32 nInliers = 0;
+    f32 mThreshSq = params->modelThresh*params->modelThresh;
+    for(s32 i=0; i<(s32)flat.size(); i++) {
+      f32 _t = flat[i].point.dot(params->descriptor);
+      f32 distSq = 1;
+      if(src) {
+        Vec3f opt = EvaluatePoly(src, _t);
+        distSq = opt.distanceSquared(flat[i].point);
+        if(distSq < mThreshSq ) {
+          nInliers++;
+        }
+      }
+    }
+
+    return nInliers;
+  }
+
   static s32 fitWeightedPolyCurve(PolyCurve *out, std::vector < Vec3f > &usedPoints, std::vector < NeedlePoint > & usedNPoints, std::vector < NeedlePoint > & flat, const PolyCurveParams *params, const PolyCurve *src = NULL)
   {
     real_1d_array t,x,y,z,w;
@@ -221,11 +242,6 @@ namespace Nf
     polynomialfitwc(t, y, w, n, dummy1, dummy2, dummy3, k, m, info, py, reportY);
     polynomialfitwc(t, z, w, n, dummy1, dummy2, dummy3, k, m, info, pz, reportZ);
 
-#ifdef USE_BARYCENTRIC
-    out->x = px;
-    out->y = py;
-    out->z = pz;
-#else
     real_1d_array resX,resY,resZ;
     polynomialbar2pow(px, resX);
     polynomialbar2pow(py, resY);
@@ -240,7 +256,7 @@ namespace Nf
       out->coefY[i] = (f32)resY[i];
       out->coefZ[i] = (f32)resZ[i];
     }
-#endif
+
     out->degree = params->degree;
     out->descriptor = params->descriptor;
     out->rmsError = (f32)sqrt((reportX.rmserror*reportX.rmserror+reportY.rmserror*reportY.rmserror+
@@ -272,31 +288,34 @@ namespace Nf
     polynomialfit(t, y, n, m, info, py, reportY);
     polynomialfit(t, z, n, m, info, pz, reportZ);
 
-#ifdef USE_BARYCENTRIC
-    out->x = px;
-    out->y = py;
-    out->z = pz;
-#else
     real_1d_array resX,resY,resZ;
     polynomialbar2pow(px, resX);
     polynomialbar2pow(py, resY);
     polynomialbar2pow(pz, resZ);
 
-    memset(out->coefX, 0, sizeof(f32)*(MAX_POLY_DEGREE+1));
-    memset(out->coefY, 0, sizeof(f32)*(MAX_POLY_DEGREE+1));
-    memset(out->coefZ, 0, sizeof(f32)*(MAX_POLY_DEGREE+1));
+    PolyCurve temp;
+    memset(temp.coefX, 0, sizeof(f32)*(MAX_POLY_DEGREE+1));
+    memset(temp.coefY, 0, sizeof(f32)*(MAX_POLY_DEGREE+1));
+    memset(temp.coefZ, 0, sizeof(f32)*(MAX_POLY_DEGREE+1));
 
     for(s32 i=0; i<=params->degree; i++) {
-      out->coefX[i] = (f32)resX[i];
-      out->coefY[i] = (f32)resY[i];
-      out->coefZ[i] = (f32)resZ[i];
+      temp.coefX[i] = (f32)resX[i];
+      temp.coefY[i] = (f32)resY[i];
+      temp.coefZ[i] = (f32)resZ[i];
     }
-#endif
-    out->degree = params->degree;
-    out->descriptor = params->descriptor;
-    out->rmsError = (f32)((reportX.rmserror*reportX.rmserror+reportY.rmserror*reportY.rmserror+
+
+    temp.degree = params->degree;
+    temp.descriptor = params->descriptor;
+    temp.rmsError = (f32)((reportX.rmserror*reportX.rmserror+reportY.rmserror*reportY.rmserror+
       reportZ.rmserror*reportZ.rmserror));
-    out->dRange = GenerateRange(t);
+    temp.dRange = GenerateRange(t);
+
+    s32 nInliersBefore = usedPoints.size();
+    s32 nInliersAfter = countInliers(flat, params, &temp);
+    if(nInliersAfter < (f32)nInliersBefore*0.25 && src != NULL)
+      memcpy(out, src, sizeof(PolyCurve));
+    else
+      memcpy(out, &temp, sizeof(PolyCurve));
 
 
     return (s32)info;
@@ -320,6 +339,7 @@ namespace Nf
 
     //fit to curve
     if((s32)pts.size() < pParams->min_points) {
+      dst->rmsError = -1;
       return;
     }
 
@@ -330,7 +350,8 @@ namespace Nf
     f32 nUsedPoints = (f32)usedPoints.size();
     nUsedPoints = MAX(MIN(nUsedPoints,75),20);
     f32 maxModelThresh = pParams->minModelThresh*INIT_MODEL_THRESH_FACTOR;
-    pParams->modelThresh = maxModelThresh-(nUsedPoints-20.0f)/(75.0f-20.0f)*(maxModelThresh-pParams->minModelThresh);
+    //pParams->modelThresh = maxModelThresh-(nUsedPoints-20.0f)/(75.0f-20.0f)*(maxModelThresh-pParams->minModelThresh);
+    pParams->modelThresh = maxModelThresh;
 
 
     //upate scores decay youth and remove pts below threshhold
@@ -704,7 +725,7 @@ namespace Nf
     : m_mainModelInit(false)
     , m_update(update)
     , ParameterCollection("2D US Segmentation")
-    , m_model(3, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1.5f)
+    , m_model(2, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 4.0f)
     , m_initialModel(2, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000000.0f)
   {
     ADD_BOOL_PARAMETER(m_showColorMask, "Show Mask", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, false);
@@ -1025,10 +1046,10 @@ namespace Nf
   }
 
   IplImage * NeedleSegmenter::UpdateModel(PolyCurve *model, IplImage *doppler, IplImage *bmode, 
-    const ImageCoordTransform *transform)
+    const ImageCoordTransform *transform, bool useDoppler)
   {
-	m_dopplerCentroid.segments.clear();
-	m_frame.segments.clear();
+    m_dopplerCentroid.segments.clear();
+    m_frame.segments.clear();
 
     ProcessColor(doppler, bmode, transform);
     s32 initSize = (s32)m_initialModel.GetUsedPoints()->size();
@@ -1039,13 +1060,19 @@ namespace Nf
       m_model.SetInitialModel(&m_initialModel.GetModel());
       m_mainModelInit = true;
     }
-    m_model.AddNeedleFrame(m_frame);
+    if(useDoppler)
+      m_model.AddNeedleFrame(m_dopplerCentroid);
+    else
+      m_model.AddNeedleFrame(m_frame);
     if(m_mainModelInit && m_model.GetUsedPoints()->size() < INITIAL_MODEL_POINTS) {
       m_mainModelInit = false;
       m_model.ClearPoints();
       m_initialModel.ClearPoints();
     }
-    *model = m_model.GetModel();
+    if(m_mainModelInit)
+      *model = m_model.GetModel();
+    else
+      *model = m_initialModel.GetModel();
     return m_disImage;
   }
 
@@ -1122,6 +1149,21 @@ namespace Nf
 
 	  return res;
 
+  }
+
+  Polynomial PolyCurveToPolynomial(const PolyCurve *curve)
+  {
+    s32 deg = curve->degree;
+    arma::mat coeffs = arma::zeros(3,deg+1);
+    //flip order of coefficients
+    //Polynmoal[0] = constant coefficient
+    //PolyCurve[0] = highest degree coefficient
+    for(s32 i=0; i<=curve->degree; i++) {
+      coeffs(0,deg-i) = curve->coefX[i];
+      coeffs(1,deg-i) = curve->coefY[i];
+      coeffs(2,deg-i) = curve->coefZ[i];
+    }
+    return Polynomial(coeffs);
   }
   ////////////////////////////////////////////////////////////////////////
   //End Needle Estimator

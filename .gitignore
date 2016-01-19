@@ -10,3 +10,4 @@ src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/*
 *.DS_Store
 ._*
 *~
+IndividualDefines.h

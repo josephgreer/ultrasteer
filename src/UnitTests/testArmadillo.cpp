@@ -454,8 +454,8 @@ TEST(Math, CurveFit)
 TEST(Math, Polynomial)
 {
   using ::s32; 
-  //std::string dir[100] = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
-  std::string dir = "C:/Users/Joey/Documents/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
+  std::string dir = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
+  //std::string dir = "C:/Users/Joey/Documents/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
 
   arma::mat xpt,ypt,zpt;
   xpt.load((dir+"xpt.dat").c_str());

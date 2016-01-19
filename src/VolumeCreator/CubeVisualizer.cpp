@@ -147,6 +147,9 @@ namespace Nf {
   CurveVisualizer::CurveVisualizer()
     : GeometryVisualizer()
   {
+    m_mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    m_actor = vtkSmartPointer<vtkActor>::New();
+    m_actor->SetMapper(m_mapper);
   }
 
   void CurveVisualizer::SetCurve(const Polynomial *p, Vec2d range, f64 ds)
@@ -166,16 +169,9 @@ namespace Nf {
     vtkSmartPointer<vtkPolyData> linesPolyData = vtkSmartPointer<vtkPolyData>::New();
     linesPolyData->SetPoints(points);
     linesPolyData->SetLines(lines);
+    m_actor->GetProperty()->SetLineWidth(2);
 
-    vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-    mapper->SetInputData(linesPolyData);
-
-    m_mapper = mapper;
-
-    vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
-    actor->SetMapper(m_mapper);
-
-    m_actor = actor;
+    m_mapper->SetInputData(linesPolyData);
   }
   
   ////////////////////////////////////////////////////////

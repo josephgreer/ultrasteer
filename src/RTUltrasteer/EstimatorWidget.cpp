@@ -82,13 +82,14 @@ namespace Nf
     return t;
   }
 
-  static PFData AssemblePFData(const NeedlePoint &np, const Matrix44d &cal, const RPData &rp, f64 rho)
+  static PFData AssemblePFData(const NeedlePoint &np, const Matrix44d &cal, const RPData &rp, f64 rho, const PolyCurve &curve)
   {
     PFData res;
     res.m = MeasurementFromRPDataAndNeedlePoint(np, cal, rp);
     res.t = TipStateFromGPS2(rp, rho);
     res.u = rp.u;
     res.mpp = rp.mpp;
+    res.measCurve = curve;
     return res;
   }
 
@@ -110,6 +111,7 @@ namespace Nf
     ADD_BOOL_PARAMETER(m_showExpectedPos, "Show Estimated Position", CALLBACK_POINTER(onVisibilityChanged, ParticleFilterVisualizer), this, true);
     ADD_BOOL_PARAMETER(m_showExpectedOrientation, "Show Estimated Orientation", CALLBACK_POINTER(onVisibilityChanged, ParticleFilterVisualizer), this, true);
     ADD_BOOL_PARAMETER(m_showMeasurements, "Show Measurement Positions", CALLBACK_POINTER(onVisibilityChanged, ParticleFilterVisualizer), this, true);
+    ADD_BOOL_PARAMETER(m_showMeasurementCurve, "Show Measurement Curve", CALLBACK_POINTER(onVisibilityChanged, ParticleFilterVisualizer), this, true);
     ADD_INT_PARAMETER(m_nParticles, "Number of Particles", CALLBACK_POINTER(onNumParticlesChanged, ParticleFilterVisualizer), this, 500, 25, 5000, 10);
     ADD_INT_PARAMETER(m_nVisSkip, "NVis Skip", CALLBACK_POINTER(onNVisSkipChanged, ParticleFilterVisualizer), this, 5, 1, 100, 1);
     ADD_ENUM_PARAMETER(m_pfMethod, "Particle Filter Method", CALLBACK_POINTER(onPFMethodChanged, ParticleFilterVisualizer), this, QtEnums::ParticleFilterMethod::PFM_FULL_STATE, "ParticleFilterMethod");
@@ -134,6 +136,10 @@ namespace Nf
     m_pfPoints->SetColor(Vec3d(0,0,1));
     m_pfPoints->GetActor()->GetProperty()->SetOpacity(0.2);
 
+    m_measCurveVis = std::tr1::shared_ptr < CurveVisualizer > (new CurveVisualizer());
+    m_measCurveVis->GetActor()->SetVisibility(false);
+    m_measCurveVis->SetColor(Vec3d(1,0,1));
+
     onVisibilityChanged();
   }
 
@@ -147,6 +153,7 @@ namespace Nf
     renderer->AddActor(m_pfPoints->GetActor());
     renderer->AddActor(m_pfExpectedPos->GetActor());
     renderer->AddActor(m_measurementPoints->GetActor());
+    renderer->AddActor(m_measCurveVis->GetActor());
   }
 
   void ParticleFilterVisualizer::SetVisiblity(bool visible)
@@ -164,34 +171,40 @@ namespace Nf
       m_pfExpectedPos->GetActor()->SetVisibility(m_showExpectedPos->GetValue());
       m_pfExpectedOrientation->SetVisibility(m_showExpectedOrientation->GetValue());
       m_measurementPoints->GetActor()->SetVisibility(m_showMeasurements->GetValue());
+      m_measCurveVis->GetActor()->SetVisibility(m_showMeasurementCurve->GetValue());
     } else {
       m_pfPoints->GetActor()->SetVisibility(false);
       m_pfExpectedPos->GetActor()->SetVisibility(false);
       m_pfExpectedOrientation->SetVisibility(false);
       m_measurementPoints->GetActor()->SetVisibility(false);
+      m_measCurveVis->GetActor()->SetVisibility(false);
     }
   }
   
-  void ParticleFilterVisualizer::DoSegmentation(RPData *rp, NeedleFrame &doppler, NeedleFrame &bmode)
+  void ParticleFilterVisualizer::DoSegmentation(RPData *rp, NeedleFrame &doppler, NeedleFrame &bmode, PolyCurve *curve, bool imageOnly)
   {
     if(!m_segmenter->IsInit())
       m_segmenter->Initialize(rp->b8->width, rp->b8->height);
 
     RPCoordTransform transform(rp->mpp, rp->origin, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), rp->gps);
-    m_segmenter->ProcessColor(rp->color, rp->b8, &transform);
-    m_segmenter->GetSegmentationResults(bmode, doppler);
+    if(imageOnly) {
+      m_segmenter->ProcessColor(rp->color, rp->b8, &transform);
+    } else {
+      m_segmenter->UpdateModel(curve, rp->color, rp->b8, &transform,true);
+      m_segmenter->GetSegmentationResults(bmode, doppler);
+    }
     rp->dis = m_segmenter->GetDisplayImage();
 
     if(m_collectMeasurements->GetValue()) {
       if(doppler.segments.size() > 0)
         m_measurementPoints->AddPoint(doppler.segments[0].pts[0].point);
-
     }
   }
 
   void ParticleFilterVisualizer::onClearEstimatorData()
   {
     m_measurementPoints->ClearPoints();
+    m_segmenter = std::tr1::shared_ptr < NeedleSegmenter > (new Nf::NeedleSegmenter(0,0,this));
 
     m_pfFramesProcessed.clear();
     m_update->onUpdate();
@@ -523,6 +536,12 @@ namespace Nf
     Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(Matrix33d::FromArmaMatrix3x3(m_pfFramesProcessed[frame].est.R), Vec3d::FromArmaVec(m_pfFramesProcessed[frame].est.pos));
     m_pfExpectedOrientation->PokeMatrix(posePos.GetVTKMatrix());
 
+    if(m_pfFramesProcessed[frame].measCurve.rmsError > 0) {
+      Polynomial curr = PolyCurveToPolynomial(&m_pfFramesProcessed[frame].measCurve);
+      Vec2d range(m_pfFramesProcessed[frame].measCurve.dRange.x, m_pfFramesProcessed[frame].measCurve.dRange.y);
+      m_measCurveVis->SetCurve(&curr, range, 0.5);
+    }
+
     m_update->onRepaint();
   }
 
@@ -597,16 +616,19 @@ namespace Nf
 
   void ParticleFilterVisualizer::Update(RPData *rp, s32 frame)
   {
-    m_lastFrame=  frame;
+    bool alreadyProcessed = m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end();
+    m_lastFrame =  frame;
     arma::arma_rng::set_seed(frame);
     NeedleFrame doppler, bmode;
-    DoSegmentation(rp, doppler, bmode);
+
+    PolyCurve curve;
+    DoSegmentation(rp, doppler, bmode, &curve, alreadyProcessed);
 
     if(m_pf == NULL)
       Initialize(m_basePath.c_str());
 
     // If we've already run this data through our particle filter, bail.
-    if(m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end()) {
+    if(alreadyProcessed) {
       UpdateVisualizations(frame);
       return;
     }
@@ -627,7 +649,7 @@ namespace Nf
 
     onVisibilityChanged();
 
-    m_pfFramesProcessed[frame] = AssemblePFData(np, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), *rp, m_roc->GetValue());
+    m_pfFramesProcessed[frame] = AssemblePFData(np, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), *rp, m_roc->GetValue(), curve);
 
     std::tr1::shared_ptr < PFParams > params = GetParams(frame);
     if(!m_init && NumberOfMeasurementsUpToAndIncludingFrame(frame) >= params->minimumMeasurements->GetValue()) {

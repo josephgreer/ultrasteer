@@ -50,6 +50,7 @@ namespace Nf
     std::vector < arma::mat33 > particleRs;
     arma::mat particlePos;
     arma::mat w;
+    PolyCurve measCurve;
   };
 
   class ParticleFilterVisualizer : public ParameterCollection, public Updateable
@@ -60,6 +61,7 @@ namespace Nf
     vtkSmartPointer < vtkAxesActor > m_pfExpectedOrientation;
     std::tr1::shared_ptr < SphereVisualizer > m_pfExpectedPos;
     std::tr1::shared_ptr < NeedleSegmenter > m_segmenter;
+    std::tr1::shared_ptr < CurveVisualizer > m_measCurveVis;
     std::map < s32, PFData > m_pfFramesProcessed;
     std::tr1::shared_ptr < PointCloudVisualizer > m_measurementPoints;
     std::tr1::shared_ptr < PFParams > m_pfParams;
@@ -78,7 +80,7 @@ namespace Nf
     ~ParticleFilterVisualizer();
     void AddActorsToRenderer(vtkSmartPointer < vtkRenderer > renderer);
     void SetVisiblity(bool visible);
-    virtual void DoSegmentation(RPData *rp, NeedleFrame &doppler, NeedleFrame &bmode);
+    virtual void DoSegmentation(RPData *rp, NeedleFrame &doppler, NeedleFrame &bmode, PolyCurve *curve, bool imageOnly);
     virtual void Update(RPData *rp, s32 frame); 
     virtual void Initialize(const char *basePath);
     virtual s32 NumberOfMeasurementsUpToAndIncludingFrame(s32 frame);
@@ -117,6 +119,7 @@ namespace Nf
     std::tr1::shared_ptr < Nf::BoolParameter > m_showExpectedPos;
     std::tr1::shared_ptr < Nf::BoolParameter > m_showExpectedOrientation;
     std::tr1::shared_ptr < Nf::BoolParameter > m_showMeasurements;
+    std::tr1::shared_ptr < Nf::BoolParameter > m_showMeasurementCurve;
     void onVisibilityChanged();
     CLASS_CALLBACK(onVisibilityChanged, ParticleFilterVisualizer);
 

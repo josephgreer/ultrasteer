@@ -68,6 +68,8 @@ namespace Nf
 	PolyCurve Derivative() const;
   };
 
+  Polynomial PolyCurveToPolynomial(const PolyCurve *curve);
+
   typedef struct {
     u8 enforceFrameConsistency;                   //do we choose one needle segment per frame?  
     u8 ransacTrialN;                              //number of probe inliers for RANSAC
@@ -185,7 +187,7 @@ namespace Nf
        
     //Returned IplImage is an image meant for display.
     //Caller is not responsible for freeing the returned image.
-    IplImage * UpdateModel(PolyCurve *model, IplImage *doppler, IplImage *bmode, const ImageCoordTransform *transform);
+    IplImage * UpdateModel(PolyCurve *model, IplImage *doppler, IplImage *bmode, const ImageCoordTransform *transform, bool useDoppler=false);
 
     IplImage *GetDisplayImage() const;
     void InitZeroLut();
