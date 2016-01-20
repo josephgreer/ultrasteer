@@ -303,7 +303,7 @@ pw = zeros(params.np,1);
 
 measurement = measurements{1};
 curvePoints = [];
-if(exist('measurement.curvePoints'))
+if(any(strcmpi('curvePoints',fieldnames(measurement))))
     curvePoints = measurement.curvePoints;
 else
     curvePoints = cell2mat(measurements);
@@ -324,12 +324,7 @@ for i=1:params.np
     xs = xs+repmat(xp{i}.pos, 1, size(xsc,2));
     
     % if we don't have enough measurements yet, then just use true quaternion
-    dR = zeros(3,3);
-    if(length(measurements) >= params.p3.minimumMeasurements)
-        dR = optimalRotationForHistory(xs', curvePoints, params);
-    else
-        assert(0);
-    end
+    dR = optimalRotationForHistory(xs', curvePoints, params);
     
     if(norm(SO3HatInverse(SO3Log(dR))) > 0.5)
         yep = 0;

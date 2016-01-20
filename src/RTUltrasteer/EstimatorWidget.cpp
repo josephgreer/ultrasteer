@@ -552,9 +552,8 @@ namespace Nf
       res = res.rows(0,i);
 
     if(res.n_rows > n) {
-      f64 downsample = (f64)res.n_rows/(f64)n;
-      arma::uvec ris = arma::linspace<arma::uvec>(0, res.n_rows, n);
-      res = res.rows(ris);
+      arma::uvec ris = arma::linspace<arma::uvec>(0, res.n_rows-1, n);
+			res = res.rows(ris);
     }
     return res;
   }
