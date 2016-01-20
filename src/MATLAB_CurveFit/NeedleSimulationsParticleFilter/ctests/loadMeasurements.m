@@ -8,6 +8,7 @@ furs = load(strcat(pathBase,'MeasFur.dat'));
 fbxs = load(strcat(pathBase,'MeasBx.dat'));
 fbys = load(strcat(pathBase,'MeasBy.dat'));
 uvs = load(strcat(pathBase,'MeasUv.dat'));
+curvePoints = load(strcat(pathBase, 'curvePoints.dat'));
 
 
 measurements = {};
@@ -21,6 +22,8 @@ for i=1:length(doppler)
     mm.bx = fbxs(:,i);
     mm.by = fbys(:,i);
     mm.uv = uvs(:, i);
+    if(i == 1)
+        mm.curvePoints = curvePoints;
     
     measurements = vertcat(measurements, mm);
 end

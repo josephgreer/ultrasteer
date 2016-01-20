@@ -302,6 +302,13 @@ xsc = [xsc.pos];
 pw = zeros(params.np,1);
 
 measurement = measurements{1};
+curvePoints = [];
+if(exist('measurement.curvePoints'))
+    curvePoints = measurement.curvePoints;
+else
+    curvePoints = cell2mat(measurements);
+    curvePoints = [curvePoints.pos]';
+end
 
 % for projection particle position onto ultrasound image planes
 A = [measurement.bx measurement.by cross(measurement.bx, measurement.by)];
@@ -319,7 +326,7 @@ for i=1:params.np
     % if we don't have enough measurements yet, then just use true quaternion
     dR = zeros(3,3);
     if(length(measurements) >= params.p3.minimumMeasurements)
-        dR = optimalRotationForHistory(xs', measurements, params);
+        dR = optimalRotationForHistory(xs', curvePoints, params);
     else
         assert(0);
     end

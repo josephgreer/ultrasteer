@@ -7,11 +7,7 @@
 function R = optimalRotationForHistory(template,measurements, params)
 offset = template(1,:);
 template = template-repmat(offset, size(template,1), 1);
-measurements = cell2mat(measurements);
-measurements = [measurements.pos]';
 measurements = measurements-repmat(offset, size(measurements,1), 1);
-
-
 
 R = eye(3);
 ctemplate = template;
