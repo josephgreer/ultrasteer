@@ -300,6 +300,13 @@ namespace Nf
 
     res = join_vert(res, lastPt.t());
 
+    bool flip = a>b;
+    if(flip) {
+      f64 c = b;
+      b = a;
+      a = c;
+    }
+
     
     f64 currT = (b-a)/2+a;
     f64 lastT = a;
@@ -321,6 +328,10 @@ namespace Nf
       lastT = lastT+delta;
       dist = norm((*this)(currT)-lastPt);
       it = 0;
+    }
+
+    if(flip) {
+      res = arma::flipud(res);
     }
 
     return res;

@@ -112,6 +112,7 @@ namespace Nf
     ADD_BOOL_PARAMETER(m_showExpectedOrientation, "Show Estimated Orientation", CALLBACK_POINTER(onVisibilityChanged, ParticleFilterVisualizer), this, true);
     ADD_BOOL_PARAMETER(m_showMeasurements, "Show Measurement Positions", CALLBACK_POINTER(onVisibilityChanged, ParticleFilterVisualizer), this, true);
     ADD_BOOL_PARAMETER(m_showMeasurementCurve, "Show Measurement Curve", CALLBACK_POINTER(onVisibilityChanged, ParticleFilterVisualizer), this, true);
+    ADD_BOOL_PARAMETER(m_showCurvePoints, "Show Curve Points", CALLBACK_POINTER(onVisibilityChanged, ParticleFilterVisualizer), this, true);
     ADD_INT_PARAMETER(m_nParticles, "Number of Particles", CALLBACK_POINTER(onNumParticlesChanged, ParticleFilterVisualizer), this, 500, 25, 5000, 10);
     ADD_INT_PARAMETER(m_nVisSkip, "NVis Skip", CALLBACK_POINTER(onNVisSkipChanged, ParticleFilterVisualizer), this, 5, 1, 100, 1);
     ADD_ENUM_PARAMETER(m_pfMethod, "Particle Filter Method", CALLBACK_POINTER(onPFMethodChanged, ParticleFilterVisualizer), this, QtEnums::ParticleFilterMethod::PFM_FULL_STATE, "ParticleFilterMethod");
@@ -140,6 +141,10 @@ namespace Nf
     m_measCurveVis->GetActor()->SetVisibility(false);
     m_measCurveVis->SetColor(Vec3d(1,0,1));
 
+    m_curvePoints = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 1, 0)));
+    m_curvePoints->GetActor()->SetVisibility(false);
+    m_curvePoints->SetColor(Vec3d(1,1,0));
+
     onVisibilityChanged();
   }
 
@@ -154,6 +159,7 @@ namespace Nf
     renderer->AddActor(m_pfExpectedPos->GetActor());
     renderer->AddActor(m_measurementPoints->GetActor());
     renderer->AddActor(m_measCurveVis->GetActor());
+    renderer->AddActor(m_curvePoints->GetActor());
   }
 
   void ParticleFilterVisualizer::SetVisiblity(bool visible)
@@ -172,12 +178,14 @@ namespace Nf
       m_pfExpectedOrientation->SetVisibility(m_showExpectedOrientation->GetValue());
       m_measurementPoints->GetActor()->SetVisibility(m_showMeasurements->GetValue());
       m_measCurveVis->GetActor()->SetVisibility(m_showMeasurementCurve->GetValue());
+      m_curvePoints->GetActor()->SetVisibility(m_showCurvePoints->GetValue());
     } else {
       m_pfPoints->GetActor()->SetVisibility(false);
       m_pfExpectedPos->GetActor()->SetVisibility(false);
       m_pfExpectedOrientation->SetVisibility(false);
       m_measurementPoints->GetActor()->SetVisibility(false);
       m_measCurveVis->GetActor()->SetVisibility(false);
+      m_curvePoints->GetActor()->SetVisibility(false);
     }
   }
   
@@ -520,6 +528,37 @@ namespace Nf
     UpdateVisualizations(m_lastFrame);
   }
 
+  static arma::mat CurvePoints(const PolyCurve *p, s32 n, f64 desiredLength, f64 ds, arma::vec latestMeasurement)
+  {
+    Polynomial pp = PolyCurveToPolynomial(p);
+    
+    f64 ta, tb;
+    if(arma::norm(pp(p->dRange.x)-latestMeasurement) < arma::norm(pp(p->dRange.y)-latestMeasurement)) {
+      ta = p->dRange.x;
+      tb = p->dRange.y;
+    } else {
+      ta = p->dRange.y;
+      tb = p->dRange.x;
+    }
+    arma::mat res = pp.UniformlySpacedPoints(ta, tb, ds, 3);
+    f64 totalLength = 0;
+    s32 i=1;
+    while(totalLength < desiredLength && i < res.n_rows) {
+      totalLength += arma::norm(res.row(i)-res.row(i-1));
+      i++;
+    }
+
+    if(i < res.n_rows-1)
+      res = res.rows(0,i);
+
+    if(res.n_rows > n) {
+      f64 downsample = (f64)res.n_rows/(f64)n;
+      arma::uvec ris = arma::linspace<arma::uvec>(0, res.n_rows, n);
+      res = res.rows(ris);
+    }
+    return res;
+  }
+
   void ParticleFilterVisualizer::UpdateVisualizations(s32 frame)
   {
     arma::mat pos = m_pfFramesProcessed[frame].particlePos;
@@ -540,13 +579,20 @@ namespace Nf
       Polynomial curr = PolyCurveToPolynomial(&m_pfFramesProcessed[frame].measCurve);
       Vec2d range(m_pfFramesProcessed[frame].measCurve.dRange.x, m_pfFramesProcessed[frame].measCurve.dRange.y);
       m_measCurveVis->SetCurve(&curr, range, 0.5);
+
+      arma::mat curvePoints = CurvePoints(&m_pfFramesProcessed[frame].measCurve, (s32)(1*GetParams(frame)->n->GetValue()), 2*GetParams(frame)->minLength->GetValue(), 
+        (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0*m_pfFramesProcessed[frame].u.v, m_pfFramesProcessed[frame].m.pos.col(0));
+      std::vector < Vec3d > cpoints;
+      for(s32 i=0; i<curvePoints.n_rows; i++) 
+        cpoints.push_back(Vec3d(curvePoints(i,0), curvePoints(i,1), curvePoints(i,2)));
+      m_curvePoints->SetPoints(cpoints);
     }
 
     m_update->onRepaint();
   }
 
   static void SaveParticleFilterState(const std::vector <NSCommand> &us, const arma::vec &dts, 
-    const std::vector < Measurement > &meas, const PartMethod1 &parts, const PFFullStateParams *p)
+    const std::vector < Measurement > &meas, const PartMethod1 &parts, const arma::mat &curvePoints, const PFFullStateParams *p)
   {
 		char *directory = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
 		char basePath[200]; 
@@ -556,6 +602,7 @@ namespace Nf
     saveTimes(basePath, dts);
     saveMeasurements(basePath, meas);
     saveParticlesMethod1(basePath, parts);
+    saveCurvePoints(basePath, curvePoints);
 
 		char temp[200];
 		sprintf(temp, "%sparamsFullState.dat", directory);
@@ -565,7 +612,7 @@ namespace Nf
   }
 
   static void SaveParticleFilterState(const std::vector <NSCommand> &us, const arma::vec &dts, 
-    const std::vector < Measurement > &meas, const PartMethod3 &parts, const PFMarginalizedParams *p)
+    const std::vector < Measurement > &meas, const PartMethod3 &parts, const arma::mat &curvePoints, const PFMarginalizedParams *p)
   {
 		char *directory = "C:/Joey/ultrasteer/src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/";
 		char basePath[200]; 
@@ -575,6 +622,7 @@ namespace Nf
     saveTimes(basePath, dts);
     saveMeasurements(basePath, meas);
     saveParticlesMethod3(basePath, parts);
+    saveCurvePoints(basePath, curvePoints);
 
 		char temp[200];
 		sprintf(temp, "%sparamsMarginalized.dat", directory);
@@ -668,19 +716,24 @@ namespace Nf
         (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0, params.get());
       //NTrace("Dt %f", (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0);
 
+      arma::mat curvePoints;
+      if(frame > 0 && curve.rmsError > 0) {
+         curvePoints = CurvePoints(&m_pfFramesProcessed[frame].measCurve, (s32)(1*GetParams(frame)->n->GetValue()), 2*GetParams(frame)->minLength->GetValue(), 
+          (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0*m_pfFramesProcessed[frame].u.v, m_pfFramesProcessed[frame].m.pos.col(0));
+      } 
+
       if(false) {
         if(this->m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
           SaveParticleFilterState(AssembleCommands(frame), AssembleDts(frame), AssembleMeasurements(frame),
-            AssembleParticles(std::tr1::shared_ptr < ParticleFilterFullState > ((ParticleFilterFullState *)m_pf.get()), GetParams(-1).get()),
+            AssembleParticles(std::tr1::shared_ptr < ParticleFilterFullState > ((ParticleFilterFullState *)m_pf.get()), GetParams(-1).get()), curvePoints,
 						(const PFFullStateParams *)GetParams(frame).get());
         } else {
           SaveParticleFilterState(AssembleCommands(frame), AssembleDts(frame), AssembleMeasurements(frame),
-            AssembleParticles(std::tr1::shared_ptr < ParticleFilterMarginalized > ((ParticleFilterMarginalized *)m_pf.get()), GetParams(-1).get()),
+            AssembleParticles(std::tr1::shared_ptr < ParticleFilterMarginalized > ((ParticleFilterMarginalized *)m_pf.get()), GetParams(-1).get()), curvePoints,
 						(const PFMarginalizedParams *)GetParams(frame).get());
         }
       }
-
-      m_pf->ApplyMeasurement(AssembleMeasurements(frame), AssembleCommands(frame), AssembleDts(frame), params.get(), totalLength(AssembleAllCommands(frame), AssembleAllDts(frame)));
+      m_pf->ApplyMeasurement(AssembleMeasurements(frame), AssembleCommands(frame), AssembleDts(frame), params.get(), totalLength(AssembleAllCommands(frame), AssembleAllDts(frame)), curvePoints.t());
 
       // Push in estimate from particle filter
       m_pfFramesProcessed[frame].est = m_pf->GetExpectedValue(params.get());

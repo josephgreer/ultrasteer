@@ -521,7 +521,7 @@ namespace Nf
     m_rho = max(m_rho+noiseR, PF_MIN_RHO*ones(1,m_nParticles));
   }
 
-  void ParticleFilterFullState::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const vec &dts, const PFParams *p, f64 shaftLength)
+  void ParticleFilterFullState::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const vec &dts, const PFParams *p, f64 shaftLength, arma::mat curvePoints)
   {
     const PFFullStateParams *params = (const PFFullStateParams *)p;
 
@@ -803,7 +803,7 @@ namespace Nf
     m_rho = max(m_rho+noiseR,ones(1,m_nParticles)*PF_MIN_RHO);
   }
 
-  void ParticleFilterMarginalized::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const vec &dts, const PFParams *p, f64 shaftLength)
+  void ParticleFilterMarginalized::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const vec &dts, const PFParams *p, f64 shaftLength, arma::mat curvePoints)
   {
     const PFMarginalizedParams *params = (const PFMarginalizedParams *)p;
 
@@ -867,6 +867,9 @@ namespace Nf
 
     NTrace("Shaft length %f\n", shaftLength);
 
+    if(curvePoints.n_rows == 0)
+      curvePoints = meas;
+
     // For each particle...
     for(s32 i=0; i<m_nParticles; i++) {
       Rprior = m_R[i].mu;
@@ -879,7 +882,7 @@ namespace Nf
       assert(m.size() >= minimumMeasurements);
 
       if(shaftLength > minTotalLength) {
-        Rmeas = optimalRotationForModel(cModelHist, meas, m_pos.col(i), p);
+        Rmeas = optimalRotationForModel(cModelHist, curvePoints, m_pos.col(i), p);
         Rmeas = (mat33)(Rmeas*m_R[i].mu);
       } else {
         Rmeas = m_R[i].mu;
@@ -1245,6 +1248,14 @@ namespace Nf
     particles.ws.save(path, raw_ascii);
     sprintf(path, "%sRs.dat", basePath);
     saveOrientations(particles.Rs, path);
+  }
+
+  void saveCurvePoints(const char *basePath, const arma::mat &curvePoints)
+  {
+    char path[150] = {0};
+
+    sprintf(path, "%sCurvePoints.dat", basePath);
+    curvePoints.save(path, raw_ascii);
   }
 
   void saveTipHistory(const char *basePath, const std::vector < TipState > &hist)

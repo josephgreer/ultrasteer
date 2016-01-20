@@ -211,7 +211,7 @@ namespace Nf
     // dts[0] = time elapsed from timestep t-1 to t
     // ...
     // dts[n] = time elapsed from t-n-1 to t-n
-    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p, f64 shaftLength) = 0;
+    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p, f64 shaftLength, arma::mat curvePoints = arma::mat()) = 0;
 
     // Get all the particle positions
     virtual arma::mat GetParticlePositions(const PFParams *p) = 0;
@@ -279,7 +279,7 @@ namespace Nf
     // dts(0) = time elapsed from timestep t-1 to t
     // ...
     // dts(n) = time elapsed from t-n-1 to t-n
-    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p, f64 shaftLength);
+    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p, f64 shaftLength, arma::mat curvePoints = arma::mat());
 
     // Get all the particle positions
     // return
@@ -369,7 +369,7 @@ namespace Nf
     // dts[0] = time elapsed from timestep t-1 to t
     // ...
     // dts[n] = time elapsed from t-n-1 to t-n
-    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p, f64 shaftLength);
+    virtual void ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const arma::vec &dts, const PFParams *p, f64 shaftLength, arma::mat curvePoints = arma::mat());
 
     // Get all the particle positions
     // return
@@ -429,6 +429,7 @@ namespace Nf
   void saveMeasurements(const char *basePath, const std::vector < Measurement > &measurements);
   arma::mat loadTimes(const char *basePath);
   void saveTimes(const char *basePath, const arma::mat &ts);
+  void saveCurvePoints(const char *basePath, const arma::mat &curvePoints);
   std::vector < NSCommand > loadCommands(const char *basePath);
   void saveCommands(const char *basePath, const std::vector < NSCommand > &commands);
   PartMethod1 loadParticlesMethod1(const char *basePath);

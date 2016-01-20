@@ -4,7 +4,7 @@ Estimator File Widget++Presaved Point History->OpenFile== C:/Joey/Data/9_18_15/T
 Estimator File Widget++Tip Calibration Save Path->SaveFile== C:/Joey/Data/1_7_16/05mm/Trial1/tipCalib.mat
 Estimator File Widget++Point History Save Path->SaveFile== C:/Joey/Data/9_18_15/Trial1/PreInsertionGPS/TipHistory.mat
 Estimator File Widget++Add New Calib Frame->Bool== 0
-Estimator File Widget++Frame Index->Int== 0
+Estimator File Widget++Frame Index->Int== 1
 Estimator File Widget++Display Modality->Enum== 8
 Estimator File Widget++Operation Mode->Enum== 0
 Estimator File Widget++Ultrasound Volume Visualizer++Ultrasound Visualization++Show Volume Extent->Bool== 0
@@ -23,12 +23,14 @@ Estimator File Widget++Particle Filter++Show Particle Positions->Bool== 1
 Estimator File Widget++Particle Filter++Show Estimated Position->Bool== 1
 Estimator File Widget++Particle Filter++Show Estimated Orientation->Bool== 1
 Estimator File Widget++Particle Filter++Show Measurement Positions->Bool== 1
+Estimator File Widget++Particle Filter++Show Measurement Curve->Bool== 1
+Estimator File Widget++Particle Filter++Show Curve Points->Bool== 1
 Estimator File Widget++Particle Filter++Number of Particles->Int== 500
 Estimator File Widget++Particle Filter++NVis Skip->Int== 5
 Estimator File Widget++Particle Filter++Expected ROC (mm)->Float== 98.889999
 Estimator File Widget++Particle Filter++Particle Filter Method->Enum== 1
 Estimator File Widget++Particle Filter++2D US Segmentation++Show Mask->Bool== 0
-Estimator File Widget++Particle Filter++2D US Segmentation++Initial Model Points->Int== 30
+Estimator File Widget++Particle Filter++2D US Segmentation++Initial Model Points->Int== 60
 Estimator File Widget++Particle Filter++2D US Segmentation++Threshold Fraction->Float== 0.020000
 Estimator File Widget++Particle Filter++2D US Segmentation++Doppler Cluster Expansion->Float== 2.000000
 Estimator File Widget++Particle Filter++2D US Segmentation++Bmode Cluster Expansion->Float== 1.100000
@@ -90,6 +92,7 @@ Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Off
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Off Frame B1->Float== 20.000000
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++neff->Float== 0.500000
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Distance Thresh Sq->Float== 15.000000
+Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Minimum Total Length->Float== 10.000000
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Tip Offset->Vec3d== 0.000000 5.500000 7.500000
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Init Pos Mu->Vec3d== 0.000000 0.000000 0.000000
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Init Pos Sigma->Vec3d== 1.000000 1.000000 1.000000

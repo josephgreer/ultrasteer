@@ -732,7 +732,7 @@ namespace Nf
     ADD_FLOAT_PARAMETER(m_threshFrac, "Threshold Fraction", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, .02, 0.0, 1.0, 0.01);
     ADD_FLOAT_PARAMETER(m_dopplerClusterExpand, "Doppler Cluster Expansion", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 2.0f, 0.0f, 100.0f, 0.1f);
     ADD_FLOAT_PARAMETER(m_bmodeClusterExpand, "Bmode Cluster Expansion", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 1.1f, 0.0f, 100.0f, 0.1f);
-    ADD_INT_PARAMETER(m_initialModelPoints, "Initial Model Points", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 30, 1, 100, 1);
+    ADD_INT_PARAMETER(m_initialModelPoints, "Initial Model Points", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 60, 1, 100, 1);
     ADD_ENUM_PARAMETER(m_displayMode, "Display Type", CALLBACK_POINTER(onSetDisplayMode, NeedleSegmenter), this, QtEnums::DisplayModality::DM_BPOST32, "DisplayModality");
 
     if(width > 0 && height > 0) {

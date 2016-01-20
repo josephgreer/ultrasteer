@@ -64,6 +64,7 @@ namespace Nf
     std::tr1::shared_ptr < CurveVisualizer > m_measCurveVis;
     std::map < s32, PFData > m_pfFramesProcessed;
     std::tr1::shared_ptr < PointCloudVisualizer > m_measurementPoints;
+    std::tr1::shared_ptr < PointCloudVisualizer > m_curvePoints;
     std::tr1::shared_ptr < PFParams > m_pfParams;
     std::tr1::shared_ptr < PFParams > m_pfParamsMarg;
     std::string m_basePath;
@@ -120,6 +121,7 @@ namespace Nf
     std::tr1::shared_ptr < Nf::BoolParameter > m_showExpectedOrientation;
     std::tr1::shared_ptr < Nf::BoolParameter > m_showMeasurements;
     std::tr1::shared_ptr < Nf::BoolParameter > m_showMeasurementCurve;
+    std::tr1::shared_ptr < Nf::BoolParameter > m_showCurvePoints;
     void onVisibilityChanged();
     CLASS_CALLBACK(onVisibilityChanged, ParticleFilterVisualizer);
 
