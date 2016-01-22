@@ -17,7 +17,8 @@ params = loadParams(params, baseDir, method);
 params.drawTruePos = 0;
 params.np = 500;
 params.drawParticlePos = 1;
-params.LUTDistributionBasePath = '/Users/Joey/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Data/NeedleScan/1_7_16/05mm/Trial1/';
+%params.tipOffset = zeros(3,1);
+%params.LUTDistributionBasePath = '/Users/Joey/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Data/NeedleScan/1_7_16/05mm/Trial1/';
 
 rng('default');
 rng(1);

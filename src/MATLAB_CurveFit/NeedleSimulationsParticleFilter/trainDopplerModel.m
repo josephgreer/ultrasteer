@@ -1,13 +1,16 @@
 %%%%%%% Used to train p(over needle | doppler response)
 clearvars -except data; clc; close all;
-
 if(exist('data') == 0)
     data = [];
 end
 
 addpath('../LabelData/');
 
-basePath = 'C:\Joey\Data\1_7_16\05mm\Trial5\';
+basePath = 'C:\Joey\Data\1_7_16\05mm\Trial1\';
+if(exist(strcat(basePath,'data.mat'), 'file'))
+    data = [];
+    load(strcat(basePath,'data.mat'));
+end
 dop = fopen(strcat(basePath,'scan.b32'));
 dopHeader = ReadHeader(dop);
 
@@ -37,8 +40,9 @@ for i=size(data,1)+1:dopHeader.nframes
 %     if(button(1) == 3)% || button(2) == 3)
 %         isDop = 0;
 %     end
-    data = vertcat(data, [sum(imbw(:)) isDop]); 
+    data = vertcat(data, [min(sum(imbw(:)),1e10) isDop]); 
 end
+
 
 pause;
 
@@ -66,7 +70,7 @@ for i=1:nBagging
     cOffNeedles = offNeedles;
     
     X = vertcat(data(cOnNeedles,1), data(cOffNeedles,1));
-    Y = vertcat(ones(size(cOnNeedles)), 2*ones(size(cOffNeedles)));
+    Y = vertcat(1.5*ones(size(cOnNeedles)), ones(size(cOffNeedles)));
     B = mnrfit(X,Y);
     Bs = horzcat(Bs,B);
 end
@@ -96,6 +100,10 @@ plot([-10:.1:1e4],vals);%/sum(vals(:,1)));
 
 %data(offNeedles,1) = 1;
 
+nPad = 50;
+data = vertcat(data, [zeros(nPad,1), ones(nPad,1)]);
+offNeedles = find(data(:,2) == 0);
+onNeedles = find(data(:,2) == 1);
 figure;
 [Fpos Xipos] = ksdensity(data(onNeedles,1),'bandwidth',80);
 plot(Xipos, Fpos)

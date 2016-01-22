@@ -83,6 +83,7 @@ namespace Nf
     ADD_INT_PARAMETER(subsetSize, "Procrustes Subset Size", NULL, NULL, 15, 5, 1e5, 1);
     ADD_INT_PARAMETER(procrustesIt, "Procrustes Iteraitons", NULL, NULL, 3, 1, 1e5, 1);
     ADD_FLOAT_PARAMETER(minTotalLength, "Minimum Total Length", NULL, NULL, 10, 0.1, 200, 0.1);
+    ADD_INT_PARAMETER(nPoints, "N Points", NULL, NULL, 5, 1, 20, 1);
   }
 
   TipState TipState::PropagateLength(const NSCommand &u, f64 dl, const PFParams *p)
@@ -268,10 +269,17 @@ namespace Nf
     return res;
   }
 
+  struct OptimalRotationData
+  {
+    mat33 R;
+    f64 meanDist;
+    f64 medDist;
+  };
+
   //model = current state projected back
   //model = [x1 x2 ... xn] \in R^(3xn), x1 = current point, ... xn = point n timesteps ago
   //measurements = [x1 x2 ... xm] \in R^(3xm), x1 = current measurement point, ..., xm = measurement m timesteps ago
-  static mat33 optimalRotationForModel(mat model, mat measurements, const mat &offset, const PFParams *p)
+  static OptimalRotationData optimalRotationForModel(mat model, mat measurements, const mat &offset, const PFParams *p)
   {
     using ::s32;
 
@@ -291,10 +299,11 @@ namespace Nf
     mat D,U,V,X,Y,XYt,dR;
     vec S, minD;
     s32 mm = 0;
-    s32 nIt = pfm->procrustesIt->GetValue();
+    s32 nIt = 1;//pfm->procrustesIt->GetValue();
     bool bad = false;
     s32 subsetSz = pfm->subsetSize->GetValue();
     f32 distanceThreshSq = pfm->distanceThreshSq->GetValue();
+    u32 minIdx;
     for(s32 i=0; i<nIt; i++) {
       //D_ij = distanceSq(measurements(i), cTemplate(j))
 #if 1
@@ -319,12 +328,19 @@ namespace Nf
       X = cTemplate.cols(minTemplate);
       Y = measurements.cols(goodDs);
 #else 
-      mm = MIN(MIN(pfm->subsetSize, measurements.n_cols),cTemplate.n_cols);
+      X.clear();
+      D = distanceMatrix(measurements.col(0),cTemplate);
+      //D = ones(measurements.n_cols, cTemplate.n_cols);
 
-      // X = cTemplate.cols(span(0,mm-1));
-	  // Y = measurements.cols(span(0,mm-1));
-      X = randu(3, mm);
-      Y = randu(3, mm);
+      minD = D.min(minIdx);
+      for(s32 c=minIdx; c<measurements.n_cols; c++) {
+        X = join_horiz(X,cTemplate.col(c));
+      }
+
+      if(minD(0) > distanceThreshSq)
+        bad = true;
+
+      Y = measurements.cols(0, X.n_cols-1);
 #endif
       XYt = X*Y.t();
       svd(U,S,V,XYt);
@@ -336,10 +352,20 @@ namespace Nf
       cTemplate = dR*cTemplate;
       minTemplate.clear();
     }
-    if(bad)
-      return eye(3,3);
+    //if(bad)
+    //  return eye(3,3);
 
-    return R;
+    OptimalRotationData ret;
+    
+    s32 nPoints = pfm->nPoints->GetValue();
+    D = distanceMatrix(measurements,cTemplate);
+    minD = min(D, 1);
+    minD = arma::sqrt(arma::sort(minD,"ascend"));
+    ret.meanDist = arma::mean(minD.subvec(0,nPoints));
+    ret.medDist = minD(3*nPoints/4);
+    ret.R = R;
+
+    return ret;
   }
 
   static f64 calculateLength(const std::vector < NSCommand > u, const vec dts)
@@ -865,10 +891,15 @@ namespace Nf
 
     bool useLUT = params->useLut->GetValue();
 
-    NTrace("Shaft length %f\n", shaftLength);
+    NTrace("Doppler %f\n", dop);
 
     if(curvePoints.n_rows == 0)
       curvePoints = meas;
+
+    OptimalRotationData omeas;
+    
+    Gaussian < vec, mat > measurementGauss(zeros<vec>(1),ones<mat>(1)*arma::norm(measurementOffsetSigma.diag()));
+    measurementGauss.InitForSampling();
 
     // For each particle...
     for(s32 i=0; i<m_nParticles; i++) {
@@ -882,7 +913,8 @@ namespace Nf
       assert(m.size() >= minimumMeasurements);
 
       if(shaftLength > minTotalLength) {
-        Rmeas = optimalRotationForModel(cModelHist, curvePoints, m_pos.col(i), p);
+        omeas = optimalRotationForModel(cModelHist, curvePoints, m_pos.col(i), p);
+        Rmeas = omeas.R;
         Rmeas = (mat33)(Rmeas*m_R[i].mu);
       } else {
         Rmeas = m_R[i].mu;
@@ -900,6 +932,7 @@ namespace Nf
         Rc = (mat33)(Rprior*SO3Exp(K*v));
         m_R[i] = OrientationKF(Rc, sigmaC);
       }
+
 
       Rdelta = (mat33)(m_R[i].mu*t.R.t());
 
@@ -957,6 +990,8 @@ namespace Nf
         pin = m[0].doppler(0,0) > 0 ? sigmoid(m[0].doppler(0,0), sigB0, sigB1) : 0;
         p_uvxOnFrame = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), measurementOffsetSigma, a, b)+
           (1-pin)*(1/(ush*usw));
+        if(shaftLength > minTotalLength)
+          p_uvxOnFrame *= measurementGauss.Eval(ones<vec>(1)*omeas.medDist);//pin*measurementGauss.Eval(ones<vec>(1)*omeas.meanDist)+(1-pin)*(1/(ush*usw));
       }
 
       p_uvxOffFrame = 1/(ush*usw);

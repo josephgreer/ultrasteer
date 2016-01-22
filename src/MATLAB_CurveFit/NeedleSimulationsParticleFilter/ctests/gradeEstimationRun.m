@@ -2,8 +2,8 @@ clearvars -except 'truePosB' 'estPosB'; clc; close all;
 
 %method = 'FullState';
 method = 'Marginalized';
-estBasePath = strcat('C:\Joey\Data\1_7_16\05mm\Trial4\results\', method, 'Estimated');
-truthBasePath = strcat('C:\Joey\Data\1_7_16\05mm\Trial4\results\', method, 'GroundTruth');
+estBasePath = strcat('C:\Joey\Data\1_7_16\05mm\Trial1\results\', method, 'Estimated');
+truthBasePath = strcat('C:\Joey\Data\1_7_16\05mm\Trial1\results\', method, 'GroundTruth');
 
 estPos = load(strcat(estBasePath, 'Pos.dat'));
 truePos = load(strcat(truthBasePath, 'Pos.dat'));
@@ -15,7 +15,7 @@ estRhos = load(strcat(estBasePath, 'Rho.dat'));
 trueRhos = load(strcat(truthBasePath, 'Rho.dat'));
 
 startId = 20;
-endId = size(estPos,1)-40;
+endId = size(estPos,1)-20;
 
 estPos = estPos([startId:endId], :);
 truePos = truePos([startId:endId], :);
@@ -40,6 +40,18 @@ for i=1:3
     plot(1:size(truePos,1), truePos(:,i),'b');
     hold on;
     plot(1:size(estPos,1), estPos(:,i),'r--');
+    title(titles(i));
+end
+
+figure;
+titles = ['x', 'y', 'z'];
+deltas = zeros(size(truePos));
+for i=1:length(trueRs)
+    deltas(i,:) = (inv(trueRs{i})*(truePos(i,:)-estPos(i,:))')';
+end
+for i=1:3
+    subplot(2,2,i);
+    plot(1:size(truePos,1), deltas(:,i));
     title(titles(i));
 end
 

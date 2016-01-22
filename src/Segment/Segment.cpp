@@ -396,9 +396,9 @@ namespace Nf
   static s32 nPointsToDegree(s32 maxDegree, s32 nPoints)
   {
     s32 res = 0;
-    if(nPoints < 40)
+    if(nPoints < 80)
       res = MIN(1, maxDegree);
-    else if(nPoints < 80)
+    else if(nPoints < 100)
       res = MIN(2, maxDegree);
     else
       res = maxDegree;
@@ -725,14 +725,14 @@ namespace Nf
     : m_mainModelInit(false)
     , m_update(update)
     , ParameterCollection("2D US Segmentation")
-    , m_model(2, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 4.0f)
-    , m_initialModel(2, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000000.0f)
+    , m_model(1, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 4.0f)
+    , m_initialModel(1, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000000.0f)
   {
     ADD_BOOL_PARAMETER(m_showColorMask, "Show Mask", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, false);
     ADD_FLOAT_PARAMETER(m_threshFrac, "Threshold Fraction", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, .02, 0.0, 1.0, 0.01);
     ADD_FLOAT_PARAMETER(m_dopplerClusterExpand, "Doppler Cluster Expansion", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 2.0f, 0.0f, 100.0f, 0.1f);
     ADD_FLOAT_PARAMETER(m_bmodeClusterExpand, "Bmode Cluster Expansion", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 1.1f, 0.0f, 100.0f, 0.1f);
-    ADD_INT_PARAMETER(m_initialModelPoints, "Initial Model Points", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 60, 1, 100, 1);
+    ADD_INT_PARAMETER(m_initialModelPoints, "Initial Model Points", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 60, 1, 2000, 1);
     ADD_ENUM_PARAMETER(m_displayMode, "Display Type", CALLBACK_POINTER(onSetDisplayMode, NeedleSegmenter), this, QtEnums::DisplayModality::DM_BPOST32, "DisplayModality");
 
     if(width > 0 && height > 0) {

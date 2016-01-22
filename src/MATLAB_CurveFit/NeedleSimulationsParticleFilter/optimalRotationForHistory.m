@@ -13,18 +13,27 @@ R = eye(3);
 ctemplate = template;
 minTemplate = [];
 for i=1:params.p100.procrustesit
-    D = distanceMatrix(measurements,ctemplate);
-    [minD minTemplate] = min(D,[], 2);
-    goodDs = find(minD < params.p3.distanceThresh);
-    goodDs = datasample(goodDs, min(params.p3.subsetSize, length(goodDs)), 'Replace', false);
-    %goodDs = sort(goodDs);
-    %display(length(goodDs));
-    minTemplate = minTemplate(goodDs);
-    
-    X = ctemplate(minTemplate,:);
-    % X = QuatToRotationMatrix(AxisAngleToQuat(2000*rand(3,1)))*X';
-    % X = X';
-    Y = measurements(goodDs,:);
+    if(true)
+        D = distanceMatrix(measurements,ctemplate);
+        [minD minTemplate] = min(D,[], 2);
+        goodDs = find(minD < params.p3.distanceThresh);
+        goodDs = datasample(goodDs, min(params.p3.subsetSize, length(goodDs)), 'Replace', false);
+        %goodDs = sort(goodDs);
+        %display(length(goodDs));
+        minTemplate = minTemplate(goodDs);
+        
+        X = ctemplate(minTemplate,:);
+        % X = QuatToRotationMatrix(AxisAngleToQuat(2000*rand(3,1)))*X';
+        % X = X';
+        Y = measurements(goodDs,:);
+    else
+        X = [];
+        D = distanceMatrix(measurements(1,:), ctemplate(1:end,:));
+        [minD minIdx] = min(D);
+        
+        X = ctemplate(minIdx:end,:);
+        Y = measurements(1:size(X,1),:);
+    end
     dR = procrustesRotation(X,Y);
     R = dR*R;
     ctemplate = dR*ctemplate';
@@ -51,7 +60,7 @@ Z = Z+repmat(offset, size(Z,1), 1);
 hold on
 scatter3(X(:,1), X(:,2), X(:,3), 'filled','MarkerFaceColor',[1 0 0]);
 scatter3(Y(:,1), Y(:,2), Y(:,3), 'filled','MarkerFaceColor',[0 1 0]);
-scatter3(Z(:,1), Z(:,2), Z(:,3), 'filled','MarkerFaceColor',[0 0 1]);
+%scatter3(Z(:,1), Z(:,2), Z(:,3), 'filled','MarkerFaceColor',[0 0 1]);
 
 
 xlabel('x');

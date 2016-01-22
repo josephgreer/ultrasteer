@@ -720,7 +720,8 @@ namespace Nf
          curvePoints = CurvePoints(&m_pfFramesProcessed[frame].measCurve, (s32)(1*GetParams(frame)->n->GetValue()), 2*GetParams(frame)->minLength->GetValue(), 
           (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0*m_pfFramesProcessed[frame].u.v, m_pfFramesProcessed[frame].m.pos.col(0));
       } 
-
+      
+      f64 tLength = totalLength(AssembleAllCommands(frame), AssembleAllDts(frame));
       if(false) {
         if(this->m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
           SaveParticleFilterState(AssembleCommands(frame), AssembleDts(frame), AssembleMeasurements(frame),
@@ -732,6 +733,7 @@ namespace Nf
 						(const PFMarginalizedParams *)GetParams(frame).get());
         }
       }
+      NTrace("Frame %d\n", frame);
       m_pf->ApplyMeasurement(AssembleMeasurements(frame), AssembleCommands(frame), AssembleDts(frame), params.get(), totalLength(AssembleAllCommands(frame), AssembleAllDts(frame)), curvePoints.t());
 
       // Push in estimate from particle filter

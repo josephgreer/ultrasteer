@@ -120,6 +120,7 @@ namespace Nf
     std::tr1::shared_ptr < IntParameter > subsetSize;                              //  subset size for rotation measurement
     std::tr1::shared_ptr < IntParameter > procrustesIt;                            //  number of iterations to run procrustes
     std::tr1::shared_ptr < FloatParameter > minTotalLength;                        //  minimum shaft length before starting to compute rotations
+    std::tr1::shared_ptr < IntParameter > nPoints;                                 //  number of points to average together for distance calculation
 
     PFMarginalizedParams(Vec2d mpp = Vec2d(83,83), const char *name = "Particle Filter Marginalized Params");
   };
