@@ -1,8 +1,8 @@
-Estimator File Widget++RP Filename->OpenFile== C:/Joey/Data/9_18_15/2mm/Trial3/scan.b8
-Estimator File Widget++Presaved Tip Calibration->OpenFile== C:/Joey/Data/9_18_15/2mm/Trial3/TipCalib.mat
-Estimator File Widget++Presaved Point History->OpenFile== C:/Joey/Data/9_18_15/Trial3/PreInsertionGPS/TipHistory.mat
-Estimator File Widget++Tip Calibration Save Path->SaveFile== C:/Joey/Data/9_18_15/2mm/Trial3/tipCalib.mat
-Estimator File Widget++Point History Save Path->SaveFile== C:/Joey/Data/9_18_15/Trial3/PreInsertionGPS/TipHistory.mat
+Estimator File Widget++RP Filename->OpenFile== C:/Joey/Data/9_18_15/2mm/Trial4/scan.b8
+Estimator File Widget++Presaved Tip Calibration->OpenFile== C:/Joey/Data/9_18_15/2mm/Trial4/TipCalib.mat
+Estimator File Widget++Presaved Point History->OpenFile== C:/Joey/Data/9_18_15/Trial4/PreInsertionGPS/TipHistory.mat
+Estimator File Widget++Tip Calibration Save Path->SaveFile== C:/Joey/Data/9_18_15/2mm/Trial4/tipCalib.mat
+Estimator File Widget++Point History Save Path->SaveFile== C:/Joey/Data/9_18_15/Trial4/PreInsertionGPS/TipHistory.mat
 Estimator File Widget++Add New Calib Frame->Bool== 0
 Estimator File Widget++Frame Index->Int== 1
 Estimator File Widget++Display Modality->Enum== 8
@@ -67,8 +67,8 @@ Estimator File Widget++Particle Filter++Particle Filter Full State Params++Parti
 Estimator File Widget++Particle Filter++Particle Filter Full State Params++Particle Mu Orientation->Vec3d== 0.000000 0.000000 0.000000
 Estimator File Widget++Particle Filter++Particle Filter Full State Params++Particle Sigma Orientation->Vec3d== 0.000628 0.000628 0.000628
 Estimator File Widget++Particle Filter++Particle Filter Full State Params++Measurement Offset Sigma (Px)->Vec2d== 20.000000 20.000000
-Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++onNeedleLUTPath->OpenFile== C:/Joey/Data/9_18_15/2mm/Trial3/pdopoverneedle.dat
-Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++offNeedleLUTPath->OpenFile== C:/Joey/Data/9_18_15/2mm/Trial3/pdopnotoverneedle.dat
+Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++onNeedleLUTPath->OpenFile== C:/Joey/Data/9_18_15/2mm/Trial4/pdopoverneedle.dat
+Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++offNeedleLUTPath->OpenFile== C:/Joey/Data/9_18_15/2mm/Trial4/pdopnotoverneedle.dat
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Use LUT->Bool== 0
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Minimum Measurements->Int== 15
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++n->Int== 20
