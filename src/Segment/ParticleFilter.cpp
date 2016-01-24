@@ -254,6 +254,31 @@ namespace Nf
     return D;
   }
 
+  //X = [x1 x2 ... xn] x_i \in R^3
+  //Y = [y1 y2 ... ym] y_i \in R^3
+  //derivs = [d1 d2 ... dm] d_i \in R^3 unit vectors to only look at lateral error
+  //D = D_ij = |(x_i-y_j)|^2
+  static mat distanceMatrixLateral(const mat &X, const mat &Y, const mat &derivs)
+  {
+    using ::s32;
+
+    s32 m = X.n_cols;
+    s32 n = Y.n_cols;
+
+    //mat D = repmat(((mat)(X.t()*X)).diag(), 1, n)-2*X.t()*Y+repmat(((mat)(Y.t()*Y)).diag().t(), m, 1);
+    mat D = zeros(m,n);
+    vec3 delta;
+    for(s32 i=0; i<m; i++) {
+      for(s32 j=0; j<n; j++) {
+        delta = (vec3)(X.col(i) - Y.col(j));
+        delta = delta-dot(delta,derivs.col(i))*derivs.col(i);
+        D(i,j) = delta(0)*delta(0)+delta(1)*delta(1)+delta(2)*delta(2);
+      }
+    }
+
+    return D;
+  }
+
   // sample without replacmenet
   static uvec sample(uvec x, s32 n)
   {
@@ -288,6 +313,12 @@ namespace Nf
     //offset so that model.col(0) is origin (we rotate about that point)
     measurements = measurements-repmat(offset,1,measurements.n_cols);
 
+    // we want directions of each measurement
+    mat measurementDerivs = measurements.cols(0,measurements.n_cols-2)-measurements.cols(1,measurements.n_cols-1);
+    measurementDerivs = join_horiz(measurementDerivs, measurementDerivs.col(measurementDerivs.n_cols-1));
+    for(s32 i=0; i<measurementDerivs.n_cols; i++)
+      measurementDerivs.col(i) = measurementDerivs.col(i)/norm(measurementDerivs.col(i));
+
     mat33 R = eye(3,3);
 
     mat cTemplate = model;
@@ -306,7 +337,6 @@ namespace Nf
     u32 minIdx;
     for(s32 i=0; i<nIt; i++) {
       //D_ij = distanceSq(measurements(i), cTemplate(j))
-#if 1
       D = distanceMatrix(measurements,cTemplate);
       //D = ones(measurements.n_cols, cTemplate.n_cols);
 
@@ -315,10 +345,10 @@ namespace Nf
         minTemplate = join_vert(minTemplate,find(D.row(r) == minD(r)));
       }
       goodDs = find(minD < distanceThreshSq);
-      goodDs = sample(goodDs, MIN(subsetSz, goodDs.n_rows));
+      //goodDs = sample(goodDs, MIN(subsetSz, goodDs.n_rows));
 
-      if(i == nIt-1 && goodDs.n_rows < (subsetSz/2))
-        bad = true;
+      //if(i == nIt-1 && goodDs.n_rows < (subsetSz/2))
+      //  bad = true;
 
       //goodDs = goodDs.subvec(span(0,MAX(MIN(pfm->subsetSize-1, goodDs.n_rows-1),0)));
       //goodDs = sort(goodDs);
@@ -327,21 +357,7 @@ namespace Nf
 
       X = cTemplate.cols(minTemplate);
       Y = measurements.cols(goodDs);
-#else 
-      X.clear();
-      D = distanceMatrix(measurements.col(0),cTemplate);
-      //D = ones(measurements.n_cols, cTemplate.n_cols);
 
-      minD = D.min(minIdx);
-      for(s32 c=minIdx; c<measurements.n_cols; c++) {
-        X = join_horiz(X,cTemplate.col(c));
-      }
-
-      if(minD(0) > distanceThreshSq)
-        bad = true;
-
-      Y = measurements.cols(0, X.n_cols-1);
-#endif
       XYt = X*Y.t();
       svd(U,S,V,XYt);
       dR = V*U.t();
@@ -358,10 +374,11 @@ namespace Nf
     OptimalRotationData ret;
     
     s32 nPoints = pfm->nPoints->GetValue();
-    D = distanceMatrix(measurements,cTemplate);
+    D = distanceMatrix(measurements,cTemplate);// distanceMatrixLateral(measurements,cTemplate,measurementDerivs);
     minD = min(D, 1);
     minD = arma::sqrt(arma::sort(minD,"ascend"));
-    ret.meanDist = arma::mean(minD.subvec(0,nPoints));
+    f64 dither = 0;//5*((arma::vec)arma::randu(1))(0);
+    ret.meanDist = arma::mean(minD.subvec(0,nPoints-1));
     ret.medDist = minD(3*nPoints/4);
     ret.R = R;
 
@@ -891,10 +908,12 @@ namespace Nf
 
     bool useLUT = params->useLut->GetValue();
 
-    NTrace("Doppler %f\n", dop);
-
     if(curvePoints.n_rows == 0)
       curvePoints = meas;
+
+    if(shaftLength > minTotalLength) {
+      NTrace("Marginalizing\n");
+    }
 
     OptimalRotationData omeas;
     
@@ -988,10 +1007,12 @@ namespace Nf
 
         // calculate p(frame interesects with flagella|doppler)
         pin = m[0].doppler(0,0) > 0 ? sigmoid(m[0].doppler(0,0), sigB0, sigB1) : 0;
-        p_uvxOnFrame = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), measurementOffsetSigma, a, b)+
-          (1-pin)*(1/(ush*usw));
-        if(shaftLength > minTotalLength)
-          p_uvxOnFrame *= measurementGauss.Eval(ones<vec>(1)*omeas.medDist);//pin*measurementGauss.Eval(ones<vec>(1)*omeas.meanDist)+(1-pin)*(1/(ush*usw));
+        if(shaftLength > minTotalLength) {
+          p_uvxOnFrame = measurementGauss.Eval(ones<vec>(1)*omeas.medDist);//pin*measurementGauss.Eval(ones<vec>(1)*omeas.meanDist)+(1-pin)*(1/(ush*usw));
+        }else {
+          p_uvxOnFrame = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), measurementOffsetSigma, a, b)+
+            (1-pin)*(1/(ush*usw));
+        }
       }
 
       p_uvxOffFrame = 1/(ush*usw);

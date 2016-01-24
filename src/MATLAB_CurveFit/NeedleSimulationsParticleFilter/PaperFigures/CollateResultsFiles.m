@@ -4,7 +4,7 @@ clear; clc; close all;
 
 addpath('../ctests/');
 
-baseDir = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\';
+baseDir = 'C:\Joey\Data\NeedleScan\';
 outBaseDir = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\JournalResults\';
 
 excludeDir = {'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\9_18_15\Results\9_18_15\05mm',...

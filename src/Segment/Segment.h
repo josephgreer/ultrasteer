@@ -88,6 +88,7 @@ namespace Nf
     Vec3f descriptor;                             //descriptor axis
     f32 modelThresh;
     f32 minModelThresh;
+    s32 minPointsDeg2;
   } PolyCurveParams;
 
   typedef struct {
@@ -113,12 +114,13 @@ namespace Nf
     s32 m_maxDegree;
 
   public:
-    CurveFitter(s32 polyDegree, f32 timeDecay, f32 minYouth, f32 imageWeight, f32 modelWeight, f32 youthWeight, f32 modelThresh);
+    CurveFitter(s32 polyDegree, s32 minPointsDeg2, f32 timeDecay, f32 minYouth, f32 imageWeight, f32 modelWeight, f32 youthWeight, f32 modelThresh);
     ~CurveFitter();
     void AddNeedleFrame(NeedleFrame &frame);
     PolyCurve GetModel();
     void SetInitialModel(const PolyCurve *src);
     void ClearPoints();
+    void Clear();
     std::vector < NeedlePoint > * GetPoints();
     std::vector < Vec3f > * GetUsedPoints();
     std::vector < NeedlePoint > GetUsedNeedlePoints();
@@ -173,6 +175,9 @@ namespace Nf
     std::tr1::shared_ptr < Nf::FloatParameter > m_bmodeClusterExpand;
     std::tr1::shared_ptr < Nf::FloatParameter > m_threshFrac;
     std::tr1::shared_ptr < Nf::IntParameter > m_initialModelPoints;
+    std::tr1::shared_ptr < Nf::IntParameter > m_mainModelDegree;
+    std::tr1::shared_ptr < Nf::IntParameter > m_initialModelDegree;
+    std::tr1::shared_ptr < Nf::IntParameter > m_minPointsDeg2;
     virtual void onParamChange();
     CLASS_CALLBACK(onParamChange, NeedleSegmenter);
 
@@ -180,6 +185,7 @@ namespace Nf
     NeedleSegmenter(s32 width = 0, s32 height = 0, Updateable *m_update = NULL);
     ~NeedleSegmenter();
     void Initialize(s32 width, s32 height);
+    void Clear();
     bool IsInit();
     void ProcessColor(const IplImage *color, IplImage *bmode, const ImageCoordTransform *transform); 
 

@@ -17,5 +17,7 @@ elseif(strcmpi(splits{1}, 'procrustesIt'));
     params.p3.procrustesit = str2num(splits{2});
 elseif(strcmpi(splits{1}, 'distanceThres'))
     params.p3.distanceThresh = str2num(splits{2});
+elseif(strcmpi(splits{1}, 'nPoints'))
+    params.p3.nPoints = str2num(splits{2});
 end
 end

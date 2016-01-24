@@ -101,6 +101,7 @@ params.p3.distanceThresh = 5^2;                                             %min
 params.p3.subsetSize = 15;                                                  %subset size for rotation measurement
 params.p3.procrustesit = 3;                                                 %number of iterations to run procrustes
 params.p3.particleSigmaPos = diag(1/3*[1 1 1]);                               %sigma pos for particle propagation
+params.p3.nPoints = 5;                                                      % number of points to average together for distance calculation
 
 % method 4
 params.p4.initPosSigma = diag([5 5 5]);                                     %pos sigma for initial distribution of particles

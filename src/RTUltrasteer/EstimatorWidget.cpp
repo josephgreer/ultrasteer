@@ -212,7 +212,7 @@ namespace Nf
   void ParticleFilterVisualizer::onClearEstimatorData()
   {
     m_measurementPoints->ClearPoints();
-    m_segmenter = std::tr1::shared_ptr < NeedleSegmenter > (new Nf::NeedleSegmenter(0,0,this));
+    m_segmenter->Clear();
 
     m_pfFramesProcessed.clear();
     m_update->onUpdate();
@@ -464,6 +464,7 @@ namespace Nf
     fprintf(f, "subsetSize %d\n", p->subsetSize->GetValue());
     fprintf(f, "procrustesIt %d\n", p->procrustesIt->GetValue());
     fprintf(f, "measurementSigma %f, %f, %f\n", p->measurementSigma->GetValue().x, p->measurementSigma->GetValue().y, p->measurementSigma->GetValue().z);
+    fprintf(f, "nPoints %d\n", p->nPoints->GetValue());
   }
 
   void ParticleFilterVisualizer::SaveParticleFilterResults(s32 frame, const char *directory)
@@ -531,7 +532,6 @@ namespace Nf
   static arma::mat CurvePoints(const PolyCurve *p, s32 n, f64 desiredLength, f64 ds, arma::vec latestMeasurement)
   {
     Polynomial pp = PolyCurveToPolynomial(p);
-    
     f64 ta, tb;
     if(arma::norm(pp(p->dRange.x)-latestMeasurement) < arma::norm(pp(p->dRange.y)-latestMeasurement)) {
       ta = p->dRange.x;
@@ -550,6 +550,21 @@ namespace Nf
 
     if(i < res.n_rows-1)
       res = res.rows(0,i);
+
+    // we want directions of each measurement
+    arma::mat derivs = res.rows(0,res.n_rows-2)-res.rows(1,res.n_rows-1);
+    derivs = arma::join_vert(derivs, derivs.row(derivs.n_rows-1));
+    arma::vec spacings = arma::zeros(derivs.n_rows);
+    for(s32 i=0; i<derivs.n_rows; i++) {
+      spacings(i) = arma::norm(derivs.row(i));
+      derivs.row(i) = derivs.row(i)/spacings(i);
+    }
+
+    f64 dlen = arma::mean(spacings);
+
+    for(f64 extraLen=0; extraLen <= 10.0; extraLen += dlen) {
+      res = arma::join_vert(res.row(0)+derivs.row(derivs.n_rows/10)*dlen, res);
+    }
 
     if(res.n_rows > n) {
       arma::uvec ris = arma::linspace<arma::uvec>(0, res.n_rows-1, n);
@@ -661,6 +676,16 @@ namespace Nf
     return res;
   }
 
+  bool ParticleFilterVisualizer::ShouldInitialize(s32 frame)
+  {
+    PFMarginalizedParams *p = (PFMarginalizedParams *)GetParams(frame).get();
+    if(this->m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE && !m_init && NumberOfMeasurementsUpToAndIncludingFrame(frame) >= GetParams(frame)->minimumMeasurements->GetValue())
+      return true;
+    else if(this->m_pfMethod->GetValue() == QtEnums::PFM_MARGINALIZED_ORIENTATION && !m_init && totalLength(AssembleAllCommands(frame), AssembleAllDts(frame)) > p->minTotalLength->GetValue())
+      return true;
+    return false;
+  }
+
   void ParticleFilterVisualizer::Update(RPData *rp, s32 frame)
   {
     bool alreadyProcessed = m_pfFramesProcessed.find(frame) != m_pfFramesProcessed.end();
@@ -699,7 +724,7 @@ namespace Nf
     m_pfFramesProcessed[frame] = AssemblePFData(np, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), *rp, m_roc->GetValue(), curve);
 
     std::tr1::shared_ptr < PFParams > params = GetParams(frame);
-    if(!m_init && NumberOfMeasurementsUpToAndIncludingFrame(frame) >= params->minimumMeasurements->GetValue()) {
+    if(ShouldInitialize(frame)) {
       //We are not initialized, but we can initialize now
       m_pf->InitializeParticleFilter(AssembleTipHistory(frame), params.get());
       m_init = true;
@@ -722,7 +747,7 @@ namespace Nf
       } 
       
       f64 tLength = totalLength(AssembleAllCommands(frame), AssembleAllDts(frame));
-      if(false) {
+      if(false) {//frame == 341) {
         if(this->m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
           SaveParticleFilterState(AssembleCommands(frame), AssembleDts(frame), AssembleMeasurements(frame),
             AssembleParticles(std::tr1::shared_ptr < ParticleFilterFullState > ((ParticleFilterFullState *)m_pf.get()), GetParams(-1).get()), curvePoints,

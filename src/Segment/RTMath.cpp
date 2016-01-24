@@ -332,6 +332,7 @@ namespace Nf
 
     if(flip) {
       res = arma::flipud(res);
+      res = res.rows(0,res.n_rows-2);
     }
 
     return res;

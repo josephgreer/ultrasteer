@@ -5,7 +5,7 @@ paths = {'C:\Joey\Data\1_7_16\05mm\Trial1\data.mat', 'C:\Joey\Data\1_7_16\05mm\T
     'C:\Joey\Data\1_7_16\05mm\Trial5\data.mat'}
 %paths = {'C:\Joey\Data\1_7_16\05mm\Trial5\data.mat'};
 
-basePath = 'C:\Joey\Data\1_7_16\05mm\Trial1\';
+basePath = 'C:\Joey\Data\1_7_16\05mm\Trial2\';
 
 data = load(paths{1});
 data = data.data;
@@ -13,10 +13,6 @@ for i=2:length(paths)
     currData = load(paths{i});
     data = vertcat(data, currData.data);
 end
-
-nPad = 0;
-nPad = nPad*length(paths);
-data = vertcat(data, [zeros(nPad,1), ones(nPad,1)]);
 
 nBagging = 5;
 offNeedles = find(data(:,2) == 0);
@@ -47,7 +43,7 @@ for i=1:nBagging
     
     X = vertcat(data(cOnNeedles,1), data(cOffNeedles,1));
     Y = vertcat(ones(size(cOnNeedles)), zeros(size(cOffNeedles)));
-    ws = vertcat(ones(size(cOnNeedles)),ones(size(cOffNeedles)));
+    ws = vertcat(1.1*ones(size(cOnNeedles)),ones(size(cOffNeedles)));
     B = glmfit(X,Y,'binomial','weights',ws);
     Bs = horzcat(Bs,B);
 end
@@ -60,6 +56,14 @@ plot([-10:.1:1e4],vals);%/sum(vals(:,1)));
 
 %data(offNeedles,1) = 1;
 
+
+nPad = 200;
+nPad = nPad*length(paths);
+mults = randn(nPad,1)*0.5 + 1;
+base = 50;
+data = vertcat(data, [base*mults, ones(nPad,1)]);
+offNeedles = find(data(:,2) == 0);
+onNeedles = find(data(:,2) == 1);
 
 figure;
 [Fpos Xipos] = ksdensity(data(onNeedles,1),'bandwidth',80);

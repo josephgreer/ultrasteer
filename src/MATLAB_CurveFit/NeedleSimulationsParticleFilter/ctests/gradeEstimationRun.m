@@ -2,26 +2,31 @@ clearvars -except 'truePosB' 'estPosB'; clc; close all;
 
 %method = 'FullState';
 method = 'Marginalized';
-estBasePath = strcat('C:\Joey\Data\1_7_16\05mm\Trial1\results\', method, 'Estimated');
-truthBasePath = strcat('C:\Joey\Data\1_7_16\05mm\Trial1\results\', method, 'GroundTruth');
-
+trial = 3;
+date = '9_18_15'
+speed = '2mm';
+estBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\results\', method, 'Estimated');
+truthBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\results\', method, 'GroundTruth');
+% estBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\', method, 'Estimated');
+% truthBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\', method, 'GroundTruth');
 estPos = load(strcat(estBasePath, 'Pos.dat'));
 truePos = load(strcat(truthBasePath, 'Pos.dat'));
 
 estRs = loadOrientations(strcat(estBasePath, 'Rs.dat'));
 trueRs = loadOrientations(strcat(truthBasePath, 'Rs.dat'));
-
 estRhos = load(strcat(estBasePath, 'Rho.dat'));
 trueRhos = load(strcat(truthBasePath, 'Rho.dat'));
 
-startId = 20;
+[indicesR, indicesC] = ind2sub(size(estPos), find(estPos ~= 0));
+startId = min(indicesR);
 endId = size(estPos,1)-20;
+idxs = [startId:endId];
 
-estPos = estPos([startId:endId], :);
-truePos = truePos([startId:endId], :);
+estPos = estPos(idxs, :);
+truePos = truePos(idxs, :);
 
-estRs = estRs([startId:endId]);
-trueRs = trueRs([startId:endId]);
+estRs = estRs(idxs);
+trueRs = trueRs(idxs);
 
 scatter3(estPos(:,1), estPos(:,2), estPos(:,3), 'b');
 hold on;
@@ -37,9 +42,9 @@ figure;
 titles = ['x', 'y', 'z'];
 for i=1:3
     subplot(2,2,i);
-    plot(1:size(truePos,1), truePos(:,i),'b');
+    plot(idxs, truePos(:,i),'b');
     hold on;
-    plot(1:size(estPos,1), estPos(:,i),'r--');
+    plot(idxs, estPos(:,i),'r--');
     title(titles(i));
 end
 
@@ -51,7 +56,7 @@ for i=1:length(trueRs)
 end
 for i=1:3
     subplot(2,2,i);
-    plot(1:size(truePos,1), deltas(:,i));
+    plot(idxs, deltas(:,i));
     title(titles(i));
 end
 

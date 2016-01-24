@@ -7,6 +7,9 @@
 using namespace std;
 using namespace alglib;
 
+#define MAIN_MODEL_DEG 2
+#define INITIAL_MODEL_DEG 2
+
 namespace Nf
 {
   static void makeFlat(std::vector < NeedlePoint > &flat, const std::vector < NeedleFrame > &collection)
@@ -364,7 +367,7 @@ namespace Nf
   //////////////////////////////////////////////////
   //Begin Curve Fitter 
   //////////////////////////////////////////////////
-  CurveFitter::CurveFitter(s32 polyDegree, f32 timeDecay, f32 minYouth, f32 imageWeight, f32 modelWeight, f32 youthWeight, f32 modelThresh)
+  CurveFitter::CurveFitter(s32 polyDegree, s32 minPointsDeg2, f32 timeDecay, f32 minYouth, f32 imageWeight, f32 modelWeight, f32 youthWeight, f32 modelThresh)
   {
     m_data.pParams.min_points = INITIAL_MODEL_POINTS;
     m_data.pParams.degree = 1;
@@ -374,6 +377,7 @@ namespace Nf
     m_data.pParams.timeDecay = timeDecay;
     m_data.pParams.min_youth = minYouth;
     m_data.pParams.descriptor = Vec3f(1.0f, 0, 0);
+    m_data.pParams.minPointsDeg2 = minPointsDeg2;
 
     m_data.pParams.modelThresh = modelThresh*INIT_MODEL_THRESH_FACTOR;
     m_data.pParams.minModelThresh = modelThresh;
@@ -393,12 +397,12 @@ namespace Nf
     m_lastModel = *src;
   }
 
-  static s32 nPointsToDegree(s32 maxDegree, s32 nPoints)
+  static s32 nPointsToDegree(s32 maxDegree, s32 minPointsDeg2, s32 nPoints)
   {
     s32 res = 0;
-    if(nPoints < 80)
+    if(nPoints < minPointsDeg2)
       res = MIN(1, maxDegree);
-    else if(nPoints < 100)
+    else if(nPoints < 80)
       res = MIN(2, maxDegree);
     else
       res = maxDegree;
@@ -409,7 +413,7 @@ namespace Nf
   {
     PolyCurve last = m_lastModel;
     fitPointsToNeedle(&m_lastModel, &m_data.pParams, m_usedPoints, m_usedNPoints, m_pts, frame, &last);
-    m_data.pParams.degree = nPointsToDegree(m_maxDegree, (s32)m_usedPoints.size());
+    m_data.pParams.degree = nPointsToDegree(m_maxDegree, m_data.pParams.minPointsDeg2, (s32)m_usedPoints.size());
   }
 
   PolyCurve CurveFitter::GetModel()
@@ -436,6 +440,18 @@ namespace Nf
   std::vector < NeedlePoint > CurveFitter::GetUsedNeedlePoints()
   {
     return m_usedNPoints;
+  }
+
+  void CurveFitter::Clear()
+  {
+    m_usedPoints.clear();
+    m_pts.clear();
+    m_data.incomingPts.clear();
+    memset(&m_data.res, 0, sizeof(PolyCurve));
+    m_data.usedNpoints.clear();
+    m_data.usedPoints.clear();
+    m_data.pParams.min_points = INITIAL_MODEL_POINTS;
+    m_data.pParams.degree = 1;
   }
 
   //////////////////////////////////////////////////
@@ -725,14 +741,17 @@ namespace Nf
     : m_mainModelInit(false)
     , m_update(update)
     , ParameterCollection("2D US Segmentation")
-    , m_model(1, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 4.0f)
-    , m_initialModel(1, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000000.0f)
+    , m_model(m_mainModelDegree->GetValue(), m_minPointsDeg2->GetValue(), .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000.0f)
+    , m_initialModel(m_initialModelDegree->GetValue(), m_minPointsDeg2->GetValue(), .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000000.0f)
   {
     ADD_BOOL_PARAMETER(m_showColorMask, "Show Mask", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, false);
     ADD_FLOAT_PARAMETER(m_threshFrac, "Threshold Fraction", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, .02, 0.0, 1.0, 0.01);
     ADD_FLOAT_PARAMETER(m_dopplerClusterExpand, "Doppler Cluster Expansion", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 2.0f, 0.0f, 100.0f, 0.1f);
     ADD_FLOAT_PARAMETER(m_bmodeClusterExpand, "Bmode Cluster Expansion", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 1.1f, 0.0f, 100.0f, 0.1f);
     ADD_INT_PARAMETER(m_initialModelPoints, "Initial Model Points", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 60, 1, 2000, 1);
+    ADD_INT_PARAMETER(m_mainModelDegree, "Main Model Degree", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 2, 1, 5, 1);
+    ADD_INT_PARAMETER(m_initialModelDegree, "Initial Model Degree", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 1, 1, 5, 1);
+    ADD_INT_PARAMETER(m_minPointsDeg2, "Min Points Degree 2", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, 30, 1, 2000, 1);
     ADD_ENUM_PARAMETER(m_displayMode, "Display Type", CALLBACK_POINTER(onSetDisplayMode, NeedleSegmenter), this, QtEnums::DisplayModality::DM_BPOST32, "DisplayModality");
 
     if(width > 0 && height > 0) {
@@ -749,6 +768,18 @@ namespace Nf
 
 
     InitZeroLut();
+  }
+
+  void NeedleSegmenter::Clear()
+  {
+    m_mainModelInit = false;
+    
+    m_model = CurveFitter(m_mainModelDegree->GetValue(), m_minPointsDeg2->GetValue(), .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000.0f);
+    m_initialModel = CurveFitter(m_initialModelDegree->GetValue(), m_minPointsDeg2->GetValue(), .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000000.0f);
+    for(s32 i=0; i<2; i++) 
+      m_colorMask[i] = NULL;
+
+    m_disImage = NULL;
   }
 
   NeedleSegmenter::~NeedleSegmenter()
@@ -772,6 +803,9 @@ namespace Nf
     if(m_disImage != NULL)
       cvReleaseImage(&m_disImage);
     m_disImage = cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, 4);
+    
+    m_initialModel = CurveFitter(m_initialModelDegree->GetValue(), m_minPointsDeg2->GetValue(), .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000000.0f);
+    m_model = CurveFitter(m_mainModelDegree->GetValue(), m_minPointsDeg2->GetValue(), .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 4.0f);
 
   }
 

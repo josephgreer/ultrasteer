@@ -16,7 +16,8 @@ end
 params = loadParams(params, baseDir, method);
 params.drawTruePos = 0;
 params.np = 500;
-params.drawParticlePos = 1;
+params.drawParticlePos = 0;
+params.lambdaDop = 0.5;
 %params.tipOffset = zeros(3,1);
 %params.LUTDistributionBasePath = '/Users/Joey/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Data/NeedleScan/1_7_16/05mm/Trial1/';
 
@@ -29,6 +30,10 @@ measurements = loadMeasurements(basePath);
 xp = loadParticlesFromBasePath(basePath, params);
 dts = loadDts(basePath);
 us = loadCommands(basePath);
+
+for i=1:params.np
+    xp{i}.w = 1/params.np;
+end
 
 params.usw = norm(measurements{1}.fur-measurements{1}.ful);
 params.ush = norm(measurements{1}.fur-measurements{1}.fbr);
@@ -53,6 +58,7 @@ view(-109, 32);
 xpa = measureParticles(xp, us, [], dts, measurements, params);
 
 xpea = expectedValueOfParticles(xpa, params);
+pause(2);
 particleHandles = drawParticles(1, xpa, xpea, [], params, particleHandles);
 
 figure;
@@ -60,7 +66,7 @@ figure;
 Re = QuatToRotationMatrix(xpea.q);
 projScatter = zeros(length(xpa),3);
 for i=1:length(xpa)
-    projScatter(i,1) = (xpa{i}.pos-xpea.pos)'*Re(:,3);
+    projScatter(i,1) = (xpa{i}.pos-xpe.pos)'*Re(:,3);
     projScatter(i,2) = xpa{i}.w;
     projScatter(i,3) = i;
 end

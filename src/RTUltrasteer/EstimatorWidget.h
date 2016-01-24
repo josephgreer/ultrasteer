@@ -86,6 +86,7 @@ namespace Nf
     virtual void Initialize(const char *basePath);
     virtual s32 NumberOfMeasurementsUpToAndIncludingFrame(s32 frame);
     virtual void UpdateVisualizations(s32 frame);
+    virtual bool ShouldInitialize(s32 frame);
     std::tr1::shared_ptr < PFParams > GetParams(s32 frame);
     std::vector < TipState > AssembleTipHistory(s32 frame);
     std::vector < Measurement > AssembleMeasurements(s32 frame);

@@ -324,7 +324,7 @@ for i=1:params.np
     xs = xs+repmat(xp{i}.pos, 1, size(xsc,2));
     
     % if we don't have enough measurements yet, then just use true quaternion
-    dR = optimalRotationForHistory(xs', curvePoints, params);
+    [dR, omeas, omed] = optimalRotationForHistory(xs', curvePoints, params);
     
     if(norm(SO3HatInverse(SO3Log(dR))) > 0.5)
         yep = 0;
@@ -405,9 +405,13 @@ for i=1:params.np
         duv = suv-measurement.uv;
         
         pin = sigmf(measurement.doppler, [params.sigB0, params.sigB1]);
-        p_uvxOnFrame = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.p1.uvOffsetSigma),...,
-            a,b) + ...
-            (1-pin)*(1/(params.ush*params.usw));
+        if(false)
+            p_uvxOnFrame = pin*truncatedIndependentGaussianPdf(duv, zeros(2,1), diag(params.p1.uvOffsetSigma),...,
+                a,b) + ...
+                (1-pin)*(1/(params.ush*params.usw));
+        else
+          p_uvxOnFrame = normpdf(omed, 0, norm(diag(params.measurementOffsetSigma)));
+        end
     end
     p_uvxOffFrame = 1/(params.ush*params.usw);
     
@@ -427,7 +431,7 @@ for i=1:params.np
     end
     
     % p(measurement | x)
-    pw(i) = (p_uvxOnFrame*p_dxOnFrame*(1-offFrame))+p_dxOffFrame*p_uvxOffFrame*offFrame;
+    pw(i) = (p_uvxOnFrame*p_dxOnFrame*(1-offFrame))+p_dxOffFrame*p_uvxOnFrame*offFrame;
     x{i}.w = xp{i}.w;
     
 end
