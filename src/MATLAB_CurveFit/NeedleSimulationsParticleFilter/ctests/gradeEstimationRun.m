@@ -2,9 +2,9 @@ clearvars -except 'truePosB' 'estPosB'; clc; close all;
 
 %method = 'FullState';
 method = 'Marginalized';
-trial = 3;
-date = '9_18_15'
-speed = '2mm';
+trial = 5;
+date = '1_7_16'
+speed = '05mm';
 estBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\results\', method, 'Estimated');
 truthBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\results\', method, 'GroundTruth');
 % estBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\', method, 'Estimated');
@@ -59,5 +59,17 @@ for i=1:3
     plot(idxs, deltas(:,i));
     title(titles(i));
 end
+
+% figure;
+% titles = ['x', 'y', 'z'];
+% estDeltas = zeros(size(estPos,1)-1, 3);
+% for i=2:length(trueRs)
+%     estDeltas(i,:) = (inv(trueRs{i})*(estPos(i,:)-estPos(i-1,:))')';
+% end
+% for i=1:3
+%     subplot(2,2,i);
+%     plot(idxs, estDeltas(:,i));
+%     title(titles(i));
+% end
 
 mean(sqrt(sum(delta.^2,2)))

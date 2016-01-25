@@ -1,7 +1,6 @@
 clear; clc; close all;
 
-path = 'C:\Joey\Data\1_7_16\05mm\PreInsertionGPS.mat';
-
+path = 'C:\Joey\Data\9_18_15\2mm\Trial3\PreInsertionGPS.mat';
 TipHistory = load(path, '-ascii');
 
 scatter3(TipHistory(:,1), TipHistory(:,2), TipHistory(:,3));

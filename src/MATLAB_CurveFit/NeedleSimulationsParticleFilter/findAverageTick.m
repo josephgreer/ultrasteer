@@ -1,10 +1,10 @@
 clear; clc; close all;
 
 addpath('../../LabelData');
-basebasePath = 'C:\Joey\Data\9_18_15\3mm\Trial1';
+basebasePath = 'C:\Joey\Data\1_7_16\05mm\Trial4';
 basePath = strcat(basebasePath,'\scan');
 
-speed = 3; % mm/s
+speed = 0.5; % mm/s
 % 
 % fgps = fopen(strcat(basePath,'.gps2'));
 % header = ReadHeader(fgps);

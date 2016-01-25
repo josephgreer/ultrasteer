@@ -6,7 +6,7 @@ end
 
 addpath('../LabelData/');
 
-basePath = 'C:\Joey\Data\12_16_15\1mm\Trial1\';
+basePath = 'C:\Joey\Data\12_16_15\2mm\Trial1\';
 if(exist(strcat(basePath,'data.mat'), 'file'))
     data = [];
     load(strcat(basePath,'data.mat'));

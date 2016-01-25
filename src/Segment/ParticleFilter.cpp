@@ -377,9 +377,9 @@ namespace Nf
     D = distanceMatrix(measurements,cTemplate);// distanceMatrixLateral(measurements,cTemplate,measurementDerivs);
     minD = min(D, 1);
     minD = arma::sqrt(arma::sort(minD,"ascend"));
-    f64 dither = 0;//5*((arma::vec)arma::randu(1))(0);
+    f64 dither = 2*((arma::vec)arma::randu(1))(0);
     ret.meanDist = arma::mean(minD.subvec(0,nPoints-1));
-    ret.medDist = minD(3*nPoints/4);
+    ret.medDist = minD(nPoints-1);
     ret.R = R;
 
     return ret;
@@ -846,6 +846,22 @@ namespace Nf
     m_rho = max(m_rho+noiseR,ones(1,m_nParticles)*PF_MIN_RHO);
   }
 
+  static arma::mat findCurvePointOnFrame(arma::mat curvePoints, arma::mat invA, std::vector < Measurement > m)
+  {
+    mat ds;
+    // find flagella point with minimum distance projection onto ultrasound frame
+    ds = zeros(3,curvePoints.n_cols);
+
+    // for each history point...
+    for(s32 j=0; j<curvePoints.n_cols; j++) {
+      ds.col(j) = invA*(curvePoints.col(j)-m[0].ful);
+    }
+    f32 minAbsVal; u32 minAbsIdx;
+    minAbsVal = abs(ds.row(2)).min(minAbsIdx);
+    vec suv = (vec2)(ds.submat(span(0,1), span(minAbsIdx,minAbsIdx)));
+    return suv;
+  }
+
   void ParticleFilterMarginalized::ApplyMeasurement(const std::vector < Measurement > &m, const std::vector < NSCommand > &u, const vec &dts, const PFParams *p, f64 shaftLength, arma::mat curvePoints)
   {
     const PFMarginalizedParams *params = (const PFMarginalizedParams *)p;
@@ -912,13 +928,15 @@ namespace Nf
       curvePoints = meas;
 
     if(shaftLength > minTotalLength) {
-      NTrace("Marginalizing\n");
+      NTrace("Marginalizing dt %f\n", dts(0));
     }
 
     OptimalRotationData omeas;
     
     Gaussian < vec, mat > measurementGauss(zeros<vec>(1),ones<mat>(1)*arma::norm(measurementOffsetSigma.diag()));
     measurementGauss.InitForSampling();
+
+    arma::mat uv = findCurvePointOnFrame(curvePoints, invA, m);
 
     // For each particle...
     for(s32 i=0; i<m_nParticles; i++) {
@@ -1003,12 +1021,12 @@ namespace Nf
         a = suv-usFrameParams;  // if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
         b = suv;                                            // if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0) 
 
-        duv = suv-m[0].uv.col(0);
+        duv = suv-uv;//m[0].uv.col(0);
 
         // calculate p(frame interesects with flagella|doppler)
-        pin = m[0].doppler(0,0) > 0 ? sigmoid(m[0].doppler(0,0), sigB0, sigB1) : 0;
-        if(shaftLength > minTotalLength) {
-          p_uvxOnFrame = measurementGauss.Eval(ones<vec>(1)*omeas.medDist);//pin*measurementGauss.Eval(ones<vec>(1)*omeas.meanDist)+(1-pin)*(1/(ush*usw));
+        pin = m[0].doppler(0,0) > 0 ? sigmoid(MAX(m[0].doppler(0,0)-100, 0), sigB0, sigB1) : 0;
+        if(false) {//shaftLength > minTotalLength) {
+          p_uvxOnFrame = pin*measurementGauss.Eval(ones<vec>(1)*omeas.medDist)+(1-pin)*(1/(ush*usw));//pin*measurementGauss.Eval(ones<vec>(1)*omeas.meanDist)+(1-pin)*(1/(ush*usw));
         }else {
           p_uvxOnFrame = pin*TruncatedIndependentGaussianPDF2(duv, (vec2)zeros(2,1), measurementOffsetSigma, a, b)+
             (1-pin)*(1/(ush*usw));

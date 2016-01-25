@@ -17,7 +17,7 @@ params = loadParams(params, baseDir, method);
 params.drawTruePos = 0;
 params.np = 500;
 params.drawParticlePos = 0;
-params.lambdaDop = 0.5;
+params.lambdaDop = 0.8;
 %params.tipOffset = zeros(3,1);
 %params.LUTDistributionBasePath = '/Users/Joey/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Data/NeedleScan/1_7_16/05mm/Trial1/';
 
@@ -31,9 +31,9 @@ xp = loadParticlesFromBasePath(basePath, params);
 dts = loadDts(basePath);
 us = loadCommands(basePath);
 
-for i=1:params.np
-    xp{i}.w = 1/params.np;
-end
+% for i=1:params.np
+%     xp{i}.w = 1/params.np;
+% end
 
 params.usw = norm(measurements{1}.fur-measurements{1}.ful);
 params.ush = norm(measurements{1}.fur-measurements{1}.fbr);
@@ -60,7 +60,7 @@ xpa = measureParticles(xp, us, [], dts, measurements, params);
 xpea = expectedValueOfParticles(xpa, params);
 pause(2);
 particleHandles = drawParticles(1, xpa, xpea, [], params, particleHandles);
-
+pause(2);
 figure;
 
 Re = QuatToRotationMatrix(xpea.q);

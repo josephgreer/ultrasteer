@@ -188,6 +188,7 @@ namespace Nf
     ADD_ACTION_PARAMETER(m_setViewYZGPS2, "Set View YZ GPS2", CALLBACK_POINTER(onSetViewYZGPS2, Image3DImagePlaneWidget), this, true); 
 
     ADD_BOOL_PARAMETER(m_showFrameBoundaries, "Show Frame Boundary", CALLBACK_POINTER(onShowExtrasChanged, Image3DImagePlaneWidget), this, false);
+    ADD_BOOL_PARAMETER(m_showImage, "Show Image", CALLBACK_POINTER(onShowImageChanged, Image3DImagePlaneWidget), this, true);
   }
 
   Image3DImagePlaneWidget::~Image3DImagePlaneWidget()
@@ -255,6 +256,12 @@ namespace Nf
     QVTKWidget::update();
     m_renderer->ResetCameraClippingRange();
   }
+
+  void Image3DImagePlaneWidget::onShowImageChanged()
+  {
+    m_imageActor->SetVisibility(m_showImage->GetValue());
+  }
+
 
   void Image3DImagePlaneWidget::SetUSVisView(s32 axis1, s32 axis2)
   {

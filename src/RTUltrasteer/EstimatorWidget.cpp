@@ -747,7 +747,7 @@ namespace Nf
       } 
       
       f64 tLength = totalLength(AssembleAllCommands(frame), AssembleAllDts(frame));
-      if(false) {//frame == 341) {
+      if(false) {//frame == 492) {
         if(this->m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE) {
           SaveParticleFilterState(AssembleCommands(frame), AssembleDts(frame), AssembleMeasurements(frame),
             AssembleParticles(std::tr1::shared_ptr < ParticleFilterFullState > ((ParticleFilterFullState *)m_pf.get()), GetParams(-1).get()), curvePoints,

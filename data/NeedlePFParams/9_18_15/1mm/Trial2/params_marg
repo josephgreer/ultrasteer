@@ -4,7 +4,7 @@ Estimator File Widget++Presaved Point History->OpenFile== C:/Joey/Data/9_18_15/T
 Estimator File Widget++Tip Calibration Save Path->SaveFile== C:/Joey/Data/9_18_15/1mm/Trial2/tipCalib.mat
 Estimator File Widget++Point History Save Path->SaveFile== C:/Joey/Data/9_18_15/Trial1/PreInsertionGPS/TipHistory.mat
 Estimator File Widget++Add New Calib Frame->Bool== 0
-Estimator File Widget++Frame Index->Int== 559
+Estimator File Widget++Frame Index->Int== 1
 Estimator File Widget++Display Modality->Enum== 8
 Estimator File Widget++Operation Mode->Enum== 0
 Estimator File Widget++Ultrasound Volume Visualizer++Ultrasound Visualization++Show Volume Extent->Bool== 0
@@ -18,6 +18,7 @@ Estimator File Widget++Ultrasound Volume Visualizer++Ultrasound Visualization++V
 Estimator File Widget++Ultrasound Volume Visualizer++Ultrasound Visualization++Volume Creator++Volume++Horziontal Crop->Vec2i== 0 0
 Estimator File Widget++Ultrasound Volume Visualizer++Ultrasound Visualization++Volume Creator++Volume++Vertical Crop->Vec2i== 0 0
 Estimator File Widget++Image Plane Viewer++Show Frame Boundary->Bool== 0
+Estimator File Widget++Image Plane Viewer++Show Image->Bool== 1
 Estimator File Widget++Particle Filter++Collect US Measurements->Bool== 1
 Estimator File Widget++Particle Filter++Show Particle Positions->Bool== 1
 Estimator File Widget++Particle Filter++Show Estimated Position->Bool== 1
@@ -31,6 +32,9 @@ Estimator File Widget++Particle Filter++Expected ROC (mm)->Float== 76.800003
 Estimator File Widget++Particle Filter++Particle Filter Method->Enum== 1
 Estimator File Widget++Particle Filter++2D US Segmentation++Show Mask->Bool== 0
 Estimator File Widget++Particle Filter++2D US Segmentation++Initial Model Points->Int== 60
+Estimator File Widget++Particle Filter++2D US Segmentation++Main Model Degree->Int== 2
+Estimator File Widget++Particle Filter++2D US Segmentation++Initial Model Degree->Int== 1
+Estimator File Widget++Particle Filter++2D US Segmentation++Min Points Degree 2->Int== 50
 Estimator File Widget++Particle Filter++2D US Segmentation++Threshold Fraction->Float== 0.020000
 Estimator File Widget++Particle Filter++2D US Segmentation++Doppler Cluster Expansion->Float== 2.000000
 Estimator File Widget++Particle Filter++2D US Segmentation++Bmode Cluster Expansion->Float== 1.100000

@@ -314,6 +314,8 @@ end
 A = [measurement.bx measurement.by cross(measurement.bx, measurement.by)];
 invA = inv(A);
 
+uv = findClosestPointToCurve(curvePoints', invA, measurement);
+
 for i=1:params.np
     Rprior = xp{i}.qdist.mu;
     
@@ -402,7 +404,7 @@ for i=1:params.np
         a = suv-[params.usw;params.ush]; % if shaft (u,v) - (u,v) < shaft (u,v) - br, then  (u,v) > br
         b = suv; % if shaft (u,v) - (u,v) > shaft (u,v), then (u,v) < (0,0)
         
-        duv = suv-measurement.uv;
+        duv = suv-uv;%measurement.uv;
         
         pin = sigmf(measurement.doppler, [params.sigB0, params.sigB1]);
         if(false)

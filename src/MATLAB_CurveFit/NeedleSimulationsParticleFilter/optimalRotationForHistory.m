@@ -58,7 +58,7 @@ Z = Z+repmat(offset, size(Z,1), 1);
 hold on
 scatter3(X(:,1), X(:,2), X(:,3), 'filled','MarkerFaceColor',[1 0 0]);
 scatter3(Y(:,1), Y(:,2), Y(:,3), 'filled','MarkerFaceColor',[0 1 0]);
-%scatter3(Z(:,1), Z(:,2), Z(:,3), 'filled','MarkerFaceColor',[0 0 1]);
+scatter3(Z(:,1), Z(:,2), Z(:,3), 'filled','MarkerFaceColor',[0 0 1]);
 
 
 xlabel('x');

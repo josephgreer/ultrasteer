@@ -3,9 +3,9 @@ clear; clc; close all;
 paths = {'C:\Joey\Data\1_7_16\05mm\Trial1\data.mat', 'C:\Joey\Data\1_7_16\05mm\Trial2\data.mat',...
     'C:\Joey\Data\1_7_16\05mm\Trial3\data.mat', 'C:\Joey\Data\1_7_16\05mm\Trial4\data.mat',...
     'C:\Joey\Data\1_7_16\05mm\Trial5\data.mat'}
-%paths = {'C:\Joey\Data\1_7_16\05mm\Trial5\data.mat'};
+%paths = {'C:\Joey\Data\1_7_16\05mm\Trial1\data.mat'};
 
-basePath = 'C:\Joey\Data\1_7_16\05mm\Trial2\';
+basePath = 'C:\Joey\Data\1_7_16\05mm\Trial1\';
 
 data = load(paths{1});
 data = data.data;
@@ -57,7 +57,7 @@ plot([-10:.1:1e4],vals);%/sum(vals(:,1)));
 %data(offNeedles,1) = 1;
 
 
-nPad = 200;
+nPad = 0;
 nPad = nPad*length(paths);
 mults = randn(nPad,1)*0.5 + 1;
 base = 50;

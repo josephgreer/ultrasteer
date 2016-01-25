@@ -741,8 +741,8 @@ namespace Nf
     : m_mainModelInit(false)
     , m_update(update)
     , ParameterCollection("2D US Segmentation")
-    , m_model(m_mainModelDegree->GetValue(), m_minPointsDeg2->GetValue(), .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000.0f)
-    , m_initialModel(m_initialModelDegree->GetValue(), m_minPointsDeg2->GetValue(), .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000000.0f)
+    , m_model(2/*maxDegree*/, 30/*minpointsfordegree2*/, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000.0f)
+    , m_initialModel(2/*maxDegree*/, 30/*minpointsfordegree2*/, .99f/*timeDecay*/, .001f/*minYouth*/, 1.0f/3.0f/*imageWeight*/, 1.0f/3.0f/*modelWeight*/, 1.0f/3.0f/*timeWeight*/, 1000000.0f)
   {
     ADD_BOOL_PARAMETER(m_showColorMask, "Show Mask", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, false);
     ADD_FLOAT_PARAMETER(m_threshFrac, "Threshold Fraction", CALLBACK_POINTER(onParamChange, NeedleSegmenter), this, .02, 0.0, 1.0, 0.01);

@@ -4,7 +4,7 @@ Estimator File Widget++Presaved Point History->OpenFile== C:/Joey/Data/9_18_15/T
 Estimator File Widget++Tip Calibration Save Path->SaveFile== C:/Joey/Data/9_18_15/1mm/Trial1/tipCalib.mat
 Estimator File Widget++Point History Save Path->SaveFile== C:/Joey/Data/9_18_15/Trial1/PreInsertionGPS/TipHistory.mat
 Estimator File Widget++Add New Calib Frame->Bool== 0
-Estimator File Widget++Frame Index->Int== 1
+Estimator File Widget++Frame Index->Int== 379
 Estimator File Widget++Display Modality->Enum== 8
 Estimator File Widget++Operation Mode->Enum== 0
 Estimator File Widget++Ultrasound Volume Visualizer++Ultrasound Visualization++Show Volume Extent->Bool== 0
@@ -18,6 +18,7 @@ Estimator File Widget++Ultrasound Volume Visualizer++Ultrasound Visualization++V
 Estimator File Widget++Ultrasound Volume Visualizer++Ultrasound Visualization++Volume Creator++Volume++Horziontal Crop->Vec2i== 0 0
 Estimator File Widget++Ultrasound Volume Visualizer++Ultrasound Visualization++Volume Creator++Volume++Vertical Crop->Vec2i== 0 0
 Estimator File Widget++Image Plane Viewer++Show Frame Boundary->Bool== 0
+Estimator File Widget++Image Plane Viewer++Show Image->Bool== 1
 Estimator File Widget++Particle Filter++Collect US Measurements->Bool== 1
 Estimator File Widget++Particle Filter++Show Particle Positions->Bool== 1
 Estimator File Widget++Particle Filter++Show Estimated Position->Bool== 1
@@ -31,13 +32,16 @@ Estimator File Widget++Particle Filter++Expected ROC (mm)->Float== 76.800003
 Estimator File Widget++Particle Filter++Particle Filter Method->Enum== 1
 Estimator File Widget++Particle Filter++2D US Segmentation++Show Mask->Bool== 0
 Estimator File Widget++Particle Filter++2D US Segmentation++Initial Model Points->Int== 60
+Estimator File Widget++Particle Filter++2D US Segmentation++Main Model Degree->Int== 2
+Estimator File Widget++Particle Filter++2D US Segmentation++Initial Model Degree->Int== 1
+Estimator File Widget++Particle Filter++2D US Segmentation++Min Points Degree 2->Int== 50
 Estimator File Widget++Particle Filter++2D US Segmentation++Threshold Fraction->Float== 0.020000
 Estimator File Widget++Particle Filter++2D US Segmentation++Doppler Cluster Expansion->Float== 2.000000
 Estimator File Widget++Particle Filter++2D US Segmentation++Bmode Cluster Expansion->Float== 1.100000
 Estimator File Widget++Particle Filter++2D US Segmentation++Display Type->Enum== 8
 Estimator File Widget++Particle Filter++Particle Filter Full State Params++onNeedleLUTPath->OpenFile== C:/Joey/Data/9_18_15/Trial3/Insertion/pdopoverneedle.dat
 Estimator File Widget++Particle Filter++Particle Filter Full State Params++offNeedleLUTPath->OpenFile== C:/Joey/Data/9_18_15/Trial3/Insertion/pdopnotoverneedle.dat
-Estimator File Widget++Particle Filter++Particle Filter Full State Params++Use LUT->Bool== 0
+Estimator File Widget++Particle Filter++Particle Filter Full State Params++Use LUT->Bool== 1
 Estimator File Widget++Particle Filter++Particle Filter Full State Params++Minimum Measurements->Int== 10
 Estimator File Widget++Particle Filter++Particle Filter Full State Params++n->Int== 50
 Estimator File Widget++Particle Filter++Particle Filter Full State Params++Init Rho Mu->Float== 0.000000
@@ -69,7 +73,7 @@ Estimator File Widget++Particle Filter++Particle Filter Full State Params++Parti
 Estimator File Widget++Particle Filter++Particle Filter Full State Params++Measurement Offset Sigma (Px)->Vec2d== 20.000000 20.000000
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++onNeedleLUTPath->OpenFile== C:/Joey/Data/9_18_15/1mm/Trial1/pdopoverneedle.dat
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++offNeedleLUTPath->OpenFile== C:/Joey/Data/9_18_15/1mm/Trial1/pdopnotoverneedle.dat
-Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Use LUT->Bool== 0
+Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Use LUT->Bool== 1
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Minimum Measurements->Int== 15
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++n->Int== 20
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Procrustes Subset Size->Int== 15
@@ -88,7 +92,7 @@ Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++On 
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Minimum Length->Float== 30.000000
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Doppler Sigmoid B0->Float== -2.268300
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Doppler Sigmoid B1->Float== 0.044600
-Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Doppler lambda->Float== 0.900000
+Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Doppler lambda->Float== 0.010000
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Off Frame B0->Float== -5.000000
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++Off Frame B1->Float== 20.000000
 Estimator File Widget++Particle Filter++Particle Filter Marginalized Params++neff->Float== 0.500000

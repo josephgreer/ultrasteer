@@ -110,6 +110,11 @@ namespace Nf
     std::tr1::shared_ptr < Nf::BoolParameter > m_setViewYZGPS2;
     void onSetViewYZGPS2();
     CLASS_CALLBACK(onSetViewYZGPS2, Image3DImagePlaneWidget);
+
+    //Show Image
+    std::tr1::shared_ptr < Nf::BoolParameter > m_showImage;
+    void onShowImageChanged();
+    CLASS_CALLBACK(onShowImageChanged, Image3DImagePlaneWidget);
   };
 
 
