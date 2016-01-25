@@ -4,8 +4,8 @@ clear; clc; close all;
 
 addpath('../ctests/');
 
-baseDir = 'C:\Joey\Data\NeedleScan\';
-outBaseDir = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\JournalResults\';
+baseDir = 'C:\Joey\Data\1_7_16\';
+outBaseDir = 'C:\Users\CHARM\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\JournalResults\';
 
 excludeDir = {'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\9_18_15\Results\9_18_15\05mm',...
     'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\JournalResults'};
@@ -44,6 +44,8 @@ for i=1:length(data)
     else
         preamble = '';
     end
+    
+    display(data(i).name);
     
     [currOutDir,~] = regexp(data(i).name, '.*(\d+\_\d+\_\d+\\\d+mm\\Trial\d+).*', 'tokens', 'match'); 
     currOutDir = cell2mat(currOutDir{1});

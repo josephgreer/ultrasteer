@@ -2,9 +2,9 @@ clear; clc; close all;
 
 addpath('../ctests/');
 
-baseDir = 'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\JournalResults\';
+baseDir = 'C:\Users\CHARM\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\JournalResults\';
 
-method = 'FullState';
+method = 'Marginalized';
 data = rdir(strcat(baseDir,'**\',method,'EstimatedPos.dat'))
 
 speedLabels = {'05mm', '1mm', '2mm', '3mm'};
@@ -14,6 +14,7 @@ showPlots = 0;
 
 results = {[],[],[],[]};
 for i=1:length(data)
+    display(data(i).name)
     close all;
     currDir = data(i).name;
     idxs = strfind(currDir, '\');
@@ -38,7 +39,8 @@ for i=1:length(data)
     estRs = loadOrientations(strcat(estBasePath, 'Rs.dat'));
     trueRs = loadOrientations(strcat(truthBasePath, 'Rs.dat'));
     
-    startId = 40;
+    [indicesR, indicesC] = ind2sub(size(estPos), find(estPos ~= 0));
+    startId = min(indicesR);
     endId = size(estPos,1)-40;
     
     estPos = estPos([startId:endId], :);
@@ -78,6 +80,7 @@ for i=1:length(data)
     end
     set(figHandle, 'Position', [100 100 800 150]);
     
+    display(mean(sqrt(sum(delta.^2,2))));
     results{resultBin} = vertcat(results{resultBin},mean(sqrt(sum(delta.^2,2))));
 end
 
