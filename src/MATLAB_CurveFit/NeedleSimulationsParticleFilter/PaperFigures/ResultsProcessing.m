@@ -1,11 +1,12 @@
 clear; clc; 
 
 addpath('../ctests/');
+addpath('../');
 
 type = 'JournalResults';
 baseDir = strcat('C:\Users\CHARM\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\', type, '\');
 
-method = 'FullState';
+method = 'Marginalized';
 data = rdir(strcat(baseDir,'**\',method,'EstimatedPos.dat'))
 
 speedLabels = {'05mm', '1mm', '2mm', '3mm'};
@@ -16,6 +17,7 @@ showPlots = 0;
 results = {[],[],[],[]};
 resultsAxial = {[], [], [], []};
 resultsLateral = {[], [], [], []};
+resultsOrientationError = {[], [], [], []};
 for i=1:length(data)
     display(data(i).name)
     %close all;
@@ -92,8 +94,15 @@ for i=1:length(data)
     for i=1:length(trueRs)
         deltaZs(i,:) = (inv(trueRs{i})*(truePos(i,:)-estPos(i,:))')';
     end
+    
+    orErrors = zeros(length(trueRs),1);
+    for i=1:length(trueRs)
+        orErrors(i) = SO3Metric(trueRs{i}, estRs{i});
+    end
+    
     resultsAxial{resultBin} = vertcat(resultsAxial{resultBin},mean(sqrt(sum(deltaZs(:,3).^2,2))));
     resultsLateral{resultBin} = vertcat(resultsLateral{resultBin},mean(sqrt(sum(deltaZs(:,1:2).^2,2))));
+    resultsOrientationError{resultBin} = vertcat(resultsOrientationError{resultBin},mean(orErrors));
 end
 
 
@@ -111,10 +120,11 @@ legend('Measurement', 'Mean');
 xlabel('Insertion Velocity (mm/s),','FontSize', 10, 'FontName', 'Times New Roman');
 ylabel('RMS Error (mm)','FontSize', 10, 'FontName', 'Times New Roman');
 grid on;
+box on;
 set(gca, 'FontSize', 10, 'FontName', 'Times New Roman');
 title(strcat(type, method));
 xlim([0 3.5]);
-ylim([0 10]);
+ylim([0 6]);
 
 subplot(1,3,2);
 hold on;
@@ -129,10 +139,11 @@ legend('Measurement', 'Mean');
 xlabel('Insertion Velocity (mm/s),','FontSize', 10, 'FontName', 'Times New Roman');
 ylabel('Axial Error (mm)','FontSize', 10, 'FontName', 'Times New Roman');
 grid on;
+box on;
 set(gca, 'FontSize', 10, 'FontName', 'Times New Roman');
 title(strcat(type, method));
 xlim([0 3.5]);
-ylim([0 10]);
+ylim([0 6]);
 %export_fig -transparent AccuracyResults.pdf
 
 
@@ -149,9 +160,10 @@ legend('Measurement', 'Mean');
 xlabel('Insertion Velocity (mm/s),','FontSize', 10, 'FontName', 'Times New Roman');
 ylabel('Lateral Error (mm)','FontSize', 10, 'FontName', 'Times New Roman');
 grid on;
+box on;
 set(gca, 'FontSize', 10, 'FontName', 'Times New Roman');
 title(strcat(type, method));
 xlim([0 3.5]);
-ylim([0 10]);
-set(figHandle, 'Position', [100 100 800 240]);
-tightfig
+ylim([0 6]);
+set(figHandle, 'Position', [100 100 900 240]);
+tightfig;
