@@ -1,12 +1,12 @@
 clearvars -except 'truePosB' 'estPosB'; clc; close all;
 
-%method = 'FullState';
-method = 'Marginalized';
-trial = 5;
+method = 'FullState';
+%method = 'Marginalized';
+trial = 1;
 date = '1_7_16'
 speed = '05mm';
-estBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\results\', method, 'Estimated');
-truthBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\results\', method, 'GroundTruth');
+estBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\resultsNoDoppler\', method, 'Estimated');
+truthBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\resultsNoDoppler\', method, 'GroundTruth');
 % estBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\', method, 'Estimated');
 % truthBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\', method, 'GroundTruth');
 estPos = load(strcat(estBasePath, 'Pos.dat'));
