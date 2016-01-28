@@ -1,0 +1,24 @@
+n 50
+neff 0.500000
+mpp 119.000000, 119.000000
+usw 35.577421
+ush 35.577421
+tipOffset 0.000000, 0.000000, 0.000000
+lutBasePath C:/Joey/Data/9_18_15/1mm/Trial3/
+useLUT 0
+minimumMeasurements 10
+minLength 15.000000
+dopplerLambda 0.000000
+dopplerSigB0 -1.568036
+dopplerSigB1 0.031428
+offFrameB0 -5.000000
+offFrameB1 20.000000
+measurementOffsetSigma 1.785000, 1.785000
+measurementOffsetSigmaPx 15.000000, 15.000000
+initPosSigma 1.000000, 1.000000, 1.000000
+initOrientationSigma 0.000100, 0.000100, 0.000100
+initRhoSigma 0.000000
+particleSigmaOr 0.000628, 0.000628, 0.000628
+particleSigmaPos 0.050000, 0.050000, 0.050000
+particleSigmaRho 3.000000
+particleSigmaVel 1.000000
