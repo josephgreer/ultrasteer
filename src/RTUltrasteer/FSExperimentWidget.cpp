@@ -696,4 +696,92 @@ namespace Nf
   ////////////////////////////////////////////////////////////////////////////////
   /// END FSExperimentStreamingWidget CLASS
   ////////////////////////////////////////////////////////////////////////////////
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /// BEGIN FSSimpleWidget CLASS
+  ////////////////////////////////////////////////////////////////////////////////
+  FSSimpleWidget::FSSimpleWidget(QWidget *parent, const char *name)
+    : RPStreamingWidget(parent, NULL, name)
+    , m_saveDataWidget(new SaveDataWidget(parent))
+    , m_bottomRow(new QGridLayout(parent))
+#ifdef USE_FORCE_SENSOR
+    , m_forceSensor(std::tr1::shared_ptr < cForceSensor > (new cForceSensor()))
+#endif
+  {
+#ifdef USE_FORCE_SENSOR
+    ADD_BOOL_PARAMETER(m_forceSensorInitialized, "Initialize Force Sensor", CALLBACK_POINTER(onInitializeForceSensor, FSSimpleWidget), this, false);
+    ADD_ACTION_PARAMETER(m_zeroForceSensor, "Zero Force Sensor", CALLBACK_POINTER(onZeroForceSensor, FSSimpleWidget), this, false);
+#endif
+    m_bottomRow->addWidget(m_saveDataWidget.get(), 0, 0, Qt::Alignment(Qt::AlignTop));
+    m_layout->addLayout(m_bottomRow.get(), 1, 0, 1, 1);
+
+    m_forceText = vtkSmartPointer < vtkTextActor >::New();
+    m_forceText->SetPosition(10,10);
+    m_forceText->GetTextProperty()->SetColor(1,1,1);
+    m_imageViewer->GetRenderer()->AddActor2D(m_forceText);
+
+  }
+
+  FSSimpleWidget::~FSSimpleWidget()
+  {
+
+  }
+  
+#ifdef USE_FORCE_SENSOR
+  void FSSimpleWidget::onInitializeForceSensor()
+  {
+    m_forceSensor->Set_Calibration_File_Loc("C:/Joey/ultrasteer/src/Nano17/FT14057.cal"); 
+    s32 rv = m_forceSensor->Initialize_Force_Sensor("Dev1/ai0:5");
+    if(rv != 0) {
+      NTrace("error initializign force sensor\n");
+      throw std::runtime_error("Error intializing force sensor");
+    }
+    Sleep(50);
+    m_forceSensorInitialized->SetValue(true);
+    rv = m_forceSensor->Zero_Force_Sensor();
+    if(rv != 0) {
+      NTrace("error zeroing force sensor\n");
+      throw std::runtime_error("Error zeroing force sensor");
+    }
+    m_saveDataWidget->SetEnabled(true);
+  }
+#endif
+  
+#ifdef USE_FORCE_SENSOR
+  void FSSimpleWidget::onZeroForceSensor()
+  {
+    if(!m_forceSensorInitialized->GetValue())
+      return;
+
+    s32 rv = m_forceSensor->Zero_Force_Sensor();
+  }
+#endif
+
+  void FSSimpleWidget::HandleFrame(RPData &rp)
+  {
+    if(m_forceSensorInitialized->GetValue()) {
+      s32 rv = m_forceSensor->AcquireFTData();
+      if(rv != 0)
+        throw std::runtime_error("Error acquiring force data");
+      f64 force[3] = {0};
+      m_forceSensor->GetForceReading(force);
+      rp.force.force = Vec3d(force[0], force[1], force[2]);
+      f64 torque[3] = {0};
+      m_forceSensor->GetTorqueReading(torque);
+      rp.force.torque = Vec3d(torque[0], torque[1], torque[2]);
+
+      char forceString[200];
+      sprintf(forceString, "Force: {%f, %f, %f}, Torque: {%f, %f, %f}, Insertion: %f", rp.force.force.x, rp.force.force.y, rp.force.force.z,
+        rp.force.torque.x, rp.force.torque.y, rp.force.torque.z, rp.force.slidePosition);
+      m_forceText->SetInput(forceString);
+    }
+
+    RPStreamingWidget::HandleFrame(rp);
+
+
+    m_saveDataWidget->SaveDataFrame(rp);
+  }
+  ////////////////////////////////////////////////////////////////////////////////
+  /// END FSExperimentStreamingWidget CLASS
+  ////////////////////////////////////////////////////////////////////////////////
 }

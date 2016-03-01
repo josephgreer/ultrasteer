@@ -47,7 +47,7 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   ADD_BOOL_PARAMETER(m_usDockVisible, "Show Full US Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_rpFileWidgetVisible, "Show Incremental Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_rpStreamingWidgetVisible, "Show Streaming Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
-  ADD_BOOL_PARAMETER(m_estimatorFileWidgetVisible, "Show ParticleFilter File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
+  ADD_BOOL_PARAMETER(m_estimatorFileWidgetVisible, "Show ParticleFilter File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_estimatorStreamingWidgetVisible, "Show ParticleFilter Streaming Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_robotHWWidgetVisible, "Show Robot HW Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_teleoperation2DFileWidgetVisible, "Show 2D Teleoperation File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
@@ -55,7 +55,8 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   ADD_BOOL_PARAMETER(m_emCalibrationFileWidgetVisible, "Show EM Calibration File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_emCalibrationStreamWidgetVisible, "Show EM Calibration Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_fsExperimentFileWidgetVisible, "Show FS Experiment File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
-  ADD_BOOL_PARAMETER(m_fsExperimentStreamWidgetVisible, "Show FS Experiment Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
+  ADD_BOOL_PARAMETER(m_fsExperimentStreamWidgetVisible, "Show FS Experiment Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
+  ADD_BOOL_PARAMETER(m_fsSimpleStreamWidgetVisible, "Show FS Simple Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
 
   CreateUSVisualizer();
   CreateMenuDock();
@@ -70,6 +71,7 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   CreateEMCalibrationStreamDock();
   CreateFSExperimentFileDock();
   CreateFSExperimentStreamDock();
+  CreateFSSimpleStreamDock();
 
   QTreeWidgetItem * rt = new QTreeWidgetItem(m_params);
   rt->setText(0, this->GetName());
@@ -122,6 +124,10 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   QTreeWidgetItem * rpFSESW = new QTreeWidgetItem(m_params);
   rpFSESW->setText(0, "FSExperimentStream");
   CreateUIElements(rpFSESW, *m_fsExperimentStreamWidget, m_fsExperimentStreamWidget->GetChildWidgets());
+
+  QTreeWidgetItem * rpFSSSW = new QTreeWidgetItem(m_params);
+  rpFSSSW->setText(0, "FSSimpleStream");
+  CreateUIElements(rpFSSSW, *m_fsSimpleStreamWidget, m_fsSimpleStreamWidget->GetChildWidgets());
 
   //Add to our map of root dock windows
   m_roots[std::string("USDock")].dock = m_usDock;
@@ -184,6 +190,11 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   m_roots[std::string("FSExperimentStreamingDock")].root = rpFSESW;
   m_roots[std::string("FSExperimentStreamingDock")].resize = (Resizable *)m_fsExperimentStreamWidget;
   m_roots[std::string("FSExperimentStreamingDock")].collection = (ParameterCollection *)m_fsExperimentStreamWidget;
+  m_roots[std::string("FSSimpleStreamDock")].dock = m_FSSimpleStreamDock;
+  m_roots[std::string("FSSimpleStreamDock")].param = m_fsSimpleStreamWidgetVisible.get();
+  m_roots[std::string("FSSimpleStreamDock")].root = rpFSSSW;
+  m_roots[std::string("FSSimpleStreamDock")].resize = (Resizable *)m_fsSimpleStreamWidget;
+  m_roots[std::string("FSSimpleStreamDock")].collection = (ParameterCollection *)m_fsSimpleStreamWidget;
 
   QDockWidget *last = NULL;
   for(std::map < std::string, DockWidgetInfo >::iterator i=m_roots.begin(); i!=m_roots.end(); i++) {
@@ -1103,6 +1114,17 @@ void RTUltrasteer::CreateFSExperimentStreamDock()
   m_FSExperimentStreamDock->setWidget(m_fsExperimentStreamWidget);
 
   m_fsExperimentStreamWidget->SetRobot(&m_robot);
+    
+  m_FSExperimentStreamDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
+}
+
+void RTUltrasteer::CreateFSSimpleStreamDock()
+{
+  m_FSSimpleStreamDock = new QDockWidget(tr("FSSimpleStreaming"), this);
+  m_FSSimpleStreamDock->setAllowedAreas(Qt::AllDockWidgetAreas);
+  
+  m_fsSimpleStreamWidget = new Nf::FSSimpleWidget(m_FSExperimentStreamDock);
+  m_FSSimpleStreamDock->setWidget(m_fsSimpleStreamWidget);
     
   m_FSExperimentStreamDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }

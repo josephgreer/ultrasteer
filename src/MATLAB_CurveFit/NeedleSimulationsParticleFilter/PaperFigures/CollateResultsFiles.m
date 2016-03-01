@@ -4,13 +4,13 @@ clear; clc; close all;
 
 addpath('../ctests/');
 
-baseDir = 'C:\Joey\Data\1_7_16\';
-outBaseDir = 'C:\Users\CHARM\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\JournalResults\';
+baseDir = 'C:\Joey\Data\';
+outBaseDir = 'C:\Users\CHARM\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\JournalResultsNaive\';
 
 excludeDir = {'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\9_18_15\Results\9_18_15\05mm',...
     'C:\Users\Joey\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\JournalResults'};
 
-data = rdir(strcat(baseDir,'**\*EstimatedPos.dat'))
+data = rdir(strcat(baseDir,'**\results\*EstimatedPos.dat'))
 
 speedLabels = {'05mm', '1mm', '2mm', '3mm'};
 speeds = [0.5 1 2 3];
@@ -71,18 +71,21 @@ for i=1:length(data)
         preamble = defaultPreamble;
     end
     
-    fullOutDirPath = strcat(fullOutDir, preamble, 'EstimatedPos.dat');
-    copyfile(estPos, fullOutDirPath, 'f');
-    fullOutDirPath = strcat(fullOutDir, preamble, 'EstimatedRs.dat');
-    copyfile(estRs, fullOutDirPath, 'f');
-    fullOutDirPath = strcat(fullOutDir, preamble, 'EstimatedRhos.dat');
-    copyfile(estRhos, fullOutDirPath, 'f');
+    fullOutDirPath = strcat(fullOutDir, 'MeasPos.dat');
+    copyfile(strcat(currDir, 'MeasPos.dat'), fullOutDirPath, 'f');
     
-    
-    fullOutDirPath = strcat(fullOutDir, preamble, 'GroundTruthPos.dat');
-    copyfile(truePos, fullOutDirPath, 'f');
-    fullOutDirPath = strcat(fullOutDir, preamble, 'GroundTruthRs.dat');
-    copyfile(trueRs, fullOutDirPath, 'f');
-    fullOutDirPath = strcat(fullOutDir, preamble, 'GroundTruthRhos.dat');
-    copyfile(trueRhos, fullOutDirPath, 'f');
+%     fullOutDirPath = strcat(fullOutDir, preamble, 'EstimatedPos.dat');
+%     copyfile(estPos, fullOutDirPath, 'f');
+%     fullOutDirPath = strcat(fullOutDir, preamble, 'EstimatedRs.dat');
+%     copyfile(estRs, fullOutDirPath, 'f');
+%     fullOutDirPath = strcat(fullOutDir, preamble, 'EstimatedRhos.dat');
+%     copyfile(estRhos, fullOutDirPath, 'f');
+%     
+%     
+%     fullOutDirPath = strcat(fullOutDir, preamble, 'GroundTruthPos.dat');
+%     copyfile(truePos, fullOutDirPath, 'f');
+%     fullOutDirPath = strcat(fullOutDir, preamble, 'GroundTruthRs.dat');
+%     copyfile(trueRs, fullOutDirPath, 'f');
+%     fullOutDirPath = strcat(fullOutDir, preamble, 'GroundTruthRhos.dat');
+%     copyfile(trueRhos, fullOutDirPath, 'f');
 end

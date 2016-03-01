@@ -745,6 +745,8 @@ public:
     
     std::tr1::shared_ptr < Nf::BoolParameter > m_fsExperimentStreamWidgetVisible;
 
+    std::tr1::shared_ptr < Nf::BoolParameter > m_fsSimpleStreamWidgetVisible;
+
     void onSetDocksVisible();
     CLASS_CALLBACK(onSetDocksVisible, RTUltrasteer);
 
@@ -795,6 +797,9 @@ private:
     QDockWidget *m_FSExperimentStreamDock;
     Nf::FSExperimentStreamingWidget *m_fsExperimentStreamWidget;
 
+    QDockWidget *m_FSSimpleStreamDock;
+    Nf::FSSimpleWidget *m_fsSimpleStreamWidget;
+
     NeedleSteeringRobot m_robot;
     Nf::ControlAlgorithms m_control;
     Mouse3DInput m_mouse;
@@ -812,6 +817,7 @@ private:
     void CreateEMCalibrationStreamDock();
     void CreateFSExperimentFileDock();
     void CreateFSExperimentStreamDock();
+    void CreateFSSimpleStreamDock();
     void resizeEvent(QResizeEvent *event);
     void Resize();
 

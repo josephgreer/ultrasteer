@@ -8,7 +8,7 @@
 #include <vtkAxesActor.h>
 #include <vtkTextActor.h>
 
-// #define USE_FORCE_SENSOR
+#define USE_FORCE_SENSOR
 namespace Nf
 {
   class ExperimentCalibrationData : public ParameterCollection
@@ -191,6 +191,31 @@ namespace Nf
     virtual void SetRobot(NeedleSteeringRobot *robot);
     std::vector < QVTKWidget * > GetChildWidgets();
     virtual void UpdateSize(QSize sz);
+  };
+
+  class FSSimpleWidget : public RPStreamingWidget
+  {
+    Q_OBJECT
+  protected:
+#ifdef USE_FORCE_SENSOR
+    std::tr1::shared_ptr < cForceSensor > m_forceSensor;
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_zeroForceSensor;
+    void onZeroForceSensor();
+    CLASS_CALLBACK(onZeroForceSensor, FSSimpleWidget);
+    
+    std::tr1::shared_ptr < Nf::BoolParameter > m_forceSensorInitialized;
+    void onInitializeForceSensor();
+    CLASS_CALLBACK(onInitializeForceSensor, FSSimpleWidget)
+#endif
+    std::tr1::shared_ptr < SaveDataWidget > m_saveDataWidget;
+    std::tr1::shared_ptr < QGridLayout > m_bottomRow;
+    vtkSmartPointer < vtkTextActor > m_forceText;
+
+  public:
+    FSSimpleWidget(QWidget *parent, const char *name = "FSSimpleWidget");
+    virtual ~FSSimpleWidget();
+    virtual void HandleFrame(RPData &rp);
   };
 
 }

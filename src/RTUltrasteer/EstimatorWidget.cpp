@@ -228,12 +228,7 @@ namespace Nf
 
   void ParticleFilterVisualizer::onNumParticlesChanged()
   {
-    if(m_pf != NULL) {
-      std::tr1::shared_ptr < PFParams > params = GetParams(-1);
-      m_pf->Resample(m_nParticles->GetValue(), params.get());
-    }
-    if(!m_pfFramesProcessed.empty())
-      UpdateVisualizations(m_lastFrame);
+    onPFMethodChanged();
   }
 
   std::tr1::shared_ptr < PFParams > ParticleFilterVisualizer::GetParams(s32 frame)
@@ -487,10 +482,11 @@ namespace Nf
     std::reverse(estimatedStates.begin(), estimatedStates.end());
 
     std::string method;
+    method = std::to_string((_Longlong)this->m_nParticles->GetValue());
     if(this->m_pfMethod->GetValue() == QtEnums::PFM_FULL_STATE)
-      method = "FullState";
+      method = method+"FullState";
     else
-      method = "Marginalized";
+      method = method+"Marginalized";
 
     char temp[200] = {0};
     sprintf(temp, "%s/%sGroundTruth", directory, method.c_str());
@@ -1122,7 +1118,7 @@ namespace Nf
       {
         std::string fl = m_rpFile->GetValue();
         QFileInfo fi(fl.c_str());
-        std::string dir = fi.dir().path().toStdString()+"/results";
+        std::string dir = fi.dir().path().toStdString()+"/resultsNumParticles";
         m_pfVisualizer->SaveParticleFilterResults(m_frame->GetValue(), dir.c_str());
       break;
       }

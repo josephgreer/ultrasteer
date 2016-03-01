@@ -3,12 +3,12 @@ clearvars -except 'truePosB' 'estPosB'; clc; close all;
 %method = 'FullState';
 method = 'Marginalized';
 trial = 1;
-date = '1_7_16'
-speed = '05mm';
+date = '9_18_15'
+speed = '1mm';
 estBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\results\', method, 'Estimated');
 truthBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\results\', method, 'GroundTruth');
-% estBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\', method, 'Estimated');
-% truthBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\', method, 'GroundTruth');
+%estBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\', method, 'Estimated');
+%truthBasePath = strcat('C:\Joey\Data\', date, '\', speed, '\Trial', num2str(trial), '\', method, 'GroundTruth');
 estPos = load(strcat(estBasePath, 'Pos.dat'));
 truePos = load(strcat(truthBasePath, 'Pos.dat'));
 
@@ -19,7 +19,7 @@ trueRhos = load(strcat(truthBasePath, 'Rho.dat'));
 
 [indicesR, indicesC] = ind2sub(size(estPos), find(estPos ~= 0));
 startId = min(indicesR);
-endId = size(estPos,1)-20;
+endId = size(estPos,1)-10;
 idxs = [startId:endId];
 
 estPos = estPos(idxs, :);
