@@ -145,6 +145,71 @@ namespace Nf
       rpw->WriteNextRPData(&m_dataToSave[i]);
     }
 
+    rpw->Cleanup(&header);
+    FreeData();
+    ui.progressBar->setValue(0);
+  }
+
+  void SaveDataWidget::SaveDataWithSnap(RPFileHeader header, const char *filename, RPData &snap)
+  {
+    if(m_dataToSave.size() <= 0)
+      return;
+    std::string fname(filename);
+    std::string dir = fname.substr(0,fname.find_last_of("/"));
+    std::string name = fname.substr(fname.find_last_of("/")+1,std::string::npos);
+    name = name.substr(0, name.find_last_of("."));
+
+    //TODO: Save The Data
+    std::tr1::shared_ptr < RPFileWriterCollection > rpw(new RPFileWriterCollection(std::string(dir+std::string("/")+name).c_str(), &header));
+    if(m_dataToSave.size() > 0 && m_dataToSave.front().b8 != NULL)
+      rpw->AddWriter(RPF_BPOST8);
+    if(m_dataToSave.size() > 0 && m_dataToSave.front().color != NULL)
+      rpw->AddWriter(RPF_BPOST32);
+    rpw->AddGPSWriter();
+    rpw->AddGPSWriter2();
+    rpw->AddNSCommandWriter();
+    rpw->AddForceWriter();
+
+    header.frames = m_dataToSave.size();
+    header.sf = (s32)(m_dataToSave[0].mpp.y/m_dataToSave[0].mpp.x*NOMINAL_SOS+0.5);
+    header.dr = (s32)(m_dataToSave[0].mpp.x+0.5);
+    header.ld = (s32)(m_dataToSave[0].origin.x+0.5);
+    header.extra = (s32)(m_dataToSave[0].origin.y+0.5);
+
+    for(s32 i=0; i<m_dataToSave.size(); i++) {
+      rpw->WriteNextRPData(&m_dataToSave[i]);
+    }
+
+    arma::mat force;
+    arma::mat pos;
+
+    Vec2d mppScale(snap.mpp.x/1000.0, snap.mpp.y/1000.0);
+    Matrix44d tPose = Matrix44d::FromCvMat(snap.gps.pose);
+    Matrix33d pose = tPose.GetOrientation();
+    Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, snap.gps.pos);
+    for(s32 i=0; i<m_dataToSave.size(); i++) {
+      arma::mat row = arma::zeros(1,6);
+      row(0,0) = m_dataToSave[i].force.force.x; 
+      row(0,1) = m_dataToSave[i].force.force.y;
+      row(0,2) = m_dataToSave[i].force.force.z;
+      row(0,3) = m_dataToSave[i].force.torque.x; 
+      row(0,4) = m_dataToSave[i].force.torque.y;
+      row(0,5) = m_dataToSave[i].force.torque.z;
+      force = arma::join_vert(force, row);
+
+      Vec3d image = rpWorldCoord3ToImageCoord(m_dataToSave[i].gps2.pos, posePos, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), snap.origin, mppScale);
+      row = arma::zeros(1,6);
+      row(0,0) = image.x;
+      row(0,1) = image.y;
+      row(0,2) = image.z;
+      row(0,3) = m_dataToSave[i].gps2.pos.x;
+      row(0,4) = m_dataToSave[i].gps2.pos.y;
+      row(0,5) = m_dataToSave[i].gps2.pos.z;
+      pos = arma::join_vert(pos, row);
+    }
+
+    force.save(std::string(dir+std::string("/force.mat")).c_str(), arma::raw_ascii);
+    pos.save(std::string(dir+std::string("/pos.mat")).c_str(), arma::raw_ascii);
 
     rpw->Cleanup(&header);
     FreeData();

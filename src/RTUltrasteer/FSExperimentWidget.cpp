@@ -5,6 +5,8 @@
 
 namespace Nf
 {
+  void SpoofRPDataWithNeedleTipCalibration(RPData &rp, const EMNeedleTipCalibrator *em, s32 frame);
+
   ////////////////////////////////////////////////////////////////////////////////
   /// BEGIN ExperimentCalibrationData CLASS
   ////////////////////////////////////////////////////////////////////////////////
@@ -704,6 +706,7 @@ namespace Nf
     : RPStreamingWidget(parent, NULL, name)
     , m_saveDataWidget(new SaveDataWidget(parent))
     , m_bottomRow(new QGridLayout(parent))
+    , m_state(FSS_NOTHING)
 #ifdef USE_FORCE_SENSOR
     , m_forceSensor(std::tr1::shared_ptr < cForceSensor > (new cForceSensor()))
 #endif
@@ -712,6 +715,13 @@ namespace Nf
     ADD_BOOL_PARAMETER(m_forceSensorInitialized, "Initialize Force Sensor", CALLBACK_POINTER(onInitializeForceSensor, FSSimpleWidget), this, false);
     ADD_ACTION_PARAMETER(m_zeroForceSensor, "Zero Force Sensor", CALLBACK_POINTER(onZeroForceSensor, FSSimpleWidget), this, false);
 #endif
+    ADD_OPEN_FILE_PARAMETER(m_tipCalibPath, "Tip Calibration Path", CALLBACK_POINTER(onTipCalibPathChanged, FSSimpleWidget), this, PATH_CAT("2_29_16/TipCalib/tipCalib.mat"), "(*.mat)");
+    ADD_ACTION_PARAMETER(m_clearCalib, "Clear Calibration", CALLBACK_POINTER(onClearCalib, FSSimpleWidget), this, false);
+    ADD_SAVE_FILE_PARAMETER(m_baseSavePath, "Base Save Path", NULL, this, PATH_CAT("2_29_16/Trial"), "(*.mat)");
+    ADD_INT_PARAMETER(m_trialNumber, "Trial Number", NULL, this, 0, 0, 100000, 1);
+    ADD_ACTION_PARAMETER(m_beginSave, "Save Trial", CALLBACK_POINTER(onBeginSaveTrial, FSSimpleWidget), this, false);
+    ADD_ACTION_PARAMETER(m_endSave, "End Trial", CALLBACK_POINTER(onEndSaveTrial, FSSimpleWidget), this, false);
+
     m_bottomRow->addWidget(m_saveDataWidget.get(), 0, 0, Qt::Alignment(Qt::AlignTop));
     m_layout->addLayout(m_bottomRow.get(), 1, 0, 1, 1);
 
@@ -720,11 +730,28 @@ namespace Nf
     m_forceText->GetTextProperty()->SetColor(1,1,1);
     m_imageViewer->GetRenderer()->AddActor2D(m_forceText);
 
+    onTipCalibPathChanged();
   }
 
   FSSimpleWidget::~FSSimpleWidget()
   {
 
+  }
+
+  void FSSimpleWidget::onTipCalibPathChanged()
+  {
+    QFile file(m_tipCalibPath->GetValue().c_str());
+    if(file.exists()) {
+      arma::mat calib; calib.load(m_tipCalibPath->GetValue().c_str());
+      m_ntCalibrator.SetSolution(calib);
+    } else {
+      m_ntCalibrator.ResetSolution();
+    }
+  }
+
+  void FSSimpleWidget::onClearCalib()
+  {
+    m_ntCalibrator.ResetSolution();
   }
   
 #ifdef USE_FORCE_SENSOR
@@ -757,8 +784,50 @@ namespace Nf
   }
 #endif
 
+  void FSSimpleWidget::onBeginSaveTrial()
+  {
+    m_state = FSS_BEGIN_SAVE;
+  }
+
+  void FSSimpleWidget::onEndSaveTrial()
+  {
+    std::string basePath = m_baseSavePath->GetValue();
+
+    std::string dirName = basePath+std::to_string((_Longlong)m_trialNumber->GetValue());
+    QDir dir(dirName.c_str());
+    if(!dir.exists())
+      dir.mkdir(dirName.c_str());
+
+    cvSaveImage((dirName+"/scan.png").c_str(), m_snap.b8);
+    m_saveDataWidget->StopRecording();
+    m_saveDataWidget->SaveDataWithSnap(RPFileHeader(), (dirName+"/scan.b8").c_str(), m_snap);
+
+    m_snap.Release();
+    m_snap = RPData();
+
+    m_trialNumber->SetValue(m_trialNumber->GetValue()+1);
+    m_state = FSS_NOTHING;
+    return;
+  }
+
+  static void findCoordsOfTracker(Vec3d &imageCoord, f64 &angle, const RPData &rp, const RPData &snap)
+  {
+    Vec2d mppScale(rp.mpp.x/1000.0, rp.mpp.y/1000.0);
+    Matrix44d tPose = Matrix44d::FromCvMat(snap.gps.pose);
+    Matrix33d pose = tPose.GetOrientation();
+    Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(pose, snap.gps.pos);
+    imageCoord = rpWorldCoord3ToImageCoord(rp.gps2.pos, posePos, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), rp.origin, mppScale);
+
+    arma::mat trackerz = Matrix44d::FromCvMat(rp.gps2.pose).ToArmaMatrix4x4().submat(arma::span(0,2), arma::span(2,2));
+    arma::mat usz = Matrix44d::FromCvMat(snap.gps.pose).ToArmaMatrix4x4().submat(arma::span(0,2), arma::span(2,2));
+    angle = 180.0/PI*std::acos(arma::dot(trackerz/norm(trackerz), usz/norm(usz)));
+    angle = min(angle, 180-angle);
+    angle = 90-angle;
+  }
+
   void FSSimpleWidget::HandleFrame(RPData &rp)
   {
+    char forceString[200] = {0};
     if(m_forceSensorInitialized->GetValue()) {
       s32 rv = m_forceSensor->AcquireFTData();
       if(rv != 0)
@@ -770,16 +839,65 @@ namespace Nf
       m_forceSensor->GetTorqueReading(torque);
       rp.force.torque = Vec3d(torque[0], torque[1], torque[2]);
 
-      char forceString[200];
-      sprintf(forceString, "Force: {%f, %f, %f}, Torque: {%f, %f, %f}, Insertion: %f", rp.force.force.x, rp.force.force.y, rp.force.force.z,
-        rp.force.torque.x, rp.force.torque.y, rp.force.torque.z, rp.force.slidePosition);
-      m_forceText->SetInput(forceString);
+      sprintf(forceString, "Force: {%f, %f, %f}, Torque: {%f, %f, %f}", rp.force.force.x, rp.force.force.y, rp.force.force.z,
+        rp.force.torque.x, rp.force.torque.y, rp.force.torque.z);
     }
+    SpoofRPDataWithNeedleTipCalibration(rp, &m_ntCalibrator, 0);
+    
+    switch(m_state)
+    {
+    case FSS_NOTHING:
+      {
+        break;
+      }
+    case FSS_BEGIN_SAVE:
+      {
+        if(m_snap.b8 != NULL)
+          m_snap.Release();
+        m_snap = rp.Clone();
 
+        m_state = FSS_ORIENTING;
+        break;
+      }
+    case FSS_ORIENTING:
+      {
+        f64 angle;
+        Vec3d image;
+        findCoordsOfTracker(image, angle, rp, rp);
+
+        sprintf(forceString, "dist = %f mm, angle = %f deg, Force: {%f, %f, %f}, Torque: {%f, %f, %f} ", image.z, angle, rp.force.force.x, rp.force.force.y, rp.force.force.z,
+          rp.force.torque.x, rp.force.torque.y, rp.force.torque.z);
+        cvDrawCircle(rp.b8, cvPoint(image.x, image.y), 5, cvScalar(128, 0, 0), 2);
+
+        if(rp.force.force.z < -1) {
+          m_saveDataWidget->StartRecording();
+          m_state = FSS_SAVING;
+        }
+        break;
+      }
+    case FSS_SAVING:
+      {
+        f64 angle;
+        Vec3d image;
+        
+        findCoordsOfTracker(image, angle, rp, rp);
+        sprintf(forceString, "dist = %f mm, angle = %f deg, Force: {%f, %f, %f}, Torque: {%f, %f, %f} dist = %f mm", image.z, angle, rp.force.force.x, rp.force.force.y, rp.force.force.z,
+          rp.force.torque.x, rp.force.torque.y, rp.force.torque.z);
+        cvDrawCircle(rp.b8, cvPoint(image.x, image.y), 10, cvScalar(255, 0, 0), 2); 
+
+        if(rp.force.force.z > 1) {
+          onEndSaveTrial();
+        }
+        break;
+      }
+    };
     RPStreamingWidget::HandleFrame(rp);
+    m_forceText->SetInput(forceString);
 
-
-    m_saveDataWidget->SaveDataFrame(rp);
+    RPData copy = rp;
+    copy.b8 = NULL;
+    copy.color = NULL;
+    m_saveDataWidget->SaveDataFrame(copy);
   }
   ////////////////////////////////////////////////////////////////////////////////
   /// END FSExperimentStreamingWidget CLASS

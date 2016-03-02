@@ -286,7 +286,7 @@ namespace Nf
         break;
     }
 
-    char filename[100];
+    char filename[200] = {0};
     sprintf(filename, "%s.%s", m_path, extension);
 
     FILE *temp = fopen(filename, "rb");
@@ -334,7 +334,7 @@ namespace Nf
   
   s32 RPFileWriterCollection::AddGPSWriter()
   {
-    char filename[100];
+    char filename[200];
     sprintf(filename, "%s.%s", m_path, "gps1");
     
 
@@ -382,7 +382,7 @@ namespace Nf
   
   s32 RPFileWriterCollection::AddGPSWriter2()
   {
-    char filename[100];
+    char filename[200];
     sprintf(filename, "%s.%s", m_path, "gps2");
     
 
@@ -430,7 +430,7 @@ namespace Nf
   
   s32 RPFileWriterCollection::AddNSCommandWriter()
   {
-    char filename[100];
+    char filename[200];
     sprintf(filename, "%s.%s", m_path, "u");
     
 
@@ -478,7 +478,7 @@ namespace Nf
   
   s32 RPFileWriterCollection::AddForceWriter()
   {
-    char filename[100];
+    char filename[200];
     sprintf(filename, "%s.%s", m_path, "force");
     
 

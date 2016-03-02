@@ -92,7 +92,7 @@ namespace Nf
     NSCommandWriter *m_u;
     ForceWriter *m_f;
     RPFileHeader m_header;
-    char m_path[100];
+    char m_path[200];
     bool m_writeOver;
   };
 

@@ -33,6 +33,7 @@ namespace Nf
     void ResumeRecording();
     void SaveData(RPFileHeader header);
     void SaveData(RPFileHeader header, const char *filename);
+    void SaveDataWithSnap(RPFileHeader header, const char *filename, RPData &snap);
     void FreeData();
     bool HasData() const;
 

@@ -8,7 +8,6 @@
 #include <highgui.h>
 
 #define NOMINAL_SOS 1540.0
-#define TRANSDUCER_OFFSET 3.5  // measured offset to correct transducer misalignment with curvalinear probe
 
 //#define GPS3_SAVING
 
@@ -153,8 +152,19 @@ namespace Nf
 
   inline Vec3d rpImageCoordToWorldCoord3(const Vec2d &image, const Matrix44d &posePos, const Matrix44d &calibration, const Vec2d &start, const Vec2d &scale)
   {
-    Vec4d world =  posePos*calibration*Vec4d(1, (image.y-start.y)*scale.y, (image.x-start.x)*scale.x, 1.0);
+    Vec4d world =  posePos*calibration*Vec4d(1, (image.y-start.y)*scale.y, (image.x-start.x)*scale.x, 1.0)+Vec4d(TRANSDUCER_OFFSET,0.0,0.0,0.0);
     return Vec3d(world.x, world.y, world.z);
+  }
+
+  inline Vec3d rpWorldCoord3ToImageCoord(const Vec3d &world, const Matrix44d &posePos, const Matrix44d &calibration, const Vec2d &start, const Vec2d &scale)
+  {                                                           
+    Vec4d p4(world.x, world.y, world.z, 1);
+    Vec4d p4_us = posePos.Inverse()*p4-Vec4d(TRANSDUCER_OFFSET,0.0,0.0,0.0);                          // Transducer frame point
+    Matrix33d cal_part(calibration.m_data[0][2], calibration.m_data[0][1], 0, 1.00, calibration.m_data[1][1], 0, 0, 0, 1); // values taken from Sonix calibration 
+    // Invert a square portion of the calibration matrix, scale and shift image point to VTK origin
+    Vec3d p3_im = cal_part.Inverse()* ( Vec3d(p4_us.x,p4_us.y,0) - Vec3d(calibration.m_data[0][0],calibration.m_data[1][0],0) );
+    p3_im.z = p4_us.z;
+    return Vec3d( (p3_im.x/scale.x) + start.x, (p3_im.y/scale.y) + start.y, p3_im.z);
   }
 
   //inline Vec3d rpWorldCoord3ToImageCoord(const Vec3d &pt3_w, const Matrix44d &posePos, const Matrix44d &calibration, Vec2d &start, const Vec2d &scale)

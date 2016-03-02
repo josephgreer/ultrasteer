@@ -193,6 +193,14 @@ namespace Nf
     virtual void UpdateSize(QSize sz);
   };
 
+  enum FSSimpleState 
+  {
+    FSS_NOTHING = 0,
+    FSS_BEGIN_SAVE = 1,
+    FSS_ORIENTING = 2,
+    FSS_SAVING = 3,
+  };
+
   class FSSimpleWidget : public RPStreamingWidget
   {
     Q_OBJECT
@@ -211,6 +219,31 @@ namespace Nf
     std::tr1::shared_ptr < SaveDataWidget > m_saveDataWidget;
     std::tr1::shared_ptr < QGridLayout > m_bottomRow;
     vtkSmartPointer < vtkTextActor > m_forceText;
+
+    std::tr1::shared_ptr < Nf::FileParameter > m_tipCalibPath;
+    virtual void onTipCalibPathChanged();
+    CLASS_CALLBACK(onTipCalibPathChanged, FSSimpleWidget);
+    
+    std::tr1::shared_ptr < Nf::BoolParameter > m_clearCalib;
+    void onClearCalib();
+    CLASS_CALLBACK(onClearCalib, FSSimpleWidget)
+
+    std::tr1::shared_ptr < Nf::FileParameter > m_baseSavePath;
+    std::tr1::shared_ptr < Nf::IntParameter > m_trialNumber;
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_beginSave;
+    void onBeginSaveTrial();
+    CLASS_CALLBACK(onBeginSaveTrial, FSSimpleWidget);
+    
+    std::tr1::shared_ptr < Nf::BoolParameter > m_endSave;
+    void onEndSaveTrial();
+    CLASS_CALLBACK(onEndSaveTrial, FSSimpleWidget);
+
+    EMNeedleTipCalibrator m_ntCalibrator;
+
+    FSSimpleState m_state;
+
+    RPData m_snap;
 
   public:
     FSSimpleWidget(QWidget *parent, const char *name = "FSSimpleWidget");

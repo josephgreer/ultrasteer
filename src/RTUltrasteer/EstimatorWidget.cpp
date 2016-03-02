@@ -8,7 +8,7 @@ namespace Nf
 {
 #define INSERT_VEL 0.5 //mm/s
 
-  static void SpoofRPDataWithNeedleTipCalibration(RPData &rp, const EMNeedleTipCalibrator *em, s32 frame)
+  void SpoofRPDataWithNeedleTipCalibration(RPData &rp, const EMNeedleTipCalibrator *em, s32 frame)
   {
     Vec3d tipOffset; Matrix33d tipFrame;
     em->GetSolution(tipOffset, tipFrame, rp.gps2.pos, Matrix44d::FromCvMat(rp.gps2.pose).GetOrientation(), frame);
