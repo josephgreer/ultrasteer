@@ -1,6 +1,6 @@
 clear; clc; close all;
 
-basePath = 'C:\Users\CHARM\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\2_29_16\Trial0\';
+basePath = 'C:\Users\CHARM\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\2_29_16\Trial21\';
 im = imread(strcat(basePath, 'scan.png'));
 imshow(im);
 

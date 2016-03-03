@@ -786,7 +786,17 @@ namespace Nf
 
   void FSSimpleWidget::onBeginSaveTrial()
   {
-    m_state = FSS_BEGIN_SAVE;
+    switch(m_state) {
+    case FSS_NOTHING:
+      m_state = FSS_ORIENTING;
+      break;
+    case FSS_ORIENTING:
+      m_saveDataWidget->StartRecording();
+      m_state = FSS_SAVING;
+      break;
+    case FSS_SAVING:
+      break;
+    }
   }
 
   void FSSimpleWidget::onEndSaveTrial()
@@ -806,7 +816,14 @@ namespace Nf
     m_snap = RPData();
 
     m_trialNumber->SetValue(m_trialNumber->GetValue()+1);
-    m_state = FSS_NOTHING;
+
+    switch(m_state) {
+    case FSS_NOTHING:
+    case FSS_ORIENTING:
+    case FSS_SAVING:
+      m_state = FSS_ORIENTING;
+      break;
+    }
     return;
   }
 
@@ -850,15 +867,6 @@ namespace Nf
       {
         break;
       }
-    case FSS_BEGIN_SAVE:
-      {
-        if(m_snap.b8 != NULL)
-          m_snap.Release();
-        m_snap = rp.Clone();
-
-        m_state = FSS_ORIENTING;
-        break;
-      }
     case FSS_ORIENTING:
       {
         f64 angle;
@@ -867,12 +875,15 @@ namespace Nf
 
         sprintf(forceString, "dist = %f mm, angle = %f deg, Force: {%f, %f, %f}, Torque: {%f, %f, %f} ", image.z, angle, rp.force.force.x, rp.force.force.y, rp.force.force.z,
           rp.force.torque.x, rp.force.torque.y, rp.force.torque.z);
-        cvDrawCircle(rp.b8, cvPoint(image.x, image.y), 5, cvScalar(128, 0, 0), 2);
 
         if(rp.force.force.z < -1) {
+          if(m_snap.b8 != NULL)
+            m_snap.Release();
+          m_snap = rp.Clone();
           m_saveDataWidget->StartRecording();
           m_state = FSS_SAVING;
         }
+        cvDrawCircle(rp.b8, cvPoint(image.x, image.y), 5, cvScalar(128, 0, 0), 2);
         break;
       }
     case FSS_SAVING:
@@ -880,7 +891,7 @@ namespace Nf
         f64 angle;
         Vec3d image;
         
-        findCoordsOfTracker(image, angle, rp, rp);
+        findCoordsOfTracker(image, angle, rp, m_snap);
         sprintf(forceString, "dist = %f mm, angle = %f deg, Force: {%f, %f, %f}, Torque: {%f, %f, %f} dist = %f mm", image.z, angle, rp.force.force.x, rp.force.force.y, rp.force.force.z,
           rp.force.torque.x, rp.force.torque.y, rp.force.torque.z);
         cvDrawCircle(rp.b8, cvPoint(image.x, image.y), 10, cvScalar(255, 0, 0), 2); 

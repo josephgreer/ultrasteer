@@ -196,9 +196,8 @@ namespace Nf
   enum FSSimpleState 
   {
     FSS_NOTHING = 0,
-    FSS_BEGIN_SAVE = 1,
-    FSS_ORIENTING = 2,
-    FSS_SAVING = 3,
+    FSS_ORIENTING = 1,
+    FSS_SAVING = 2,
   };
 
   class FSSimpleWidget : public RPStreamingWidget
