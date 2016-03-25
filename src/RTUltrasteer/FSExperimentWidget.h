@@ -243,6 +243,7 @@ namespace Nf
     FSSimpleState m_state;
 
     RPData m_snap;
+    RPData m_snap2;
 
   public:
     FSSimpleWidget(QWidget *parent, const char *name = "FSSimpleWidget");

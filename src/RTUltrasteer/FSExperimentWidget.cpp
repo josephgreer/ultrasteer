@@ -809,6 +809,7 @@ namespace Nf
       dir.mkdir(dirName.c_str());
 
     cvSaveImage((dirName+"/scan.png").c_str(), m_snap.b8);
+    cvSaveImage((dirName+"/scan2.png").c_str(), m_snap2.b8);
     m_saveDataWidget->StopRecording();
     m_saveDataWidget->SaveDataWithSnap(RPFileHeader(), (dirName+"/scan.b8").c_str(), m_snap);
 
@@ -860,6 +861,11 @@ namespace Nf
         rp.force.torque.x, rp.force.torque.y, rp.force.torque.z);
     }
     SpoofRPDataWithNeedleTipCalibration(rp, &m_ntCalibrator, 0);
+
+    if(m_snap2.b8)
+      m_snap2.Release();
+
+    m_snap2 = rp.Clone();
     
     switch(m_state)
     {

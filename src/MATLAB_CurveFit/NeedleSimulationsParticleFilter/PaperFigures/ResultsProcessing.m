@@ -20,15 +20,15 @@ meanFaceColor = [0 0 255;...
 lineColors = {'r','k'};
 
 output_lateral = 0;
-types = {'JournalResults','JournalResultsNoDoppler'};
+types = {'JournalResults','JournalResultsNoDoppler','JournalResultsNaive'};
 
 for mth=1:length(methods)
     for tp = 1:length(types)
-        %baseDir = strcat('C:\Users\CHARM\Dropbox (Stanford CHARM Lab)\Joey Greer Research Folder\Data\NeedleScan\', type, '\');
-        baseDir = strcat('/Users/Joey/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Data/NeedleScan/', types{tp}, '/');
+        baseDir = strcat('C:/Users/CHARM/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Data/NeedleScan/', types{tp}, '/');
+        %baseDir = strcat('/Users/Joey/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Data/NeedleScan/', types{tp}, '/');
         
         method = methods{mth};
-        data = rdir(strcat(baseDir,'**/',method,'EstimatedPos.dat'))
+        data = rdir(strcat(baseDir,'**\',method,'EstimatedPos.dat'))
         
         speedLabels = {'05mm', '1mm', '2mm', '3mm'};
         speeds = [0.5 1 2 3];
@@ -39,11 +39,14 @@ for mth=1:length(methods)
         resultsAxial = {[], [], [], []};
         resultsLateral = {[], [], [], []};
         resultsOrientationError = {[], [], [], []};
+        resultsMeasDistance = [];
+        resultsMax = {[], [], [], []};
+        resultsStd = {[], [], [], []};
         for i=1:length(data)
             display(data(i).name)
             %close all;
             currDir = data(i).name;
-            idxs = strfind(currDir, '/');
+            idxs = strfind(currDir, '\');
             currDir = currDir(1:idxs(end));
             
             speedLabel = currDir(idxs(end-2)+1:idxs(end-1)-1);
@@ -62,6 +65,9 @@ for mth=1:length(methods)
             estPos = load(strcat(estBasePath, 'Pos.dat'));
             truePos = load(strcat(truthBasePath, 'Pos.dat'));
             
+            measPos = load(strcat(currDir,'MeasPos.dat'))';
+            deltaMeasPos = truePos-measPos;
+            
             estRs = loadOrientations(strcat(estBasePath, 'Rs.dat'));
             trueRs = loadOrientations(strcat(truthBasePath, 'Rs.dat'));
             
@@ -75,6 +81,9 @@ for mth=1:length(methods)
             estRs = estRs([startId:endId]);
             trueRs = trueRs([startId:endId]);
             
+            delta = estPos-truePos;
+            resultsMeasDistance = vertcat(resultsMeasDistance,[mean(sqrt(sum(delta.^2,2))) mean(sqrt(sum(deltaMeasPos.^2,2)))]);
+            
             if(showPlots)
                 scatter3(estPos(:,1), estPos(:,2), estPos(:,3), 'b');
                 hold on;
@@ -84,8 +93,6 @@ for mth=1:length(methods)
                 ylabel('y');
                 zlabel('z');
             end
-            
-            delta = estPos-truePos;
             
             %     figHandle = figure;
             %     titles = ['x', 'y', 'z'];
@@ -108,6 +115,8 @@ for mth=1:length(methods)
             
             %display(mean(sqrt(sum(delta.^2,2))));
             results{resultBin} = vertcat(results{resultBin},mean(sqrt(sum(delta.^2,2))));
+            resultsMax{resultBin} = vertcat(resultsMax{resultBin}, max(sqrt(sum(delta.^2,2))));
+            resultsStd{resultBin} = vertcat(resultsStd{resultBin}, std(sqrt(sum(delta.^2,2))));
             
             
             titles = ['x', 'y', 'z'];
@@ -145,6 +154,47 @@ for mth=1:length(methods)
             legend('Measurement', 'Mean', 'Location', 'northwest');
             xlabel('Insertion Velocity (mm/s),','FontSize', 10, 'FontName', 'Times New Roman');
             ylabel('RMS Error (mm)','FontSize', 10, 'FontName', 'Times New Roman');
+            grid on;
+            box on;
+            set(gca, 'FontSize', 10, 'FontName', 'Times New Roman');
+            title(strcat(method, ' RMS Error'));
+            xlim([0 3.5]);
+            ylim([0 6]);
+            
+            figure(5);
+            
+            subplot(1,2,mth);
+            hold on;
+            % positon error plots
+            for i=1:length(resultsMax)
+                for j=1:length(resultsMax{i})
+                    scatter(speeds(i),resultsMax{i}(j),100, 'MarkerEdgeColor',normalLineColor(mth,:),'LineWidth',1.5);%'MarkerFaceColor',normalFaceColor(mth,:),'LineWidth',1.5)
+                end
+                scatter(speeds(i), mean(resultsMax{i}), 100, 'MarkerEdgeColor',meanLineColor(mth,:),'MarkerFaceColor',meanFaceColor(mth,:),'LineWidth',1.5)
+            end
+            legend('Measurement', 'Mean', 'Location', 'northwest');
+            xlabel('Insertion Velocity (mm/s),','FontSize', 10, 'FontName', 'Times New Roman');
+            ylabel('Max Error (mm)','FontSize', 10, 'FontName', 'Times New Roman');
+            grid on;
+            box on;
+            set(gca, 'FontSize', 10, 'FontName', 'Times New Roman');
+            title(strcat(method, ' RMS Error'));
+            xlim([0 3.5]);
+            ylim([0 6]);
+            
+            figure(6);
+            subplot(1,2,mth);
+            hold on;
+            % positon error plots
+            for i=1:length(resultsStd)
+                for j=1:length(resultsStd{i})
+                    scatter(speeds(i),resultsStd{i}(j),100, 'MarkerEdgeColor',normalLineColor(mth,:),'LineWidth',1.5);%'MarkerFaceColor',normalFaceColor(mth,:),'LineWidth',1.5)
+                end
+                scatter(speeds(i), mean(resultsStd{i}), 100, 'MarkerEdgeColor',meanLineColor(mth,:),'MarkerFaceColor',meanFaceColor(mth,:),'LineWidth',1.5)
+            end
+            legend('Measurement', 'Mean', 'Location', 'northwest');
+            xlabel('Insertion Velocity (mm/s),','FontSize', 10, 'FontName', 'Times New Roman');
+            ylabel('Error Std (mm)','FontSize', 10, 'FontName', 'Times New Roman');
             grid on;
             box on;
             set(gca, 'FontSize', 10, 'FontName', 'Times New Roman');
@@ -196,7 +246,7 @@ for mth=1:length(methods)
             ylim([0 6]);
         end
         
-        if(strcmpi(methods{mth},'Marginalized'))
+        if(strcmpi(methods{mth},'Marginalized') & tp ~= 3)
             figure(2);
             pause(1);
             subplot(1,3,1);
@@ -246,6 +296,15 @@ for mth=1:length(methods)
             display(sprintf('marginalized %s, RMS %f Axial %f Lateral %f\n', types{tp}, mean(cellfun(@mean, results)), mean(cellfun(@mean, resultsAxial)),...
                 mean(cellfun(@mean, resultsLateral))));
         end
+        
+        % measureDistance vs accuracy
+        figure(3);
+        if(tp ~= 3 || mth ~= 2)
+            subplot(2, 2, tp*mth);
+            scatter(resultsMeasDistance(:,2), resultsMeasDistance(:,1));
+            title(strcat(methods{mth}, ' ', types{tp}));
+            ylim([0.5 10]);
+        end
     end
 end
 figure(1);
@@ -253,7 +312,19 @@ set(figHandle, 'Position', [100 100 750 200]);
 pause(1);
 tightfig;
 pause(1);
-export_fig -transparent AccuracyResults.pdf
+
+figure(5);
+set(figHandle, 'Position', [100 100 750 200]);
+pause(1);
+tightfig;
+pause(1);
+
+figure(6);
+set(figHandle, 'Position', [100 100 750 200]);
+pause(1);
+tightfig;
+pause(1);
+%export_fig -transparent AccuracyResults.pdf
 
 % figure(2);
 % set(figHandle2, 'Position', [100 100 750 350]);
