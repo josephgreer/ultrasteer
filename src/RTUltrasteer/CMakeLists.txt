@@ -39,10 +39,10 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_SOURCE_DIR}/../../external/nano17/include
 ) 
 
-SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp USVisualizerWidget.cpp VTKTransferFunctionWidget.cpp FileWidget.cpp Resizable.cpp ImageViewerWidget.cpp RPWidget.cpp RobotHardwareWidget.cpp RobotControlsWidget.cpp Teleoperation2DWidget.cpp
+SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp ChartWidget.cpp USVisualizerWidget.cpp VTKTransferFunctionWidget.cpp FileWidget.cpp Resizable.cpp ImageViewerWidget.cpp RPWidget.cpp RobotHardwareWidget.cpp RobotControlsWidget.cpp Teleoperation2DWidget.cpp
 	PFVisualizerWidget.cpp EstimatorWidget.cpp SaveDataWidget.cpp EMCalibrationWidget.cpp NeedleTipCalibrationPP.cpp TeleoperationVisualizationWidget.cpp RobotStatusWidget.cpp FSExperimentWidget.cpp)
 
-SET(ultrasteerHeaders RTUltrasteer.h USVisualizerWidget.h UICore.h VTKTransferFunctionWidget.h FileWidget.h Resizable.h ImageViewerWidget.h RPWidget.h RobotHardwareWidget.h RobotControlsWidget.h Teleoperation2DWidget.h MouseInteractorStylePP.h
+SET(ultrasteerHeaders RTUltrasteer.h USVisualizerWidget.h ChartWidget.h UICore.h VTKTransferFunctionWidget.h FileWidget.h Resizable.h ImageViewerWidget.h RPWidget.h RobotHardwareWidget.h RobotControlsWidget.h Teleoperation2DWidget.h MouseInteractorStylePP.h
 	PFVisualizerWidget.h EstimatorWidget.h SaveDataWidget.h EMCalibrationWidget.h NeedleTipCalibrationPP.h TeleoperationVisualizationWidget.h RobotStatusWidget.h FSExperimentWidget.h)
 
 SET(ultrasteerUI RTUltrasteer.ui FileWidget.ui RobotControlsWidget.ui SaveDataWidget.ui RobotStatusWidget.ui)

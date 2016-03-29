@@ -437,6 +437,7 @@ namespace Nf
     : m_nParticles(nParticles)
     , m_pDopOverNeedle(pDopOverNeedle)
     , m_pDopNotOverNeedle(pDopNotOverNeedle)
+    , m_overNeedle(0,0)
   {
     m_w = ones(1,m_nParticles)/(f64)m_nParticles;
   }
@@ -473,6 +474,11 @@ namespace Nf
     m_w = m_w%pw;
     mat tot = sum(m_w,1);
     m_w = m_w/tot(0,0);
+  }
+
+  Vec2d ParticleFilter::GetProbOverNeedle()
+  {
+    return m_overNeedle;
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -616,6 +622,8 @@ namespace Nf
 
     bool useLUT = p->useLut->GetValue();
 
+    mat overNeedles = mat(m_nParticles,1);
+
     // For each particle...
     for(s32 i=0; i<m_nParticles; i++) {
       //delta rotation from particle 0 to particle i
@@ -665,6 +673,7 @@ namespace Nf
 
         // p(off frame | distance of projection)
         p_offFrame = sigmoid(minAbsVal, offFrameB0, offFrameB1);
+        overNeedles(i,0) = 1-p_offFrame;
 
         // gaussian centered at measurement intersections
         suv = (vec2)(ds.submat(span(0,1), span(minAbsIdx,minAbsIdx)));
@@ -698,6 +707,9 @@ namespace Nf
     }
 
     ApplyWeights(pw);
+
+    m_overNeedle.y = dot(overNeedles, m_w);
+    m_overNeedle.x = pin;
   }
 
   mat ParticleFilterFullState::GetParticlePositions(const PFParams *p)
@@ -938,6 +950,8 @@ namespace Nf
 
     arma::mat uv = findCurvePointOnFrame(curvePoints, invA, m);
 
+    mat overNeedles = mat(m_nParticles,1);
+
     // For each particle...
     for(s32 i=0; i<m_nParticles; i++) {
       Rprior = m_R[i].mu;
@@ -1011,6 +1025,7 @@ namespace Nf
 
         // p(off frame | distance of projection)
         p_offFrame = sigmoid(minAbsVal, offFrameB0, offFrameB1);
+        overNeedles(i,0) = 1-p_offFrame;
 
         // gaussian centered at measurement intersections
         suv = (vec2)(ds.submat(span(0,1), span(minAbsIdx,minAbsIdx)));
@@ -1049,6 +1064,8 @@ namespace Nf
     mat sm = sum(pw, 1);
     pw = pw/sm(0,0);
     ApplyWeights(pw);
+    m_overNeedle.y = dot(overNeedles, m_w);
+    m_overNeedle.x = pin;
   }
 
   mat ParticleFilterMarginalized::GetParticlePositions(const PFParams *p)

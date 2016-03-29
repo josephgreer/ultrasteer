@@ -2,6 +2,7 @@
 #include "NeedleTipCalibrationPP.h"
 #include <regex>
 #include <vtkProperty.h>
+#include <vtkFloatArray.h>
 #include <QKeyEvent>
 
 namespace Nf
@@ -93,13 +94,14 @@ namespace Nf
     return res;
   }
 
-  ParticleFilterVisualizer::ParticleFilterVisualizer(Updateable *update)
+  ParticleFilterVisualizer::ParticleFilterVisualizer(Updateable *update, QWidget *parent)
     : ParameterCollection("Particle Filter")
     , m_update(update)
     , m_init(false)
     , m_segmenter(new Nf::NeedleSegmenter(0,0,this))
     , m_lastFrame(0)
     , m_pf(NULL)
+    , m_chartWidget(new ChartWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT/4)))
   {
     m_pfParams = std::tr1::shared_ptr < PFParams > ((PFParams *)new PFFullStateParams());
     m_pfParamsMarg = std::tr1::shared_ptr < PFParams > ((PFParams *)new PFMarginalizedParams());
@@ -525,7 +527,7 @@ namespace Nf
     UpdateVisualizations(m_lastFrame);
   }
 
-  static arma::mat CurvePoints(const PolyCurve *p, s32 n, f64 desiredLength, f64 ds, arma::vec latestMeasurement)
+  static arma::mat CurvePoints(const PolyCurve *p, s32 n, f64 desiredLength, f64 ds, arma::vec latestMeasurement, f64 maxLength = 10.0)
   {
     Polynomial pp = PolyCurveToPolynomial(p);
     f64 ta, tb;
@@ -558,7 +560,7 @@ namespace Nf
 
     f64 dlen = arma::mean(spacings);
 
-    for(f64 extraLen=0; extraLen <= 10.0; extraLen += dlen) {
+    for(f64 extraLen=0; extraLen <= maxLength; extraLen += dlen) {
       res = arma::join_vert(res.row(0)+derivs.row(derivs.n_rows/10)*dlen, res);
     }
 
@@ -590,12 +592,14 @@ namespace Nf
       Vec2d range(m_pfFramesProcessed[frame].measCurve.dRange.x, m_pfFramesProcessed[frame].measCurve.dRange.y);
       m_measCurveVis->SetCurve(&curr, range, 0.5);
 
+#if 0
       arma::mat curvePoints = CurvePoints(&m_pfFramesProcessed[frame].measCurve, (s32)(1*GetParams(frame)->n->GetValue()), 2*GetParams(frame)->minLength->GetValue(), 
-        (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0*m_pfFramesProcessed[frame].u.v, m_pfFramesProcessed[frame].m.pos.col(0));
+        (m_pfFramesProcessed[frame].u.tick-m_pfFramesProcessed[frame-1].u.tick)/1000.0*m_pfFramesProcessed[frame].u.v, m_pfFramesProcessed[frame].m.pos.col(0), 0);
       std::vector < Vec3d > cpoints;
       for(s32 i=0; i<curvePoints.n_rows; i++) 
         cpoints.push_back(Vec3d(curvePoints(i,0), curvePoints(i,1), curvePoints(i,2)));
       m_curvePoints->SetPoints(cpoints);
+#endif
     }
 
     m_update->onRepaint();
@@ -762,6 +766,7 @@ namespace Nf
       m_pfFramesProcessed[frame].particleRs = m_pf->GetParticleOrientations(params.get());
       m_pfFramesProcessed[frame].particlePos = m_pf->GetParticlePositions(params.get());
       m_pfFramesProcessed[frame].w = m_pf->GetWeights();
+      m_pfFramesProcessed[frame].overNeedle = m_pf->GetProbOverNeedle();
       UpdateVisualizations(frame);
 
       // Resample if effective number of particles drops below threshold
@@ -784,6 +789,12 @@ namespace Nf
     m_update->onRepaint();
   }
 
+
+  void ParticleFilterVisualizer::AddWidgetsToLayout(QGridLayout *layout)
+  {
+    layout->addWidget(m_chartWidget.get(), 0, 0);
+  }
+
   /////////////////////////////////////////////////////////////////////////////////
   //END PFVisualizer
   /////////////////////////////////////////////////////////////////////////////////
@@ -792,10 +803,13 @@ namespace Nf
     : RPFileWidget(parent, (USVisualizer *)new PFVisualizer(parent), name)
     , m_state(EFS_READY)
     , m_resultsAvailable(ERA_NONE)
-    , m_pfVisualizer(new ParticleFilterVisualizer(this))
+    , m_pfVisualizer(new ParticleFilterVisualizer(this, parent))
     , m_screenWriter(std::tr1::shared_ptr < ScreenWriter >(new ScreenWriter(m_planeVis->GetRenderWindow())))
     , m_lastFrame(1)
+    , m_topRow(new QGridLayout(parent))
   {
+    m_pfVisualizer->AddWidgetsToLayout(m_topRow.get());
+    m_layout->addLayout(m_topRow.get(), 1, 0, 1, 2);
 
     ADD_ACTION_PARAMETER(m_doNeedleCalib, "Do Needle Calibration", CALLBACK_POINTER(onDoNeedleCalibrationPushed, EstimatorFileWidget), this, false);
     ADD_ENUM_PARAMETER(m_operationMode, "Operation Mode", CALLBACK_POINTER(onSetOperationMode, EstimatorFileWidget), this, QtEnums::EstimatorOperationMode::EOM_NONE, "EstimatorOperationMode");
@@ -832,8 +846,18 @@ namespace Nf
   EstimatorFileWidget::~EstimatorFileWidget()
   {
   }
-     
 
+  void EstimatorFileWidget::UpdateSize(QSize sz)
+  {
+    s32 ml, mr, mu, mb;
+    ResizableQWidget::UpdateSize(sz);
+    m_layout->getContentsMargins(&ml, &mu, &mr, &mb);
+    m_imageViewer->UpdateSize(QSize(sz.width()/2-10, (3*sz.height())/4));
+    m_usVis->UpdateSize(QSize(sz.width()/2-10, (3*sz.height())/4));
+    m_planeVis->UpdateSize(QSize(sz.width()/2-10, (3*sz.height())/4));
+    m_pfVisualizer->GetChartWidget()->UpdateSize(QSize(sz.width()-10, sz.height()/4));
+  }
+  
   void EstimatorFileWidget::onUpdateFrame()
   {
     if(m_data.gps.valid)

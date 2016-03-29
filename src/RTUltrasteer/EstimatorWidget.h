@@ -16,8 +16,11 @@
 #include "RPWidget.h"
 #include "CubeVisualizer.h"
 #include "Calibration.h"
+#include "ChartWidget.h"
 #include "Segment.h"
 #include <vtkAxesActor.h>
+#include <vtkBarChartActor.h>
+#include <vtkChartXY.h>
 
 namespace Nf
 {
@@ -45,6 +48,7 @@ namespace Nf
     Measurement m;
     NSCommand u;
     TipState t;
+    Vec2d overNeedle;
     Vec2d mpp;
     TipState est;
     std::vector < arma::mat33 > particleRs;
@@ -67,6 +71,7 @@ namespace Nf
     std::tr1::shared_ptr < PointCloudVisualizer > m_curvePoints;
     std::tr1::shared_ptr < PFParams > m_pfParams;
     std::tr1::shared_ptr < PFParams > m_pfParamsMarg;
+    std::tr1::shared_ptr < ChartWidget > m_chartWidget;
     std::string m_basePath;
 
     Updateable *m_update;
@@ -77,7 +82,7 @@ namespace Nf
     std::map < s32, TipState > m_trueTipStates;
 
   public:
-    ParticleFilterVisualizer(Updateable *update);
+    ParticleFilterVisualizer(Updateable *update, QWidget *parent);
     ~ParticleFilterVisualizer();
     void AddActorsToRenderer(vtkSmartPointer < vtkRenderer > renderer);
     void SetVisiblity(bool visible);
@@ -128,6 +133,10 @@ namespace Nf
 
     std::tr1::shared_ptr < Nf::BoolParameter > m_collectMeasurements;
 
+    std::tr1::shared_ptr < ChartWidget > GetChartWidget() { return m_chartWidget; }
+
+    virtual void AddWidgetsToLayout(QGridLayout *layout);
+
     virtual void onUpdate();
     virtual void onRepaint();
   };
@@ -142,8 +151,11 @@ namespace Nf
     std::tr1::shared_ptr < ParticleFilterVisualizer > m_pfVisualizer;
     std::tr1::shared_ptr < PointCloudVisualizer > m_calibrationPointsTip;
     std::tr1::shared_ptr < PointCloudVisualizer > m_calibrationPointsCurvature;
+    std::tr1::shared_ptr < QGridLayout > m_topRow;
 
     s32 m_lastFrame;
+    
+    virtual void UpdateSize(QSize sz);
     
     EMNeedleTipMultiCalibrator m_ntCalibrator;
     NeedleCurvatureCalibrator m_ncCalibrator;
@@ -201,9 +213,6 @@ namespace Nf
 
     public slots:
     virtual void onUpdateFrame();
-
-
-
   };
 
   enum EstimatorState {

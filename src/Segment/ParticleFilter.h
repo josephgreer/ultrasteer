@@ -175,6 +175,7 @@ namespace Nf
     arma::mat m_w;                          //weights [w1 ... wn] wi \in R, m_w \in R^(1xn)
     std::tr1::shared_ptr < Distribution > m_pDopOverNeedle;
     std::tr1::shared_ptr < Distribution > m_pDopNotOverNeedle;
+    Vec2d m_overNeedle;                       //does US frame intersect each particle's flagella?
 
   public:
     //Constructor
@@ -242,6 +243,9 @@ namespace Nf
     virtual TipState GetExpectedValue(const PFParams *p) = 0;
 
     virtual void ApplyWeights(const arma::mat &pw);
+
+    // Get Probability Ultrasound Frame is over Needle Shaft
+    virtual Vec2d GetProbOverNeedle();
   };
 
   // Implements full state particle filter.
