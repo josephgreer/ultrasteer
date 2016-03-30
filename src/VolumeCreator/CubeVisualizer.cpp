@@ -132,6 +132,7 @@ namespace Nf {
 
     vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
     actor->SetMapper(m_mapper);
+    actor->GetProperty()->SetLineWidth(5);
 
     m_actor = actor;
   }
@@ -250,7 +251,7 @@ namespace Nf {
   STLVisualizer::STLVisualizer(const char *path)
   {
     m_stlReader = vtkSmartPointer < vtkSTLReader >::New();
-    m_stlReader->SetFileName(STL_PATH_CAT("NeedleSteeringRobot.STL"));
+    m_stlReader->SetFileName(path);
     m_stlReader->Update();
     m_mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
     m_mapper->SetInputConnection(m_stlReader->GetOutputPort());

@@ -71,7 +71,8 @@ namespace Nf
     std::tr1::shared_ptr < PointCloudVisualizer > m_curvePoints;
     std::tr1::shared_ptr < PFParams > m_pfParams;
     std::tr1::shared_ptr < PFParams > m_pfParamsMarg;
-    std::tr1::shared_ptr < ChartWidget > m_chartWidget;
+    std::tr1::shared_ptr < BarChartWidget > m_barChartWidget;
+    std::tr1::shared_ptr < LineChartWidget > m_lineChartWidget;
     std::string m_basePath;
 
     Updateable *m_update;
@@ -133,7 +134,8 @@ namespace Nf
 
     std::tr1::shared_ptr < Nf::BoolParameter > m_collectMeasurements;
 
-    std::tr1::shared_ptr < ChartWidget > GetChartWidget() { return m_chartWidget; }
+    std::tr1::shared_ptr < ChartWidget > GetBarChartWidget() { return m_barChartWidget; }
+    std::tr1::shared_ptr < ChartWidget > GetLineChartWidget() { return m_lineChartWidget; }
 
     virtual void AddWidgetsToLayout(QGridLayout *layout);
 
@@ -152,6 +154,8 @@ namespace Nf
     std::tr1::shared_ptr < PointCloudVisualizer > m_calibrationPointsTip;
     std::tr1::shared_ptr < PointCloudVisualizer > m_calibrationPointsCurvature;
     std::tr1::shared_ptr < QGridLayout > m_topRow;
+    std::tr1::shared_ptr < STLVisualizer > m_probeVis;
+    std::tr1::shared_ptr < PlaneVisualizer > m_groundVis;
 
     s32 m_lastFrame;
     
@@ -163,6 +167,9 @@ namespace Nf
     std::tr1::shared_ptr < SphereVisualizer > m_calibTip;
     vtkSmartPointer < vtkAxesActor > m_calibTipFrame;
     std::tr1::shared_ptr < ScreenWriter > m_screenWriter;
+    std::tr1::shared_ptr < ScreenWriter > m_imageScreenWriter;
+    std::tr1::shared_ptr < ScreenWriter > m_barChartScreenWriter;
+    std::tr1::shared_ptr < ScreenWriter > m_lineChartScreenWriter;
 
   public:
     EstimatorFileWidget(QWidget *parent, const char *name = "Estimator File Widget");

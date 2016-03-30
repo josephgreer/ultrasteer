@@ -3,6 +3,7 @@
 #include <regex>
 #include <vtkProperty.h>
 #include <vtkFloatArray.h>
+#include <vtkCamera.h>
 #include <QKeyEvent>
 
 namespace Nf
@@ -101,7 +102,8 @@ namespace Nf
     , m_segmenter(new Nf::NeedleSegmenter(0,0,this))
     , m_lastFrame(0)
     , m_pf(NULL)
-    , m_chartWidget(new ChartWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT/4)))
+    , m_barChartWidget(new BarChartWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT/4)))
+    , m_lineChartWidget(new LineChartWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT/4)))
   {
     m_pfParams = std::tr1::shared_ptr < PFParams > ((PFParams *)new PFFullStateParams());
     m_pfParamsMarg = std::tr1::shared_ptr < PFParams > ((PFParams *)new PFMarginalizedParams());
@@ -146,6 +148,9 @@ namespace Nf
     m_curvePoints = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 1, 0)));
     m_curvePoints->GetActor()->SetVisibility(false);
     m_curvePoints->SetColor(Vec3d(1,1,0));
+
+    m_barChartWidget->Initialize();
+    m_lineChartWidget->Initialize();
 
     onVisibilityChanged();
   }
@@ -769,6 +774,9 @@ namespace Nf
       m_pfFramesProcessed[frame].overNeedle = m_pf->GetProbOverNeedle();
       UpdateVisualizations(frame);
 
+      m_barChartWidget->UpdateVisualization(m_pfFramesProcessed[frame]);
+      m_lineChartWidget->UpdateVisualization(m_pfFramesProcessed[frame]);
+
       // Resample if effective number of particles drops below threshold
       f64 nParts = m_pf->EffectiveSampleSize();
       if(nParts < params->neff->GetValue()*m_pf->GetNumberOfParticles())
@@ -792,7 +800,8 @@ namespace Nf
 
   void ParticleFilterVisualizer::AddWidgetsToLayout(QGridLayout *layout)
   {
-    layout->addWidget(m_chartWidget.get(), 0, 0);
+    layout->addWidget(m_barChartWidget.get(), 0, 0);
+    layout->addWidget(m_lineChartWidget.get(), 0, 1);
   }
 
   /////////////////////////////////////////////////////////////////////////////////
@@ -805,8 +814,13 @@ namespace Nf
     , m_resultsAvailable(ERA_NONE)
     , m_pfVisualizer(new ParticleFilterVisualizer(this, parent))
     , m_screenWriter(std::tr1::shared_ptr < ScreenWriter >(new ScreenWriter(m_planeVis->GetRenderWindow())))
+    , m_imageScreenWriter(std::tr1::shared_ptr < ScreenWriter >(new ScreenWriter(m_imageViewer->GetRenderWindow())))
+    , m_barChartScreenWriter(std::tr1::shared_ptr < ScreenWriter >(new ScreenWriter(m_pfVisualizer->GetBarChartWidget()->GetRenderWindow())))
+    , m_lineChartScreenWriter(std::tr1::shared_ptr < ScreenWriter >(new ScreenWriter(m_pfVisualizer->GetLineChartWidget()->GetRenderWindow())))
     , m_lastFrame(1)
     , m_topRow(new QGridLayout(parent))
+    , m_probeVis(std::tr1::shared_ptr < STLVisualizer >(new STLVisualizer(STL_PATH_CAT("L14-5GPS.STL"))))
+    , m_groundVis(std::tr1::shared_ptr < PlaneVisualizer >(new PlaneVisualizer(Vec3d(0,0,0), Vec3d(0,0,1))))
   {
     m_pfVisualizer->AddWidgetsToLayout(m_topRow.get());
     m_layout->addLayout(m_topRow.get(), 1, 0, 1, 2);
@@ -822,6 +836,8 @@ namespace Nf
     ADD_BOOL_PARAMETER(m_addNewFrame, "Add New Calib Frame", NULL, this, false);
     ADD_CHILD_COLLECTION(m_pfVisualizer.get());
     ADD_CHILD_COLLECTION(m_screenWriter.get());
+    ADD_CHILD_COLLECTION(m_barChartScreenWriter.get());
+    ADD_CHILD_COLLECTION(m_lineChartScreenWriter.get());
 
     m_calibrationPointsTip = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(0, 1, 0)));
     m_calibrationPointsCurvature = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 1, 0)));
@@ -837,6 +853,9 @@ namespace Nf
 
     m_pfVisualizer->SetVisiblity(false);
     m_pfVisualizer->AddActorsToRenderer(m_planeVis->GetRenderer());
+
+    m_planeVis->GetRenderer()->AddActor(m_probeVis->GetActor());
+    m_planeVis->GetRenderer()->AddActor(m_groundVis->GetActor());
 
     onUpdateFile();
 
@@ -855,7 +874,8 @@ namespace Nf
     m_imageViewer->UpdateSize(QSize(sz.width()/2-10, (3*sz.height())/4));
     m_usVis->UpdateSize(QSize(sz.width()/2-10, (3*sz.height())/4));
     m_planeVis->UpdateSize(QSize(sz.width()/2-10, (3*sz.height())/4));
-    m_pfVisualizer->GetChartWidget()->UpdateSize(QSize(sz.width()-10, sz.height()/4));
+    m_pfVisualizer->GetBarChartWidget()->UpdateSize(QSize(sz.width()/4-10, sz.height()/4));
+    m_pfVisualizer->GetLineChartWidget()->UpdateSize(QSize(3*sz.width()/4-10, sz.height()/4));
   }
   
   void EstimatorFileWidget::onUpdateFrame()
@@ -974,6 +994,17 @@ namespace Nf
 
     if(validFile)
       m_lastFrame = m_frame->GetValue();
+
+    Vec2d mppScale = m_data.mpp*1e-3;
+    Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(m_data.gps.pose).GetOrientation(), m_data.gps.pos);
+    
+    f64 len = 500;
+    Vec3d xAx = rpImageCoordToWorldCoord3(Vec2d(1,0), posePos, this->m_cal, m_data.origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0,0), posePos, this->m_cal, m_data.origin, mppScale); 
+    Vec3d yAx = rpImageCoordToWorldCoord3(Vec2d(0,1), posePos, this->m_cal, m_data.origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0,0), posePos, this->m_cal, m_data.origin, mppScale); 
+    xAx = xAx.normalized();
+    yAx = yAx.normalized();
+    Vec3d zAx = xAx.cross(yAx);
+    m_groundVis->SetPlane(m_data.gps2.pos+yAx*40-xAx*(len/2.0)-zAx*(len/2.0), xAx*len, zAx*len);
   }
 
   void EstimatorFileWidget::onUpdate()
@@ -1298,6 +1329,8 @@ namespace Nf
         if(m_usVis->GetRenderer()->HasViewProp(m_calibTipFrame))
           m_usVis->GetRenderer()->RemoveActor(m_calibTipFrame);
       }
+
+      m_probeVis->GetActor()->PokeMatrix(Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(m_data.gps.pose).GetOrientation(), m_data.gps.pos).GetVTKMatrix());
     } 
 
     if(m_resultsAvailable&ERA_NEEDLE_CURVATURE_CALIB) {
