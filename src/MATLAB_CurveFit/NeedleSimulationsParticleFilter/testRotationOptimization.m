@@ -3,27 +3,45 @@ clear; clc; close all;
 
 addpath('icp');
 
+rng(2);
+
 % init params
 params = initParamsForSimulation();
 
 % custom parameters
 params.doParticleFilter = 0;
 params.doMeasurement = 0;
-params.simulationTime = 12;
+params.simulationTime = 10;
 params.particleInitTime = 100;
 
-params.sigmaOrientation = diag(1/5*[1*pi/1000, 1*pi/1000, pi/1000]);            
-%params.sigmaPos = zeros(3,3);
-%params.sigmaRho = 0;
+params.sigmaOrientation = diag(0/5*[1*pi/1000, 1*pi/1000, pi/1000]);            
+params.sigmaPos = zeros(3,3);
+params.sigmaRho = 0;
 %params.sigmaRho = 1;
-%params.sigmaVelocity = 0;
+params.sigmaVelocity = 0;
 
-params.n = 20;
-nskip = 2;
+params.minLength = 40;
 
-[~, xhist, u] = runSimulation(params, @(t,params)(twistyCommandFcn(t, params)),[]);
+params.n = 100;
+nskip = 10;
 
+[~, xhist, u] = runSimulation(params, @(t,params)(commandFcn(t, params)),[],[]);
+pause;
+
+uhist = u;%{u{end:-1:1}};
+xinit = xhist{1};
+xinit.q = quatmult(xinit.q, AxisAngleToQuat(pi*[0; 1; 0]));
+[~, ~, ~] = runSimulation(params, @(t, params)(historyCommandFcn(t, params, uhist)), [], xinit)
+
+pause;
 drawPointHistory(xhist(1:nskip:end), 1, [1 1 0]);
+pause;
+
+uhist = u;%{u{end:-1:1}};
+xinit = xhist{1};
+xinit.q = quatmult(xinit.q, AxisAngleToQuat([1; 1; 1]));
+xinit.q = quatmult(xinit.q, AxisAngleToQuat(pi*[0; 1; 0]));
+[~, ~, ~] = runSimulation(params, @(t, params)(historyCommandFcn(t, params, uhist)), [], xinit)
 
 % perturb latest orientation by small rotation
 dtheta = pi/2;

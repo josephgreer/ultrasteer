@@ -7,7 +7,7 @@
 %%%     actual data capture
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [results, xhist, u] = runSimulation(params, commandFcn, data)
+function [results, xhist, u] = runSimulation(params, commandFcn, data, initialState)
 % results structure
 results.states = {};
 results.estimatedStates = {};
@@ -20,10 +20,14 @@ results.us = [];
 
 
 % initial state of needle
-xcurr.pos = [0; 0; 0];
-xcurr.q = RotationMatrixToQuat(eye(3));
-xcurr.rho = 80;        % 10 cm roc
-xcurr.w = 1;           % not a particle but using the same propagation routine.
+if(isempty(initialState)) 
+    xcurr.pos = [0; 0; 0];
+    xcurr.q = RotationMatrixToQuat(eye(3));
+    xcurr.rho = 80;        % 10 cm roc
+    xcurr.w = 1;           % not a particle but using the same propagation routine.
+else
+    xcurr = initialState
+end
 
 % historic states
 xhist = {};
@@ -57,7 +61,7 @@ end
 xlabel('x');
 ylabel('y');
 zlabel('z');
-view(90,0);
+view(45,20);
 daspect([1 1 1]);
 hold on;
 grid on;

@@ -54,6 +54,7 @@ while(length < params.minLength)
         uc.v = 2;
         uc.dtheta = 0;
     end
+    length = length+uc.v*params.dt;
     i=i+1;
 end
 end

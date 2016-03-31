@@ -611,7 +611,9 @@ xsc = [xsc.pos]';
 % if we don't have enough measurements yet, then just use true quaternion
 deltaR = zeros(3,3);
 if(length(measurements) >= params.p100.minimumMeasurements)
-    deltaR = optimalRotationForHistory(xsc, measurements, params);
+    meas = cell2mat(measurements);
+    meas = [meas.pos]';
+    deltaR = optimalRotationForHistory(xsc, meas, params);
 else
     deltaR = QuatToRotationMatrix(xtrue{1}.q)*Rprior';
     x{1}.rho = xp{1}.rho;
