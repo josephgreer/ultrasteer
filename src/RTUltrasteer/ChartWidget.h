@@ -25,6 +25,7 @@ namespace Nf
 
     virtual void Initialize() = 0;
     virtual void UpdateVisualization(const PFData &p) = 0;
+    virtual void Clear() = 0;
   };
 
   class BarChartWidget : public ChartWidget
@@ -38,17 +39,20 @@ namespace Nf
     BarChartWidget(QWidget *parent, QSize sz);
     virtual void UpdateVisualization(const PFData &p);
     virtual void Initialize();
+    virtual void Clear();
   };
 
   class LineChartWidget : public ChartWidget
   {
   protected:
     vtkSmartPointer < vtkPlotLine > m_doppler;
+    bool m_writeOverLast;
 
   public:
     LineChartWidget(QWidget *parent, QSize sz);
     virtual void UpdateVisualization(const PFData &p);
     virtual void Initialize();
+    virtual void Clear();
   };
 
 }

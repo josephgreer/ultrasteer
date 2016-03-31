@@ -68,7 +68,7 @@ namespace Nf
       table->SetValue(0, 2*i+1, 2*i+1);
     }
 
-    f64 colors[3][3] = { {1, 0, 0}, {0, 1, 0}, {0, 0, 1} };
+    f64 colors[3][3] = { {1, 0.65, 0}, {0, 1, 0}, {0, 0, 1} };
 
     for(s32 i=0; i<numPlots; i++) {
       m_chart->AddPlot(barPlots[i]);
@@ -115,6 +115,22 @@ namespace Nf
     QVTKWidget::update();
     this->repaint();
   }
+
+  void BarChartWidget::Clear()
+  {
+    m_doppler->GetInput()->SetValue(0, 1, 0);
+    m_probOverNeedleDoppler->GetInput()->SetValue(0, 3, 0);
+    m_probOverNeedle->GetInput()->SetValue(0,5, 0);
+    m_doppler->Update();
+    m_doppler->Modified();
+    m_probOverNeedle->Update();
+    m_probOverNeedle->Modified();
+    m_probOverNeedleDoppler->Update();
+    m_probOverNeedleDoppler->Modified();
+    m_chart->Modified();
+    QVTKWidget::update();
+    this->repaint();
+  }
   ////////////////////////////////////////////////////////
   // END BarChartWidget
   ////////////////////////////////////////////////////////
@@ -124,6 +140,7 @@ namespace Nf
   ////////////////////////////////////////////////////////
   LineChartWidget::LineChartWidget(QWidget *parent, QSize sz)
     : ChartWidget(parent, sz)
+    , m_writeOverLast(false)
   {
     m_doppler = vtkSmartPointer < vtkPlotLine >::New();
   }
@@ -167,8 +184,8 @@ namespace Nf
 
   void LineChartWidget::UpdateVisualization(const PFData &p)
   {
-#if 1
-    m_doppler->GetInput()->InsertNextBlankRow();
+    if(!m_writeOverLast)
+      m_doppler->GetInput()->InsertNextBlankRow();
     s32 nRows = m_doppler->GetInput()->GetNumberOfRows();
     m_doppler->GetInput()->SetValue(nRows-1, 0, nRows);
     m_doppler->GetInput()->SetValue(nRows-1, 1, std::log(MAX(p.m.doppler(0,0), 1)));
@@ -178,8 +195,22 @@ namespace Nf
     m_chart->Modified();
     QVTKWidget::update();
     this->repaint();
-#endif
+
+    m_writeOverLast = false;
     //m_chart->GetInput()->GetFieldData()->GetArray(0)->SetTuple1(0, MIN(p.m.doppler(0,0)/500.0,1));
+  }
+
+  void LineChartWidget::Clear()
+  {
+    while(m_doppler->GetInput()->GetNumberOfRows() > 1) {
+      m_doppler->GetInput()->RemoveRow(0);
+    }
+    m_writeOverLast = true;
+    m_doppler->Update();
+    m_doppler->Modified();
+    m_chart->Update();
+    m_chart->Modified();
+    this->repaint();
   }
   ////////////////////////////////////////////////////////
   // END LineChartWidget

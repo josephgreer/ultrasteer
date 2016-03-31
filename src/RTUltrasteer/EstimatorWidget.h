@@ -73,6 +73,7 @@ namespace Nf
     std::tr1::shared_ptr < PFParams > m_pfParamsMarg;
     std::tr1::shared_ptr < BarChartWidget > m_barChartWidget;
     std::tr1::shared_ptr < LineChartWidget > m_lineChartWidget;
+    std::tr1::shared_ptr < PolygonVisualizer > m_measurementVis;
     std::string m_basePath;
 
     Updateable *m_update;
@@ -91,7 +92,7 @@ namespace Nf
     virtual void Update(RPData *rp, s32 frame); 
     virtual void Initialize(const char *basePath);
     virtual s32 NumberOfMeasurementsUpToAndIncludingFrame(s32 frame);
-    virtual void UpdateVisualizations(s32 frame);
+    virtual void UpdateVisualizations(s32 frame, const RPData *rp=NULL, const NeedlePoint *np=NULL);
     virtual bool ShouldInitialize(s32 frame);
     std::tr1::shared_ptr < PFParams > GetParams(s32 frame);
     std::vector < TipState > AssembleTipHistory(s32 frame);
@@ -122,6 +123,10 @@ namespace Nf
     std::tr1::shared_ptr < Nf::IntParameter > m_nVisSkip;
     void onNVisSkipChanged();
     CLASS_CALLBACK(onNVisSkipChanged, ParticleFilterVisualizer);
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_clearGraphs;
+    void onClearGraphs();
+    CLASS_CALLBACK(onClearGraphs, ParticleFilterVisualizer);
 
     std::tr1::shared_ptr < Nf::BoolParameter > m_showParticlePos;
     std::tr1::shared_ptr < Nf::BoolParameter > m_showExpectedPos;

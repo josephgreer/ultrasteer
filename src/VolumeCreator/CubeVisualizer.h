@@ -16,6 +16,7 @@
 #include <vtkWindowToImageFilter.h>
 #include <vtkAVIWriter.h>
 #include <vtkRenderWindow.h>
+#include <vtkRegularPolygonSource.h>
 
 #include "RTCore.h"
 
@@ -40,6 +41,15 @@ namespace Nf {
 
   public:
     CubeVisualizer(const Nf::Cubed &cube, const u8 color[3]);
+  };
+
+  class PolygonVisualizer : public GeometryVisualizer
+  {
+    vtkSmartPointer<vtkRegularPolygonSource> m_polygon;
+
+  public:
+    PolygonVisualizer(f64 radius, s32 numSides, bool outlineOnly);
+    void SetPose(const Matrix44d &pose);
   };
 
   class PointCloudVisualizer : public GeometryVisualizer

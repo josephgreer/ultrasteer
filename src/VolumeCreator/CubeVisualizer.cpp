@@ -140,6 +140,44 @@ namespace Nf {
   //End CubeVisualizer Class
   ///////////////////////////////////////////////////////
 
+  ////////////////////////////////////////////////////////
+  //PolygonVisualizer Class
+  ////////////////////////////////////////////////////////
+  PolygonVisualizer::PolygonVisualizer(f64 radius, s32 numSides, bool outlineOnly)
+  { 
+    // Create a circle
+    vtkSmartPointer<vtkRegularPolygonSource> m_polygon =
+      vtkSmartPointer<vtkRegularPolygonSource>::New();
+
+    if(outlineOnly)
+      m_polygon->GeneratePolygonOff(); 
+    m_polygon->SetNumberOfSides(numSides);
+    m_polygon->SetRadius(radius);
+    m_polygon->SetCenter(0, 0, 0);
+
+    // Visualize
+    vtkSmartPointer<vtkPolyDataMapper> mapper =
+      vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper->SetInputConnection(m_polygon->GetOutputPort());
+
+    m_mapper = mapper;
+
+    vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+    actor->SetMapper(m_mapper);
+    actor->GetProperty()->SetLineWidth(5);
+    actor->GetProperty()->SetOpacity(0.5);
+
+    m_actor = actor;
+  }
+
+  void PolygonVisualizer::SetPose(const Matrix44d &pose)
+  {
+    m_actor->PokeMatrix(pose.GetVTKMatrix());
+  }
+  ////////////////////////////////////////////////////////
+  //End CubeVisualizer Class
+  ///////////////////////////////////////////////////////
+
   
   ////////////////////////////////////////////////////////
   //Begin CurveVisualizer Class

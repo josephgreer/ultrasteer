@@ -104,12 +104,14 @@ namespace Nf
     , m_pf(NULL)
     , m_barChartWidget(new BarChartWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT/4)))
     , m_lineChartWidget(new LineChartWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT/4)))
+    , m_measurementVis(std::tr1::shared_ptr < PolygonVisualizer > (new PolygonVisualizer(5, 50, true)))
   {
     m_pfParams = std::tr1::shared_ptr < PFParams > ((PFParams *)new PFFullStateParams());
     m_pfParamsMarg = std::tr1::shared_ptr < PFParams > ((PFParams *)new PFMarginalizedParams());
 
     ADD_FLOAT_PARAMETER(m_roc, "Expected ROC (mm)", NULL, this, 76.8, 20, 1000, 0.1);
     ADD_ACTION_PARAMETER(m_clearEstimatorData, "Clear Estimator Data", CALLBACK_POINTER(onClearEstimatorData, ParticleFilterVisualizer), this, false);
+    ADD_ACTION_PARAMETER(m_clearGraphs, "Clear Graphs", CALLBACK_POINTER(onClearGraphs, ParticleFilterVisualizer), this, false);
     ADD_BOOL_PARAMETER(m_collectMeasurements, "Collect US Measurements", NULL, this, false);
     ADD_BOOL_PARAMETER(m_showParticlePos, "Show Particle Positions", CALLBACK_POINTER(onVisibilityChanged, ParticleFilterVisualizer), this, true);
     ADD_BOOL_PARAMETER(m_showExpectedPos, "Show Estimated Position", CALLBACK_POINTER(onVisibilityChanged, ParticleFilterVisualizer), this, true);
@@ -152,6 +154,8 @@ namespace Nf
     m_barChartWidget->Initialize();
     m_lineChartWidget->Initialize();
 
+    m_measurementVis->SetColor(Vec3d(1, 0.65, 0));
+
     onVisibilityChanged();
   }
 
@@ -167,6 +171,7 @@ namespace Nf
     renderer->AddActor(m_measurementPoints->GetActor());
     renderer->AddActor(m_measCurveVis->GetActor());
     renderer->AddActor(m_curvePoints->GetActor());
+    renderer->AddActor(m_measurementVis->GetActor());
   }
 
   void ParticleFilterVisualizer::SetVisiblity(bool visible)
@@ -179,7 +184,7 @@ namespace Nf
 
   void ParticleFilterVisualizer::onVisibilityChanged()
   {
-    if(m_init) {
+    if(true) { //m_init) {
       m_pfPoints->GetActor()->SetVisibility(m_showParticlePos->GetValue());
       m_pfExpectedPos->GetActor()->SetVisibility(m_showExpectedPos->GetValue());
       m_pfExpectedOrientation->SetVisibility(m_showExpectedOrientation->GetValue());
@@ -204,6 +209,7 @@ namespace Nf
     RPCoordTransform transform(rp->mpp, rp->origin, Matrix44d(TRANSDUCER_CALIBRATION_COEFFICIENTS), rp->gps);
     if(imageOnly) {
       m_segmenter->ProcessColor(rp->color, rp->b8, &transform);
+      m_segmenter->GetSegmentationResults(bmode, doppler);
     } else {
       m_segmenter->UpdateModel(curve, rp->color, rp->b8, &transform,true);
       m_segmenter->GetSegmentationResults(bmode, doppler);
@@ -221,10 +227,19 @@ namespace Nf
     m_measurementPoints->ClearPoints();
     m_segmenter->Clear();
 
+    m_barChartWidget->Clear();
+    m_lineChartWidget->Clear();
+
     m_pfFramesProcessed.clear();
     m_update->onUpdate();
     m_init = false;
     onVisibilityChanged();
+  }
+
+  void ParticleFilterVisualizer::onClearGraphs()
+  {
+    m_barChartWidget->Clear();
+    m_lineChartWidget->Clear();
   }
 
   void ParticleFilterVisualizer::onPFMethodChanged()
@@ -576,7 +591,23 @@ namespace Nf
     return res;
   }
 
-  void ParticleFilterVisualizer::UpdateVisualizations(s32 frame)
+  static Matrix44d measurementPose(const RPData *rp, const NeedlePoint *np)
+  {
+    Matrix44d posePos = Matrix44d::FromOrientationAndTranslation(Matrix44d::FromCvMat(rp->gps.pose).GetOrientation(), rp->gps.pos);
+    Vec2d mppScale(rp->mpp.x*1e-3, rp->mpp.y*1e-3);
+    Matrix44d cal(TRANSDUCER_CALIBRATION_COEFFICIENTS);
+    Vec2d origin = rp->origin;
+
+    Vec3d xAx = rpImageCoordToWorldCoord3(Vec2d(1,0), posePos, cal, origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0,0), posePos, cal, origin, mppScale); 
+    Vec3d yAx = rpImageCoordToWorldCoord3(Vec2d(0,1), posePos, cal, origin, mppScale)-rpImageCoordToWorldCoord3(Vec2d(0,0), posePos, cal, origin, mppScale); 
+    xAx = xAx.normalized();
+    yAx = yAx.normalized();
+    Vec3d zAx = xAx.cross(yAx);
+
+    return Matrix44d::FromOrientationAndTranslation(Matrix33d::FromCols(xAx, yAx, zAx), Vec3d(np->point.x, np->point.y, np->point.z));
+  }
+
+  void ParticleFilterVisualizer::UpdateVisualizations(s32 frame, const RPData *rp, const NeedlePoint *np)
   {
     arma::mat pos = m_pfFramesProcessed[frame].particlePos;
     arma::mat w = m_pfFramesProcessed[frame].w;
@@ -606,6 +637,12 @@ namespace Nf
       m_curvePoints->SetPoints(cpoints);
 #endif
     }
+    m_barChartWidget->UpdateVisualization(m_pfFramesProcessed[frame]);
+    m_lineChartWidget->UpdateVisualization(m_pfFramesProcessed[frame]);
+    if(rp && np && np->dResp > 0)
+      m_measurementVis->SetPose(measurementPose(rp, np));
+    else
+      m_measurementVis->SetPose(Matrix44d::Zero());
 
     m_update->onRepaint();
   }
@@ -706,7 +743,14 @@ namespace Nf
 
     // If we've already run this data through our particle filter, bail.
     if(alreadyProcessed) {
-      UpdateVisualizations(frame);
+      NeedlePoint np;
+      if(doppler.segments.size() > 0)
+        np = doppler.segments[0].pts[0];
+      else
+        np.dResp = 0;
+
+      UpdateVisualizations(frame, rp, &np);
+      Sleep(10);
       return;
     }
 
@@ -738,7 +782,7 @@ namespace Nf
       m_pfFramesProcessed[frame].particleRs = m_pf->GetParticleOrientations(params.get());
       m_pfFramesProcessed[frame].particlePos = m_pf->GetParticlePositions(params.get());
       m_pfFramesProcessed[frame].w = m_pf->GetWeights();
-      UpdateVisualizations(frame);
+      UpdateVisualizations(frame, rp, &np);
     } else if(m_init) {
       //We're initialized
       m_pf->Propagate(&m_pfFramesProcessed[frame].u, 
@@ -772,10 +816,7 @@ namespace Nf
       m_pfFramesProcessed[frame].particlePos = m_pf->GetParticlePositions(params.get());
       m_pfFramesProcessed[frame].w = m_pf->GetWeights();
       m_pfFramesProcessed[frame].overNeedle = m_pf->GetProbOverNeedle();
-      UpdateVisualizations(frame);
-
-      m_barChartWidget->UpdateVisualization(m_pfFramesProcessed[frame]);
-      m_lineChartWidget->UpdateVisualization(m_pfFramesProcessed[frame]);
+      UpdateVisualizations(frame, rp, &np);
 
       // Resample if effective number of particles drops below threshold
       f64 nParts = m_pf->EffectiveSampleSize();
@@ -854,6 +895,7 @@ namespace Nf
     m_pfVisualizer->SetVisiblity(false);
     m_pfVisualizer->AddActorsToRenderer(m_planeVis->GetRenderer());
 
+    m_probeVis->GetActor()->GetProperty()->SetOpacity(0.4);
     m_planeVis->GetRenderer()->AddActor(m_probeVis->GetActor());
     m_planeVis->GetRenderer()->AddActor(m_groundVis->GetActor());
 
@@ -917,7 +959,7 @@ namespace Nf
     case EFS_ESTIMATE_SCAN:
       {
         m_pfVisualizer->Update(&m_data, m_frame->GetValue());
-        if(m_frame->GetValue() < m_frame->GetMax()) {
+        if(m_frame->GetValue() < m_frame->GetMax()-1) {
           m_frame->SetValue(m_frame->GetValue()+1);
           emit updateFrame();
         } else {
@@ -1118,7 +1160,7 @@ namespace Nf
             QFileInfo fi(m_rpFile->GetValue().c_str());
             m_pfVisualizer->Initialize(fi.dir().path().toStdString().c_str());
             m_state = EFS_ESTIMATE_SCAN;
-            m_frame->SetValue(m_frame->GetMin());
+            //m_frame->SetValue(m_frame->GetMin());
             emit updateFrame();
             break;
           }
