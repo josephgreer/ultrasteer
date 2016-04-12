@@ -12,3 +12,5 @@ src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/*
 *~*
 IndividualDefines.h
 !data/solidworks/meat_vice/*pdf
+!src/Vine/**/*pdf
+src/Vine/**/._*pdf
