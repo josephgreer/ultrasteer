@@ -105,7 +105,8 @@ for tp=1:length(types)
 end
 
 mins = mins-1;
-maxs = maxs+5;
+maxs(2) = maxs(2)+10;
+maxs(3) = maxs(3)+2;
 for i=1:nTypes
     subplot(1,nTypes,i);
     xlim([mins(1) maxs(1)]);
@@ -116,9 +117,11 @@ for i=1:nTypes
 %     cpos(3) = cpos(3)-300;
 %     campos(cpos);
     
-    box on;
+    %box on;
     grid on;
     
 end
-set(figHandle, 'Position', [100 100 900 240]);
+set(figHandle, 'Position', [100 100 350 250]);
 tightfig;
+
+export_fig -transparent 'Trajectories.pdf'

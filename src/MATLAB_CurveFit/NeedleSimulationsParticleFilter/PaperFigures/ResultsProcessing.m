@@ -7,15 +7,18 @@ methods = {'FullState', 'Marginalized'};
 figHandle = figure(1);
 figHandle2 = figure(2);
 
-normalLineColor = [0 23 102;...
-                   64 0 0]/255;
+normalLineColor = [0 23/255 102/255;...
+                   64/255 0 0;...
+                   0.4 0.6 0.7];
                
 meanLineColor = normalLineColor;               
 
 normalFaceColor = [163 185 255;...
+                 255 194 194;...
                  255 194 194]/255;
-meanFaceColor = [0 0 255;...
-                255 0 0 ]/255;
+meanFaceColor = [0 0 255/255;...
+                255/255 0 0;...
+                0.4 0.6 0.7];
             
 lineColors = {'r','k'};
 
@@ -122,7 +125,10 @@ for mth=1:length(methods)
             titles = ['x', 'y', 'z'];
             deltaZs = zeros(size(truePos));
             for i=1:length(trueRs)
-                deltaZs(i,:) = (inv(trueRs{i})*(truePos(i,:)-estPos(i,:))')';
+                deltaZs(i,:) = (trueRs{i}'*(truePos(i,:)-estPos(i,:))')';
+                if(isinf(deltaZs(i,:)))
+                    xx = 0;
+                end
             end
             
             orErrors = zeros(length(trueRs),1);
@@ -141,15 +147,18 @@ for mth=1:length(methods)
             if(output_lateral)
                 subplot(2,3,3*(mth-1)+1);
             else
-                subplot(1,2,mth);
+                subplot(1,3,mth);
             end
             hold on;
             % positon error plots
             for i=1:length(results)
                 for j=1:length(results{i})
                     scatter(speeds(i),results{i}(j),100, 'MarkerEdgeColor',normalLineColor(mth,:),'LineWidth',1.5);%'MarkerFaceColor',normalFaceColor(mth,:),'LineWidth',1.5)
+                    %errorbar(speeds(i), results{i}(j), resultsStd{i}(j), 'rx');
                 end
                 scatter(speeds(i), mean(results{i}), 100, 'MarkerEdgeColor',meanLineColor(mth,:),'MarkerFaceColor',meanFaceColor(mth,:),'LineWidth',1.5)
+                %errorbar(speeds(i), mean(results{i}), mean(resultsStd{i}), 'rx');
+                
             end
             legend('Measurement', 'Mean', 'Location', 'northwest');
             xlabel('Insertion Velocity (mm/s),','FontSize', 10, 'FontName', 'Times New Roman');
@@ -296,7 +305,6 @@ for mth=1:length(methods)
             display(sprintf('marginalized %s, RMS %f Axial %f Lateral %f\n', types{tp}, mean(cellfun(@mean, results)), mean(cellfun(@mean, resultsAxial)),...
                 mean(cellfun(@mean, resultsLateral))));
         end
-        
         % measureDistance vs accuracy
         figure(3);
         if(tp ~= 3 || mth ~= 2)
@@ -305,10 +313,15 @@ for mth=1:length(methods)
             title(strcat(methods{mth}, ' ', types{tp}));
             ylim([0.5 10]);
         end
+        
+%         display(sprintf('method %s type %s, Mean %f Std %f Max %f Axial %f Lateral %f\n', methods{mth}, types{tp}, mean(cellfun(@mean, results)),...
+%             mean(cellfun(@mean, resultsStd)), mean(cellfun(@mean, resultsMax)), mean(cellfun(@mean, resultsAxial)),...
+%             mean(cellfun(@mean, resultsLateral))));
     end
 end
 figure(1);
-set(figHandle, 'Position', [100 100 750 200]);
+set(figHandle, 'Position', [100 100 750 150]);
+subplot(1,3,3);
 pause(1);
 tightfig;
 pause(1);
@@ -325,6 +338,22 @@ pause(1);
 tightfig;
 pause(1);
 %export_fig -transparent AccuracyResults.pdf
+
+% figure(4);
+% set(figHandle, 'Position', [100 100 750 150]);
+% subplot(1,3,3);
+% pause(1);
+% tightfig;
+% pause(1);
+% export_fig -transparent AccuracyResultsMax.pdf
+% 
+% figure(5);
+% set(figHandle, 'Position', [100 100 750 150]);
+% subplot(1,3,3);
+% pause(1);
+% tightfig;
+% pause(1);
+% export_fig -transparent AccuracyResultsStd.pdf
 
 % figure(2);
 % set(figHandle2, 'Position', [100 100 750 350]);

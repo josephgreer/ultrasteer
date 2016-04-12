@@ -6,7 +6,7 @@ figHandle = figure;
 subplot(1,2,1);
 hold on;
 [Fpos Xipos] = ksdensity(data(onNeedles,1));%,'bandwidth',1);
-plot(Xipos, Fpos,'LineWidth',2)
+plot(Xipos, Fpos,'b','LineWidth',2)
 res = [Xipos; Fpos];
 
 [Fneg Xineg] = ksdensity(data(offNeedles,1));%, 'bandwidth',1);
@@ -30,6 +30,6 @@ ylim([0 1.5]);
 set(gca, 'FontSize', 10, 'FontName', 'Times New Roman');
 box on;
 legend('P(i | d)', 'P(ni | d)','Location','northwest');
-set(figHandle, 'Position', [100 100 750 240]);
+set(figHandle, 'Position', [100 100 750 150]);
 tightfig;
-%export_fig -transparent ExperimentalDopplerProb.pdf
+export_fig -transparent ExperimentalDopplerProb.pdf
