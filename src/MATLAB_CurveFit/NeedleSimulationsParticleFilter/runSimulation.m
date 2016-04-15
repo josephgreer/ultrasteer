@@ -7,7 +7,7 @@
 %%%     actual data capture
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [results, xhist, u] = runSimulation(params, commandFcn, data, initialState)
+function [results, xhist, u, writerObj] = runSimulation(params, commandFcn, data, initialState, writerObj)
 % results structure
 results.states = {};
 results.estimatedStates = {};
@@ -48,9 +48,9 @@ if(params.drawFloatingFrame)
     title('Simulated Insertion');
 end
 if(~dataExists)
-    ylim([-40 150]);
-    zlim([-40 150]);
-    xlim([-50 50]);
+    ylim([-30 150]);
+    zlim([-30 150]);
+    xlim([-75 75]);
 else
     xcurr = data.trueStates{1};
     expand = 30;
@@ -58,17 +58,21 @@ else
     ylim([xcurr.pos(2)-expand xcurr.pos(2)+expand]);
     zlim([xcurr.pos(3)-expand xcurr.pos(3)+expand]);
 end
+
 xlabel('x');
 ylabel('y');
 zlabel('z');
-view(45,20);
+view(45,45);
 daspect([1 1 1]);
 hold on;
 grid on;
 
-writerObj = [];
-if(params.writeVideo)
+resize = 0;
+if(params.writeVideo && isempty(writerObj))
+    resize = 1;
     writerObj = VideoWriter(params.videoFile,'MPEG-4');
+    writerObj.Quality = 95;
+    writerObj.FrameRate = 60;
     open(writerObj);
 end
 
@@ -200,18 +204,18 @@ for idx=1:length(ts)-1
     
     if(~isempty(writerObj))
     	%if we're writing a video, make it big.
-        if(t == 0)
+        if(t == 0 && resize)
             pos = get(1, 'position');
-            set(1, 'position', [pos(1)-150 pos(2)-150 1.5*pos(3) 1.5*pos(4)]);
+            set(1, 'position', [pos(1)-150 pos(2)-150 1*pos(3) 1.5*pos(4)]);
         end
-        if(params.particlesInit)
-            frame = getframe(1);
-            writeVideo(writerObj, frame);
-        end
+        frame = getframe(1);
+        writeVideo(writerObj, frame);
         %writeVideo(writerObj, frame);
     end
     %pause(params.dt/5);
 end
 
-close(writerObj);
+writerObj = writerObj;
+
+delete(tipFrameHandles);
 end

@@ -3,7 +3,7 @@ clear; clc; close all;
 
 addpath('icp');
 
-rng(2);
+rng(3);
 
 % init params
 params = initParamsForSimulation();
@@ -20,28 +20,141 @@ params.sigmaRho = 0;
 %params.sigmaRho = 1;
 params.sigmaVelocity = 0;
 
+params.writeVideo = 1;
+params.videoFile = 'C:/Joey/test.mp4';
+
 params.minLength = 40;
 
 params.n = 100;
 nskip = 10;
+qs = {};
 
-[~, xhist, u] = runSimulation(params, @(t,params)(commandFcn(t, params)),[],[]);
+[~, xhist, u, writerObj] = runSimulation(params, @(t,params)(commandFcn(t, params)),[],[],[]);
 pause;
+
+xhists = {xhist};
 
 uhist = u;%{u{end:-1:1}};
 xinit = xhist{1};
+qs = {xinit.q}
+initQ = xinit.q;
 xinit.q = quatmult(xinit.q, AxisAngleToQuat(pi*[0; 1; 0]));
-[~, ~, ~] = runSimulation(params, @(t, params)(historyCommandFcn(t, params, uhist)), [], xinit)
+[~, ~, ~, writerObj] = runSimulation(params, @(t, params)(historyCommandFcn(t, params, uhist)), [], xinit,writerObj)
 
-pause;
-drawPointHistory(xhist(1:nskip:end), 1, [1 1 0]);
-pause;
+close(1);
+figure(1);
+pos = get(1, 'position');
+set(1, 'position', [pos(1)-150 pos(2)-150 1*pos(3) 1.5*pos(4)]);
+ylim([-30 150]);
+zlim([-30 150]);
+xlim([-75 75]);
+xlabel('x');
+ylabel('y');
+zlabel('z');
+view(45,45);
+daspect([1 1 1]);
+hold on;
+grid on;
 
-uhist = u;%{u{end:-1:1}};
-xinit = xhist{1};
-xinit.q = quatmult(xinit.q, AxisAngleToQuat([1; 1; 1]));
+
+npauseFrames = 30*2;
+pointHandles = [];
+pointsOriginal = drawPointHistory(xhist(1:nskip:end), 1, 0.5*[1 1 0], []);
+if(params.writeVideo)
+    for j=1:npauseFrames
+        frame = getframe(1);
+        writeVideo(writerObj, frame);
+    end
+else
+    pause;
+end
+
+
+
+nPerturbs = 5;
+tippy = [];
+for i=1:nPerturbs
+    uhist = u;%{u{end:-1:1}};
+    perturbVector = unifrnd(-1, 1, 3, 1);
+    perturbVector = 1.5*perturbVector/norm(perturbVector);
+    xinit.q = initQ;
+    xinit.q = quatmult(xinit.q, AxisAngleToQuat(perturbVector));
+    qs = vertcat(qs, {xinit.q});
+    tippy = drawFrames(1, {xinit}, 20, params, tippy);
+    if(params.writeVideo)
+        for j=1:npauseFrames
+            frame = getframe(1);
+            writeVideo(writerObj, frame);
+        end
+    else
+        pause;
+    end
+    xinit.q = quatmult(xinit.q, AxisAngleToQuat(pi*[0; 1; 0]));
+    [~, xhist, ~, writerObj] = runSimulation(params, @(t, params)(historyCommandFcn(t, params, uhist)), [], xinit, writerObj);
+    xhists = vertcat(xhists, {xhist});
+    pointHandles = drawPointHistory(xhist(1:nskip:end), 1, [1 0 1], pointHandles);
+    if(params.writeVideo)
+        for j=1:npauseFrames
+            frame = getframe(1);
+            writeVideo(writerObj, frame);
+        end
+    else
+        pause;
+    end
+end
+
+xinit.q = initQ;
+tippy = drawFrames(1, {xinit}, 20, params, tippy);
+if(params.writeVideo)
+    for j=1:npauseFrames
+        frame = getframe(1);
+        writeVideo(writerObj, frame);
+    end
+else
+    pause;
+end
 xinit.q = quatmult(xinit.q, AxisAngleToQuat(pi*[0; 1; 0]));
-[~, ~, ~] = runSimulation(params, @(t, params)(historyCommandFcn(t, params, uhist)), [], xinit)
+[~, xhist, ~, writerObj] = runSimulation(params, @(t, params)(historyCommandFcn(t, params, uhist)), [], xinit, writerObj);
+delete(pointsOriginal);
+drawPointHistory(xhist(1:nskip:end), 1, [1 0 1], pointHandles);
+if(params.writeVideo)
+    for j=1:npauseFrames
+        frame = getframe(1);
+        writeVideo(writerObj, frame);
+    end
+else
+    pause;
+end
+close(writerObj);
+pause;
+
+for i=2:length(xhists)
+    xinit.q = initQ;
+    tippy = drawFrames(1, {xinit}, 20, params, tippy);
+    drawPointHistory(xhists{1}(1:nskip:end), 1, [1 1 0], pointHandles);
+    if(params.writeVideo)
+        for j=1:npauseFrames
+            frame = getframe(1);
+            writeVideo(writerObj, frame);
+        end
+    else
+        pause;
+    end
+    xinit.q = qs{i};
+    tippy = drawFrames(1, {xinit}, 20, params, tippy);
+    drawPointHistory(xhists{i}(1:nskip:end), 1, [0 1 1], pointHandles);
+    if(params.writeVideo)
+        for j=1:npauseFrames
+            frame = getframe(1);
+            writeVideo(writerObj, frame);
+        end
+    else
+        pause;
+    end
+end
+
+close(writerObj);
+pause;
 
 % perturb latest orientation by small rotation
 dtheta = pi/2;

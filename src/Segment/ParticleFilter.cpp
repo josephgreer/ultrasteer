@@ -939,8 +939,9 @@ namespace Nf
     if(curvePoints.n_rows == 0)
       curvePoints = meas;
 
+    minTotalLength = 40.0;
     if(shaftLength > minTotalLength) {
-      NTrace("Marginalizing dt %f\n", dts(0));
+      NTrace("Marginalizing dt %f lenght %f minTotalLength %f\n", dts(0), shaftLength, minTotalLength);
     }
 
     OptimalRotationData omeas;
