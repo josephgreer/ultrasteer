@@ -15,6 +15,9 @@ int dirAPin = 8;
 int encoderPinA = 2;
 int encoderPinB = 3; 
 
+int regulator1Pin = 9;
+int regulator2Pin = 10;
+
 // Program Scope Variables
 Encoder encoder(encoderPinA, encoderPinB);
 f64 countPerRev = 1024;
@@ -26,7 +29,7 @@ int counter = 0;
 void setup() 
 {
   // Set Up Serial
-  Serial.begin(115200);
+  Serial.begin(9600);
   
   // Set PWM frequency 
   setPwmFrequency(pwmAPin,1); //PWM on pin 3 is (32500/1) = 32500 [Hz] 
@@ -35,12 +38,19 @@ void setup()
   pinMode(pwmAPin, OUTPUT);  // PWM for A
   pinMode(dirAPin, OUTPUT);  // dir for A
 
+  //regulator Pins
+  pinMode(regulator1Pin, OUTPUT);  // PWM for A
+  pinMode(regulator2Pin, OUTPUT);  // dir for A
+
+  // Encoder Pins
   pinMode(encoderPinA, INPUT);
   pinMode(encoderPinB, INPUT);
   
   // Init Motor 
   analogWrite(pwmAPin, 0);     // set to not be spinning (0/255)
   digitalWrite(dirAPin, LOW);  // set direction 
+
+  digitalWrite(regulator1Pin, LOW);
   
   // Init Timer and Set Haptic Loop 
   //Timer1.initialize(); 
@@ -76,6 +86,8 @@ f64 Kip = 0.00005;
 f64 Kpv = 1;
 f64 Kdv = 0;
 f64 Kiv = 0.01;
+
+bool printOut = false;
 
 CONTROL_MODE controlMode = CM_POS;
 
@@ -155,13 +167,17 @@ void loop()
     digitalWrite(dirAPin, dir);
     dirLast = dir;
   }
-  if(count++ % 2000 == 0 && controlMode == CM_POS)
-    Serial.println("Des Pos " +  String(desPos) + " Pos " + String(pos) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
-  else if(count % 2000 == 0 && controlMode == CM_VEL)
-    Serial.println("DesVel " + String(desVel) + " Vel " + String(vel) + " Dir " + String((s32)dir) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
-  else if(count % 2000 == 0 && controlMode == CM_THROTTLE)
-    Serial.println("DesVel " + String(desVel) + " Vel " + String(vel) + " Dir " + String((s32)dir) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
-  analogWrite(pwmAPin, u);
+
+  if(printOut) 
+  {
+    if(count++ % 2000 == 0 && controlMode == CM_POS)
+      Serial.println("Des Pos " +  String(desPos) + " Pos " + String(pos) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
+    else if(count % 2000 == 0 && controlMode == CM_VEL)
+      Serial.println("DesVel " + String(desVel) + " Vel " + String(vel) + " Dir " + String((s32)dir) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
+    else if(count % 2000 == 0 && controlMode == CM_THROTTLE)
+      Serial.println("DesVel " + String(desVel) + " Vel " + String(vel) + " Dir " + String((s32)dir) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
+    analogWrite(pwmAPin, u);
+  }
 
 }
 
@@ -256,6 +272,15 @@ void serialEvent()
 
         Serial.println("Pause");
         break;
+      case 'l':
+      case 'L': //Toggle Pin 
+      {
+        f64 amount = atof(input+2);
+        u8 amnt = (u8)(amount*255.0);
+        Serial.println("Setting valve to " + String(amount) + " input string " + String(input) + " amount " + String(amnt)); 
+        analogWrite(regulator1Pin, amnt);
+        break;
+      }
       default:
         break;
     }   
