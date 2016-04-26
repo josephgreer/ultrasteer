@@ -78,30 +78,16 @@ enum CONTROL_MODE {
   CM_THROTTLE = 2
 };
 
-f64 errorLast = 0;
-u8 dirLast = 0;
+enum STEERING_CONTROL_MODE {
+  SCM_NOTHING = 0,
+  SCM_CALIBRATE = 1,
+  SCM_POS = 2
+};
+
 u32 lastTime = 0;
-f64 desPos = 0;
-f64 desVel = 0;
-u32 count = 0;
-f64 integralError = 0;
-f64 lastPos = 0;
-f64 lastVel = 0;
 
-// Position Constants
-f64 Kpp = 0.08;
-f64 Kdp = 0;
-f64 Kip = 0.00005;
-
-// Velocity Constants
-f64 Kpv = 1;
-f64 Kdv = 0;
-f64 Kiv = 0.01;
-
-bool printOutMotors = false;
-bool printOutTracks = true;
-
-CONTROL_MODE controlMode = CM_POS;
+CONTROL_MODE motorControlMode = CM_POS;
+STEERING_CONTROL_MODE steeringControlMode = SCM_NOTHING;
 
 u8 unwindDir = 1;
 
@@ -114,89 +100,17 @@ s32 nBytes = 0;
 
 void loop()
 {
-  f64 pos = encoder.read();
   u32 currTime = millis();
   f64 dt = (f64)(currTime - lastTime) / (1000.0);
-  f64 u;
-  f64 vel;
-
-  f64 error, derror;
-
-  if (controlMode == CM_POS) {
-    error = desPos - pos;
-  } else {
-    vel = 0.2 * (pos - lastPos) / dt + 0.8 * lastVel;
-    error = desVel - vel;
-    lastVel = vel;
-  }
-  derror = error - errorLast;
-  integralError += error;
-
-  errorLast = error;
-  derror /= dt;
   lastTime = currTime;
-  lastPos = pos;
 
-  s8 dir = 0;
+  //MOTOR CONTROL
+  controlMotors(dt);
 
-  switch (controlMode) {
-    case CM_POS:
-      {
-        u = Kpp * error + Kdp * derror + Kip * integralError;
+  //STEERING CONTROL
+  controlSteering(dt);
 
-        if (u < 0) {
-          dir = 1;
-          u = abs(u);
-        }
-        u = min(u, 255);
-        break;
-      }
-    case CM_VEL:
-      {
-        u = Kpv * error + Kdv * derror + Kiv * integralError;
-
-        if (u < 0) {
-          dir = 1;
-          u = abs(u);
-        }
-        u = min(u, 255);
-        break;
-      }
-    case CM_THROTTLE:
-      {
-        u = Kpv * error + Kdv * derror + Kiv * integralError;
-
-        if (u < 0) {
-          dir = 1;
-          u = abs(u);
-        }
-        if (dir == unwindDir) {
-          u = 0;
-          integralError = 0;
-          derror = 0;
-          dir = 1 - unwindDir;
-        }
-        u = min(u, 255);
-        break;
-      }
-  }
-
-  if (dir != dirLast) {
-    digitalWrite(dirAPin, dir);
-    dirLast = dir;
-  }
-
-  if (printOutMotors)
-  {
-    if (count++ % TRACE_COUNT_MOTORS == 0 && controlMode == CM_POS)
-      Serial.println("Des Pos " +  String(desPos) + " Pos " + String(pos) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt * 1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
-    else if (count % TRACE_COUNT_MOTORS == 0 && controlMode == CM_VEL)
-      Serial.println("DesVel " + String(desVel) + " Vel " + String(vel) + " Dir " + String((s32)dir) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt * 1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
-    else if (count % TRACE_COUNT_MOTORS == 0 && controlMode == CM_THROTTLE)
-      Serial.println("DesVel " + String(desVel) + " Vel " + String(vel) + " Dir " + String((s32)dir) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt * 1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
-    analogWrite(pwmAPin, u);
-  }
-
+  //SERIAL HANDLER
 #if 1
   if (Serial.available()) {
     nBytes = Serial.readBytes(input, BUFFER_LEN);
@@ -212,6 +126,138 @@ void loop()
   }
 }
 
+f64 vTrackRow = 0;
+f64 vTrackCol = 0;
+
+f64 desPosTrackRow = 0;
+f64 desPosTrackCol = 0;
+void controlSteering(f64 dt)
+{
+  f64 u = 0;
+  f64 vel;
+
+  switch(steeringControlMode) 
+  {
+    case SCM_NOTHING: 
+    {
+      break;
+    }
+    case SCM_CALIBRATE:
+    {
+      break;
+    }
+    case SCM_POS:
+    {
+      break;
+    }
+  }
+}
+
+f64 errorLastPosMotor = 0;
+u8 dirLastMotor = 0;
+f64 desPosMotor = 0;
+f64 desVelMotor = 0;
+u32 count = 0;
+f64 integralErrorMotor = 0;
+f64 lastPosMotor = 0;
+f64 lastVelMotor = 0;
+
+// Position Constants
+f64 motorKpp = 0.08;
+f64 motorKdp = 0;
+f64 motorKip = 0.00005;
+
+// Velocity Constants
+f64 motorKpv = 1;
+f64 motorKdv = 0;
+f64 motorKiv = 0.01;
+
+bool printOutMotors = false;
+bool printOutTracks = true;
+
+void controlMotors(f64 dt)
+{
+  f64 u;
+  f64 vel;
+  
+  f64 pos = encoder.read();
+  f64 error, derror;
+
+  if (motorControlMode == CM_POS) {
+    error = desPosMotor - pos;
+  } else {
+    vel = 0.2 * (pos - lastPosMotor) / dt + 0.8 * lastVelMotor;
+    error = desVelMotor - vel;
+    lastVelMotor = vel;
+  }
+  derror = error - errorLastPosMotor;
+  integralErrorMotor += error;
+
+  errorLastPosMotor = error;
+  derror /= dt;
+  lastPosMotor = pos;
+
+  s8 dir = 0;
+
+  switch (motorControlMode) {
+    case CM_POS:
+      {
+        u = motorKpp * error + motorKdp * derror + motorKip * integralErrorMotor;
+
+        if (u < 0) {
+          dir = 1;
+          u = abs(u);
+        }
+        u = min(u, 255);
+        break;
+      }
+    case CM_VEL:
+      {
+        u = motorKpv * error + motorKdv * derror + motorKiv * integralErrorMotor;
+
+        if (u < 0) {
+          dir = 1;
+          u = abs(u);
+        }
+        u = min(u, 255);
+        break;
+      }
+    case CM_THROTTLE:
+      {
+        u = motorKpv * error + motorKdv * derror + motorKiv * integralErrorMotor;
+
+        if (u < 0) {
+          dir = 1;
+          u = abs(u);
+        }
+        if (dir == unwindDir) {
+          u = 0;
+          integralErrorMotor = 0;
+          derror = 0;
+          dir = 1 - unwindDir;
+        }
+        u = min(u, 255);
+        break;
+      }
+  }
+
+  if (dir != dirLastMotor) {
+    digitalWrite(dirAPin, dir);
+    dirLastMotor = dir;
+  }
+
+  if (printOutMotors)
+  {
+    if (count++ % TRACE_COUNT_MOTORS == 0 && motorControlMode == CM_POS)
+      Serial.println("Des Pos " +  String(desPosMotor) + " Pos " + String(pos) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt * 1000.0) + " derror " + String(derror) + " integralErrorMotor " + String(integralErrorMotor));
+    else if (count % TRACE_COUNT_MOTORS == 0 && motorControlMode == CM_VEL)
+      Serial.println("DesVel " + String(desVelMotor) + " Vel " + String(vel) + " Dir " + String((s32)dir) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt * 1000.0) + " derror " + String(derror) + " integralErrorMotor " + String(integralErrorMotor));
+    else if (count % TRACE_COUNT_MOTORS == 0 && motorControlMode == CM_THROTTLE)
+      Serial.println("DesVel " + String(desVelMotor) + " Vel " + String(vel) + " Dir " + String((s32)dir) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt * 1000.0) + " derror " + String(derror) + " integralErrorMotor " + String(integralErrorMotor));
+    analogWrite(pwmAPin, u);
+  }
+}
+
 void handleSerial(const s8 *input, s32 nBytes)
 {
   switch (input[0]) {
@@ -219,20 +265,20 @@ void handleSerial(const s8 *input, s32 nBytes)
       {
         String mode;
         if (input[2] == 'v') {              //velocity
-          controlMode = CM_VEL;
+          motorControlMode = CM_VEL;
           mode = "velocity";
         } else if (input[2] == 'p') {       //position
-          controlMode = CM_POS;
+          motorControlMode = CM_POS;
           mode = "position";
         } else if (input[2] == 't') {       //throttle
-          controlMode = CM_THROTTLE;
+          motorControlMode = CM_THROTTLE;
           mode = "throttle";
         }
-        desVel = integralError = 0;
-        errorLast = 0;
-        desPos = lastPos;
-        integralError = 0;
-        lastVel = 0;
+        desVelMotor = integralErrorMotor = 0;
+        errorLastPosMotor = 0;
+        desPosMotor = lastPosMotor;
+        integralErrorMotor = 0;
+        lastVelMotor = 0;
 
         Serial.println("Control mode switched to " + mode);
         break;
@@ -240,10 +286,10 @@ void handleSerial(const s8 *input, s32 nBytes)
     case 'q':  // decrement set point. interpretation depends on mode
       {
         f64 decrement = atof(input + 2);
-        if (controlMode == CM_POS)
-          desPos -= decrement;
+        if (motorControlMode == CM_POS)
+          desPosMotor -= decrement;
         else
-          desVel -= decrement;
+          desVelMotor -= decrement;
 
         Serial.println("Decrementing " + String(decrement));
         break;
@@ -251,10 +297,10 @@ void handleSerial(const s8 *input, s32 nBytes)
     case 'w':   // increment set point. interpretation depends on mode
       {
         f64 increment = atof(input + 2);
-        if (controlMode == CM_POS)
-          desPos += increment ;
+        if (motorControlMode == CM_POS)
+          desPosMotor += increment ;
         else
-          desVel += increment;
+          desVelMotor += increment;
 
         Serial.println("Incrementing " + String(increment));
         break;
@@ -263,14 +309,14 @@ void handleSerial(const s8 *input, s32 nBytes)
     case 'k':
       {
         f64 *Kp, *Kd, *Ki;
-        if (controlMode == CM_VEL) {
-          Kp = &Kpv;
-          Kd = &Kdv;
-          Ki = &Kiv;
+        if (motorControlMode == CM_VEL) {
+          Kp = &motorKpv;
+          Kd = &motorKdv;
+          Ki = &motorKiv;
         } else {
-          Kp = &Kpp;
-          Kd = &Kdp;
-          Ki = &Kip;
+          Kp = &motorKpp;
+          Kd = &motorKdp;
+          Ki = &motorKip;
         }
         f64 val = atof(input + 3);
         if (input[1] == 'p') {
@@ -288,11 +334,11 @@ void handleSerial(const s8 *input, s32 nBytes)
     case 'p':   //Pause
     case 'P':
 
-      desVel = integralError = 0;
-      errorLast = 0;
-      desPos = lastPos;
-      integralError = 0;
-      lastVel = 0;
+      desVelMotor = integralErrorMotor = 0;
+      errorLastPosMotor = 0;
+      desPosMotor = lastPosMotor;
+      integralErrorMotor = 0;
+      lastVelMotor = 0;
 
       Serial.println("Pause");
       break;
@@ -335,6 +381,8 @@ void handleSlaSerial(const u8 *input, s32 nBytes)
 
   u16 trackRow = input[6] + (input[7] << 8);
   u16 trackCol = input[4] + (input[5] << 8);
+  vTrackRow = (f64)trackRow;
+  vTrackCol = (f64)trackCol;
 
   if((serialCount++ % TRACE_COUNT_TRACKS) == 0 && printOutTracks) {
     u32 currTime = millis();
