@@ -1,7 +1,11 @@
 clear; clc; close all;
 
-path = 'C:\Joey\Data\9_18_15\2mm\Trial3\PreInsertionGPS.mat';
+path = 'C:\Giada\Data\4_26_16_Curvature\Trial8\PointHistory.mat';
 TipHistory = load(path, '-ascii');
+
+[~,idxs] = sort(TipHistory(:,1));
+TipHistory = TipHistory(idxs,:);
+TipHistory = TipHistory(2:end,:);
 
 scatter3(TipHistory(:,1), TipHistory(:,2), TipHistory(:,3));
 daspect([1 1 1]);
