@@ -2,25 +2,26 @@
 #include <TimerOne.h>
 #include <Encoder.h>
 #include <SoftwareSerial.h>
+#include "Common.h"
+//#include "ServoValve.h"
 #include <math.h>
-
-typedef double f64;
-typedef char s8;
-typedef unsigned char u8;
-typedef unsigned long u32;
-typedef int s32;
+#include <Servo.h>
 
 // Pin Declares
 int pwmAPin = 5;
 int dirAPin = 8;
-int encoderPinA = 11;
+int encoderPinA = 13;
 int encoderPinB = 3;
 
-int regulator1Pin = 9;
-int regulator2Pin = 10;
+int servoValvePin = 9;
+f64 openAngle = 70;
+f64 closeAngle = 85;
+
+int regulator1Pin = 10;
+int regulator2Pin = 11;
 
 int slaSerialPinRx = 2;
-int slaSerialPinTx = 12;
+int slaSerialPinTx = 13;
 
 // Program Scope Variables
 Encoder encoder(encoderPinA, encoderPinB);
@@ -29,12 +30,17 @@ int counter = 0;
 
 SoftwareSerial slaSerial(slaSerialPinRx, slaSerialPinTx);
 
+//ServoValve extensionValve(servoValvePin);
+Servo extensionServo;
 // --------------------------
 // Initialize
 // --------------------------
 void setup()
 {
   pinMode(slaSerialPinRx, INPUT);
+
+  extensionServo.attach(servoValvePin);
+  extensionServo.write(closeAngle);
 
   // Set Up Serial
   Serial.begin(57600);
@@ -61,8 +67,9 @@ void setup()
   digitalWrite(dirAPin, LOW);  // set direction
 
   digitalWrite(regulator1Pin, LOW);
-  digitalWrite(regulator2Pin, HIGH);
-
+  digitalWrite(regulator2Pin, LOW);
+  setPwmFrequency(regulator2Pin, 1024); //PWM on pin 3 is (32500/1) = 32500 [Hz]
+  
   // Init Timer and Set Haptic Loop
   //Timer1.initialize();
   //long period = 10000; // 10000 [us] -> 100 Hz sample time
@@ -131,6 +138,11 @@ f64 vTrackCol = 0;
 
 f64 desPosTrackRow = 0;
 f64 desPosTrackCol = 0;
+
+// Position Constants
+f64 steeringKpp = 0.08;
+f64 steeringKdp = 0;
+f64 steeringKip = 0.00005;
 void controlSteering(f64 dt)
 {
   f64 u = 0;
@@ -342,6 +354,15 @@ void handleSerial(const s8 *input, s32 nBytes)
 
       Serial.println("Pause");
       break;
+    case 'e':
+    case 'E': //Servo Valve
+      {
+        f64 pos = atof(input + 2);
+        f64 angle = (closeAngle-openAngle)*pos+openAngle;
+        Serial.println("Setting servo valve position " + String(angle));
+        extensionServo.write(angle);
+        break;   
+      }
     case 'l':
     case 'L': //Toggle Pin
       {

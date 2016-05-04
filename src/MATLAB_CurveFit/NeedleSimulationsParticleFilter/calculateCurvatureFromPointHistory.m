@@ -1,11 +1,11 @@
 clear; clc; close all;
 
-path = 'C:\Giada\Data\4_26_16_Curvature\Trial8\PointHistory.mat';
+path = 'C:\Giada\Data\4_28_16_Curvature in liver\Trial3\PointHistory.mat';
 TipHistory = load(path, '-ascii');
 
 [~,idxs] = sort(TipHistory(:,1));
 TipHistory = TipHistory(idxs,:);
-TipHistory = TipHistory(2:end,:);
+TipHistory = TipHistory(3:end, :);
 
 scatter3(TipHistory(:,1), TipHistory(:,2), TipHistory(:,3));
 daspect([1 1 1]);
