@@ -6,6 +6,9 @@
 //#include "ServoValve.h"
 #include <math.h>
 #include <Servo.h>
+//#define SLA_SERIAL
+
+#define N_TURN_ACT 3
 
 // Pin Declares
 int pwmAPin = 5;
@@ -13,22 +16,24 @@ int dirAPin = 8;
 int encoderPinA = 13;
 int encoderPinB = 3;
 
-int servoValvePin = 9;
+int servoValvePin = 45;
 f64 openAngle = 70;
-f64 closeAngle = 85;
+f64 closeAngle = 90;
 
-int regulator1Pin = 10;
-int regulator2Pin = 11;
 
+s32 regulatorPins[N_TURN_ACT]  = {11, 9, 10};
+
+#ifdef SLA_SERIAL
 int slaSerialPinRx = 2;
 int slaSerialPinTx = 13;
+
+SoftwareSerial slaSerial(slaSerialPinRx, slaSerialPinTx);
+#endif
 
 // Program Scope Variables
 Encoder encoder(encoderPinA, encoderPinB);
 f64 countPerRev = 1024;
 int counter = 0;
-
-SoftwareSerial slaSerial(slaSerialPinRx, slaSerialPinTx);
 
 //ServoValve extensionValve(servoValvePin);
 Servo extensionServo;
@@ -37,15 +42,24 @@ Servo extensionServo;
 // --------------------------
 void setup()
 {
+#ifdef SLA_SERIAL
   pinMode(slaSerialPinRx, INPUT);
+#endif
 
   extensionServo.attach(servoValvePin);
   extensionServo.write(closeAngle);
 
+	Serial.setTimeout(10);
+
   // Set Up Serial
   Serial.begin(57600);
+ #ifdef SLA_SERIAL
   slaSerial.begin(57600);
   slaSerial.setTimeout(1);
+ #else
+  Serial1.begin(57600);
+  Serial1.setTimeout(30);
+ #endif
 
   // Set PWM frequency
   setPwmFrequency(pwmAPin, 1); //PWM on pin 3 is (32500/1) = 32500 [Hz]
@@ -55,8 +69,10 @@ void setup()
   pinMode(dirAPin, OUTPUT);  // dir for A
 
   //regulator Pins
-  pinMode(regulator1Pin, OUTPUT);  // PWM for A
-  pinMode(regulator2Pin, OUTPUT);  // dir for A
+	for(s32 ii=0; ii<N_TURN_ACT; ii++) {
+		pinMode(regulatorPins[ii], OUTPUT);
+		digitalWrite(regulatorPins[ii], OUTPUT);
+	}
 
   // Encoder Pins
   pinMode(encoderPinA, INPUT);
@@ -65,10 +81,6 @@ void setup()
   // Init Motor
   analogWrite(pwmAPin, 0);     // set to not be spinning (0/255)
   digitalWrite(dirAPin, LOW);  // set direction
-
-  digitalWrite(regulator1Pin, LOW);
-  digitalWrite(regulator2Pin, LOW);
-  setPwmFrequency(regulator2Pin, 1024); //PWM on pin 3 is (32500/1) = 32500 [Hz]
   
   // Init Timer and Set Haptic Loop
   //Timer1.initialize();
@@ -87,8 +99,8 @@ enum CONTROL_MODE {
 
 enum STEERING_CONTROL_MODE {
   SCM_NOTHING = 0,
-  SCM_CALIBRATE = 1,
-  SCM_POS = 2
+  SCM_CALIBRATE,
+  SCM_POS
 };
 
 u32 lastTime = 0;
@@ -107,9 +119,16 @@ s32 nBytes = 0;
 
 void loop()
 {
+	TIME_LOOP(MainLoop, 5000);
   u32 currTime = millis();
-  f64 dt = (f64)(currTime - lastTime) / (1000.0);
+  f64 dt = ((f64)currTime - (f64)lastTime) / (1000.0);
   lastTime = currTime;
+
+	u32 begTime = millis();
+	Serial.println("Begin delay");
+	delay(10000);
+	u32 endTime = millis();
+	Serial.println("End delay = " + String(endTime-begTime));
 
   //MOTOR CONTROL
   controlMotors(dt);
@@ -126,18 +145,39 @@ void loop()
   }
 #endif
 
+#ifdef SLA_SERIAL
   if (slaSerial.available()) {
     nBytes = slaSerial.readBytes(input, BUFFER_LEN);
     handleSlaSerial((u8 *)input, nBytes);
-    //memset(input, 0, nBytes);
+    memset(input, 0, nBytes);
   }
+#else
+  if (Serial1.available()) {
+    nBytes = Serial1.readBytes(input, BUFFER_LEN);
+    handleSlaSerial((u8 *)input, nBytes);
+    memset(input, 0, nBytes);
+  }
+#endif
 }
 
-f64 vTrackRow = 0;
-f64 vTrackCol = 0;
 
-f64 desPosTrackRow = 0;
-f64 desPosTrackCol = 0;
+f64 totalCalibTime = 0.500;
+f64 totalRestTime = 0.500;
+f64 calibTime = 0;
+s8 currCalibAct = -1;
+Vec2f64 calibStartTrackPos(0,0);
+
+Vec2f64 trackPos;
+Vec2f64 scenePos;
+Vec2f64 desTrackPos(320, 240);
+
+struct ActuatorCalibration 
+{
+	f64 angle;
+	f64 strength;
+};
+
+ActuatorCalibration actuatorCalibs[N_TURN_ACT] = {0};
 
 // Position Constants
 f64 steeringKpp = 0.08;
@@ -156,6 +196,48 @@ void controlSteering(f64 dt)
     }
     case SCM_CALIBRATE:
     {
+			bool transition = false;
+			bool doneResting = false;
+
+			if(currCalibAct = -1) {
+				transition = true;
+			}
+
+			calibTime += dt;
+			Serial.println("calibrating calibTime " + String(calibTime) + " dt " + String(dt));
+			if(calibTime >= totalCalibTime)
+				transition = true;
+
+			if(calibTime >= totalCalibTime+totalRestTime)
+				doneResting = true;
+
+			if(transition) {
+				Vec2f64 delta = trackPos-calibStartTrackPos;
+
+				if(currCalibAct >= 0) {
+					actuatorCalibs[currCalibAct].angle = delta.angle();
+					actuatorCalibs[currCalibAct].strength = delta.magnitude();
+					analogWrite(regulatorPins[currCalibAct], 0);
+				}
+			}
+			if(doneResting) {
+				calibTime = 0;
+				currCalibAct++;
+				if(currCalibAct >= N_TURN_ACT) {
+					steeringControlMode = SCM_NOTHING;
+					currCalibAct = -1;
+					Serial.println("Calibration: ");
+					char str[100] = {0};
+					for(s32 ii=0; ii<N_TURN_ACT; ii++) {
+						sprintf(str, "ii = %d, angle = %f, strength = %f", ii+1, actuatorCalibs[ii].angle, actuatorCalibs[ii].strength);
+						Serial.println(String(str));
+					}
+					return;
+				}
+				calibStartTrackPos = trackPos;
+				analogWrite(regulatorPins[currCalibAct], 255);
+			}
+
       break;
     }
     case SCM_POS:
@@ -295,6 +377,11 @@ void handleSerial(const s8 *input, s32 nBytes)
         Serial.println("Control mode switched to " + mode);
         break;
       }
+		case 'c':
+			{
+				steeringControlMode = SCM_CALIBRATE;
+				break;
+			}
     case 'q':  // decrement set point. interpretation depends on mode
       {
         f64 decrement = atof(input + 2);
@@ -367,13 +454,12 @@ void handleSerial(const s8 *input, s32 nBytes)
     case 'L': //Toggle Pin
       {
         s32 reg = atoi(input + 2);
+				if(reg < 1 || reg > N_TURN_ACT)
+					return;
         f64 amount = atof(input + 4);
         u8 amnt = (u8)(amount * 255.0);
         Serial.println("Setting valve " + String(reg) + " to " + String(amount) + " input string " + String(input) + " amount " + String(amnt));
-        if(reg == 1)
-          analogWrite(regulator1Pin, amnt);
-        else if(reg == 2)
-          analogWrite(regulator2Pin, amnt);
+				analogWrite(regulatorPins[reg-1], amnt);
         break;
       }
     default:
@@ -402,8 +488,12 @@ void handleSlaSerial(const u8 *input, s32 nBytes)
 
   u16 trackRow = input[6] + (input[7] << 8);
   u16 trackCol = input[4] + (input[5] << 8);
-  vTrackRow = (f64)trackRow;
-  vTrackCol = (f64)trackCol;
+
+	u16 sceneRow = input[10] + (input[11] << 8);
+	u16 sceneCol = input[8] + (input[9] << 8);
+
+  trackPos = Vec2f64((f64)trackCol,(f64)trackRow);
+	scenePos = Vec2f64((f64)sceneCol, (f64)sceneRow);
 
   if((serialCount++ % TRACE_COUNT_TRACKS) == 0 && printOutTracks) {
     u32 currTime = millis();
