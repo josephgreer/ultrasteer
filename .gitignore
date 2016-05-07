@@ -7,6 +7,9 @@ src/Nano17/*
 src/Nano17
 src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data
 src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/*
+src/Vine/HW/Winch/Code/Control/Debug/*
+src/Vine/HW/Winch/Code/Control/Release/*
+src/Vine/HW/Winch/Code/Control/__vm/*
 *.DS_Store
 ._*
 *~*

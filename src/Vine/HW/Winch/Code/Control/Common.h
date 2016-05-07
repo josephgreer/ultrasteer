@@ -75,8 +75,13 @@ public:
 
 #define TIME_LOOP(x,y) \
 	static u32 g_n##x = 0; static u32 g_begTime##x; \
-	if(g_n##x == y) { Serial.println("g_nx " + String(g_n##x)); \
-										g_n##x = 0; u32 currTime = millis(); \
+	if(g_n##x == y) { g_n##x = 0; u32 currTime = millis(); \
 										Serial.println("Loop " + String(#x) + " Time = " + String((f64)(currTime-g_begTime##x)/(f64)y) + " ms g_nx " + String(g_n##x)); g_begTime##x = currTime;}\
 										g_n##x++;
 #endif
+
+#define PI 3.14159265359
+
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
+#define ABS(x) ((x) > 0 ? (x) : -(x))

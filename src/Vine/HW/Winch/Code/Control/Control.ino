@@ -49,7 +49,7 @@ void setup()
   extensionServo.attach(servoValvePin);
   extensionServo.write(closeAngle);
 
-	Serial.setTimeout(10);
+	Serial.setTimeout(5);
 
   // Set Up Serial
   Serial.begin(57600);
@@ -58,11 +58,8 @@ void setup()
   slaSerial.setTimeout(1);
  #else
   Serial1.begin(57600);
-  Serial1.setTimeout(30);
+  Serial1.setTimeout(5);
  #endif
-
-  // Set PWM frequency
-  setPwmFrequency(pwmAPin, 1); //PWM on pin 3 is (32500/1) = 32500 [Hz]
 
   // Output Pins
   pinMode(pwmAPin, OUTPUT);  // PWM for A
@@ -71,7 +68,7 @@ void setup()
   //regulator Pins
 	for(s32 ii=0; ii<N_TURN_ACT; ii++) {
 		pinMode(regulatorPins[ii], OUTPUT);
-		digitalWrite(regulatorPins[ii], OUTPUT);
+		digitalWrite(regulatorPins[ii], LOW);
 	}
 
   // Encoder Pins
@@ -109,6 +106,7 @@ CONTROL_MODE motorControlMode = CM_POS;
 STEERING_CONTROL_MODE steeringControlMode = SCM_NOTHING;
 
 u8 unwindDir = 1;
+bool invalidPos = true;
 
 
 #define TRACE_COUNT_TRACKS 50
@@ -119,22 +117,18 @@ s32 nBytes = 0;
 
 void loop()
 {
-	TIME_LOOP(MainLoop, 5000);
-  u32 currTime = millis();
-  f64 dt = ((f64)currTime - (f64)lastTime) / (1000.0);
+	TIME_LOOP(MainLoop, 50000);
+  u32 currTime = micros();
+  f64 dt = ((f64)currTime - (f64)lastTime) / ((f64)1e6);
   lastTime = currTime;
-
-	u32 begTime = millis();
-	Serial.println("Begin delay");
-	delay(10000);
-	u32 endTime = millis();
-	Serial.println("End delay = " + String(endTime-begTime));
 
   //MOTOR CONTROL
   controlMotors(dt);
 
-  //STEERING CONTROL
-  controlSteering(dt);
+	if(!invalidPos) {
+		//STEERING CONTROL
+		controlSteering();
+	}
 
   //SERIAL HANDLER
 #if 1
@@ -160,9 +154,25 @@ void loop()
 #endif
 }
 
+struct ActuatorCalibration 
+{
+	f64 angle;
+	f64 strength;
+};
 
-f64 totalCalibTime = 0.500;
-f64 totalRestTime = 0.500;
+ActuatorCalibration actuatorCalibs[N_TURN_ACT] = {0};
+u8 sortedAngleIdxs[N_TURN_ACT] = {0};
+
+// Position Constants
+f64 steeringKpp = 0.01;
+f64 steeringKdp = 0;
+f64 steeringKip = 0;
+
+Vec2f64 errorLastTrack(0,0);
+Vec2f64 integralErrorTrack(0,0);
+
+f64 totalCalibTime = 0.800;
+f64 totalRestTime = 2;
 f64 calibTime = 0;
 s8 currCalibAct = -1;
 Vec2f64 calibStartTrackPos(0,0);
@@ -171,22 +181,20 @@ Vec2f64 trackPos;
 Vec2f64 scenePos;
 Vec2f64 desTrackPos(320, 240);
 
-struct ActuatorCalibration 
-{
-	f64 angle;
-	f64 strength;
-};
+u32 lastTimeSteeringVisited = 0;
 
-ActuatorCalibration actuatorCalibs[N_TURN_ACT] = {0};
-
-// Position Constants
-f64 steeringKpp = 0.08;
-f64 steeringKdp = 0;
-f64 steeringKip = 0.00005;
-void controlSteering(f64 dt)
+bool hasOutput = false;
+void controlSteering()
 {
   f64 u = 0;
   f64 vel;
+	invalidPos = true;
+
+	u32 currTime = micros();
+	f64 dt = (f64)(currTime-lastTimeSteeringVisited)/(f64)1e6;
+	if(lastTimeSteeringVisited == 0)
+		dt = 0;
+	lastTimeSteeringVisited = currTime;
 
   switch(steeringControlMode) 
   {
@@ -199,17 +207,18 @@ void controlSteering(f64 dt)
 			bool transition = false;
 			bool doneResting = false;
 
-			if(currCalibAct = -1) {
+			if(currCalibAct == -1) {
 				transition = true;
 			}
 
 			calibTime += dt;
-			Serial.println("calibrating calibTime " + String(calibTime) + " dt " + String(dt));
 			if(calibTime >= totalCalibTime)
 				transition = true;
 
-			if(calibTime >= totalCalibTime+totalRestTime)
+			if(calibTime >= totalCalibTime+totalRestTime) {
+				Serial.println("Done resting actuator " + String((s32)currCalibAct));
 				doneResting = true;
+			}
 
 			if(transition) {
 				Vec2f64 delta = trackPos-calibStartTrackPos;
@@ -226,12 +235,26 @@ void controlSteering(f64 dt)
 				if(currCalibAct >= N_TURN_ACT) {
 					steeringControlMode = SCM_NOTHING;
 					currCalibAct = -1;
-					Serial.println("Calibration: ");
-					char str[100] = {0};
+
+					memset(sortedAngleIdxs, 0, sizeof(sortedAngleIdxs));
 					for(s32 ii=0; ii<N_TURN_ACT; ii++) {
-						sprintf(str, "ii = %d, angle = %f, strength = %f", ii+1, actuatorCalibs[ii].angle, actuatorCalibs[ii].strength);
-						Serial.println(String(str));
+						sortedAngleIdxs[ii] = ii;
+						s32 idx = ii-1;
+						while(idx >= 0 && actuatorCalibs[ii].angle < actuatorCalibs[sortedAngleIdxs[idx]].angle) {
+							u8 tempIdx = sortedAngleIdxs[idx];
+							sortedAngleIdxs[idx] = ii;
+							sortedAngleIdxs[idx+1] = tempIdx;
+							idx--;
+						}
 					}
+
+					Serial.println("Calibration: ");
+					for(s32 ii=0; ii<N_TURN_ACT; ii++) {
+						Serial.println("ii = " + String(ii+1) + " angle = " + String(180*actuatorCalibs[ii].angle/PI) + " strength = " + String(actuatorCalibs[ii].strength));
+					}
+					Serial.println("Sorted Angle Idxs:  ");
+					for(s32 ii=0; ii<N_TURN_ACT; ii++)
+						Serial.println(String(sortedAngleIdxs[ii]));
 					return;
 				}
 				calibStartTrackPos = trackPos;
@@ -242,7 +265,75 @@ void controlSteering(f64 dt)
     }
     case SCM_POS:
     {
-      break;
+			Vec2f64 error = desTrackPos-trackPos;
+			Vec2f64 derror = error - errorLastTrack;
+
+			errorLastTrack = error;
+			derror = derror*(1.0/dt);
+
+			Vec2f64 u = error*steeringKpp + derror*steeringKdp + integralErrorTrack*steeringKip;
+			if(!hasOutput)
+				Serial.println("u " + String(u.x) + " " + String(u.y));
+
+			//anti windup
+			if(u.x < 1)
+				integralErrorTrack.x += error.x;
+			if(u.y < 1)
+				integralErrorTrack.y += error.y;
+
+			f64 utheta = fmodf(u.angle()+PI,PI);
+			f64 umag = u.magnitude();
+
+			s8 firstLessThanAngleIdx = N_TURN_ACT-1;
+			while(actuatorCalibs[sortedAngleIdxs[firstLessThanAngleIdx]].angle > utheta && firstLessThanAngleIdx >= 0)
+				firstLessThanAngleIdx--;
+
+			u8 angle1Idx, angle2Idx;
+			if(firstLessThanAngleIdx < 0)
+				angle1Idx = N_TURN_ACT-1;
+			else
+				angle1Idx = firstLessThanAngleIdx;
+
+			if(firstLessThanAngleIdx == N_TURN_ACT-1)
+				angle2Idx = 0;
+			else
+				angle2Idx = firstLessThanAngleIdx+1;
+
+			angle1Idx = sortedAngleIdxs[angle1Idx];
+			angle2Idx = sortedAngleIdxs[angle2Idx];
+
+			f64 dist1, dist2;
+			dist1 = ABS(utheta-actuatorCalibs[angle1Idx].angle);
+			dist1 = MIN(dist1, 2*PI-dist1);
+			dist2 = ABS(utheta-actuatorCalibs[angle2Idx].angle);
+			dist2 = MIN(dist2, 2*PI-dist2);
+
+			if(!hasOutput)
+				Serial.println("utheta " + String(180.0/PI*utheta) + " actuator1 " + angle1Idx + " actuator2 " + angle2Idx + " angle1 " + String(180.0/PI*actuatorCalibs[angle1Idx].angle) + " angle2 " + String(180.0/PI*actuatorCalibs[angle2Idx].angle) + " distance1 " + String(180.0/PI*dist1) + " distance2 " + String(180.0/PI*dist2));
+
+			f64 u1 = (dist2/(dist1+dist2));
+			f64 u2 = 1-u1;
+			if(!hasOutput)
+				Serial.println("u1 u2 " + String(u1) + " " + String(u2));
+			u1 = u1*umag;
+			u2 = u2*umag;
+			if(!hasOutput)
+				Serial.println("u1 u2 after mag " + String(u1) + " " + String(u2));
+			s32 u1amnt = (s32)(255.0*MIN(u1,1)+0.5);
+			s32 u2amnt = (s32)(255.0*MIN(u2,1)+0.5);
+			if(!hasOutput)
+				Serial.println("u1amnt u2amnt " + String(u1amnt) + " " + String(u2amnt));
+
+			hasOutput = true;
+
+			for(s32 ii=0; ii<N_TURN_ACT; ii++) {
+				if(ii != angle1Idx || ii != angle2Idx)
+					analogWrite(regulatorPins[ii], 0);
+			}
+
+			analogWrite(regulatorPins[angle1Idx], u1amnt);
+			analogWrite(regulatorPins[angle2Idx], u2amnt);
+
     }
   }
 }
@@ -267,7 +358,7 @@ f64 motorKdv = 0;
 f64 motorKiv = 0.01;
 
 bool printOutMotors = false;
-bool printOutTracks = true;
+bool printOutTracks = false;
 
 void controlMotors(f64 dt)
 {
@@ -379,7 +470,35 @@ void handleSerial(const s8 *input, s32 nBytes)
       }
 		case 'c':
 			{
-				steeringControlMode = SCM_CALIBRATE;
+				String mode;
+				if(input[2] == 'c') {
+					steeringControlMode = SCM_CALIBRATE;
+					mode = "calibrate";
+				} else if(input[2] == 'p') {
+					steeringControlMode = SCM_POS;
+					mode = "position";
+				} else if(input[2] == 'n') {
+					steeringControlMode = SCM_NOTHING;
+					mode = 'none';
+				} else if(input[2] == 'k') {
+					f64 *Kp, *Kd, *Ki;
+					Kp = &steeringKpp;
+					Kd = &steeringKdp;
+					Ki = &steeringKip;
+					f64 val = atof(input + 5);
+					if (input[3] == 'p') {
+						*Kp = val;
+						Serial.println("Set Kp to " + String(val));
+					} else if (input[1] == 'd') {
+						*Kd = val;
+						Serial.println("Set Kd to " + String(val));
+					} else if (input[1] == 'i') {
+						*Ki = val;
+						Serial.println("Set Ki to " + String(val));
+					} 
+				}
+				if(input[2] == 'c' || input[2] == 'p' || input[2] == 'n')
+					Serial.println("Setting steering control mode " + mode);
 				break;
 			}
     case 'q':  // decrement set point. interpretation depends on mode
@@ -427,7 +546,7 @@ void handleSerial(const s8 *input, s32 nBytes)
         } else if (input[1] == 'i') {
           *Ki = val;
           Serial.println("Set Ki to " + String(val));
-        }
+        } 
         break;
       }
     case 'p':   //Pause
@@ -494,45 +613,12 @@ void handleSlaSerial(const u8 *input, s32 nBytes)
 
   trackPos = Vec2f64((f64)trackCol,(f64)trackRow);
 	scenePos = Vec2f64((f64)sceneCol, (f64)sceneRow);
+	invalidPos = false;
 
   if((serialCount++ % TRACE_COUNT_TRACKS) == 0 && printOutTracks) {
     u32 currTime = millis();
     Serial.println("track row track col " + String(trackRow) + " " + String(trackCol) + " time " + String((currTime-lastTimeTracks)/(f64)TRACE_COUNT_TRACKS));
     lastTimeTracks = currTime;
     serialCount = 1;
-  }
-}
-
-// --------------------------
-// Set PWM Freq
-// --------------------------
-void setPwmFrequency(int pin, int divisor) {
-  byte mode;
-  if (pin == 5 || pin == 6 || pin == 9 || pin == 10) {
-    switch (divisor) {
-      case 1: mode = 0x01; break;
-      case 8: mode = 0x02; break;
-      case 64: mode = 0x03; break;
-      case 256: mode = 0x04; break;
-      case 1024: mode = 0x05; break;
-      default: return;
-    }
-    if (pin == 5 || pin == 6) {
-      TCCR0B = TCCR0B & 0b11111000 | mode;
-    } else {
-      TCCR1B = TCCR1B & 0b11111000 | mode;
-    }
-  } else if (pin == 3 || pin == 11) {
-    switch (divisor) {
-      case 1: mode = 0x01; break;
-      case 8: mode = 0x02; break;
-      case 32: mode = 0x03; break;
-      case 64: mode = 0x04; break;
-      case 128: mode = 0x05; break;
-      case 256: mode = 0x06; break;
-      case 1024: mode = 0x7; break;
-      default: return;
-    }
-    TCCR2B = TCCR2B & 0b11111000 | mode;
   }
 }
