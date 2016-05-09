@@ -163,8 +163,10 @@ struct ActuatorCalibration
 ActuatorCalibration actuatorCalibs[N_TURN_ACT] = { 0 };
 u8 sortedAngleIdxs[N_TURN_ACT] = { 0 };
 
+f64 tempArray[N_TURN_ACT] = { 0 };
+
 // Position Constants
-f64 steeringKpp = 0.01;
+f64 steeringKpp = 0.03;
 f64 steeringKdp = 0;
 f64 steeringKip = 0;
 
@@ -182,6 +184,26 @@ Vec2f64 scenePos;
 Vec2f64 desTrackPos(320, 240);
 
 u32 lastTimeSteeringVisited = 0;
+
+void sortArray(f64 *a, u8 *idx, s32 nel)
+{
+  s32 ii;
+  f64 temp;
+  u8 tempIdx;
+  for (s32 i = 0; i < N_TURN_ACT; i++) {
+    ii = i;
+    idx[ii] = i;
+    while (ii > 0 && a[ii - 1] > a[ii]) {
+      temp = a[ii - 1];
+      tempIdx = idx[ii - 1];
+      a[ii - 1] = a[ii];
+      idx[ii - 1] = idx[ii];
+      a[ii] = temp;
+      idx[ii] = tempIdx;
+      ii--;
+    }
+  }
+}
 
 bool hasOutput = false;
 void controlSteering()
@@ -237,16 +259,9 @@ void controlSteering()
         currCalibAct = -1;
 
         memset(sortedAngleIdxs, 0, sizeof(sortedAngleIdxs));
-        for (s32 ii = 0; ii < N_TURN_ACT; ii++) {
-          sortedAngleIdxs[ii] = ii;
-          s32 idx = ii - 1;
-          while (idx >= 0 && actuatorCalibs[ii].angle < actuatorCalibs[sortedAngleIdxs[idx]].angle) {
-            u8 tempIdx = sortedAngleIdxs[idx];
-            sortedAngleIdxs[idx] = ii;
-            sortedAngleIdxs[idx + 1] = tempIdx;
-            idx--;
-          }
-        }
+        for (s32 ii = 0; ii < N_TURN_ACT; ii++)
+          tempArray[ii] = actuatorCalibs[ii].angle;
+        sortArray(tempArray, sortedAngleIdxs, N_TURN_ACT);
 
         Serial.println("Calibration: ");
         for (s32 ii = 0; ii < N_TURN_ACT; ii++) {
@@ -281,35 +296,23 @@ void controlSteering()
     if (u.y < 1)
       integralErrorTrack.y += error.y;
 
-    f64 utheta = fmodf(u.angle() + PI, PI);
+    f64 utheta = fmodf(u.angle(), PI);
     f64 umag = u.magnitude();
 
-    s8 firstLessThanAngleIdx = N_TURN_ACT - 1;
-    while (actuatorCalibs[sortedAngleIdxs[firstLessThanAngleIdx]].angle > utheta && firstLessThanAngleIdx >= 0)
-      firstLessThanAngleIdx--;
+    u8 angleIdxs[N_TURN_ACT] = { 0 };
 
-    u8 angle1Idx, angle2Idx;
-    if (firstLessThanAngleIdx < 0)
-      angle1Idx = N_TURN_ACT - 1;
-    else
-      angle1Idx = firstLessThanAngleIdx;
-
-    if (firstLessThanAngleIdx == N_TURN_ACT - 1)
-      angle2Idx = 0;
-    else
-      angle2Idx = firstLessThanAngleIdx + 1;
-
-    angle1Idx = sortedAngleIdxs[angle1Idx];
-    angle2Idx = sortedAngleIdxs[angle2Idx];
+    for (s32 ii = 0; ii < N_TURN_ACT; ii++) {
+      tempArray[ii] = ABS(utheta - actuatorCalibs[ii].angle);
+      tempArray[ii] = MIN(tempArray[ii], 2 * PI - tempArray[ii]);
+    }
+    sortArray(tempArray, angleIdxs, N_TURN_ACT);
 
     f64 dist1, dist2;
-    dist1 = ABS(utheta - actuatorCalibs[angle1Idx].angle);
-    dist1 = MIN(dist1, 2 * PI - dist1);
-    dist2 = ABS(utheta - actuatorCalibs[angle2Idx].angle);
-    dist2 = MIN(dist2, 2 * PI - dist2);
+    dist1 = tempArray[0];
+    dist2 = tempArray[1];
 
     if (!hasOutput)
-      Serial.println("utheta " + String(180.0 / PI*utheta) + " actuator1 " + angle1Idx + " actuator2 " + angle2Idx + " angle1 " + String(180.0 / PI*actuatorCalibs[angle1Idx].angle) + " angle2 " + String(180.0 / PI*actuatorCalibs[angle2Idx].angle) + " distance1 " + String(180.0 / PI*dist1) + " distance2 " + String(180.0 / PI*dist2));
+      Serial.println("utheta " + String(180.0 / PI*utheta) + " actuator1 " + angleIdxs[0] + " actuator2 " + angleIdxs[1] + " angle1 " + String(180.0 / PI*actuatorCalibs[angleIdxs[0]].angle) + " angle2 " + String(180.0 / PI*actuatorCalibs[angleIdxs[1]].angle) + " distance1 " + String(180.0 / PI*dist1) + " distance2 " + String(180.0 / PI*dist2));
 
     f64 u1 = (dist2 / (dist1 + dist2));
     f64 u2 = 1 - u1;
@@ -327,12 +330,12 @@ void controlSteering()
     hasOutput = true;
 
     for (s32 ii = 0; ii < N_TURN_ACT; ii++) {
-      if (ii != angle1Idx || ii != angle2Idx)
+      if (ii != angleIdxs[0] || ii != angleIdxs[1])
         analogWrite(regulatorPins[ii], 0);
     }
 
-    analogWrite(regulatorPins[angle1Idx], u1amnt);
-    analogWrite(regulatorPins[angle2Idx], u2amnt);
+    analogWrite(regulatorPins[angleIdxs[0]], u1amnt);
+    analogWrite(regulatorPins[angleIdxs[1]], u2amnt);
 
   }
   }
