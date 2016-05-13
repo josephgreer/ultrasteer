@@ -8,6 +8,7 @@ typedef char s8;
 typedef unsigned char u8;
 typedef unsigned long u32;
 typedef int s32;
+typedef short s16;
 
 class Vec2f64
 {

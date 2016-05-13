@@ -97,6 +97,7 @@ enum CONTROL_MODE {
 enum STEERING_CONTROL_MODE {
   SCM_NOTHING = 0,
   SCM_CALIBRATE,
+  SCM_CALIBRATE_INCREMENTAL,
   SCM_POS
 };
 
@@ -117,7 +118,7 @@ s32 nBytes = 0;
 
 void loop()
 {
-  TIME_LOOP(MainLoop, 50000);
+  TIME_LOOP(MainLoop, 5000000);
   u32 currTime = micros();
   f64 dt = ((f64)currTime - (f64)lastTime) / ((f64)1e6);
   lastTime = currTime;
@@ -154,6 +155,26 @@ void loop()
 #endif
 }
 
+void sortArray(f64 *a, u8 *idx, s32 nel)
+{
+  s32 ii;
+  f64 temp;
+  u8 tempIdx;
+  for (s32 i = 0; i < N_TURN_ACT; i++) {
+    ii = i;
+    idx[ii] = i;
+    while (ii > 0 && a[ii - 1] > a[ii]) {
+      temp = a[ii - 1];
+      tempIdx = idx[ii - 1];
+      a[ii - 1] = a[ii];
+      idx[ii - 1] = idx[ii];
+      a[ii] = temp;
+      idx[ii] = tempIdx;
+      ii--;
+    }
+  }
+}
+
 struct ActuatorCalibration
 {
   f64 angle;
@@ -174,10 +195,13 @@ Vec2f64 errorLastTrack(0, 0);
 Vec2f64 integralErrorTrack(0, 0);
 
 f64 totalCalibTime = 0.800;
-f64 totalRestTime = 2;
+f64 totalRestTime = 20;
+f64 incrementalCalibTime = 0.2;
 f64 calibTime = 0;
 s8 currCalibAct = -1;
 Vec2f64 calibStartTrackPos(0, 0);
+
+#define MAX_REGULATOR_PWM 220
 
 Vec2f64 trackPos;
 Vec2f64 scenePos;
@@ -185,25 +209,9 @@ Vec2f64 desTrackPos(320, 240);
 
 u32 lastTimeSteeringVisited = 0;
 
-void sortArray(f64 *a, u8 *idx, s32 nel)
-{
-  s32 ii;
-  f64 temp;
-  u8 tempIdx;
-  for (s32 i = 0; i < N_TURN_ACT; i++) {
-    ii = i;
-    idx[ii] = i;
-    while (ii > 0 && a[ii - 1] > a[ii]) {
-      temp = a[ii - 1];
-      tempIdx = idx[ii - 1];
-      a[ii - 1] = a[ii];
-      idx[ii - 1] = idx[ii];
-      a[ii] = temp;
-      idx[ii] = tempIdx;
-      ii--;
-    }
-  }
-}
+u8 calibPWM = 0;
+#define CALIB_BIN_DS 0
+#define CALIB_BIN_DOWNSAMPLE 1.0
 
 bool hasOutput = false;
 void controlSteering()
@@ -273,7 +281,67 @@ void controlSteering()
         return;
       }
       calibStartTrackPos = trackPos;
-      analogWrite(regulatorPins[currCalibAct], 255);
+      analogWrite(regulatorPins[currCalibAct], MAX_REGULATOR_PWM);
+    }
+
+    break;
+  }
+  case SCM_CALIBRATE_INCREMENTAL:
+  {
+    bool incrementBin = false;
+    bool doneResting = false;
+
+    calibTime += dt;
+    if (calibTime >= incrementalCalibTime*(calibPWM >> CALIB_BIN_DS))
+      incrementBin = true;
+
+    if ((calibTime >= incrementalCalibTime*(MAX_REGULATOR_PWM/CALIB_BIN_DOWNSAMPLE) + totalRestTime) || currCalibAct == -1) {
+      Serial.println("Done resting actuator " + String((s32)currCalibAct));
+      doneResting = true;
+      incrementBin = false;
+    }
+
+    if ((calibTime >= incrementalCalibTime*(MAX_REGULATOR_PWM/CALIB_BIN_DOWNSAMPLE)) && (calibTime <= incrementalCalibTime*(MAX_REGULATOR_PWM/CALIB_BIN_DOWNSAMPLE) + totalRestTime))
+      return;
+
+    if (incrementBin) {
+      Vec2f64 delta = scenePos - calibStartTrackPos;
+      Serial.println(String((s32)currCalibAct) + ", " + String(calibPWM) + ", " + String(delta.x) + ", " + String(delta.y));
+#if 0 
+      calibTrackDisplacements[currCalibAct][(calibPWM >> CALIB_BIN_DS)] = delta;
+#endif
+      calibPWM += (1 << CALIB_BIN_DS);
+      if (calibPWM >= MAX_REGULATOR_PWM)
+        calibPWM = 0;
+
+      analogWrite(regulatorPins[currCalibAct], calibPWM);
+      calibStartTrackPos = scenePos;
+    }
+    if (doneResting) {
+      if (currCalibAct >= 0)
+        analogWrite(regulatorPins[currCalibAct], 0);
+      currCalibAct++;
+      Serial.println("Incrementing Calibrator to " + String((s32)currCalibAct));
+      if (currCalibAct >= N_TURN_ACT) {
+
+        for (s32 ii = 0; ii < N_TURN_ACT; ii++)
+          analogWrite(regulatorPins[ii], 0);
+
+        steeringControlMode = SCM_NOTHING;
+
+#if 0
+        for (s32 jj = 0; jj < N_TURN_ACT; jj++) {
+          String calibString = "Actuator " + String(jj) + " Calibration\n";
+          for (s32 ii = 0; ii < (s32)(MAX_REGULATOR_PWM/CALIB_BIN_DOWNSAMPLE); ii++) {
+            calibString += String(ii << CALIB_BIN_DS) + ", " + String(calibTrackDisplacements[jj][ii].magnitude()) + ", ";
+          }
+          Serial.println(calibString);
+        }
+#endif
+      }
+      calibStartTrackPos = scenePos;
+      analogWrite(regulatorPins[currCalibAct], 0);
+      calibTime = 0;
     }
 
     break;
@@ -322,8 +390,8 @@ void controlSteering()
     u2 = u2*umag;
     if (!hasOutput)
       Serial.println("u1 u2 after mag " + String(u1) + " " + String(u2));
-    s32 u1amnt = (s32)(255.0*MIN(u1, 1) + 0.5);
-    s32 u2amnt = (s32)(255.0*MIN(u2, 1) + 0.5);
+    s32 u1amnt = (s32)(MAX_REGULATOR_PWM*MIN(u1, 1) + 0.5);
+    s32 u2amnt = (s32)(MAX_REGULATOR_PWM*MIN(u2, 1) + 0.5);
     if (!hasOutput)
       Serial.println("u1amnt u2amnt " + String(u1amnt) + " " + String(u2amnt));
 
@@ -481,6 +549,10 @@ void handleSerial(const s8 *input, s32 nBytes)
       steeringControlMode = SCM_CALIBRATE;
       mode = "calibrate";
     }
+    else if(input[2] == 'i') {
+      steeringControlMode = SCM_CALIBRATE_INCREMENTAL;
+      mode = "calibration incremental";
+    }
     else if (input[2] == 'p') {
       steeringControlMode = SCM_POS;
       mode = "position";
@@ -590,7 +662,7 @@ void handleSerial(const s8 *input, s32 nBytes)
     if (reg < 1 || reg > N_TURN_ACT)
       return;
     f64 amount = atof(input + 4);
-    u8 amnt = (u8)(amount * 255.0);
+    u8 amnt = (u8)(amount * MAX_REGULATOR_PWM);
     Serial.println("Setting valve " + String(reg) + " to " + String(amount) + " input string " + String(input) + " amount " + String(amnt));
     analogWrite(regulatorPins[reg - 1], amnt);
     break;
@@ -619,19 +691,19 @@ void handleSlaSerial(const u8 *input, s32 nBytes)
   if (input[0] != 0x51 || input[1] != 0xAC || input[3] != 0x43)
     return;
 
-  u16 trackRow = input[6] + (input[7] << 8);
-  u16 trackCol = input[4] + (input[5] << 8);
+  s16 trackRow = input[6] + (input[7] << 8);
+  s16 trackCol = input[4] + (input[5] << 8);
 
-  u16 sceneRow = input[10] + (input[11] << 8);
-  u16 sceneCol = input[8] + (input[9] << 8);
+  s32 sceneRow8 = (input[10]<<8) + (input[11] << 16) + (input[23]);
+  s32 sceneCol8 = (input[8]<<8) + (input[9] << 16) + (input[22]);
 
   trackPos = Vec2f64((f64)trackCol, (f64)trackRow);
-  scenePos = Vec2f64((f64)sceneCol, (f64)sceneRow);
+  scenePos = Vec2f64((f64)sceneCol8/256.0, (f64)sceneRow8/256.0);
   invalidPos = false;
 
   if ((serialCount++ % TRACE_COUNT_TRACKS) == 0 && printOutTracks) {
     u32 currTime = millis();
-    Serial.println("track row track col " + String(trackRow) + " " + String(trackCol) + " time " + String((currTime - lastTimeTracks) / (f64)TRACE_COUNT_TRACKS));
+    Serial.println("scene row scene col " + String(scenePos.y) + " " + String(scenePos.x) + " time " + String((currTime - lastTimeTracks) / (f64)TRACE_COUNT_TRACKS));
     lastTimeTracks = currTime;
     serialCount = 1;
   }
