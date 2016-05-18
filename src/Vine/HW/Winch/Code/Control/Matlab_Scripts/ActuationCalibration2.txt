@@ -1,10 +1,3 @@
-Opening port
-Port open
-Setting servo valve position 70.00
-Setting servo valve position 66.00
-Setting servo valve position 70.00
-Done resting actuator -1
-Incrementing Calibrator to 0
 0, 0, -0.02, -0.03
 0, 1, -0.10, 0.05
 0, 2, 0.15, -0.05
@@ -225,13 +218,6 @@ Incrementing Calibrator to 0
 0, 217, -0.30, 0.31
 0, 218, 0.34, -0.30
 0, 219, 0.10, 0.15
-0, 0, -0.23, -0.29
-0, 1, 0.10, 0.23
-0, 2, -0.31, 0.16
-0, 3, -1.00, 0.36
-0, 4, -1.58, 1.60
-Done resting actuator 0
-Incrementing Calibrator to 1
 1, 5, -0.05, -0.01
 1, 6, -0.03, -0.05
 1, 7, -0.01, 0.06
@@ -447,13 +433,6 @@ Incrementing Calibrator to 1
 1, 217, 0.02, -0.01
 1, 218, -0.66, -0.67
 1, 219, 0.68, -0.15
-1, 0, 0.02, 1.35
-1, 1, 0.21, -0.82
-1, 2, -0.29, -1.07
-1, 3, -1.54, -6.74
-1, 4, -0.91, -0.21
-Done resting actuator 1
-Incrementing Calibrator to 2
 2, 5, -0.05, 0.07
 2, 6, -0.01, 0.03
 2, 7, -0.02, -0.07
@@ -669,11 +648,3 @@ Incrementing Calibrator to 2
 2, 217, 0.02, -0.03
 2, 218, -0.02, 0.00
 2, 219, 0.00, 0.00
-2, 0, 0.02, 0.02
-2, 1, 0.13, -0.08
-2, 2, 2.40, 0.51
-2, 3, 1.79, 0.41
-2, 4, -1.36, -0.41
-Setting servo valve position 90.00
-Done resting actuator 2
-Incrementing Calibrator to 3
