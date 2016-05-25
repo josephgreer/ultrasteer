@@ -1,6 +1,6 @@
 clear; clc; close all;
 
-calib = load('ActuationCalibration6.txt', '-ascii');
+calib = load('ActuationCalibration7.txt', '-ascii');
 
 actuators = {calib(find(calib(:,1) == 0),:), calib(find(calib(:,1) == 1), :),...
     calib(find(calib(:,1) == 2), :)};
