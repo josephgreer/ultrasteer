@@ -129,7 +129,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
+    <ClInclude Include="JacobianControl.h" />
     <ClInclude Include="__vm\.Control.vsarduino.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="JacobianControl.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

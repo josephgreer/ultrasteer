@@ -3,12 +3,16 @@
 
 #include <math.h>
 
+#include "string.h"
+
 typedef double f64;
 typedef char s8;
 typedef unsigned char u8;
 typedef unsigned long u32;
 typedef int s32;
 typedef short s16;
+
+#define N_TURN_ACT 3
 
 class Vec2f64
 {
@@ -191,11 +195,13 @@ public:
     return Matrix22f64(res);
   }
 
+#ifdef __AVR_ATmega2560_
   void Print() const
   {
     Serial.println("[" + String(m_data[0][0]) + " " + String(m_data[0][1]) + ";\n" +
       String(m_data[1][0]) + " " + String(m_data[1][1]) + "]");
   }
+#endif
 
   Vec2f64 Col(s32 col) const
   {
@@ -252,6 +258,8 @@ public:
   }
 };
 
+void sortArray(f64 *a, u8 *idx, s32 nel);
+
 #define TIME_LOOP(x,y) \
 	static u32 g_n##x = 0; static u32 g_begTime##x; \
 	if(g_n##x == y) { g_n##x = 0; u32 currTime = millis(); \
@@ -264,5 +272,6 @@ public:
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define ABS(x) ((x) > 0 ? (x) : -(x))
+#define SIGN(x) ((x) > 0 ? 1 : -1)
 #define EPS (1e-8)
 #define CLAMP(x,a,b) (MIN(MAX(x,a),b))

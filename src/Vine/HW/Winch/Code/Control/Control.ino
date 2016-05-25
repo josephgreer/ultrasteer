@@ -8,8 +8,6 @@
 #include <Servo.h>
 //#define SLA_SERIAL
 
-#define N_TURN_ACT 3
-
 // Pin Declares
 int pwmAPin = 5;
 int dirAPin = 8;
@@ -107,26 +105,6 @@ void loop()
     memset(input, 0, nBytes);
   }
 #endif
-}
-
-void sortArray(f64 *a, u8 *idx, s32 nel)
-{
-  s32 ii;
-  f64 temp;
-  u8 tempIdx;
-  for (s32 i = 0; i < N_TURN_ACT; i++) {
-    ii = i;
-    idx[ii] = i;
-    while (ii > 0 && a[ii - 1] > a[ii]) {
-      temp = a[ii - 1];
-      tempIdx = idx[ii - 1];
-      a[ii - 1] = a[ii];
-      idx[ii - 1] = idx[ii];
-      a[ii] = temp;
-      idx[ii] = tempIdx;
-      ii--;
-    }
-  }
 }
 
 //Actuator effort
@@ -362,7 +340,7 @@ void controlSteering()
     if (u.y < 1)
       integralErrorTrack.y += error.y;
 
-    f64 utheta = fmodf(u.angle(), PI);
+    f64 utheta = fmodf(u.angle(), 2*PI);
     f64 umag = u.magnitude();
 
     u8 angleIdxs[N_TURN_ACT] = { 0 };
