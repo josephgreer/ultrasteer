@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include "Common.h"
 #include "JacobianControl.h"
+#ifdef __AVR_ATmega2560__
+#include "Arduino.h"
+#endif
 
 struct JacobianTestData
 {
@@ -8,7 +11,7 @@ struct JacobianTestData
   f64 q_res[5];
 };
 
-int main()
+void runTest()
 {
   JacobianTestData testData[] = {
     { -356.352529, -24.280793, 0.074072, 0.929907, 1.000000 },
@@ -121,7 +124,7 @@ int main()
   Vec2f64 J[N_TURN_ACT];
 
   const f64 *qs;
- 
+
   J[0] = Vec2f64(400, 0); J[1] = Vec2f64(-200.0000, 346.4102); J[2] = Vec2f64(-200.0000, -346.4102);
   for (s32 i = 0; i < sizeof(testData) / sizeof(testData[0]); i++) {
     Vec2f64 dx(testData[i].q_res[0], testData[i].q_res[1]);
@@ -129,13 +132,24 @@ int main()
     qs = jc.Update(dx, J);
 
     f64 maxError = -1;
-    for (s32 j = 0; j < N_TURN_ACT; j++) 
+    for (s32 j = 0; j < N_TURN_ACT; j++)
       maxError = MAX(maxError, ABS(qs[j] - testData[i].q_res[2 + j]));
 
     if (maxError > 1e-4)
       s32 y = 0;
 
+#ifdef __AVR_ATmega2560__
+    Serial.println("Error " + String(maxError) + " qs " + String(qs[0]) + " " + String(qs[1]) + " " + String(qs[2]));
+#endif
+
     jc.SetQs(&testData[i].q_res[2]);
 
   }
 }
+
+#ifndef __AVR_ATmega2560__
+int main()
+{
+  runTest();
+}
+#endif

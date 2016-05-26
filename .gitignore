@@ -18,3 +18,6 @@ IndividualDefines.h
 !data/solidworks/meat_vice/*pdf
 !src/Vine/**/*pdf
 src/Vine/**/._*pdf
+src/Vine/**/cvxgen_test/*
+!src/Vine**/cvxgen_test/cvxgen_test.vcxproj
+!src/Vine**/cvxgen_test/cvxgen_test.sln
