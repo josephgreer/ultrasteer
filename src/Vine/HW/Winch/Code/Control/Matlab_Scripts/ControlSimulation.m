@@ -1,6 +1,8 @@
 clear; clc; close all;
 
-rng(3);
+addpath('../cvxgen/');
+
+rng(5);
 
 nActuators = 3;                             % number of turning actuators
 actuatorSpacing = 2*pi/nActuators;          % spacing between turning actuators
@@ -34,9 +36,21 @@ xlim([-800 800]);
 ylim([-800 800]);
 
 useLeastSquares = false;
+useLeastSquaresBVLS = true;
+
+saveQs = false;
+loadQs = false;
+qsave = [];
+qload = [];
+
+if(loadQs)
+    qload = load('saveqs.mat');
+    qload = qload.qsave;
+end
 
 deltaStrength = strengthMean;
 for i=1:nPoints
+%     display(i);
     handles = drawRobot(handles, pos, actuatorThetas, q);
     theta = unifrnd(0, 2*pi);
     delta_x = unifrnd(0,deltaStrength)*[cos(theta); sin(theta)];
@@ -52,12 +66,30 @@ for i=1:nPoints
     
     
     if(useLeastSquares)
-        delta_q = BVLS(J,delta_x,-q,1-q);
-        delta_x_actual = J*delta_q;
-        q = q+delta_q;
+        %display(i);
+        
+        cvparams.J = J;
+        cvparams.dx = delta_x;
+        cvparams.q = q;
+        [vars, status] = cvxsolve(cvparams);
+        
+%         display(sprintf('params.dx[0] = %f;\n params.dx[1] = %f;\n params.J[0] = %f;\n params.J[1] = %f;\n params.J[2] = %f;\n params.J[3] = %f;\n params.J[4] = %f;\n params.J[5] = %f;\nparams.q[0] = %f;\n params.q[1] = %f;\n params.q[2] = %f;\n dq.x = %f, dq.y = %f, dq.z = %f\n',...
+%             delta_x_desired(1), delta_x_desired(2), J(1,1), J(2,1), J(1,2), J(2,2), J(1,3), J(2,3), q(1), q(2), q(3), vars.dq(1), vars.dq(2), vars.dq(3)));
+        q = q+vars.dq;
+        q = max(min(q,1),0);
+        
         if(~all(0 <= q & q <= 1))
             yep = 0;
         end
+        
+        delta_x_actual = J*vars.dq;
+    elseif(useLeastSquaresBVLS)
+        dq = BVLS(J,delta_x_desired,-q,1-q);
+        q = q+dq;
+        if(~all(0 <= q & q <= 1))
+            yep = 0;
+        end
+        delta_x_actual = J*dq;
     else
         done = false;
         delta_x_actual = zeros(size(delta_x));
@@ -131,8 +163,18 @@ for i=1:nPoints
     end
     
     pos = pos+delta_x_actual;
-    display(sprintf('{%f, %f, %f, %f, %f},', delta_x_desired(1), delta_x_desired(2),...
-        q(1), q(2), q(3)));
+    display(sprintf('{%f, %f, %f, %f, %f, %.8f},', delta_x_desired(1), delta_x_desired(2),...
+        q(1), q(2), q(3), norm(delta_x_desired-delta_x_actual)));
     %pause(1);
+    if(saveQs)
+        qsave = [qsave q];
+    end
+    if(loadQs)
+        q = qload(:,i);
+    end
+end
+
+if(saveQs)
+    save('saveqs.mat', 'qsave');
 end
 
