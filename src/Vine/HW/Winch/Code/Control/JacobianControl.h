@@ -3,22 +3,40 @@
 
 #include "Common.h"
 
-class JacobianControl 
+class JacobianControl
 {
 protected:
-  f64 m_qs[N_TURN_ACT];
-  Vec2f64 m_J[N_TURN_ACT];
+  Vecf64<N_TURN_ACT> m_q;
+  Matrixf64<2, N_TURN_ACT> m_J;
 
 public:
   JacobianControl();
 
   // Returns actuator q values to achieve end-effector displacement dx
-  const f64 * Update(Vec2f64 dx);
+  virtual Vecf64<N_TURN_ACT> Update(Vecf64<2> dx) = 0;
 
   // Returns actuator q values to achieve end-effector displacement dx
-  const f64 * Update(Vec2f64 dx, const Vec2f64 *J);
+  virtual Vecf64<N_TURN_ACT> Update(Vecf64<2> dx, const Matrixf64<2,N_TURN_ACT>&J);
 
-  void SetQs(f64 *q) { memcpy(&m_qs[0], q, sizeof(f64)*N_TURN_ACT); }
+  virtual void SetQs(const Vecf64<N_TURN_ACT> &q) { m_q = q; }
+};
+
+class JacobianHeuristicControl : public JacobianControl
+{
+public:
+  JacobianHeuristicControl();
+
+  // Returns actuator q values to achieve end-effector displacement dx
+  virtual Vecf64<N_TURN_ACT> Update(Vecf64<2> dx);
+};
+
+class JacobianBoxConstraintControl : public JacobianControl
+{
+public:
+  JacobianBoxConstraintControl();
+
+  // Returns actuator q values to achieve end-effector displacement dx
+  virtual Vecf64<N_TURN_ACT> Update(Vecf64<2> dx);
 };
 
 #endif

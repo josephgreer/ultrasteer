@@ -7,6 +7,11 @@
 /* Filename: ldl.c. */
 /* Description: Basic test harness for solver.c. */
 #include "solver.h"
+
+#ifdef __AVR_ATmega2560__
+#pragma GCC push_options
+#pragma GCC optimize ("O3")
+#endif
 /* Be sure to place ldl_solve first, so storage schemes are defined by it. */
 void ldl_solve(double *target, double *var) {
   int i;
@@ -408,3 +413,6 @@ void fill_KKT(void) {
   work.KKT[13] = -1;
   work.KKT[15] = -1;
 }
+#ifdef __AVR_ATmega2560__
+#pragma GCC pop_options
+#endif

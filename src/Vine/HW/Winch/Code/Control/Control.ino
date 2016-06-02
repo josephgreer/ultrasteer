@@ -21,7 +21,7 @@ f64 closeAngle = 90;
 
 
 s32 regulatorPins[N_TURN_ACT] = { 11, 9, 10 };
-JacobianControl jc;
+JacobianControl *jc = (JacobianControl *)new JacobianHeuristicControl();
 
 #ifdef SLA_SERIAL
 int slaSerialPinRx = 2;
@@ -70,7 +70,7 @@ bool invalidPos = true;
 s8 input[BUFFER_LEN] = { 0 };
 s32 nBytes = 0;
 
-//#define DO_TEST
+#define DO_TEST
 
 #ifdef DO_TEST
 void runTest();
@@ -143,14 +143,14 @@ struct Sigmoid
 
 struct ActuatorCalibration
 {
-  Vec2f64 offset;
+  Vecf64<2> offset;
   Sigmoid sig;
   ActuatorCalibration()
     : offset(0,0)
     , sig()
   {
   }
-  ActuatorCalibration(Vec2f64 o, Sigmoid s)
+  ActuatorCalibration(Vecf64<2> o, Sigmoid s)
     : offset(o)
     , sig(s)
   {
@@ -158,15 +158,15 @@ struct ActuatorCalibration
 };
 
 ActuatorCalibration actuatorCalibs[N_TURN_ACT];
-Vec2f64 JJ[N_TURN_ACT];
+Matrixf64<2,N_TURN_ACT> JJ;
 
 // Position Constants
 f64 steeringKpp = 0.08;
 f64 steeringKdp = 0.02;
 f64 steeringKip = 0;
 
-Vec2f64 errorLastTrack(0, 0);
-Vec2f64 integralErrorTrack(0, 0);
+Vecf64<2> errorLastTrack(0, 0);
+Vecf64<2> integralErrorTrack(0, 0);
 
 f64 totalCalibTime = 3;
 f64 totalRestTime = 2;
@@ -174,16 +174,16 @@ f64 incrementalCalibTime = 0.3;
 f64 incrementalCalibRestTime = 15;
 f64 calibTime = 0;
 s8 currCalibAct = -1;
-Vec2f64 calibStartTrackPos(0, 0);
+Vecf64<2> calibStartTrackPos(0, 0);
 
 s32 outputCount = 0;
 
 #define MAX_REGULATOR_PWM 255
 #define CALIB_AMNT 0.2
 
-Vec2f64 trackPos;
-Vec2f64 scenePos;
-Vec2f64 desTrackPos(320, 240);
+Vecf64<2> trackPos;
+Vecf64<2> scenePos;
+Vecf64<2> desTrackPos(320, 240);
 
 u32 lastTimeSteeringVisited = 0;
 
@@ -233,7 +233,7 @@ void controlSteering()
     }
 
     if (transition) {
-      Vec2f64 delta = trackPos - calibStartTrackPos;
+      Vecf64<2> delta = trackPos - calibStartTrackPos;
 
       if (currCalibAct >= 0) {
         actuatorCalibs[currCalibAct].offset = delta*(1.0/CALIB_AMNT);
@@ -251,8 +251,11 @@ void controlSteering()
         for (s32 ii = 0; ii < N_TURN_ACT; ii++)
           Serial.println("Actuator " + String(ii) + " offset " + String(actuatorCalibs[ii].offset.x) + ", " + String(actuatorCalibs[ii].offset.y));
       }
+
+      Vecf64<2> offsets[N_TURN_ACT] = { 0 };
       for (s32 ii = 0; ii < N_TURN_ACT; ii++)
-        JJ[ii] = actuatorCalibs[ii].offset;
+        offsets[ii] = actuatorCalibs[ii].offset;
+      JJ = Matrixf64<2, N_TURN_ACT>::FromCols(offsets);
 
       calibStartTrackPos = trackPos;
       ACTUATE_REGULATOR(currCalibAct, CALIB_AMNT);
@@ -280,7 +283,7 @@ void controlSteering()
     }
 
     if (incrementBin) {
-      Vec2f64 delta = scenePos + calibStartTrackPos;
+      Vecf64<2> delta = scenePos + calibStartTrackPos;
       Serial.println(String((s32)currCalibAct) + ", " + String(calibPWM) + ", " + String(delta.x) + ", " + String(delta.y));
 #if 0 
       calibTrackDisplacements[currCalibAct][(calibPWM >> CALIB_BIN_DS)] = delta;
@@ -292,7 +295,7 @@ void controlSteering()
       //ACTUATE_REGULATOR(currCalibAct, calibPWM/256.0);
       analogWrite(regulatorPins[currCalibAct], calibPWM);
 
-      calibStartTrackPos = Vec2f64(0,0);
+      calibStartTrackPos = Vecf64<2>(0,0);
     }
     if (doneResting) {
       if (currCalibAct >= 0)
@@ -316,7 +319,7 @@ void controlSteering()
         }
 #endif
       }
-      calibStartTrackPos = Vec2f64(0,0);
+      calibStartTrackPos = Vecf64<2>(0,0);
       analogWrite(regulatorPins[currCalibAct], 0);
       calibTime = 0;
     }
@@ -330,17 +333,17 @@ void controlSteering()
   }
   case SCM_POS:
   {
-    Vec2f64 error = desTrackPos - trackPos;
-    Vec2f64 derror = error - errorLastTrack;
+    Vecf64<2> error = desTrackPos - trackPos;
+    Vecf64<2> derror = error - errorLastTrack;
 
     errorLastTrack = error;
     derror = derror*(1.0 / dt);
 
-    Vec2f64 u = error*steeringKpp + derror*steeringKdp + integralErrorTrack*steeringKip;
+    Vecf64<2> u = error*steeringKpp + derror*steeringKdp + integralErrorTrack*steeringKip;
     if (!hasOutput)
       Serial.println("u " + String(u.x) + " " + String(u.y));
 
-    const f64 *qs = jc.Update(u, &JJ[0]);
+    Vecf64<N_TURN_ACT> qs = jc->Update(u, JJ);
     ACTUATE_REGULATOR(0, qs[0]);
     ACTUATE_REGULATOR(1, qs[1]);
     ACTUATE_REGULATOR(2, qs[2]);
@@ -560,7 +563,7 @@ void handleSerial(const s8 *input, s32 nBytes)
       steeringControlMode = SCM_NOTHING;
       mode = 'none';
       calibPWM = 0;
-      calibStartTrackPos = Vec2f64(0, 0);
+      calibStartTrackPos = Vecf64<2>(0, 0);
       calibTime = 0;
       currCalibAct = 0;
       for (s32 jj = 0; jj < N_TURN_ACT; jj++)
@@ -701,8 +704,8 @@ void handleSlaSerial(const u8 *input, s32 nBytes)
   s32 sceneRow8 = (input[10]<<8) + (input[11] << 16) + (input[23]);
   s32 sceneCol8 = (input[8]<<8) + (input[9] << 16) + (input[22]);
 
-  trackPos = Vec2f64((f64)trackCol, (f64)trackRow);
-  scenePos = Vec2f64((f64)sceneCol8/256.0, (f64)sceneRow8/256.0);
+  trackPos = Vecf64<2>((f64)trackCol, (f64)trackRow);
+  scenePos = Vecf64<2>((f64)sceneCol8/256.0, (f64)sceneRow8/256.0);
   invalidPos = false;
 
   if ((serialCount++ % TRACE_COUNT_TRACKS) == 0 && printOutTracks) {
@@ -757,16 +760,16 @@ void setup()
 
 #if 1
                                // Set up actuator calibrationsA
-  actuatorCalibs[0] = ActuatorCalibration(Vec2f64(0, 0), Sigmoid(0.003146, 0.984901, 127.109794, 0.033328));
-  actuatorCalibs[1] = ActuatorCalibration(Vec2f64(0, 0), Sigmoid(0.049058, 0.976153, 182.573890, 0.028746));
-  actuatorCalibs[2] = ActuatorCalibration(Vec2f64(0, 0), Sigmoid(0.011475, 0.971715, 144.373752, 0.042064));
+  actuatorCalibs[0] = ActuatorCalibration(Vecf64<2>(0, 0), Sigmoid(0.003146, 0.984901, 127.109794, 0.033328));
+  actuatorCalibs[1] = ActuatorCalibration(Vecf64<2>(0, 0), Sigmoid(0.049058, 0.976153, 182.573890, 0.028746));
+  actuatorCalibs[2] = ActuatorCalibration(Vecf64<2>(0, 0), Sigmoid(0.011475, 0.971715, 144.373752, 0.042064));
 #else
   actuatorCalibs[0] = ActuatorCalibration(Vec2f64(0,0), Sigmoid(-0.000100, 0.982211, 116.866446, 0.041995));
   actuatorCalibs[1] = ActuatorCalibration(Vec2f64(0,0), Sigmoid(0.047229, 0.946368, 176.593023, 0.036252));
   actuatorCalibs[2] = ActuatorCalibration(Vec2f64(0,0), Sigmoid(0.015325, 0.974421, 134.341202, 0.060189));
 
   f64 qs[N_TURN_ACT]; memset(&qs[0], 0, sizeof(f64) * 3);
-  jc.SetQs(qs);
+  jc->SetQs(qs);
 #endif
 
 #if 0

@@ -7,6 +7,10 @@
 /* Filename: matrix_support.c. */
 /* Description: Support functions for matrix multiplication and vector filling. */
 #include "solver.h"
+#ifdef __AVR_ATmega2560__
+#pragma GCC push_options
+#pragma GCC optimize ("O3")
+#endif
 void multbymA(double *lhs, double *rhs) {
   lhs[0] = -rhs[0]*(params.J[0])-rhs[1]*(params.J[2])-rhs[2]*(params.J[4])-rhs[3]*(-1);
   lhs[1] = -rhs[0]*(params.J[1])-rhs[1]*(params.J[3])-rhs[2]*(params.J[5])-rhs[4]*(-1);
@@ -63,3 +67,6 @@ void fillb(void) {
 }
 void pre_ops(void) {
 }
+#ifdef __AVR_ATmega2560__
+#pragma GCC pop_options
+#endif

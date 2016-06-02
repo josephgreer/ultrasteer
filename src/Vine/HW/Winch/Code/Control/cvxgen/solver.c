@@ -7,6 +7,11 @@
 /* Filename: solver.c. */
 /* Description: Main solver file. */
 #include "solver.h"
+
+#ifdef __AVR_ATmega2560__
+#pragma GCC push_options
+#pragma GCC optimize ("O3")
+#endif
 double eval_gap(void) {
   int i;
   double gap;
@@ -89,6 +94,11 @@ void fillrhs_aff(void) {
   for (i = 0; i < 2; i++)
     r4[i] += work.b[i];
 }
+
+
+#ifdef __AVR_ATmega2560__
+//void fillrhs_cc(void) __attribute__((__optimize__("O2")));
+#endif
 void fillrhs_cc(void) {
   int i;
   double *r2;
@@ -370,3 +380,6 @@ long solve(void) {
   }
   return iter;
 }
+#ifdef __AVR_ATmega2560__
+#pragma GCC pop_options
+#endif

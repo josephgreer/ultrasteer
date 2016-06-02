@@ -129,10 +129,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
+    <ClInclude Include="cvxgen\solver.h" />
     <ClInclude Include="JacobianControl.h" />
     <ClInclude Include="__vm\.Control.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="cvxgen\ldl.c" />
+    <ClCompile Include="cvxgen\matrix_support.c" />
+    <ClCompile Include="cvxgen\solver.c" />
     <ClCompile Include="JacobianControl.cpp" />
     <ClCompile Include="Test.cpp" />
   </ItemGroup>
