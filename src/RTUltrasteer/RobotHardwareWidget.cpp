@@ -17,9 +17,9 @@ namespace Nf
     ADD_ACTION_PARAMETER(m_initInsertion, "Initialize Insertion Motor", CALLBACK_POINTER(onInitInsertion, RobotHardwareWidget), this, true); 
     ADD_ACTION_PARAMETER(m_initArticulation, "Initialize Articulation Motor", CALLBACK_POINTER(onInitArticulation, RobotHardwareWidget), this, true); 
  
-    ADD_INT_PARAMETER(m_rollCom, "Roll Port", NULL, this, 5, 1, 9, 1);   
-    ADD_INT_PARAMETER(m_insertionCom, "Insertion Port", NULL, this, 7, 1, 9, 1);
-    ADD_INT_PARAMETER(m_articulationCom, "Articulation Port", NULL, this, 6, 1, 9, 1);
+    ADD_INT_PARAMETER(m_rollCom, "Roll Port", NULL, this, 7, 1, 9, 1);   
+    ADD_INT_PARAMETER(m_insertionCom, "Insertion Port", NULL, this, 6, 1, 9, 1);
+    ADD_INT_PARAMETER(m_articulationCom, "Articulation Port", NULL, this, 8, 1, 9, 1);
   }
 
   RobotHardwareWidget::~RobotHardwareWidget()
