@@ -364,6 +364,18 @@ public:
     return Vecf64<M>(data);
   }
 
+  void SetCol(s32 idx, const Vecf64<M> &col)
+  {
+    for (s32 ii = 0; ii < M; ii++)
+      m_data[ii][idx] = col.m_data[ii];
+  }
+
+  void SetRow(s32 idx, const Vecf64<N> &row)
+  {
+    for (s32 ii = 0; ii < N; ii++)
+      m_data[idx][ii] = row.m_data[ii];
+  }
+
   Vecf64<N> Row(s32 row) const
   {
     f64 data[N] = { 0 };
@@ -410,15 +422,22 @@ public:
 
   f64 Determinant() const
   {
+    if (M == 1 && N == 1)
+      return m_data[0][0];
     return (1 / 0);
   }
 
   Matrixf64<N, M> Inverse() const
   {
     f64 data[N][M] = { 0 };
-    for (s32 ii = 0; ii < N; ii++) {
-      for (s32 jj = 0; jj < M; jj++) {
-        data[N][M] = 1 / 0;
+    if (M == 1 && N == 1) {
+      data[0][0] = 1 / m_data[0][0];
+    }
+    else {
+      for (s32 ii = 0; ii < N; ii++) {
+        for (s32 jj = 0; jj < M; jj++) {
+          data[N][M] = NAN;
+        }
       }
     }
     return Matrixf64<N, M>(data);
@@ -494,6 +513,18 @@ public:
     data[0][0] = a.x;  data[0][1] = a.y; 
     data[1][0] = b.x;  data[1][1] = b.y;  
     return Matrixf64<2,2>(data);
+  }
+
+  void SetCol(s32 idx, const Vecf64<2> &col)
+  {
+    for (s32 ii = 0; ii < 2; ii++)
+      m_data[ii][idx] = col.m_data[ii];
+  }
+
+  void SetRow(s32 idx, const Vecf64<2> &row)
+  {
+    for (s32 ii = 0; ii < 2; ii++)
+      m_data[idx][ii] = row.m_data[ii];
   }
 
   f64 operator()(s32 r, s32 c) const { return m_data[r][c]; }

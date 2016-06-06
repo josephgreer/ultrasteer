@@ -214,38 +214,38 @@ public:
 };
 
 template < unsigned char N, unsigned char O > 
-static bool steps7Through11(Vecf64 <O> z, Vecf64 <N> &x, IndexSet <N> &U, IndexSet <N> &L, IndexSet <N> &F, const Vecf64 <N> &l, const Vecf64 <N> &u)
+static bool steps7Through11(Vecf64 <O> z, Vecf64 <N> &x, IndexSet <N> &UpperBound, IndexSet <N> &LowerBound, IndexSet <N> &Free, const Vecf64 <N> &l, const Vecf64 <N> &u)
 {
   bool doSteps2Through5 = false;
   f64 alpha = 1e10;
   for (s32 i = 0; i < O; i++) {
-    if (z(i) <= l(F(i)) + EPS)
-      alpha = MIN(alpha, ABS((u(F(i)) - x(F(i))) / (z(i) - x(F(i)))));
-    else if (z(i) >= u(F(i)) - EPS)
-      alpha = MIN(alpha, ABS((l(F(i)) - x(F(i))) / (z(i) - x(F(i)))));
+    if (z(i) <= l(Free(i)) + EPS)
+      alpha = MIN(alpha, ABS((l(Free(i)) - x(Free(i))) / (z(i) - x(Free(i)))));
+    else if (z(i) >= u(Free(i)) - EPS)
+      alpha = MIN(alpha, ABS((u(Free(i)) - x(Free(i))) / (z(i) - x(Free(i)))));
   }
-  if (alpha < 1) {
+  if (alpha <= 1) {
     for (s32 i = 0; i < O; i++)
-      x(F(i)) = x(F(i)) + alpha*(z(i) - x(F(i)));
+      x(Free(i)) = x(Free(i)) + alpha*(z(i) - x(Free(i)));
     doSteps2Through5 = false;
 
 
-    U.Clear();
-    L.Clear();
-    F.Clear();
+    UpperBound.Clear();
+    LowerBound.Clear();
+    Free.Clear();
 
     for (s32 i = 0; i < N; i++) {
       if (x(i) > u(i) - EPS)
-        U.AddElement(i);
+        UpperBound.AddElement(i);
       else if (x(i) < l(i) + EPS)
-        L.AddElement(i);
+        LowerBound.AddElement(i);
       else
-        F.AddElement(i);
+        Free.AddElement(i);
     }
   }
   else {
     for (s32 i = 0; i < O; i++)
-      x(F(i)) = z(F(i));
+      x(Free(i)) = z(i);
     doSteps2Through5 = true;
   }
 
@@ -262,7 +262,7 @@ static Vecf64 < N > BVLS(const Matrixf64<M, N> &A, const Vecf64 <M> &b, const Ve
     CSM_F = 2
   };
 
-  IndexSet<N> U, L, F, B;
+  IndexSet<N> UpperBound, LowerBound, Free, Bound;
   COORDINATE_SET_MEMBER member[N];
 
   IndexSet<N> *removeList;
@@ -285,7 +285,7 @@ static Vecf64 < N > BVLS(const Matrixf64<M, N> &A, const Vecf64 <M> &b, const Ve
     tempList[i] = i;
     member[i] = CSM_L;
   }
-  L = IndexSet<N>(tempList, N);
+  LowerBound = IndexSet<N>(tempList, N);
 
   x = l;
 
@@ -317,29 +317,35 @@ static Vecf64 < N > BVLS(const Matrixf64<M, N> &A, const Vecf64 <M> &b, const Ve
 
       // remove elemnt from list
       if (member[maxIdx] == CSM_U)
-        U.RemoveElement(maxIdx);
+        UpperBound.RemoveElement(maxIdx);
       else
-        L.RemoveElement(maxIdx);
+        LowerBound.RemoveElement(maxIdx);
 
       member[maxIdx] = CSM_F;
-      F.AddElement(maxIdx);
+      Free.AddElement(maxIdx);
     }
 
     // Bounded variable set
-    B = IndexSet<N>::MutuallyExclusiveUnion(L, U);
+    Bound = IndexSet<N>::MutuallyExclusiveUnion(LowerBound, UpperBound);
     bprime = b;
-    for (s32 ii = 0; ii < B.m_nel; ii++)
-      bprime = b - A.Col(B.m_idxs[ii])*x(B.m_idxs[ii]);
+    for (s32 ii = 0; ii < Bound.m_nel; ii++)
+      bprime = bprime - A.Col(Bound.m_idxs[ii])*x(Bound.m_idxs[ii]);
 
-    if (F.m_nel == M - 1) {
+    if (Free.m_nel == M - 1) {
+      for (s32 ii = 0; ii < M - 1; ii++)
+        Aprime1.SetCol(ii, A.Col(Free.m_idxs[ii]));
       z1 = (Aprime1.Transpose()*Aprime1).Inverse()*Aprime1.Transpose()*bprime;
-      doSteps2Through5 = steps7Through11(z1, x, U, L, F, l, u);
+      doSteps2Through5 = steps7Through11(z1, x, UpperBound, LowerBound, Free, l, u);
     }
-    else if (F.m_nel == M) {
+    else if (Free.m_nel == M) {
+      for (s32 ii = 0; ii < M; ii++)
+        Aprime2.SetCol(ii, A.Col(Free.m_idxs[ii]));
       z2 = (Aprime2.Inverse())*bprime;
-      doSteps2Through5 = steps7Through11(z2, x, U, L, F, l, u);
+      doSteps2Through5 = steps7Through11(z2, x, UpperBound, LowerBound, Free, l, u);
     }
-    else {
+    else if (Free.m_nel == 0) {
+      doSteps2Through5 = true;
+    } else {
       assert(0);
     }
   }
