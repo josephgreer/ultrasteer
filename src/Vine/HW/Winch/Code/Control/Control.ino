@@ -70,7 +70,7 @@ bool invalidPos = true;
 s8 input[BUFFER_LEN] = { 0 };
 s32 nBytes = 0;
 
-#define DO_TEST
+//#define DO_TEST
 
 #ifdef DO_TEST
 void runTest();

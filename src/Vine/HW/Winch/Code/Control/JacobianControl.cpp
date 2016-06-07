@@ -1,4 +1,7 @@
 #include "JacobianControl.h"
+#ifdef __AVR_ATmega2560__
+#include "Arduino.h"
+#endif
 #include <assert.h>
 
 void sortArray(f64 *a, u8 *idx, s32 nel)
@@ -252,6 +255,8 @@ static bool steps7Through11(Vecf64 <O> z, Vecf64 <N> &x, IndexSet <N> &UpperBoun
   return doSteps2Through5;
 }
 
+//#define PRINTF_DEBUG
+
 template < unsigned char M, unsigned char N >
 static Vecf64 < N > BVLS(const Matrixf64<M, N> &A, const Vecf64 <M> &b, const Vecf64<N> &l, const Vecf64<N> &u)
 {
@@ -277,8 +282,10 @@ static Vecf64 < N > BVLS(const Matrixf64<M, N> &A, const Vecf64 <M> &b, const Ve
   Matrixf64 < M, M > Aprime2;
   Vecf64 < M - 1 > z1;
   Vecf64 < M > z2;
+  Vecf64 < N > z3;
 
   f64 *ww;
+  Vecf64 <N> w;
 
   s8 tempList[N] = { 0 };
   for (s32 i = 0; i < N; i++) {
@@ -293,8 +300,24 @@ static Vecf64 < N > BVLS(const Matrixf64<M, N> &A, const Vecf64 <M> &b, const Ve
   bool done = false;
 
   while (!done) {
+#ifdef PRINTF_DEBUG
+    Serial.println("x " + String(x(0), 10) + " " + String(x(1), 10) + " " + String(x(2), 10));
+    delay(5);
+#endif
     if (doSteps2Through5) {
-      ww = A.Transpose()*(b - A*x);
+      w = A.Transpose()*(b - A*x);
+      ww = w;
+
+#ifdef PRINTF_DEBUG
+      Serial.println("ww " + String(ww[0],10) + " " + String(ww[1],10) + " " + String(ww[2],10));
+      delay(5);
+      Serial.println("Lower " + String((s32)LowerBound.m_idxs[0]) + " " + String((s32)LowerBound.m_idxs[1]) + " " + String((s32)LowerBound.m_idxs[2]));
+      delay(5);
+      Serial.println("Upper " + String((s32)UpperBound.m_idxs[0]) + " " + String((s32)UpperBound.m_idxs[1]) + " " + String((s32)UpperBound.m_idxs[2]));
+      delay(5);
+      Serial.println("Free " + String((s32)Free.m_idxs[0]) + " " + String((s32)Free.m_idxs[1]) + " " + String((s32)Free.m_idxs[2]));
+      delay(5);
+#endif
 
       maxVal = -1e8;
       maxIdx = -1;
@@ -312,8 +335,18 @@ static Vecf64 < N > BVLS(const Matrixf64<M, N> &A, const Vecf64 <M> &b, const Ve
       }
 
       // stopping criterion
-      if (maxVal < 0)
+
+#ifdef PRINTF_DEBUG
+      Serial.println("maxIdx " + String((s32)maxIdx) + " magnitude w " + String(w.magnitude(),10));
+      delay(5);
+#endif
+      if (maxVal < 0 || w.magnitude() < 0.5) {
+#ifdef PRINTF_DEBUG
+        Serial.println("finished");
+        delay(5);
+#endif
         break;
+      }
 
       // remove elemnt from list
       if (member[maxIdx] == CSM_U)
@@ -331,22 +364,44 @@ static Vecf64 < N > BVLS(const Matrixf64<M, N> &A, const Vecf64 <M> &b, const Ve
     for (s32 ii = 0; ii < Bound.m_nel; ii++)
       bprime = bprime - A.Col(Bound.m_idxs[ii])*x(Bound.m_idxs[ii]);
 
+#ifdef PRINTF_DEBUG
+    Serial.println("ww " + String(ww[0], 10) + " " + String(ww[1], 10) + " " + String(ww[2], 10));
+    delay(5);
+    Serial.println("bound.nel " + String((s32)Bound.m_nel) + " bprime " + String(bprime(0), 10) + " " + String(bprime(1), 10));
+    delay(5);
+    Serial.println("Here I am");
+#endif
+
     if (Free.m_nel == M - 1) {
       for (s32 ii = 0; ii < M - 1; ii++)
         Aprime1.SetCol(ii, A.Col(Free.m_idxs[ii]));
       z1 = (Aprime1.Transpose()*Aprime1).Inverse()*Aprime1.Transpose()*bprime;
+#ifdef PRINTF_DEBUG
+      Serial.println("z1 " + String(z1(0), 10));
+      delay(5);
+#endif
       doSteps2Through5 = steps7Through11(z1, x, UpperBound, LowerBound, Free, l, u);
     }
     else if (Free.m_nel == M) {
       for (s32 ii = 0; ii < M; ii++)
         Aprime2.SetCol(ii, A.Col(Free.m_idxs[ii]));
       z2 = (Aprime2.Inverse())*bprime;
+#ifdef PRINTF_DEBUG
+      Serial.println("z2 " + String(z2(0), 10) + " " + String(z2(1),10));
+      delay(5);
+#endif
       doSteps2Through5 = steps7Through11(z2, x, UpperBound, LowerBound, Free, l, u);
     }
     else if (Free.m_nel == 0) {
       doSteps2Through5 = true;
-    } else {
-      assert(0);
+    }
+    else if (Free.m_nel == N) {
+      Serial.println("All coordinates should not be in the free set.");
+      delay(10000000);
+    } 
+    else {
+      Serial.println("Unexpected situation occurred.");
+      delay(10000000);
     }
   }
   return x;

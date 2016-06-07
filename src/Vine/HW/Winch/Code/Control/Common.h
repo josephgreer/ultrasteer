@@ -422,9 +422,15 @@ public:
 
   f64 Determinant() const
   {
-    if (M == 1 && N == 1)
+    if (M == 1 && N == 1) {
       return m_data[0][0];
-    return (1 / 0);
+    }
+    else if (M == 3 && N == 3) {
+      return m_data[0][0] * (m_data[1][1] * m_data[2][2] - m_data[1][2] * m_data[2][1]) -
+        m_data[0][1] * (m_data[1][0] * m_data[2][2] - m_data[1][2] * m_data[2][0]) +
+        m_data[0][2] * (m_data[1][0] * m_data[2][1] - m_data[1][1] * m_data[2][0]);
+    }
+    return NAN;
   }
 
   Matrixf64<N, M> Inverse() const
@@ -432,6 +438,18 @@ public:
     f64 data[N][M] = { 0 };
     if (M == 1 && N == 1) {
       data[0][0] = 1 / m_data[0][0];
+    }
+    else if (M == 3 && N == 3) {
+      f64 invdet = 1.0 / Determinant();
+      data[0][0] = (m_data[1][1] * m_data[2][2] - m_data[2][1] * m_data[1][2]) * invdet;
+      data[0][1] = (m_data[0][2] * m_data[2][1] - m_data[0][1] * m_data[2][2]) * invdet;
+      data[0][2] = (m_data[0][1] * m_data[1][2] - m_data[0][2] * m_data[1][1]) * invdet;
+      data[1][0] = (m_data[1][2] * m_data[2][0] - m_data[1][0] * m_data[2][2]) * invdet;
+      data[1][1] = (m_data[0][0] * m_data[2][2] - m_data[0][2] * m_data[2][0]) * invdet;
+      data[1][2] = (m_data[1][0] * m_data[0][2] - m_data[0][0] * m_data[1][2]) * invdet;
+      data[2][0] = (m_data[1][0] * m_data[2][1] - m_data[2][0] * m_data[1][1]) * invdet;
+      data[2][1] = (m_data[2][0] * m_data[0][1] - m_data[0][0] * m_data[2][1]) * invdet;
+      data[2][2] = (m_data[0][0] * m_data[1][1] - m_data[1][0] * m_data[0][1]) * invdet;
     }
     else {
       for (s32 ii = 0; ii < N; ii++) {
