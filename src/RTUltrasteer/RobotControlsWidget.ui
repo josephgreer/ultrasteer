@@ -397,7 +397,7 @@
           </size>
          </property>
          <property name="text">
-          <string>-5</string>
+          <string>0</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -422,10 +422,10 @@
           </size>
          </property>
          <property name="minimum">
-          <number>-5</number>
+          <number>0</number>
          </property>
          <property name="maximum">
-          <number>90</number>
+          <number>30</number>
          </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
