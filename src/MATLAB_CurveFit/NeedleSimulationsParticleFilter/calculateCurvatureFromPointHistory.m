@@ -1,6 +1,6 @@
 clear; clc; close all;
 
-path = 'C:\Giada\Data\4_28_16_Curvature in liver\Trial3\PointHistory.mat';
+path = 'C:\Giada\Data\6_9\TipHistory.mat';
 TipHistory = load(path, '-ascii');
 
 [~,idxs] = sort(TipHistory(:,1));
