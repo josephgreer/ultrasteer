@@ -5,6 +5,10 @@
 
 #include "string.h"
 
+#ifdef __AVR_ATmega2560__
+#include "Arduino.h"
+#endif
+
 typedef double f64;
 typedef char s8;
 typedef unsigned char u8;
@@ -42,6 +46,28 @@ public:
 
   f64 &operator()(s32 idx) { return m_data[idx]; }
   f64 operator()(s32 idx) const { return m_data[idx]; }
+
+#ifdef __AVR_ATmega2560__
+  void Print(String name) const
+  {
+    String outputStr = name + "= [";
+    for (s32 idx = 0; idx < N; idx++) {
+      outputStr += String(m_data[idx], 6) + " ";
+    }
+    outputStr += "];";
+    Serial.println(outputStr);
+  }
+
+  operator String() const
+  {
+    String outputStr = "[";
+    for (s32 idx = 0; idx < N; idx++) {
+      outputStr += String(m_data[idx], 6) + " ";
+    }
+    outputStr += "];";
+    return outputStr;
+  }
+#endif
 
   Vecf64<N> operator=(const Vecf64 <N> &rhs)
   {
@@ -225,6 +251,18 @@ public:
   {
     return atan2(this->y, this->x);
   }
+
+#ifdef __AVR_ATmega2560__
+  operator String() const
+  {
+    String outputStr = "[";
+    for (s32 idx = 0; idx < 2; idx++) {
+      outputStr += String(m_data[idx], 6) + " ";
+    }
+    outputStr += "];";
+    return outputStr;
+  }
+#endif
 };
 
 template < unsigned char M, unsigned char N >
@@ -256,6 +294,16 @@ public:
       data[ii][ii] = vec[ii];
     }
     return Matrixf64<M,N>(data);
+  }
+
+  static Matrixf64<M, N> Identity()
+  {
+    f64 data[M][N];
+    memset(data, 0, sizeof(f64) * M * N);
+    for (s32 ii = 0; ii < MIN(M, N); ii++) {
+      data[ii][ii] = 1;
+    }
+    return Matrixf64<M, N>(data);
   }
 
   static Matrixf64<M, N> FromCols(Vecf64<M> *cols)
@@ -293,7 +341,7 @@ public:
     f64 res[M][N];
     for (s32 ii = 0; ii < M; ii++) {
       for (s32 jj = 0; jj < N; jj++) {
-        res[M][N] = this->m_data[ii][jj] + b.m_data[ii][jj];
+        res[ii][jj] = this->m_data[ii][jj] + b.m_data[ii][jj];
       }
     }
 
@@ -316,7 +364,7 @@ public:
     f64 res[M][N];
     for (s32 ii = 0; ii < M; ii++) {
       for (s32 jj = 0; jj < N; jj++) {
-        res[M][N] = this->m_data[ii][jj] - b.m_data[ii][jj];
+        res[ii][jj] = this->m_data[ii][jj] - b.m_data[ii][jj];
       }
     }
 
@@ -348,11 +396,31 @@ public:
     return Matrixf64<M, O>(data);
   }
 
-#ifdef __AVR_ATmega2560_
-  void Print() const
+#ifdef __AVR_ATmega2560__
+  void Print(String name) const
   {
-    Serial.println("[" + String(m_data[0][0]) + " " + String(m_data[0][1]) + ";\n" +
-      String(m_data[1][0]) + " " + String(m_data[1][1]) + "]");
+    String outputStr = name + "= [";
+    for (s32 rr = 0; rr < M; rr++) {
+      for (s32 cc = 0; cc < N; cc++) {
+        outputStr += String(m_data[rr][cc], 6) + " ";
+      }
+      outputStr += ";\n";
+    }
+    outputStr += "];";
+    Serial.println(outputStr);
+  }
+
+  operator String() const
+  {
+    String outputStr = "[\n";
+    for (s32 rr = 0; rr < M; rr++) {
+      for (s32 cc = 0; cc < N; cc++) {
+        outputStr += String(m_data[rr][cc], 6) + " ";
+      }
+      outputStr += ";\n";
+    }
+    outputStr += "];";
+    return outputStr;
   }
 #endif
 
@@ -595,7 +663,7 @@ public:
     return Matrixf64<2,2>(res);
   }
 
-#ifdef __AVR_ATmega2560_
+#ifdef __AVR_ATmega2560__
   void Print() const
   {
     Serial.println("[" + String(m_data[0][0]) + " " + String(m_data[0][1]) + ";\n" +
