@@ -31,10 +31,10 @@ JacobianControl::JacobianControl()
 {
 }
 
-Vecf64<N_TURN_ACT> JacobianControl::Update(Vecf64<2> dx, const Matrixf64<2, N_TURN_ACT>&J)
+void JacobianControl::Update(Vecf64<N_TURN_ACT> &qs, Vecf64<N_TURN_ACT> &dqs, Vecf64<2> dx, const Matrixf64<2, N_TURN_ACT>&J)
 {
   m_J = J;
-  return Update(dx);
+  Update(qs, dqs, dx);
 }
 ///////////////////////////////////////////////////////
 /// END JACOBIANCONTROL
@@ -48,7 +48,7 @@ JacobianHeuristicControl::JacobianHeuristicControl()
 {
 }
 
-Vecf64<N_TURN_ACT> JacobianHeuristicControl::Update(Vecf64<2> dx)
+void JacobianHeuristicControl::Update(Vecf64<N_TURN_ACT> &qs, Vecf64<N_TURN_ACT> &dqs, Vecf64<2> dx)
 {
   u8 inflateActuators[N_TURN_ACT]; u8 deflateActuators[N_TURN_ACT];
   u8 currAct0, currAct1;
@@ -63,6 +63,9 @@ Vecf64<N_TURN_ACT> JacobianHeuristicControl::Update(Vecf64<2> dx)
 
   Vecf64<2> dx_actual, dx_desired, dx_curr, dq;
   dx_desired = dx;
+
+  for (s32 i = 0; i < N_TURN_ACT; i++)
+    dqs(i) = 0;
 
   while (dx.magnitude() > 1e-6) {
     f64 theta = fmod(dx.angle() + 2 * PI, 2 * PI);
@@ -118,9 +121,11 @@ Vecf64<N_TURN_ACT> JacobianHeuristicControl::Update(Vecf64<2> dx)
     
     m_q(currAct0) += dq.x;
     m_q(currAct1) += dq.y;
+    dqs(currAct0) += dq.x;
+    dqs(currAct1) += dq.y;
   }
 
-  return m_q;
+  qs = m_q;
 }
 ///////////////////////////////////////////////////////
 /// END JACOBIANHEURISTICCONTROL
@@ -396,12 +401,16 @@ static Vecf64 < N > BVLS(const Matrixf64<M, N> &A, const Vecf64 <M> &b, const Ve
       doSteps2Through5 = true;
     }
     else if (Free.m_nel == N) {
+#ifdef __AVR_ATmega2560__
       Serial.println("All coordinates should not be in the free set.");
       delay(10000000);
+#endif
     } 
     else {
+#ifdef __AVR_ATmega2560__
       Serial.println("Unexpected situation occurred.");
       delay(10000000);
+#endif
     }
   }
   return x;
@@ -413,13 +422,145 @@ JacobianBoxConstraintControl::JacobianBoxConstraintControl()
 }
 
 
-Vecf64<N_TURN_ACT> JacobianBoxConstraintControl::Update(Vecf64<2> dx)
+void JacobianBoxConstraintControl::Update(Vecf64<N_TURN_ACT> &qs, Vecf64<N_TURN_ACT> &dqs, Vecf64<2> dx)
 {
   Vecf64 <N_TURN_ACT> dq = BVLS<2, N_TURN_ACT>(m_J, dx, m_q*(-1.0), m_q*(-1.0) + 1.0);
   m_q = m_q + dq;
-  return m_q;
+  qs = m_q;
+  dqs = dq;
 }
 
 ///////////////////////////////////////////////////////
 /// END JACOBIANBOXCONSTRAINTCONTROL
+///////////////////////////////////////////////////////
+
+Matrixf64<2, N_TURN_ACT> formJacobian(Vecf64<N_TURN_ACT + 1> x, Vecf64<N_TURN_ACT> &deltaThetas)
+{
+  Matrixf64<2, N_TURN_ACT> J;
+  for (s32 i = 0; i < N_TURN_ACT; i++) {
+    J(0, i) = x(i)*cos(x(N_TURN_ACT) + deltaThetas(i));
+    J(1, i) = x(i)*sin(x(N_TURN_ACT) + deltaThetas(i));
+  }
+  return J;
+}
+
+///////////////////////////////////////////////////////
+/// BEGIN EKFJacobianEstimator
+///////////////////////////////////////////////////////
+#define STRENGTH_VAR 400
+#define THETA_VAR 0.01
+#define MEASUREMENT_VAR 400
+#define INIT_VAR 0.01
+
+EKFJacobianEstimator::EKFJacobianEstimator()
+{
+  for (s32 i = 0; i < N_TURN_ACT; i++)
+    m_dqLast(i) = -100;
+}
+
+EKFJacobianEstimator::EKFJacobianEstimator(const Matrixf64<N_TURN_ACT+1, N_TURN_ACT+1> &E, const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths)
+{
+  Initialize(E, thetas, strengths);
+}
+
+EKFJacobianEstimator::EKFJacobianEstimator(const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &R, const Matrixf64<2, 2> &Q, const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &E, const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths)
+{
+  Initialize(R, Q, E, thetas, strengths);
+}
+
+void EKFJacobianEstimator::Initialize(const Matrixf64<2, N_TURN_ACT> &J)
+{
+  Vecf64<N_TURN_ACT> thetas;
+  Vecf64<N_TURN_ACT> strengths;
+  Vecf64<2> col;
+  for (s32 i = 0; i < N_TURN_ACT; i++) {
+    col = J.Col(i);
+    thetas(i) = col.angle();
+    strengths(i) = col.magnitude();
+  }
+  Initialize(thetas, strengths);
+}
+
+void EKFJacobianEstimator::Initialize(const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths)
+{
+  f64 E[4] = { INIT_VAR,INIT_VAR,INIT_VAR,INIT_VAR };
+  Initialize(Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1>::Diagonal(E), thetas, strengths);
+}
+
+void EKFJacobianEstimator::Initialize(const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &E, const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths)
+{
+  f64 R[N_TURN_ACT + 1] = { 0 };
+  for (s32 i = 0; i < N_TURN_ACT; i++)
+    R[i] = STRENGTH_VAR;
+  R[N_TURN_ACT] = THETA_VAR;
+
+  f64 Q[2] = { MEASUREMENT_VAR,MEASUREMENT_VAR };
+  Initialize(Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1>::Diagonal(R), Matrixf64<2, 2>::Diagonal(Q), E, thetas, strengths);
+}
+
+void EKFJacobianEstimator::Initialize(const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &R, const Matrixf64<2, 2> &Q, const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &E, const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths)
+{
+  m_R = R;
+  m_Q = Q;
+  m_E = E;
+  for (s32 i = 0; i < N_TURN_ACT; i++)
+    m_x(i) = strengths(i);
+  m_x(N_TURN_ACT) = thetas(0);
+
+  for (s32 i = 0; i < N_TURN_ACT; i++)
+    m_deltaTheta(i) = thetas(i) - m_x(N_TURN_ACT);
+
+  for (s32 i = 0; i < N_TURN_ACT; i++)
+    m_dqLast(i) = -100;
+}
+
+Matrixf64<2, N_TURN_ACT> EKFJacobianEstimator::Update(const Vecf64<2> &z)
+{
+  if (m_dqLast(0) > -10)
+    return Update(z, m_dqLast);
+
+  return formJacobian(m_x, m_deltaTheta);
+}
+
+Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> &z) 
+{
+  if (m_dqLast(0) > -10)
+    return UpdateState(z, m_dqLast); 
+
+  return m_x;
+}
+
+Matrixf64<2, N_TURN_ACT> EKFJacobianEstimator::Update(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq)
+{
+  UpdateState(z, dq);
+  return formJacobian(m_x, m_deltaTheta);
+}
+
+Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq)
+{
+  Vecf64<N_TURN_ACT + 1> xtbar = m_x;
+  Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> Etbar;
+  Etbar = m_E + m_R;
+
+  Matrixf64<2, N_TURN_ACT + 1> Ht;
+  f64 cang, sang;
+  for (s32 i = 0; i < N_TURN_ACT; i++) {
+    cang = cos(xtbar(N_TURN_ACT) + m_deltaTheta(i));
+    sang = sin(xtbar(N_TURN_ACT) + m_deltaTheta(i));
+
+    Ht(0, i) = cang*dq(i);
+    Ht(1, i) = sang*dq(i);
+    Ht(0, N_TURN_ACT) += -sang*xtbar(i)*dq(i);
+    Ht(1, N_TURN_ACT) += cang*xtbar(i)*dq(i);
+  }
+
+  Vecf64<2> hxtbar = formJacobian(xtbar, m_deltaTheta)*dq;
+  Matrixf64<N_TURN_ACT + 1, 2> Kt = Etbar*Ht.Transpose()*((Ht*Etbar*Ht.Transpose() + m_Q).Inverse());
+  m_x = xtbar + Kt*(z - hxtbar);
+  m_x(N_TURN_ACT) = fmod(m_x(N_TURN_ACT), 2 * PI);
+  m_E = (Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1>::Identity() - Kt*Ht)*Etbar;
+  return m_x;
+}
+///////////////////////////////////////////////////////
+/// END EKFJacobianEstimator
 ///////////////////////////////////////////////////////

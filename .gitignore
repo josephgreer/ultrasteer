@@ -22,3 +22,4 @@ src/Vine/**/cvxgen_test/*
 !src/Vine**/cvxgen_test/cvxgen_test.vcxproj
 !src/Vine**/cvxgen_test/cvxgen_test.sln
 *.mexmaci64
+*.filters
