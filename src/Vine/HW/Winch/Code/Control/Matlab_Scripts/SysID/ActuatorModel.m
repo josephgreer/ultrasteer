@@ -231,7 +231,7 @@ R0 = 2e-2;                      % m
 L0 = 4e-2;                      % m
 P = 5*6894.76;                  % Pascals
 
-f = @(x,e)([(2*ellipticE(x(1),x(2))-ellipticF(x(1),x(2)))/(sqrt(x(2))*cos(x(1)))-L0/R0*(1-e);...
+f = @(x,e)([ellipticE(x(1),x(2))/(sqrt(x(2))*cos(x(1)))-L0/R0*(1-(e/2));...
             ellipticF(x(1),x(2))/(sqrt(x(2))*cos(x(1)))-L0/R0]);
         
 
@@ -263,10 +263,10 @@ for i=1:length(contractions)
     Vs(i) = pi*R0^2*L0/(6*m*cos(phir)^2)*(1-(1-2*m)*(1-e)+2*R0/L0*sqrt(1-(1-2*m*sin(phir)^2)^2));
     phirs(i) = phir;
     ms(i) = m;
-    tractions(i) = pi*P*R0^2*(1-2*m)/(2*m*cos(phir)^2);
+    tractions(i) = ContractionToForce(e,L0,R0,P); %pi*P*R0^2*(1-2*m)/(2*m*cos(phir)^2);
     
     phis = linspace(0,phir,nPlotPoints);
-    xs = R0/(sqrt(m)*cos(phir))*(ellipticE(phis,ones(size(phis)))-1/2*ellipticF(phis,ones(size(phis))));
+    xs = R0/(sqrt(m)*cos(phir))*(ellipticE(phis,m*ones(size(phis)))-1/2*ellipticF(phis,m*ones(size(phis))));
     rs = R0/cos(phir)*cos(phis);
     
     deltaxs = xs(2:end)-xs(1:end-1);
