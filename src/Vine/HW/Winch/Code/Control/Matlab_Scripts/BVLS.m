@@ -40,6 +40,9 @@ while(~done)
     
     % line 6
     B = union(L,U);
+    if(length(B) == 0)
+        assert(0);
+    end
     bprime = b-A(:,B)*x(B);
     Aprime = A(:,F);
     z = size(A,2);

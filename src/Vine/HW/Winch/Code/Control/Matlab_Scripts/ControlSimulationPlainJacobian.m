@@ -16,23 +16,17 @@ measurementSigma = strengthMean*0.05;                                        % m
 thetaSigma = 1e-1;                        
 eps = 1e-6;
 doPause = false;
-doControlOutput = false;
 
 % initialize robot
 xact = [strengthMean*ones(nActuators,1); theta0];
 pos = [0; 0];
 q = ones(nActuators, 1);
 deltaStrength = strengthMean;
-R = diag([strengthSigma^2*ones(nActuators,1); thetaSigma^2]);
+R = diag([strengthSigma^2*ones(2*nActuators)]);
 Q = eye(2)*measurementSigma^2;
 Sigma = 1e-1*eye(nActuators+1);                                                                % initial sigma
-xest = xact;%[50; 300; 200; 0.5];
-;
-display(sprintf('f64 strengths[3] = {%f, %f, %f};', xact(1), xact(2), xact(3)));
-display(sprintf('f64 thetas[3] = {%f, %f, %f};', xact(4)+deltaThetas(1), xact(4)+deltaThetas(2), xact(4)+deltaThetas(3)));
-display(sprintf('f64 E0[4] = {%f, %f, %f, %f};', Sigma(1,1), Sigma(2,2), Sigma(3,3), Sigma(4,4)));
-display(sprintf('f64 Q[2] = {%f, %f};', Q(1,1), Q(2,2)));
-display(sprintf('f64 R[4] = {%f, %f, %f, %f};', R(1,1),R(2,2),R(3,3),R(4,4)));
+xest = FormJacobian(xact,deltaThetas,nActuators);%[50; 300; 200; 0.5];a
+xest = xest.'; xest = xest(:);
 
 
 % initialize display
@@ -54,8 +48,8 @@ if(loadQs)
     qload = qload.qsave;
 end
 
-xests = zeros(4,nPoints);
-xacts = zeros(4,nPoints);
+xests = zeros(2*nActuators,nPoints);
+xacts = zeros(2*nActuators,nPoints);
 dqs = zeros(nActuators,nPoints);
 
 % for each time-step...
@@ -79,7 +73,7 @@ for i=1:nPoints
     end
     
     % Form estimated and actual jacobian
-    [Jest,~] = FormJacobian(xest,deltaThetas,nActuators);
+    Jest = reshape(xest,nActuators,2).';
     [J,~] = FormJacobian(xact,deltaThetas,nActuators);
     
     % find the dq to best achieve delta_x_desired
@@ -95,6 +89,9 @@ for i=1:nPoints
     % update the robot
     pos = pos+delta_x_actual;
     
+    %display the resultsd
+    display(sprintf('{%f, %f, %f, %f, %f, %.8f},', delta_x_desired(1), delta_x_desired(2),...
+        q(1), q(2), q(3), norm(delta_x_desired-delta_x_actual)));
     %pause(1);
     if(saveQs)
         qsave = [qsave q];
@@ -105,15 +102,6 @@ for i=1:nPoints
     
     % estimate jacobian
     [xest, Sigma] = JacobianExtendedKalmanFilter(delta_x_measured, xest, dq, Sigma, R, Q, nActuators, deltaThetas);
-    
-    %display the results
-    if(doControlOutput)
-        display(sprintf('{%f, %f, %f, %f, %f, %.8f},', delta_x_desired(1), delta_x_desired(2),...
-            q(1), q(2), q(3), norm(delta_x_desired-delta_x_actual)));
-    else
-        display(sprintf('{%f, %f, %f, %f, %f, %f, %f, %f, %f},', xest(1), xest(2),...
-            xest(3), xest(4), delta_x_measured(1), delta_x_measured(2), dq(1), dq(2), dq(3)));
-    end
     
     xacts(:,i) = xact;
     xests(:,i) = xest;
