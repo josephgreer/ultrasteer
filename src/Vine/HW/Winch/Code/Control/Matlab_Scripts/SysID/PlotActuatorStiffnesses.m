@@ -2,7 +2,7 @@ clear; clc; close all;
 
 figure; hold on;
 
-tube = 1;
+tube = 3;
 
 ks = [];
 
@@ -20,6 +20,8 @@ for i=1:length(files)
     data = load(fname);
     
     data(:,2) = data(:,2)-data(1,2);
+    data(:,2) = 4.4452016*data(:,2);
+    data(:,3) = 4.4452016*data(:,3);
     hold on;
     plot(data(:,1), data(:,2))
     ax = gca;
@@ -28,10 +30,10 @@ for i=1:length(files)
     
     pressures = [pressures pressure];
     
-    A = data(:,1);
+    A = [data(:,1) ones(size(data,1),1)];
     b = data(:,2);
     k = A\b
-    ks = [ks; k];
+    ks = [ks; k(1)];
     
 %     degreeFit = 1;
 %     A = vander(amnts);

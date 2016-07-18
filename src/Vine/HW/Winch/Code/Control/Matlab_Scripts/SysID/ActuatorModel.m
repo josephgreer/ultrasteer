@@ -1,226 +1,226 @@
+clear; clc; close all;
+
+L0 = pi;
+thetas = linspace(1e-6, pi/2, 100);
+
+h = @(x,y,r)(r*(sin(x)-sin(y)));
+xx = @(x,y,r)(r*cos(x));
+dx = @(x,y,r)(r*sin(x));
+dh = @(x,y,r)(r*cos(x));
+
+volIntegrand = @(x,y,r)(pi*h(x,y,r).^2.*dx(x,y,r));
+surfaceIntegrand = @(x,y,r)(2*pi*h(x,y,r).*sqrt(dx(x,y,r).^2+dh(x,y,r).^2));
+
+vols = zeros(size(thetas));
+surfaces = zeros(size(thetas));
+lengths = zeros(size(thetas));
+for i=1:length(thetas)
+    r = L0/(2*thetas(i));
+    y = pi/2-thetas(i);
+    a = y;
+    b = y+2*thetas(i);
+    vols(i) = integral(@(x)volIntegrand(x,y,r),a,b);
+    surfaces(i) = integral(@(x)surfaceIntegrand(x,y,r),a,b);
+    lengths(i) = 2*r*sin(thetas(i));
+end
+figure;
+plot(thetas, vols);
+xlabel('theta');
+ylabel('volume');
+figure;
+plot(thetas, surfaces);
+xlabel('theta');
+ylabel('surface');
+
+
+dthetas = diff(thetas);
+dvols = diff(vols)./dthetas;
+dlengths = diff(lengths)./dthetas;
+
+figure;
+plot(thetas(2:end),-dvols./dlengths,'r');
+xlabel('theta');
+ylabel('force');
+
+%%
+
+L0 = pi;
+thetas = linspace(1e-6, pi, 100);
+
+h = @(x,y,r)(r*(sin(x)-(sin(y))));
+xx = @(x,y,r)(r*cos(x));
+dx = @(x,y,r)(r*sin(x));
+dh = @(x,y,r)(r*cos(x));
+
+areaIntegrand = @(x,y,r)(h(x,y,r).*dx(x,y,r));
+
+areas = zeros(size(thetas));
+lengths = zeros(size(thetas));
+for i=1:length(thetas)
+    r = L0/(2*thetas(i));
+    y = pi/2-thetas(i);
+    a = y;
+    b = y+2*thetas(i);
+    areas(i) = integral(@(x)areaIntegrand(x,y,r),a,b);
+    lengths(i) = 2*r*sin(thetas(i));
+end
+figure;
+plot(thetas, areas,'r');
+xlabel('theta');
+ylabel('volume');
+
+
+dthetas = diff(thetas);
+dareas = diff(areas)./dthetas;
+dlengths = diff(lengths)./dthetas;
+
+figure;
+plot(thetas(2:end),dareas./dlengths,'r');
+xlabel('theta');
+ylabel('force');
+
+%% 
+%%%%%% Pouch motors
 % clear; clc; close all;
-% 
-% L0 = pi;
-% thetas = linspace(1e-6, pi/2, 100);
-% 
-% h = @(x,y,r)(r*(sin(x)-sin(y)));
-% xx = @(x,y,r)(r*cos(x));
-% dx = @(x,y,r)(r*sin(x));
-% dh = @(x,y,r)(r*cos(x));
-% 
-% volIntegrand = @(x,y,r)(pi*h(x,y,r).^2.*dx(x,y,r));
-% surfaceIntegrand = @(x,y,r)(2*pi*h(x,y,r).*sqrt(dx(x,y,r).^2+dh(x,y,r).^2));
-% 
-% vols = zeros(size(thetas));
-% surfaces = zeros(size(thetas));
-% lengths = zeros(size(thetas));
-% for i=1:length(thetas)
-%     r = L0/(2*thetas(i));
-%     y = pi/2-thetas(i);
-%     a = y;
-%     b = y+2*thetas(i);
-%     vols(i) = integral(@(x)volIntegrand(x,y,r),a,b);
-%     surfaces(i) = integral(@(x)surfaceIntegrand(x,y,r),a,b);
-%     lengths(i) = 2*r*sin(thetas(i));
-% end
-% figure;
-% plot(thetas, vols);
-% xlabel('theta');
-% ylabel('volume');
-% figure;
-% plot(thetas, surfaces);
-% xlabel('theta');
-% ylabel('surface');
-% 
-% 
-% dthetas = diff(thetas);
-% dvols = diff(vols)./dthetas;
-% dlengths = diff(lengths)./dthetas;
-% 
-% figure;
-% plot(thetas(2:end),-dvols./dlengths,'r');
-% xlabel('theta');
-% ylabel('force');
-% 
-% %%
-% 
-% L0 = pi;
-% thetas = linspace(1e-6, pi, 100);
-% 
-% h = @(x,y,r)(r*(sin(x)-(sin(y))));
-% xx = @(x,y,r)(r*cos(x));
-% dx = @(x,y,r)(r*sin(x));
-% dh = @(x,y,r)(r*cos(x));
-% 
-% areaIntegrand = @(x,y,r)(h(x,y,r).*dx(x,y,r));
-% 
-% areas = zeros(size(thetas));
-% lengths = zeros(size(thetas));
-% for i=1:length(thetas)
-%     r = L0/(2*thetas(i));
-%     y = pi/2-thetas(i);
-%     a = y;
-%     b = y+2*thetas(i);
-%     areas(i) = integral(@(x)areaIntegrand(x,y,r),a,b);
-%     lengths(i) = 2*r*sin(thetas(i));
-% end
-% figure;
-% plot(thetas, areas,'r');
-% xlabel('theta');
-% ylabel('volume');
-% 
-% 
-% dthetas = diff(thetas);
-% dareas = diff(areas)./dthetas;
-% dlengths = diff(lengths)./dthetas;
-% 
-% figure;
-% plot(thetas(2:end),dareas./dlengths,'r');
-% xlabel('theta');
-% ylabel('force');
-% 
-% %% 
-% %%%%%% Pouch motors
-% % clear; clc; close all;
-% L0 = pi;
-% thetas = linspace(1e-2,pi,100);
-% D = 1;
-% 
-% syms t real;
-% 
-% V = D.*L0^2./(2*t.^2).*(t-sin(t).*cos(t));
-% L = L0*sin(t)./t;
-% 
-% dV = diff(V,t);
-% dL = diff(L,t);
-% 
-% forces = zeros(size(thetas));
-% for i=1:length(thetas)
-%     dVi = double(subs(dV,t,thetas(i)));
-%     dLi = double(subs(dL,t,thetas(i)));
-%     forces(i) = dVi/dLi;
-% end
-% 
-% figure;
-% plot(thetas,forces);
-% figure;
-% plot(thetas,double(subs(V,t,thetas)));
-% 
-% %%
-% clear; clc; close all;
-% opts = optimset('Diagnostics','off', 'Display','off');
-% 
-% r0 = 2;
-% S0 = 4*pi*r0^2; 
-% 
-% ecc = @(a,c)(sqrt(1-(a.^2./c.^2)));
-% surface = @(a,c)(2*pi*a.^2.*(1+(c./(a.*ecc(a,c))).*asin(ecc(a,c))));
-% f = @(a,c)(surface(a,c)-S0);
-% minorAxisFromMajorAxis = @(c)(fsolve(@(x)(f(x,c)), 0.5*c,opts));
-% strains = @(x)((x-2*r0)/(2*r0));
-% 
-% lens = linspace(2*r0,10*r0,100);
-% vols = zeros(size(lens));
-% 
-% for i=1:length(lens)
-%     c = lens(i)/2;
-%     a = minorAxisFromMajorAxis(c);
-%     ss = surface(a,c);
-%     vols(i) = 4*pi/3*a^2*c;
-% end
-% 
-% plot(strains(lens),vols);
-% xlabel('strain');
-% ylabel('volume');
-% figure;
-% plot(strains(lens(2:end)),diff(vols)./diff(lens));
-% xlabel('strain');
-% ylabel('force');
-% 
-% figure;
-% 
-% n = 30;
-% hSurf = surf(zeros(n+1),zeros(n+1),zeros(n+1));
-% hSurf.LineStyle = 'None';
-% daspect([1 1 1]);
-% % view(2);
-% xlim([-5*r0 5*r0]);
-% ylim([-3*r0 3*r0]);
-% zlim([-3*r0 3*r0]);
-% for i=1:length(lens)
-%     c = lens(i)/2;
-%     a = minorAxisFromMajorAxis(c);
-%     [X,Y,Z] = ellipsoid(0,0,0,c,a,a,n);
-%     set(hSurf,'XData',X,'YData',Y,'ZData',Z);
-%     pause(1/10);
-% end
-% 
-% %%
-% %%%%%%%%% Curve Check
-% close all;
-% 
-% L0 = pi;
-% thetas = linspace(1e-3,pi/2,5);
-% 
-% npoints = 100;
-% hPlot = plot(zeros(npoints,1),zeros(npoints,1));
-% xlim([-4 4]);
-% ylim([-2.1 2.1]);
-% daspect([1 1 1]);
-% hold on;
-% grid on;
-% 
-% for i=1:length(thetas)
-%     r = L0/thetas(i);
-%     a = pi/2-thetas(i);
-%     ts = linspace(a,a+2*thetas(i),npoints);
-%     hs = h(ts,a,r);
-%     xs = xx(ts,a,r);
-%     ax = gca;
-%     plot(xs,hs);
-%     ax.ColorOrderIndex = ax.ColorOrderIndex-1;
-%     plot(xs,-hs);
-% %     set(hPlot,'XData',xs);
-% %     set(hPlot,'YData',hs);
-% end
-% 
-% %%
-% %%%%%% Constant curvature surfaces
-% clear; clc; close all;
-% 
-% a = 1;
-% b = 0.5;
-% npoints = 100;
-% if(b < a)
-%     vs = linspace(-2*pi,2*pi,npoints);
-% elseif(b == a)
-%     vs = linspace(-pi*a/2,pi*a/2,npoints);
-% else
-%     vs = linspace(-a*asin(a/b),a*asin(a/b),npoints);
-% end
-% 
-% profileIntegrand = @(x)(sqrt(a.^2-b.^2.*sin(x).^2));
-% 
-% phis = b.*cos(vs./a);
-% psis = zeros(size(phis));
-% for i=1:length(phis)
-%     psis(i) = integral(profileIntegrand,0,vs(i)/a);
-% end
-% 
-% minx = -max(abs(psis));
-% miny = min(phis);
-% 
-% psis = [minx psis -minx];
-% phis = [0 phis 0];
-% 
-% plot(psis, phis);
-% 
-% daspect([1 1 1]);
-% 
-% deltapsi = psis(1:end-1)-psis(2:end);
-% deltaphi = phis(1:end-1)-phis(2:end);
-% 
-% sum(sqrt(deltaphi.^2+deltapsi.^2))
+L0 = pi;
+thetas = linspace(1e-2,pi,100);
+D = 1;
+
+syms t real;
+
+V = D.*L0^2./(2*t.^2).*(t-sin(t).*cos(t));
+L = L0*sin(t)./t;
+
+dV = diff(V,t);
+dL = diff(L,t);
+
+forces = zeros(size(thetas));
+for i=1:length(thetas)
+    dVi = double(subs(dV,t,thetas(i)));
+    dLi = double(subs(dL,t,thetas(i)));
+    forces(i) = dVi/dLi;
+end
+
+figure;
+plot(thetas,forces);
+figure;
+plot(thetas,double(subs(V,t,thetas)));
+
+%%
+clear; clc; close all;
+opts = optimset('Diagnostics','off', 'Display','off');
+
+r0 = 2;
+S0 = 4*pi*r0^2; 
+
+ecc = @(a,c)(sqrt(1-(a.^2./c.^2)));
+surface = @(a,c)(2*pi*a.^2.*(1+(c./(a.*ecc(a,c))).*asin(ecc(a,c))));
+f = @(a,c)(surface(a,c)-S0);
+minorAxisFromMajorAxis = @(c)(fsolve(@(x)(f(x,c)), 0.5*c,opts));
+strains = @(x)((x-2*r0)/(2*r0));
+
+lens = linspace(2*r0,10*r0,100);
+vols = zeros(size(lens));
+
+for i=1:length(lens)
+    c = lens(i)/2;
+    a = minorAxisFromMajorAxis(c);
+    ss = surface(a,c);
+    vols(i) = 4*pi/3*a^2*c;
+end
+
+plot(strains(lens),vols);
+xlabel('strain');
+ylabel('volume');
+figure;
+plot(strains(lens(2:end)),diff(vols)./diff(lens));
+xlabel('strain');
+ylabel('force');
+
+figure;
+
+n = 30;
+hSurf = surf(zeros(n+1),zeros(n+1),zeros(n+1));
+hSurf.LineStyle = 'None';
+daspect([1 1 1]);
+% view(2);
+xlim([-5*r0 5*r0]);
+ylim([-3*r0 3*r0]);
+zlim([-3*r0 3*r0]);
+for i=1:length(lens)
+    c = lens(i)/2;
+    a = minorAxisFromMajorAxis(c);
+    [X,Y,Z] = ellipsoid(0,0,0,c,a,a,n);
+    set(hSurf,'XData',X,'YData',Y,'ZData',Z);
+    pause(1/10);
+end
+
+%%
+%%%%%%%%% Curve Check
+close all;
+
+L0 = pi;
+thetas = linspace(1e-3,pi/2,5);
+
+npoints = 100;
+hPlot = plot(zeros(npoints,1),zeros(npoints,1));
+xlim([-4 4]);
+ylim([-2.1 2.1]);
+daspect([1 1 1]);
+hold on;
+grid on;
+
+for i=1:length(thetas)
+    r = L0/thetas(i);
+    a = pi/2-thetas(i);
+    ts = linspace(a,a+2*thetas(i),npoints);
+    hs = h(ts,a,r);
+    xs = xx(ts,a,r);
+    ax = gca;
+    plot(xs,hs);
+    ax.ColorOrderIndex = ax.ColorOrderIndex-1;
+    plot(xs,-hs);
+%     set(hPlot,'XData',xs);
+%     set(hPlot,'YData',hs);
+end
+
+%%
+%%%%%% Constant curvature surfaces
+clear; clc; close all;
+
+a = 1;
+b = 0.5;
+npoints = 100;
+if(b < a)
+    vs = linspace(-2*pi,2*pi,npoints);
+elseif(b == a)
+    vs = linspace(-pi*a/2,pi*a/2,npoints);
+else
+    vs = linspace(-a*asin(a/b),a*asin(a/b),npoints);
+end
+
+profileIntegrand = @(x)(sqrt(a.^2-b.^2.*sin(x).^2));
+
+phis = b.*cos(vs./a);
+psis = zeros(size(phis));
+for i=1:length(phis)
+    psis(i) = integral(profileIntegrand,0,vs(i)/a);
+end
+
+minx = -max(abs(psis));
+miny = min(phis);
+
+psis = [minx psis -minx];
+phis = [0 phis 0];
+
+plot(psis, phis);
+
+daspect([1 1 1]);
+
+deltapsi = psis(1:end-1)-psis(2:end);
+deltaphi = phis(1:end-1)-phis(2:end);
+
+sum(sqrt(deltaphi.^2+deltapsi.^2))
 
 %%
 %%%%%%%%% Dearden Method
@@ -263,7 +263,7 @@ for i=1:length(contractions)
     Vs(i) = pi*R0^2*L0/(6*m*cos(phir)^2)*(1-(1-2*m)*(1-e)+2*R0/L0*sqrt(1-(1-2*m*sin(phir)^2)^2));
     phirs(i) = phir;
     ms(i) = m;
-    tractions(i) = ContractionToForce(e,L0,R0,P); %pi*P*R0^2*(1-2*m)/(2*m*cos(phir)^2);
+    tractions(i) = ContractionToForce(e,L0,R0,P,'pleated'); %pi*P*R0^2*(1-2*m)/(2*m*cos(phir)^2);
     
     phis = linspace(0,phir,nPlotPoints);
     xs = R0/(sqrt(m)*cos(phir))*(ellipticE(phis,m*ones(size(phis)))-1/2*ellipticF(phis,m*ones(size(phis))));
@@ -296,3 +296,45 @@ figure;
 plot(contractions,lengths);
 xlabel('contraction'); ylabel('length');
 
+%%
+clear; clc; close all;
+
+R0 = 7.5/2*1e-3;
+l0 = 40*1e-3;
+D0 = 2*l0/pi;
+npoints = 50;
+ls = linspace(D0*0.8, l0*0.9, npoints);
+numlinks = 2;
+
+arclen = @(a,b)(2*a*ellipticE((1-(b/a)^2)));
+f = @(a,b)(arclen(a,b)-l0);
+strain = @(x)((l0-x)./l0);
+contraction = @(x)(1-(x./l0));
+ys = @(x,a,b)(R0+b*sqrt(1-(x./a).^2));
+volintegrand = @(x,a,b)(pi*(ys(x,a,b)).^2);
+vol = @(a,b)(integral(@(x)(volintegrand(x,a,b)),-a,a));
+P = 3*1*6894.76;
+
+vols = zeros(size(ls));
+
+for i=1:length(ls)
+    a = ls(i)/2;
+    b = fsolve(@(b)(f(a,b)),a)
+    b = real(b);
+%     xx = linspace(-a,a,1000);
+%     yy = ys(xx,a,b);
+%     deltays = yy(2:end)-yy(1:end-1);
+%     deltaxs = xx(2:end)-xx(1:end-1);
+%     plot(xx,yy);
+%     len = sum(sqrt(deltaxs.^2+deltays.^2))
+    vols(i) = vol(a,b);
+end
+
+forces = -P*diff(2*vols)./diff(2*ls);
+plot((ls(2:end)),forces);
+figure;
+plot(weird(ls),vols);
+
+A = weird(ls(2:end).');
+b = forces.';
+k = A\b
