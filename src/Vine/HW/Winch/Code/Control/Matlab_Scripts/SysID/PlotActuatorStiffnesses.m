@@ -2,7 +2,7 @@ clear; clc; close all;
 
 figure; hold on;
 
-tube = 3;
+tube = 1;
 
 ks = [];
 
