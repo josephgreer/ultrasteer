@@ -123,10 +123,11 @@ public:
   virtual void SetDq(const Vecf64<N_TURN_ACT> &dq) { m_dqLast = dq; }
   virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> &z);
   virtual Vecf64<N_TURN_ACT + 1> UpdateState(const Vecf64<2> &z);
-  virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> &z) { return Update(z, m_dqLast); }
   virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq);
   virtual Vecf64<N_TURN_ACT+1> UpdateState(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq);
   Vecf64<N_TURN_ACT+1> GetState() { return m_x; }
+
+  void PrintState();
 };
 
 #endif

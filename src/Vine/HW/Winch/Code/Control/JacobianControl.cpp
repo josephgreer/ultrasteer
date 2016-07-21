@@ -512,6 +512,12 @@ void EKFJacobianEstimator::Initialize(const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT
 
   for (s32 i = 0; i < N_TURN_ACT; i++)
     m_dqLast(i) = -100;
+#ifdef __AVR_ATmega2560__
+  Serial.println("Initializng EKF...");
+  for (s32 i = 0; i < N_TURN_ACT; i++) {
+    Serial.println("Strength " + String(i) + " " + String(strengths(i)) + " Theta " + String(thetas(i)) + " DeltaTheta " + String(m_deltaTheta(i)));
+  }
+#endif
 }
 
 Matrixf64<2, N_TURN_ACT> EKFJacobianEstimator::Update(const Vecf64<2> &z)
@@ -536,8 +542,16 @@ Matrixf64<2, N_TURN_ACT> EKFJacobianEstimator::Update(const Vecf64<2> &z, const 
   return formJacobian(m_x, m_deltaTheta);
 }
 
+#define PRINT_EKF
+
+#ifdef PRINT_EKF
+static s32 g_ekfCount = 0;
+#endif
 Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq)
 {
+  if (dq.magnitude() < 0.2)
+    return m_x;
+
   Vecf64<N_TURN_ACT + 1> xtbar = m_x;
   Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> Etbar;
   Etbar = m_E + m_R;
@@ -559,7 +573,22 @@ Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> &z, con
   m_x = xtbar + Kt*(z - hxtbar);
   m_x(N_TURN_ACT) = fmod(m_x(N_TURN_ACT), 2 * PI);
   m_E = (Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1>::Identity() - Kt*Ht)*Etbar;
+
+#ifdef PRINT_EKF
+  if (++g_ekfCount == 100) {
+    g_ekfCount = 0;
+    Serial.println("Estimated Strengths = [" + String(m_x(0)) + ", " + String(m_x(1)) + ", " + String(m_x(2)) + "]");
+    Serial.println("Theta0 = " + String(m_x(3)*180.0 / PI));
+  }
+#endif
   return m_x;
+}
+
+void EKFJacobianEstimator::PrintState()
+{
+  Serial.println("State x=" + String(m_x(0)) + ", " + String(m_x(1)) + ", " + String(m_x(2)) + ", " + String(m_x(3)));
+  Matrixf64<2, N_TURN_ACT> J = formJacobian(m_x, m_deltaTheta);
+  J.Print("J");
 }
 ///////////////////////////////////////////////////////
 /// END EKFJacobianEstimator

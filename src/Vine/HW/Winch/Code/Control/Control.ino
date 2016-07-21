@@ -22,7 +22,7 @@ f64 closeAngle = 90;
 
 s32 regulatorPins[N_TURN_ACT] = { 10, 11, 9 };
 JacobianControl *jc = (JacobianControl *)new JacobianBoxConstraintControl();
-JacobianEstimator *je = (JacobianEstimator *)new EKFJacobianEstimator();
+EKFJacobianEstimator je;
 
 #ifdef SLA_SERIAL
 int slaSerialPinRx = 2;
@@ -161,21 +161,23 @@ ActuatorCalibration actuatorCalibs[N_TURN_ACT];
 Matrixf64<2,N_TURN_ACT> JJ;
 
 // Position Constants
-f64 steeringKpp = 0.08;
-f64 steeringKdp = 0.00;
+f64 steeringKpp = 0.0008;
+f64 steeringKdp = 0.0008;
 f64 steeringKip = 0;
 
 Vecf64<2> errorLastTrack(0, 0);
 Vecf64<2> derror(0, 0);
 Vecf64<2> integralErrorTrack(0, 0);
 
-f64 totalCalibTime = 3;
+f64 totalCalibTime = 0.5;
 f64 totalRestTime = 2;
 f64 incrementalCalibTime = 0.3;
 f64 incrementalCalibRestTime = 15;
 f64 calibTime = 0;
+f64 aveTimePerLoop = 0;
 s8 currCalibAct = -1;
 Vecf64<2> calibStartTrackPos(0, 0);
+bool wroteCalibration = false;
 
 s32 outputCount = 0;
 
@@ -208,6 +210,8 @@ void controlSteering()
 
   u32 currTime = micros();
   f64 dt = (f64)(currTime - lastTimeSteeringVisited) / (f64)1e6;
+  aveTimePerLoop = dt*0.2 + 0.8*aveTimePerLoop;
+
   if (lastTimeSteeringVisited == 0)
     dt = 0;
   lastTimeSteeringVisited = currTime;
@@ -239,12 +243,14 @@ void controlSteering()
     if (transition) {
       Vecf64<2> delta = trackPos - calibStartTrackPos;
 
-      if (currCalibAct >= 0) {
-        actuatorCalibs[currCalibAct].offset = delta*(1.0/CALIB_AMNT);
+      if (currCalibAct >= 0 && !wroteCalibration) {
+        actuatorCalibs[currCalibAct].offset = delta*(1.0 / CALIB_AMNT)*(aveTimePerLoop / totalCalibTime);
         analogWrite(regulatorPins[currCalibAct], 0);
       }
+      wroteCalibration = true;
     }
     if (doneResting) {
+      wroteCalibration = false;
       calibTime = 0;
       currCalibAct++;
       if (currCalibAct >= N_TURN_ACT) {
@@ -260,10 +266,12 @@ void controlSteering()
           offsets[ii] = actuatorCalibs[ii].offset;
         JJ = Matrixf64<2, N_TURN_ACT>::FromCols(offsets);
         JJ.Print("JJ");
-        je->Initialize(JJ);
+
+        je.Initialize(JJ);
       }
       calibStartTrackPos = trackPos;
-      ACTUATE_REGULATOR(currCalibAct, CALIB_AMNT);
+      if(currCalibAct >= 0)
+        ACTUATE_REGULATOR(currCalibAct, CALIB_AMNT);
     }
 
     break;
@@ -300,7 +308,7 @@ void controlSteering()
       //ACTUATE_REGULATOR(currCalibAct, calibPWM/256.0);
       analogWrite(regulatorPins[currCalibAct], calibPWM);
 
-      calibStartTrackPos = Vecf64<2>(0,0);
+      calibStartTrackPos = Vecf64<2>(0, 0);
     }
     if (doneResting) {
       if (currCalibAct >= 0)
@@ -317,14 +325,14 @@ void controlSteering()
 #if 0
         for (s32 jj = 0; jj < N_TURN_ACT; jj++) {
           String calibString = "Actuator " + String(jj) + " Calibration\n";
-          for (s32 ii = 0; ii < (s32)(MAX_REGULATOR_PWM/CALIB_BIN_DOWNSAMPLE); ii++) {
+          for (s32 ii = 0; ii < (s32)(MAX_REGULATOR_PWM / CALIB_BIN_DOWNSAMPLE); ii++) {
             calibString += String(ii << CALIB_BIN_DS) + ", " + String(calibTrackDisplacements[jj][ii].magnitude()) + ", ";
           }
           Serial.println(calibString);
         }
 #endif
       }
-      calibStartTrackPos = Vecf64<2>(0,0);
+      calibStartTrackPos = Vecf64<2>(0, 0);
       analogWrite(regulatorPins[currCalibAct], 0);
       calibTime = 0;
     }
@@ -338,36 +346,36 @@ void controlSteering()
   }
   case SCM_POS:
   {
+    //je.PrintState();
     Vecf64<2> error = desTrackPos - trackPos;
-    derror = (error - errorLastTrack)*(0.2/dt)+derror*0.8;
+    derror = (error - errorLastTrack)*(0.2 / dt) + derror*0.8;
     errorLastTrack = error;
 
     Vecf64<2> proportional = error*steeringKpp;
-    Vecf64<2> deriv = derror*steeringKpp;
+    Vecf64<2> deriv = derror*steeringKdp;
     Vecf64<2> integral = integralErrorTrack*steeringKip;
 
     Vecf64<2> u = proportional + deriv + integral;
     Vecf64<N_TURN_ACT> qs, dqs;
-    jc->Update(qs,dqs,u, JJ);
-    Serial.println("error=" + (String)(error)+" proprotional=" + String(proportional) + " deriv=" + String(deriv) + " integral=" +
-      String(integral) + " u=" + String(u) + " qs=" + String(qs));
+    jc->Update(qs, dqs, u, JJ);
+    //Serial.println("error=" + (String)(error)+" proprotional=" + String(proportional) + " deriv=" + String(deriv) + " integral=" +
+    //  String(integral) + " u=" + String(u) + " qs=" + String(qs));
     ACTUATE_REGULATOR(0, qs[0]);
     ACTUATE_REGULATOR(1, qs[1]);
     ACTUATE_REGULATOR(2, qs[2]);
 
     if (trackPosLast.x > 0 && trackPosLast.y > 0) {
       Vecf64<2> z = trackPos - trackPosLast;
-      JJ = je->Update(z);
-      Vecf64<N_TURN_ACT + 1> x = je->GetState();
-      Serial.println("State x=" + String(x(0)) + ", " + String(x(1)) + ", " + String(x(2)) + ", " + String(x(3)));
+      //JJ = je.Update(z);
     }
-    je->SetDq(dqs);
+    //je.SetDq(dqs);
     trackPosLast = trackPos;
     //anti windup
     if (0 < qs[0] && qs[0] < 1 && 0 < qs[1] && qs[1] < 1 && 0 < qs[2] && qs[2] < 1) {
       integralErrorTrack.x += error.x;
       integralErrorTrack.y += error.y;
     }
+    break;
   }
   }
 }
@@ -392,7 +400,7 @@ f64 motorKdv = 0;
 f64 motorKiv = 0.01;
 
 bool printOutMotors = false;
-bool printOutTracks = true;
+bool printOutTracks = false;
 
 void controlMotors(f64 dt)
 {
@@ -737,7 +745,12 @@ void setup()
 #endif
 
   extensionServo.attach(servoValvePin);
-  extensionServo.write(closeAngle);
+  for (s32 i = 0; i < 5; i++) {
+    extensionServo.write(openAngle);
+    delay(200);
+    extensionServo.write(closeAngle);
+    delay(200);
+  }
 
   Serial.setTimeout(5);
 
@@ -778,7 +791,6 @@ void setup()
   mapper[2] = (ActuatorMapper *)new DeadbandMapper(103.0 / 255.0);
 
   Vecf64<3> qs; qs.m_data[0] = qs.m_data[1] = qs.m_data[2] = 0;
-  jc->SetQs(qs);
 
   trackPosLast = Vecf64<2>(-1, -1);
 
