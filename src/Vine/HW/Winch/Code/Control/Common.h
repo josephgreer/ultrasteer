@@ -27,6 +27,8 @@ typedef short s16;
 #define EPS (1e-7)
 #define CLAMP(x,a,b) (MIN(MAX(x,a),b)) 
 
+#define TIME_STEP 0.0333333  //time step of visual control loop in seconds
+
 template < unsigned char N >
 class Vecf64
 {
@@ -76,6 +78,13 @@ public:
     return *this;  // Return a reference to myself.
   }
 
+  Vecf64<N> operator=(const f64 &rhs)
+  {
+    for (s32 ii = 0; ii < N; ii++)
+      m_data[ii] = rhs;
+    return *this;
+  }
+
   Vecf64<N> operator+(const Vecf64<N> &b) const
   {
     f64 data[N];
@@ -123,7 +132,7 @@ public:
     return res;
   }
 
-  Vecf64<N> operator*(const f64 &b)
+  Vecf64<N> operator*(const f64 &b) const
   {
     f64 data[N] = { 0 };
     for (s32 ii = 0; ii < N; ii++)
@@ -131,7 +140,7 @@ public:
     return Vecf64<N>(data);
   }
 
-  Vecf64 operator/(const f64 &b)
+  Vecf64 operator/(const f64 &b) const
   {
     f64 data[N] = { 0 };
     for (s32 ii = 0; ii < N; ii++)
@@ -210,6 +219,13 @@ public:
     return *this;  // Return a reference to myself.
   }
 
+  Vecf64<2> operator=(const f64 &rhs)
+  {
+    this->x = rhs;
+    this->y = rhs;
+    return *this;
+  }
+
   Vecf64<2> operator+(const Vecf64<2> &b) const
   {
     return Vecf64<2>(this->x + b.x, this->y + b.y);
@@ -220,7 +236,7 @@ public:
     return Vecf64<2>(this->x - b.x, this->y - b.y);
   }
 
-  Vecf64<2> operator*(const f64 &b)
+  Vecf64<2> operator*(const f64 &b) const
   {
     return Vecf64<2>(this->x*b, this->y*b);
   }

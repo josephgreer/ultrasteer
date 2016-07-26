@@ -91,7 +91,7 @@ public:
   virtual Matrixf64<2,N_TURN_ACT> Update(const Vecf64<2> &z) = 0;
   virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq) = 0;
   virtual Vecf64<N_TURN_ACT + 1> UpdateState(const Vecf64<2> &z) = 0;
-  virtual Vecf64<N_TURN_ACT + 1> UpdateState(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq) = 0;
+  virtual Vecf64<N_TURN_ACT + 1> UpdateState(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq) = 0;
   virtual void Initialize(const Matrixf64<2, N_TURN_ACT> &J) = 0;
   virtual void Initialize(const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths) = 0;
   virtual void Initialize(const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &E, const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths) = 0;
@@ -99,6 +99,48 @@ public:
   virtual void SetDq(const Vecf64<N_TURN_ACT> &dq) = 0;
   virtual Vecf64<N_TURN_ACT+1> GetState() = 0;
 };
+
+#define N_COMBINE 5
+
+template < class T >
+struct FixedQueue
+{
+  T m[N_COMBINE];
+  s32 n;
+
+  FixedQueue()
+    : n(0)
+  {
+  }
+
+  void AddElement(const T &el)
+  {
+    for (s32 i = N_COMBINE-1; i > 1; i--) {
+      m[i] = m[i - 1];
+    }
+    m[0] = el;
+    n = MIN(n+1,N_COMBINE);
+  }
+
+  T SumElements()
+  {
+    T sum;
+    sum = 0;
+    Serial.println("sum mag start " + String(sum.magnitude(), 6));
+    Serial.println(sum.magnitude(),6);
+    for (s32 i = 0; i < n; i++) {
+      sum = sum + m[i];
+    }
+    Serial.println("sum mag end " + String(sum.magnitude(), 6));
+    return sum;
+  }
+
+  void Clear()
+  {
+    n = 0;
+  }
+};
+
 
 class EKFJacobianEstimator
 {
@@ -108,7 +150,9 @@ protected:
   Vecf64<N_TURN_ACT> m_deltaTheta;
   Vecf64<N_TURN_ACT + 1> m_x;
   Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> m_E;
-  Vecf64<N_TURN_ACT> m_dqLast;
+  Vecf64<N_TURN_ACT> m_dq;
+  Vecf64<2> m_dz;
+  f64 m_alpha;
 
 public:
   EKFJacobianEstimator();
@@ -120,11 +164,14 @@ public:
   virtual void Initialize(const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &E, const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths);
   virtual void Initialize(const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &R, const Matrixf64<2, 2> &Q, const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &E, const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths);
 
-  virtual void SetDq(const Vecf64<N_TURN_ACT> &dq) { m_dqLast = dq; }
+  virtual void SetDq(const Vecf64<N_TURN_ACT> &dq) 
+  {
+  	m_dq = m_dq*(1.0-m_alpha)+dq*m_alpha;
+  }
+  
   virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> &z);
   virtual Vecf64<N_TURN_ACT + 1> UpdateState(const Vecf64<2> &z);
-  virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq);
-  virtual Vecf64<N_TURN_ACT+1> UpdateState(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq);
+  virtual Vecf64<N_TURN_ACT+1> UpdateState(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq);
   Vecf64<N_TURN_ACT+1> GetState() { return m_x; }
 
   void PrintState();

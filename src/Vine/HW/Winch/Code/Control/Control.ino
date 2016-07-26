@@ -161,7 +161,7 @@ ActuatorCalibration actuatorCalibs[N_TURN_ACT];
 Matrixf64<2,N_TURN_ACT> JJ;
 
 // Position Constants
-f64 steeringKpp = 0.0008;
+f64 steeringKpp = 0.001;
 f64 steeringKdp = 0.0008;
 f64 steeringKip = 0;
 
@@ -198,6 +198,8 @@ u8 calibPWM = 0;
 ActuatorMapper *mapper[N_TURN_ACT];
 
 #define ACTUATE_REGULATOR(r,amnt) (analogWrite(regulatorPins[r], mapper[r]->MapVal(amnt)))
+
+s32 g_changeCount = 0;
 
 bool hasOutput = false;
 void controlSteering()
@@ -366,9 +368,12 @@ void controlSteering()
 
     if (trackPosLast.x > 0 && trackPosLast.y > 0) {
       Vecf64<2> z = trackPos - trackPosLast;
-      //JJ = je.Update(z);
+      // Don't update if user manually specified track change
+      if (!(z.magnitude() > 1 && scenePos.magnitude() < z.magnitude() / 20.0)) {
+        JJ = je.Update(z);
+      }
     }
-    //je.SetDq(dqs);
+    je.SetDq(dqs);
     trackPosLast = trackPos;
     //anti windup
     if (0 < qs[0] && qs[0] < 1 && 0 < qs[1] && qs[1] < 1 && 0 < qs[2] && qs[2] < 1) {
