@@ -54,6 +54,9 @@ class JacobianControl
 protected:
   Vecf64<N_TURN_ACT> m_q;
   Matrixf64<2, N_TURN_ACT> m_J;
+  f64 m_alpha;
+  Vecf64<N_TURN_ACT> m_lq;
+  Vecf64<N_TURN_ACT> m_ldq;
 
 public:
   JacobianControl();

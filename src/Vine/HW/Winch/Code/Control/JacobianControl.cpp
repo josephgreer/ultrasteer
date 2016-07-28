@@ -29,6 +29,7 @@ void sortArray(f64 *a, u8 *idx, s32 nel)
 ////////////////////////////////////////////////////////
 JacobianControl::JacobianControl()
 {
+  m_alpha = TIME_STEP / (TIME_STEP + 0.1);
 }
 
 void JacobianControl::Update(Vecf64<N_TURN_ACT> &qs, Vecf64<N_TURN_ACT> &dqs, Vecf64<2> dx, const Matrixf64<2, N_TURN_ACT>&J)
@@ -422,7 +423,7 @@ JacobianBoxConstraintControl::JacobianBoxConstraintControl()
 }
 
 
-//#define DO_PRINT_CONTROL
+#define DO_PRINT_CONTROL
 
 #ifdef DO_PRINT_CONTROL
 s32 g_count = 0;
@@ -433,6 +434,9 @@ void JacobianBoxConstraintControl::Update(Vecf64<N_TURN_ACT> &qs, Vecf64<N_TURN_
   m_q = m_q + dq;
   qs = m_q;
   dqs = dq;
+
+  m_lq = m_lq*(1.0 - m_alpha) + m_q*m_alpha;
+  m_ldq = m_ldq*(1.0 - m_alpha) + dq*m_alpha;
 
 #ifdef DO_PRINT_CONTROL
   if (++g_count == 100) {
@@ -567,7 +571,7 @@ Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> z, cons
   if (dq.magnitude() < 0.005)
     return m_x;
 
-  Serial.println("dz = [" + String(z(0), 6) + ", " + String(z(1), 6) + "] dq = [" + String(dq(0), 6) + ", " + String(dq(1), 6) + ", " + String(dq(2), 6) + "]");
+  //Serial.println("dz = [" + String(z(0), 6) + ", " + String(z(1), 6) + "] dq = [" + String(dq(0), 6) + ", " + String(dq(1), 6) + ", " + String(dq(2), 6) + "]");
 
   Vecf64<N_TURN_ACT + 1> xtbar = m_x;
   Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> Etbar;
