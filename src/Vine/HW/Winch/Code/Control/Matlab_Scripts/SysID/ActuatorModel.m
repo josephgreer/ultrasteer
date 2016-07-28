@@ -300,7 +300,7 @@
 clear; clc; close all;
 
 P = 3*0.2*6894.76;
-R0 = 7.5/2*1e-3;
+R0 = 4/2*1e-3;
 L0 = 40*1e-3;
 D0 = GetD0(L0,R0,P,0,'ellipse');
 npoints = 10;
@@ -335,6 +335,6 @@ plot(contraction(ls),forces);
 figure;
 plot(contraction(ls),vols);
 
-A = [strain(ls.') ones(size(ls.'))];
+A = [contraction(ls.') ones(size(ls.'))];
 b = forces.';
 k = A\b

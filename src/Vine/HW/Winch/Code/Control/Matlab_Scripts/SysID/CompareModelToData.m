@@ -2,11 +2,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%% Tube 1
 clear; clc; close all;
 
-files = rdir('Data/Stiffness/1_*.txt');
+files = rdir('Data/Stiffness/1_2.0.txt');
 
 hold all;
 for i=1:length(files)
-    mode = 'ellipse';
+    mode = 'pleated';
     fname = files(i).name;
     display(fname)
     pressure = sscanf(fname,'Data/Stiffness/%d_%d.%d.txt');
