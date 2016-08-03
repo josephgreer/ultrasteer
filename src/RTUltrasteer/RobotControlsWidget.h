@@ -28,6 +28,10 @@ namespace Nf
     bool m_artInit;
     QTimer m_DisplayQueryTimer;
 
+    f64 m_dcInsertAngle;
+    f64 m_dcInsertVal;
+    f64 m_dcInsertDist;
+
     Ui::RobotControlsWidgetClass ui;
 
     public slots:
@@ -43,6 +47,11 @@ namespace Nf
       void InsertNegVel(void);
       void StopInsertion(void);
       void HomeInsertion(void);
+      void FullPosRot(void);
+      void FullNegRot(void);
+
+      void DCInsert(void);
+      void CancelDCInsert(void);
 
       double GetInsertion(void);
       double GetRoll(void);
@@ -55,6 +64,9 @@ namespace Nf
       void SetArticulationAngle(int);
 
       void onDisplayQuery(void);
+
+  public:
+    void SetDcInsertDist(f64 dist) { m_dcInsertDist = dist; }
   };
 
 }

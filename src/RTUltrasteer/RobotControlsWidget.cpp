@@ -4,6 +4,9 @@ namespace Nf
 {
   RobotControlsWidget::RobotControlsWidget(NeedleSteeringRobot* robot, QWidget *parent, Qt::WFlags flags)
     : QFrame(parent, flags)
+    , m_dcInsertVal(1)
+    , m_dcInsertAngle(0)
+    , m_dcInsertDist(40)
   {
     // Set up the gui
     ui.setupUi(this);
@@ -24,6 +27,7 @@ namespace Nf
     ui.homeInsertion->setDisabled(true);
     ui.articulationScrollBar->setDisabled(true);
 
+
     // Connect signals and slots
     connect(ui.stopRoll, SIGNAL(clicked(bool)), this, SLOT(StopRoll()));
     connect(ui.homeRoll, SIGNAL(clicked(bool)), this, SLOT(HomeRoll()));
@@ -36,6 +40,11 @@ namespace Nf
     connect(ui.insertNegInc, SIGNAL(clicked(bool)), this, SLOT(InsertNegInc()));
     connect(ui.insertPosVel, SIGNAL(clicked(bool)), this, SLOT(InsertPosVel()));
     connect(ui.insertNegVel, SIGNAL(clicked(bool)), this, SLOT(InsertNegVel()));
+    connect(ui.threeSixNeg, SIGNAL(clicked(bool)), this, SLOT(FullNegRot()));
+    connect(ui.threeSixPos, SIGNAL(clicked(bool)), this, SLOT(FullPosRot()));
+    connect(ui.cancelDCIns, SIGNAL(clicked(bool)), this, SLOT(CancelDCInsert()));
+
+    connect(ui.dcInsert, SIGNAL(clicked(bool)), this, SLOT(DCInsert()));
 
     connect(ui.articulationScrollBar, SIGNAL(valueChanged(int)), this, SLOT(SetArticulationAngle(int)));
     connect(&m_DisplayQueryTimer, SIGNAL(timeout()), this, SLOT(onDisplayQuery()));
@@ -53,6 +62,8 @@ namespace Nf
     ui.rotateNegInc->setEnabled(true);
     ui.stopRoll->setEnabled(true);
     ui.homeRoll->setEnabled(true);
+    ui.threeSixNeg->setEnabled(true);
+    ui.threeSixPos->setEnabled(true);
     if(!m_displayTimerOn)  {
       //start insertion query timer for GUI update
       m_DisplayQueryTimer.start(100);
@@ -71,6 +82,8 @@ namespace Nf
     ui.insertNegVel->setEnabled(true);
     ui.stopInsertion->setEnabled(true);
     ui.homeInsertion->setEnabled(true);
+    ui.dcInsert->setEnabled(true);
+    ui.cancelDCIns->setEnabled(true);
     if(!m_displayTimerOn) {
       //start insertion query timer for GUI update
       m_DisplayQueryTimer.start(100);
@@ -109,6 +122,16 @@ namespace Nf
       float angle = m_robot->getArticulationAngle();
       ui.articulation_pos->display(fmodf(angle,360));
     }
+  }
+
+  void RobotControlsWidget::DCInsert()
+  {
+    m_robot->DutyCycleSteer(this->m_dcInsertVal, this->m_dcInsertAngle, this->m_dcInsertDist);
+  }
+
+  void RobotControlsWidget::CancelDCInsert()
+  {
+    m_robot->cancelDutyCycling();
   }
 
   double RobotControlsWidget::GetInsertion()
@@ -169,6 +192,16 @@ namespace Nf
   void RobotControlsWidget::RotNegInc(void)
   {
     m_robot->RotateIncremental(-10.0);
+  }
+
+  void RobotControlsWidget::FullPosRot(void)
+  {
+    m_robot->RotateIncremental(360.0);
+  }
+
+  void RobotControlsWidget::FullNegRot(void)
+  {
+    m_robot->RotateIncremental(-360.0);
   }
 
   void RobotControlsWidget::HomeRoll(void)
