@@ -41,8 +41,8 @@ public:
   bool isRollInitialized(void);
   bool isInsertionInitialized(void);
   bool isArticulationInitialized(void);
-	//void cancelDutyCycling(void);
-	//void DutyCycleSteer(float DC, float angle, float insDist);
+	void cancelDutyCycling(void);
+	void DutyCycleSteer(float DC, float angle, float insDist);
 
 private:
 	RollDevice m_RollDevice;
@@ -54,8 +54,8 @@ private:
 	double m_DC;
   bool m_rollInit, m_insInit, m_artInit; 
 
-//private slots:
-		//void OnDwellTimeout(void);
-		//void OnPollTimeout(void);
+public slots:
+		void OnDwellTimeout(void);
+		void OnPollTimeout(void);
 };
 

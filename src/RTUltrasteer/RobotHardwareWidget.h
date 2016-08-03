@@ -58,6 +58,10 @@ namespace Nf
     void onInitArticulation();
     CLASS_CALLBACK(onInitArticulation, RobotHardwareWidget)
 
+    std::tr1::shared_ptr < Nf::FloatParameter > m_dcInsertDist;
+    void onSetDCInsertDist();
+    CLASS_CALLBACK(onSetDCInsertDist, RobotHardwareWidget)
+
     void setRobot(NeedleSteeringRobot* robot);
 
     RobotControlsWidget *GetRCWidget() { return m_rcwidget; }
