@@ -13,10 +13,12 @@ class DeadbandMapper : public ActuatorMapper
 {
 protected:
   f64 m_deadband;
+  f64 m_maxPWM;
 
 public:
-  DeadbandMapper(f64 deadband)
+  DeadbandMapper(f64 deadband, f64 maxPWM)
     : m_deadband(deadband)
+    , m_maxPWM(maxPWM)
   {
   }
 
@@ -25,7 +27,7 @@ public:
     if (x == 0)
       return 0;
 
-    return 255.0*((1 - m_deadband)*x + m_deadband);
+    return (f64)(m_maxPWM)*((1 - m_deadband)*x + m_deadband);
   }
 };
 
@@ -143,7 +145,6 @@ struct FixedQueue
     n = 0;
   }
 };
-
 
 class EKFJacobianEstimator
 {

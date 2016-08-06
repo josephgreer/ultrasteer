@@ -108,6 +108,18 @@ public:
     return Vecf64<N>(data);
   }
 
+#ifdef __AVR_ATmega2560__
+  String ToString()
+  {
+    String res = "[";
+    for (s32 ii = 0; ii < N; ii++) {
+      res += String(m_data[ii], 10) + ", ";
+    }
+    res += "]";
+    return res;
+  }
+#endif
+
   Vecf64<N> operator-(const f64 &b) const
   {
     f64 data[N];
@@ -247,6 +259,13 @@ public:
     this->y += b.y;
     return *this;
   }
+
+#ifdef __AVR_ATmega2560__
+  String ToString()
+  {
+    return "[" + String(this->x, 10) + ", " + String(this->y, 10) + "]";
+  }
+#endif
 
   f64 dot(Vecf64<2> b) const
   {
@@ -743,6 +762,8 @@ public:
 };
 
 void sortArray(f64 *a, u8 *idx, s32 nel);
+
+#define MAX_REGULATOR_PWM 155
 
 #define TIME_LOOP(x,y) \
 	static u32 g_n##x = 0; static u32 g_begTime##x; \

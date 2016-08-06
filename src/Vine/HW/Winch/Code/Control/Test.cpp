@@ -9,9 +9,10 @@
 #include "Arduino.h"
 #endif
 
-//#define RUN_JACOBIAN_TEST
+#define RUN_JACOBIAN_TEST
 //#define RUN_CVX_TEST
-#define RUN_EKF_JACOBIAN_TEST
+//#define RUN_EKF_JACOBIAN_TEST
+//#define RUN_BVLS_TEST
 
 struct DeltaTestData
 {
@@ -149,23 +150,25 @@ void runTest()
   f64 initQ[N_TURN_ACT] = { 1,1,1 };
   jc->SetQs(&initQ[0]);
 
-  const f64 *qs;
 
   f64 Jdata[2][N_TURN_ACT] = {
     {400, -200, -200},
     {0, 346.4102, -346.4102}
   };
 
+  Vecf64<N_TURN_ACT> qs;
+  Vecf64<N_TURN_ACT> dqs;
+
   J = Matrixf64<2, N_TURN_ACT>(Jdata);
   f64 maxMaxError = -1e10;
   for (s32 i = 0; i < sizeof(testData) / sizeof(testData[0]); i++) {
     Vecf64<2> dx(testData[i].q_res[0], testData[i].q_res[1]);
 
-    qs = jc->Update(dx, J);
+    jc->Update(qs, dqs, dx, J);
 
     f64 maxError = -1;
     for (s32 j = 0; j < N_TURN_ACT; j++)
-      maxError = MAX(maxError, ABS(qs[j] - testData[i].q_res[2 + j]));
+      maxError = MAX(maxError, ABS(qs(j) - testData[i].q_res[2 + j]));
 
     if (maxError > 1e-4)
       s32 y = 0;
@@ -508,6 +511,30 @@ void runTest()
     Serial.println("Maxerror " + String(maxError,10));
 #endif
   }
+}
+#endif
+
+#ifdef RUN_BVLS_TEST
+
+Vecf64<3> runBVLS(Matrixf64<2, 3> J, Vecf64<3> l, Vecf64<3> u, Vecf64<2> dx);
+
+void runTest()
+{
+  f64 dx[] = { -0.0166616480, -0.0663095940 };
+  f64 l[] = { -0.0000000000, -0.0000000000, -0.0000000000 };
+  f64 u[] = { 1.0000000000, 1.0000000000, 1.0000000000 };
+  f64 J[2][3] = { {-2.580425, -0.738108, 6.272839},
+  {-5.359344, 2.616928, 1.000985}
+  };
+
+  Matrixf64<2, 3> JJ(J);
+  Vecf64<2> ddx(dx);
+  Vecf64<3> ll(l);
+  Vecf64<3> uu(u);
+
+  Vecf64<3> dq = runBVLS(JJ, ll, uu, ddx);
+
+  int x = 0;
 }
 #endif
 

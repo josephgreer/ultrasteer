@@ -23,6 +23,9 @@ f64 closeAngle = 90;
 s32 regulatorPins[N_TURN_ACT] = { 10, 11, 9 };
 JacobianControl *jc = (JacobianControl *)new JacobianBoxConstraintControl();
 EKFJacobianEstimator je;
+bool setJacobian = false;
+
+s32 pressurePin = 3;
 
 #ifdef SLA_SERIAL
 int slaSerialPinRx = 2;
@@ -162,7 +165,7 @@ Matrixf64<2,N_TURN_ACT> JJ;
 
 // Position Constants
 f64 steeringKpp = 0.001;
-f64 steeringKdp = 0.0008;
+f64 steeringKdp = 0.001;
 f64 steeringKip = 0;
 
 Vecf64<2> errorLastTrack(0, 0);
@@ -181,7 +184,6 @@ bool wroteCalibration = false;
 
 s32 outputCount = 0;
 
-#define MAX_REGULATOR_PWM 255
 #define CALIB_AMNT 1
 
 Vecf64<2> trackPos;
@@ -197,7 +199,10 @@ u8 calibPWM = 0;
 
 ActuatorMapper *mapper[N_TURN_ACT];
 
+#define HOME_PRESSURE 0.6
+
 #define ACTUATE_REGULATOR(r,amnt) (analogWrite(regulatorPins[r], mapper[r]->MapVal(amnt)))
+#define REGULATE_PRESSURE(amnt) (analogWrite(pressurePin, (s32)((f64)255.0*amnt)))
 
 s32 g_changeCount = 0;
 
@@ -247,7 +252,7 @@ void controlSteering()
 
       if (currCalibAct >= 0 && !wroteCalibration) {
         actuatorCalibs[currCalibAct].offset = delta*(1.0 / CALIB_AMNT)*(aveTimePerLoop / totalCalibTime);
-        analogWrite(regulatorPins[currCalibAct], 0);
+        ACTUATE_REGULATOR(currCalibAct, 0);
       }
       wroteCalibration = true;
     }
@@ -307,8 +312,7 @@ void controlSteering()
       if (calibPWM >= MAX_REGULATOR_PWM)
         calibPWM = 0;
 
-      //ACTUATE_REGULATOR(currCalibAct, calibPWM/256.0);
-      analogWrite(regulatorPins[currCalibAct], calibPWM);
+      ACTUATE_REGULATOR(currCalibAct, calibPWM/256.0);
 
       calibStartTrackPos = Vecf64<2>(0, 0);
     }
@@ -320,7 +324,7 @@ void controlSteering()
       if (currCalibAct >= N_TURN_ACT) {
 
         for (s32 ii = 0; ii < N_TURN_ACT; ii++)
-          analogWrite(regulatorPins[ii], 0);
+          ACTUATE_REGULATOR(ii, 0);
 
         steeringControlMode = SCM_NOTHING;
 
@@ -335,7 +339,7 @@ void controlSteering()
 #endif
       }
       calibStartTrackPos = Vecf64<2>(0, 0);
-      analogWrite(regulatorPins[currCalibAct], 0);
+      ACTUATE_REGULATOR(currCalibAct, 0);
       calibTime = 0;
     }
 
@@ -350,7 +354,7 @@ void controlSteering()
   {
     //je.PrintState();
     Vecf64<2> error = desTrackPos - trackPos;
-    derror = (error - errorLastTrack)*(0.2 / dt) + derror*0.8;
+    derror = (error - errorLastTrack)*(0.5 / dt) + derror*0.5;
     errorLastTrack = error;
 
     Vecf64<2> proportional = error*steeringKpp;
@@ -370,7 +374,10 @@ void controlSteering()
       Vecf64<2> z = trackPos - trackPosLast;
       // Don't update if user manually specified track change
       if (!(z.magnitude() > 1 && scenePos.magnitude() < z.magnitude() / 20.0)) {
-        JJ = je.Update(z);
+        if (setJacobian)
+          JJ = je.Update(z);
+        else
+          Matrixf64 < 2, N_TURN_ACT > JJBean = je.Update(z);
       }
     }
     je.SetDq(dqs);
@@ -582,15 +589,24 @@ void handleSerial(const s8 *input, s32 nBytes)
       steeringControlMode = SCM_POS;
       mode = "position";
     }
+    else if (input[2] == 'j') {
+      setJacobian = !setJacobian;
+      if (setJacobian)
+        mode = "jacobianOn";
+      else
+        mode = "jacobianOff";
+    }
     else if (input[2] == 'n') {
       steeringControlMode = SCM_NOTHING;
-      mode = 'none';
+      mode = "none";
       calibPWM = 0;
       calibStartTrackPos = Vecf64<2>(0, 0);
       calibTime = 0;
-      currCalibAct = 0;
+      currCalibAct = -1;
       for (s32 jj = 0; jj < N_TURN_ACT; jj++)
-        analogWrite(regulatorPins[jj], 0);
+        ACTUATE_REGULATOR(jj, 0);
+
+      REGULATE_PRESSURE(HOME_PRESSURE);
     }
     else if (input[2] == 'k') {
       f64 *Kp, *Kd, *Ki;
@@ -611,7 +627,7 @@ void handleSerial(const s8 *input, s32 nBytes)
         Serial.println("Set Ki to " + String(val));
       }
     }
-    if (input[2] == 'c' || input[2] == 'p' || input[2] == 'n')
+    if (input[2] == 'c' || input[2] == 'p' || input[2] == 'n' || input[2] == 'j')
       Serial.println("Setting steering control mode " + mode);
     break;
   }
@@ -677,13 +693,25 @@ void handleSerial(const s8 *input, s32 nBytes)
 
     Serial.println("Pause");
     break;
-  case 'e':
-  case 'E': //Servo Valve
+  case 'd':
+  case 'D':
   {
-    f64 pos = atof(input + 2);
-    f64 angle = (closeAngle - openAngle)*pos + openAngle;
-    Serial.println("Setting servo valve position " + String(angle));
-    extensionServo.write(angle);
+    ACTUATE_REGULATOR(1, 1);
+    ACTUATE_REGULATOR(2, 1);
+    //Serial.println("pwm amount " + String(MAP_VAL(amount, actuatorCalibs[reg - 1].sig.a, actuatorCalibs[reg - 1].sig.b, actuatorCalibs[reg - 1].sig.c, actuatorCalibs[reg - 1].sig.d)));
+    break;
+  }
+  case 'e':
+  case 'E': //Pressure REgulator
+  {
+    //f64 pos = atof(input + 2);
+    //f64 angle = (closeAngle - openAngle)*pos + openAngle;
+    //Serial.println("Setting servo valve position " + String(angle));
+    //extensionServo.write(angle);
+    f64 amnt = atof(input + 2);
+    u8 amount = (s32)(amnt*255.0 + 0.5);
+    Serial.println("Setting pressure regulator to " + String(amnt) + " " + String(amount));
+    REGULATE_PRESSURE(amnt);
     break;
   }
   case 'l':
@@ -779,6 +807,10 @@ void setup()
     digitalWrite(regulatorPins[ii], LOW);
   }
 
+  // Pressure Pin
+  pinMode(pressurePin, OUTPUT);
+  digitalWrite(pressurePin, LOW);
+
   // Encoder Pins
   pinMode(encoderPinA, INPUT);
   pinMode(encoderPinB, INPUT);
@@ -791,9 +823,9 @@ void setup()
   actuatorCalibs[1] = ActuatorCalibration(Vecf64<2>(0, 0));// , Sigmoid(0.049058, 0.976153, 182.573890, 0.028746));
   actuatorCalibs[2] = ActuatorCalibration(Vecf64<2>(0, 0));// , Sigmoid(0.011475, 0.971715, 144.373752, 0.042064));
 
-  mapper[0] = (ActuatorMapper *)new DeadbandMapper(103.0 / 255.0);
-  mapper[1] = (ActuatorMapper *)new DeadbandMapper(103.0 / 255.0);
-  mapper[2] = (ActuatorMapper *)new DeadbandMapper(103.0 / 255.0);
+  mapper[0] = (ActuatorMapper *)new DeadbandMapper(103.0 / 255.0, 200);
+  mapper[1] = (ActuatorMapper *)new DeadbandMapper(103.0 / 255.0, 255);
+  mapper[2] = (ActuatorMapper *)new DeadbandMapper(103.0 / 255.0, 255);
 
   Vecf64<3> qs; qs.m_data[0] = qs.m_data[1] = qs.m_data[2] = 0;
 

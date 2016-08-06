@@ -346,7 +346,7 @@ static Vecf64 < N > BVLS(const Matrixf64<M, N> &A, const Vecf64 <M> &b, const Ve
       Serial.println("maxIdx " + String((s32)maxIdx) + " magnitude w " + String(w.magnitude(),10));
       delay(5);
 #endif
-      if (maxVal < 0 || w.magnitude() < 0.5) {
+      if (maxVal < 0 || w.magnitude() < 0.0005) {
 #ifdef PRINTF_DEBUG
         Serial.println("finished");
         delay(5);
@@ -403,9 +403,10 @@ static Vecf64 < N > BVLS(const Matrixf64<M, N> &A, const Vecf64 <M> &b, const Ve
     }
     else if (Free.m_nel == N) {
 #ifdef __AVR_ATmega2560__
-      Serial.println("All coordinates should not be in the free set.");
-      delay(10000000);
+      //Serial.println("All coordinates should not be in the free set.");
+      //delay(10000000);
 #endif
+      break;
     } 
     else {
 #ifdef __AVR_ATmega2560__
@@ -422,6 +423,11 @@ JacobianBoxConstraintControl::JacobianBoxConstraintControl()
 {
 }
 
+Vecf64<3> runBVLS(Matrixf64<2, 3> J, Vecf64<3> l, Vecf64<3> u, Vecf64<2> dx)
+{
+  return BVLS<2, 3>(J, dx, l, u);
+}
+
 
 #define DO_PRINT_CONTROL
 
@@ -431,6 +437,21 @@ s32 g_count = 0;
 void JacobianBoxConstraintControl::Update(Vecf64<N_TURN_ACT> &qs, Vecf64<N_TURN_ACT> &dqs, Vecf64<2> dx)
 {
   Vecf64 <N_TURN_ACT> dq = BVLS<2, N_TURN_ACT>(m_J, dx, m_q*(-1.0), m_q*(-1.0) + 1.0);
+
+#if 0
+  if (dq.magnitude() < EPS && dx.magnitude() > EPS) {
+    Vecf64<N_TURN_ACT> temp = m_q*(-1.0);
+    Serial.println("Fail");
+    Serial.println("m_q = " + m_q.ToString());
+    Serial.println("dx = " + dx.ToString());
+    Serial.println("l = " + temp.ToString());
+    temp = m_q*(-1.0)+1.0;
+    Serial.println("u = " + temp.ToString());
+    Serial.println("dq = " + dq.ToString());
+    m_J.Print("JJ");
+  }
+#endif
+
   m_q = m_q + dq;
   qs = m_q;
   dqs = dq;
@@ -442,7 +463,7 @@ void JacobianBoxConstraintControl::Update(Vecf64<N_TURN_ACT> &qs, Vecf64<N_TURN_
   if (++g_count == 100) {
     g_count = 0;
 #ifdef __AVR_ATmega2560__
-    Serial.println("q = [" + String(m_q(0), 6) + ", " + String(m_q(1), 6) + ", " + String(m_q(2), 6) + "] dq = [" + String(dq(0), 6) + ", " + String(dq(1), 6) + ", " + String(dq(2), 6) + "]");
+    Serial.println("q = [" + String(m_q(0), 6) + ", " + String(m_q(1), 6) + ", " + String(m_q(2), 6) + "] dq = [" + String(dq(0), 6) + ", " + String(dq(1), 6) + ", " + String(dq(2), 6) + "] dx = [" + String(dx(0), 6) + ", " + String(dx(1),6) + "]");
 #endif
   }
 #endif
@@ -568,7 +589,7 @@ Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> &z)
 
 Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq)
 {
-  if (dq.magnitude() < 0.005)
+  if (dq.magnitude() < 0.05 || z.magnitude() < 0.1)
     return m_x;
 
   //Serial.println("dz = [" + String(z(0), 6) + ", " + String(z(1), 6) + "] dq = [" + String(dq(0), 6) + ", " + String(dq(1), 6) + ", " + String(dq(2), 6) + "]");
@@ -610,9 +631,11 @@ Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> z, cons
 
 void EKFJacobianEstimator::PrintState()
 {
+#ifdef __AVR_ATmega2560__
   Serial.println("State x=" + String(m_x(0)) + ", " + String(m_x(1)) + ", " + String(m_x(2)) + ", " + String(m_x(3)*180.0/PI));
   Matrixf64<2, N_TURN_ACT> J = formJacobian(m_x, m_deltaTheta);
   J.Print("J");
+#endif
 }
 ///////////////////////////////////////////////////////
 /// END EKFJacobianEstimator
