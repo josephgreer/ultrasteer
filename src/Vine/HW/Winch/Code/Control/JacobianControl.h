@@ -90,21 +90,6 @@ public:
   virtual void Update(Vecf64<N_TURN_ACT> &qs, Vecf64<N_TURN_ACT> &dqs, Vecf64<2> dx);
 };
 
-class JacobianEstimator
-{
-public:
-  virtual Matrixf64<2,N_TURN_ACT> Update(const Vecf64<2> &z) = 0;
-  virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq) = 0;
-  virtual Vecf64<N_TURN_ACT + 1> UpdateState(const Vecf64<2> &z) = 0;
-  virtual Vecf64<N_TURN_ACT + 1> UpdateState(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq) = 0;
-  virtual void Initialize(const Matrixf64<2, N_TURN_ACT> &J) = 0;
-  virtual void Initialize(const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths) = 0;
-  virtual void Initialize(const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &E, const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths) = 0;
-  virtual void Initialize(const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &R, const Matrixf64<2, 2> &Q, const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &E, const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths) = 0;
-  virtual void SetDq(const Vecf64<N_TURN_ACT> &dq) = 0;
-  virtual Vecf64<N_TURN_ACT+1> GetState() = 0;
-};
-
 #define N_COMBINE 5
 
 template < class T >
@@ -172,11 +157,49 @@ public:
   {
   	m_dq = m_dq*(1.0-m_alpha)+dq*m_alpha;
   }
+
+  virtual void SetState(const Vecf64<N_TURN_ACT + 1> &x) { m_x = x; }
   
   virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> &z);
   virtual Vecf64<N_TURN_ACT + 1> UpdateState(const Vecf64<2> &z);
   virtual Vecf64<N_TURN_ACT+1> UpdateState(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq);
   Vecf64<N_TURN_ACT+1> GetState() { return m_x; }
+
+  void PrintState();
+};
+
+Matrixf64<2, N_TURN_ACT> unflattenVector(const Vecf64<2 * N_TURN_ACT> &v);
+Vecf64<2 * N_TURN_ACT> flattenMatrix(const Matrixf64<2, N_TURN_ACT> &m);
+
+class KFJacobianEstimator
+{
+protected:
+  Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> m_R;
+  Matrixf64<2, 2> m_Q;
+  Vecf64<2 * N_TURN_ACT> m_x;
+  Matrixf64<2 * N_TURN_ACT, 2* N_TURN_ACT> m_E;
+  Vecf64<N_TURN_ACT> m_dq;
+  Vecf64<2> m_dz;
+  f64 m_alpha;
+
+public:
+  KFJacobianEstimator();
+
+  void SetAlpha(f64 alpha) { m_alpha = alpha; }
+
+  virtual void SetJacobian(const Matrixf64<2, N_TURN_ACT>&J) { m_x = flattenMatrix(J); }
+
+  virtual void Initialize(const Matrixf64<2, N_TURN_ACT> &J);
+  virtual void Initialize(const Matrixf64<2, N_TURN_ACT> &J, const Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> &R, const Matrixf64<2, 2> &Q, const Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> &E);
+
+  virtual void SetDq(const Vecf64<N_TURN_ACT> &dq)
+  {
+    m_dq = m_dq*(1.0 - m_alpha) + dq*m_alpha;
+  }
+
+
+  virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> z);
+  virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq);
 
   void PrintState();
 };

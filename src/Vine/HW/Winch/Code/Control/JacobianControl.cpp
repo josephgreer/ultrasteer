@@ -557,7 +557,7 @@ void EKFJacobianEstimator::Initialize(const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT
 #endif
 }
 
-#define PRINT_EKF
+//#define PRINT_EKF
 
 #ifdef PRINT_EKF
 static s32 g_ekfCount = 0;
@@ -576,7 +576,7 @@ Matrixf64<2, N_TURN_ACT> EKFJacobianEstimator::Update(const Vecf64<2> &z)
 //#define PRINT_DZS
 Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> &z) 
 {
-  Vecf64<2> m_dz = m_dz*(1.0 - m_alpha) + z*m_alpha;
+  m_dz = m_dz*(1.0 - m_alpha) + z*m_alpha;
 
 #ifdef PRINT_DZS
   Serial.println("m_dz = [" + String(m_dz(0), 6) + ", " + String(m_dz(1), 6) + "]");
@@ -617,7 +617,7 @@ Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> z, cons
   m_E = (Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1>::Identity() - Kt*Ht)*Etbar;
 
   for (s32 i = 0; i < N_TURN_ACT; i++)
-    m_x(i) = MAX(m_x(i), EPS);
+    m_x(i) = MAX(m_x(i), 0.5);
 
 
 #ifdef PRINT_EKF
@@ -639,4 +639,112 @@ void EKFJacobianEstimator::PrintState()
 }
 ///////////////////////////////////////////////////////
 /// END EKFJacobianEstimator
+///////////////////////////////////////////////////////
+
+#if 1
+Matrixf64<2, N_TURN_ACT> unflattenVector(const Vecf64<2 * N_TURN_ACT> &v)
+{
+  Matrixf64<2, N_TURN_ACT> res;
+  for (s32 c = 0; c < N_TURN_ACT; c++) {
+    res(0, c) = v(2 * c);
+    res(1, c) = v(2 * c + 1);
+  }
+  return res;
+}
+
+Vecf64<2 * N_TURN_ACT> flattenMatrix(const Matrixf64<2, N_TURN_ACT> &m)
+{
+  Vecf64<2 * N_TURN_ACT> res;
+  for (s32 i = 0; i < N_TURN_ACT; i++) {
+    res(2 * i + 0) = m(0, i);
+    res(2 * i + 1) = m(1, i);
+  }
+  return res;
+}
+///////////////////////////////////////////////////////
+/// BEGIN KFJacobianEstimator
+///////////////////////////////////////////////////////
+#define KF_VAR 1
+#define KF_MEASUREMENT_VAR 100
+#define KF_INIT_VAR 0.1
+
+KFJacobianEstimator::KFJacobianEstimator()
+{
+  m_alpha = 1.0;// TIME_STEP / (TIME_STEP + 0.1);
+}
+
+void KFJacobianEstimator::Initialize(const Matrixf64<2, N_TURN_ACT> &J)
+{
+  f64 R[2 * N_TURN_ACT] = { 0 };
+  f64 E[2 * N_TURN_ACT] = { 0 };
+  for (s32 i = 0; i < 2 * N_TURN_ACT; i++) {
+    R[i] = KF_VAR;
+    E[i] = KF_INIT_VAR;
+  }
+  Matrixf64<2*N_TURN_ACT, 2*N_TURN_ACT> RR = Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT>::Diagonal(R);
+  Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> EE = Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT>::Diagonal(E);
+  f64 Q[2] = { KF_MEASUREMENT_VAR,KF_MEASUREMENT_VAR };
+  Matrixf64<2, 2> QQ = Matrixf64<2, 2>::Diagonal(Q);
+
+  Initialize(J, RR, QQ, EE);
+}
+
+void KFJacobianEstimator::Initialize(const Matrixf64<2, N_TURN_ACT> &J, const Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> &R, const Matrixf64<2, 2> &Q, const Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> &E)
+{
+  m_x = flattenMatrix(J);
+
+  m_Q = Q;
+  m_R = R;
+  m_E = E;
+}
+
+Matrixf64<2, N_TURN_ACT> KFJacobianEstimator::Update(const Vecf64<2> z)
+{
+  return Update(z, m_dq);
+}
+
+Matrixf64<2,N_TURN_ACT> KFJacobianEstimator::Update(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq)
+{
+#if 1
+  m_dz = m_dz*(1.0 - m_alpha) + z*m_alpha;
+  //if (dq.magnitude() < 0.05 || z.magnitude() < 0.1)
+  //  return unflattenVector(m_x);
+
+  //Serial.println("dz = [" + String(z(0), 6) + ", " + String(z(1), 6) + "] dq = [" + String(dq(0), 6) + ", " + String(dq(1), 6) + ", " + String(dq(2), 6) + "]");
+
+  Vecf64<2*N_TURN_ACT> xtbar = m_x;
+  Matrixf64<2*N_TURN_ACT, 2*N_TURN_ACT> Etbar;
+  Etbar = m_E + m_R;
+
+  Matrixf64<2, 2*N_TURN_ACT> Ct;
+  for (s32 i = 0; i < N_TURN_ACT; i++) {
+    Ct(0, 2 * i) = dq(i);
+    Ct(1, 2 * i + 1) = dq(i);
+  }
+
+  Matrixf64<2*N_TURN_ACT, 2> Kt = Etbar*Ct.Transpose()*((Ct*Etbar*Ct.Transpose() + m_Q).Inverse());
+  m_x = xtbar + Kt*(z - Ct*xtbar);
+  m_E = (Matrixf64<2*N_TURN_ACT, 2*N_TURN_ACT>::Identity() - Kt*Ct)*Etbar;
+
+
+#ifdef PRINT_EKF
+  if (++g_ekfCount == 15) {
+    g_ekfCount = 0;
+    PrintState();
+  }
+#endif
+#endif
+  return unflattenVector(m_x);
+}
+
+void KFJacobianEstimator::PrintState()
+{
+#ifdef __AVR_ATmega2560__
+  Matrixf64<2, N_TURN_ACT> J = unflattenVector(m_x);
+  J.Print("J");
+#endif
+}
+#endif
+///////////////////////////////////////////////////////
+/// END KFJacobianEstimator
 ///////////////////////////////////////////////////////

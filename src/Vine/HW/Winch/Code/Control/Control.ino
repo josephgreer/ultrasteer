@@ -22,7 +22,7 @@ f64 closeAngle = 90;
 
 s32 regulatorPins[N_TURN_ACT] = { 10, 11, 9 };
 JacobianControl *jc = (JacobianControl *)new JacobianBoxConstraintControl();
-EKFJacobianEstimator je;
+KFJacobianEstimator je;
 bool setJacobian = false;
 
 s32 pressurePin = 3;
@@ -88,7 +88,7 @@ void loop()
   lastTime = currTime;
 
 #ifdef DO_TEST
-  delay(5);
+  delay(100);
   Serial.println("About to run test");
   runTest();
   delay(10000);
@@ -96,6 +96,9 @@ void loop()
 
   //MOTOR CONTROL
   controlMotors(dt);
+
+  //PRESSURE CONTROL
+  controlPressures();
 
   if (!invalidPos) {
     //STEERING CONTROL
@@ -163,16 +166,19 @@ struct ActuatorCalibration
 ActuatorCalibration actuatorCalibs[N_TURN_ACT];
 Matrixf64<2,N_TURN_ACT> JJ;
 
+#define TRACK_WARMUP_COUNT_MAX 10
+
 // Position Constants
-f64 steeringKpp = 0.001;
-f64 steeringKdp = 0.001;
+f64 steeringKpp = 0.0001;
+f64 steeringKdp = 0.00008;
 f64 steeringKip = 0;
 
 Vecf64<2> errorLastTrack(0, 0);
-Vecf64<2> derror(0, 0);
+Vecf64<2> lowPassError(0, 0);
 Vecf64<2> integralErrorTrack(0, 0);
+s32 trackWarmupCount = 0;
 
-f64 totalCalibTime = 0.5;
+f64 totalCalibTime = 2;
 f64 totalRestTime = 2;
 f64 incrementalCalibTime = 0.3;
 f64 incrementalCalibRestTime = 15;
@@ -205,6 +211,30 @@ ActuatorMapper *mapper[N_TURN_ACT];
 #define REGULATE_PRESSURE(amnt) (analogWrite(pressurePin, (s32)((f64)255.0*amnt)))
 
 s32 g_changeCount = 0;
+
+f64 pressureSetPoints[N_TURN_ACT] = { 0 };
+f64 pressurePs[N_TURN_ACT] = { 2, 2, 2 };
+f64 pressureDs[N_TURN_ACT] = { 0.005, 0.005, 0.005 };
+f64 pressureIs[N_TURN_ACT] = { 0.1, 0.1, 0.1 };
+f64 pressureActuatorLast[N_TURN_ACT] = { 0 };
+f64 pressureLowPassError[N_TURN_ACT] = { 0 };
+f64 pressureErrorLast[N_TURN_ACT] = { 0 };
+f64 pressureIntegralError[N_TURN_ACT] = { 0 };
+s32 pressureSensorPins[N_TURN_ACT] = { A1,A2,A3 };
+u32 lastTimePressureVisited = 0;
+f64 aveTimePerPressureLoop = 0;
+
+void resetTracking()
+{
+  calibPWM = 0;
+  calibStartTrackPos = Vecf64<2>(0, 0);
+  calibTime = 0;
+  currCalibAct = -1;
+  errorLastTrack = Vecf64<2>(0, 0);
+  lowPassError = errorLastTrack;
+  integralErrorTrack = Vecf64<2>(0, 0);
+  trackWarmupCount = 0;
+}
 
 bool hasOutput = false;
 void controlSteering()
@@ -353,13 +383,26 @@ void controlSteering()
   case SCM_POS:
   {
     //je.PrintState();
+    if (trackPos.x == -1.0 && trackPos.y == -1.0) {
+      resetTracking();
+      break;
+    }
     Vecf64<2> error = desTrackPos - trackPos;
-    derror = (error - errorLastTrack)*(0.5 / dt) + derror*0.5;
-    errorLastTrack = error;
+    lowPassError = error*0.7 + lowPassError*0.3;
+    Vecf64<2> derror = (lowPassError - errorLastTrack)*(1.0/dt);
+    errorLastTrack = lowPassError;
 
+    Vecf64<2> z = trackPos - trackPosLast;
+    bool trackPosChanged = (z.magnitude() > 1 && scenePos.magnitude() < z.magnitude() / 20.0);
+
+    f64 steeringKdpAlpha = trackWarmupCount / (f64)(TRACK_WARMUP_COUNT_MAX);
+    trackWarmupCount = CLAMP(trackWarmupCount + 1, 0, TRACK_WARMUP_COUNT_MAX);
     Vecf64<2> proportional = error*steeringKpp;
-    Vecf64<2> deriv = derror*steeringKdp;
+    Vecf64<2> deriv = derror*steeringKdp*steeringKdpAlpha;
     Vecf64<2> integral = integralErrorTrack*steeringKip;
+
+    if (trackPosChanged || true)
+      trackWarmupCount = 0;
 
     Vecf64<2> u = proportional + deriv + integral;
     Vecf64<N_TURN_ACT> qs, dqs;
@@ -371,9 +414,8 @@ void controlSteering()
     ACTUATE_REGULATOR(2, qs[2]);
 
     if (trackPosLast.x > 0 && trackPosLast.y > 0) {
-      Vecf64<2> z = trackPos - trackPosLast;
       // Don't update if user manually specified track change
-      if (!(z.magnitude() > 1 && scenePos.magnitude() < z.magnitude() / 20.0)) {
+      if (!trackPosChanged) {
         if (setJacobian)
           JJ = je.Update(z);
         else
@@ -542,6 +584,54 @@ void sendSlaTrackingPacket(u8 *buffer, s32 trackRow, s32 trackCol)
 }
 #endif
 
+s32 g_pressureCount = 0;
+void controlPressures()
+{
+  f64 error = 0;
+  f64 currPressure = 0;
+  f64 derror = 0;
+
+  u32 currTime = micros();
+  f64 dt = (f64)(currTime - lastTimePressureVisited) / (f64)1e6;
+  aveTimePerPressureLoop = dt*0.2 + 0.8*aveTimePerPressureLoop;
+  f64 u = 0;
+  f64 actuatorAmount = 0;
+
+  if (lastTimePressureVisited == 0)
+    dt = 0;
+  lastTimePressureVisited = currTime;
+  if (dt == 0)
+    return;
+
+  f64 kTerm, dTerm, iTerm;
+  for (s32 i = 1; i < 2; i++) {
+    currPressure = analogRead(pressureSensorPins[i]) / 1024.0;
+    error = pressureSetPoints[i] - currPressure;
+    pressureLowPassError[i] = error*0.1 + pressureLowPassError[i] * (1 - 0.1);
+    derror = (pressureLowPassError[i] - pressureErrorLast[i]) / dt;
+
+    kTerm = error*pressurePs[i];
+    iTerm = pressureIntegralError[i] * pressureIs[i];
+    dTerm = derror*pressureDs[i];
+
+    u = kTerm + iTerm + dTerm;
+    actuatorAmount = u + pressureActuatorLast[i];
+    if (0 < actuatorAmount && actuatorAmount < 1)
+      pressureIntegralError[i] += error;
+
+#if 0
+    if (++g_pressureCount == 10) {
+      g_pressureCount = 0;
+      Serial.println("derror = " + String(derror) + " pressure = " + String(currPressure) + " regulatorAmount " + String(actuatorAmount, 6) + " error = " + String(error, 6) + " kTerm " + String(kTerm, 6) + " iTerm " + String(iTerm, 6) + " dTerm " + String(dTerm, 6));
+    }
+#endif
+
+    pressureErrorLast[i] = pressureLowPassError[i];
+
+    ACTUATE_REGULATOR(i, CLAMP(actuatorAmount,0,1));
+  }
+}
+
 void handleSerial(const s8 *input, s32 nBytes)
 {
   switch (input[0]) {
@@ -576,7 +666,7 @@ void handleSerial(const s8 *input, s32 nBytes)
       steeringControlMode = SCM_CALIBRATE;
       mode = "calibrate";
     }
-    else if(input[2] == 'i') {
+    else if (input[2] == 'i') {
       steeringControlMode = SCM_CALIBRATE_INCREMENTAL;
       currCalibAct = (s32)(atoi(&input[4]));
       mode = "calibration incremental";
@@ -599,14 +689,17 @@ void handleSerial(const s8 *input, s32 nBytes)
     else if (input[2] == 'n') {
       steeringControlMode = SCM_NOTHING;
       mode = "none";
-      calibPWM = 0;
-      calibStartTrackPos = Vecf64<2>(0, 0);
-      calibTime = 0;
-      currCalibAct = -1;
+      
+      resetTracking();
+    }
+    else if (input[2] == 'h') {
+      steeringControlMode = SCM_NOTHING;
+      mode = "none";
       for (s32 jj = 0; jj < N_TURN_ACT; jj++)
         ACTUATE_REGULATOR(jj, 0);
 
       REGULATE_PRESSURE(HOME_PRESSURE);
+      resetTracking();
     }
     else if (input[2] == 'k') {
       f64 *Kp, *Kd, *Ki;
@@ -616,16 +709,27 @@ void handleSerial(const s8 *input, s32 nBytes)
       f64 val = atof(input + 5);
       if (input[3] == 'p') {
         *Kp = val;
-        Serial.println("Set Kp to " + String(val));
+        Serial.println("Set Kp to " + String(val, 10));
       }
       else if (input[3] == 'd') {
         *Kd = val;
-        Serial.println("Set Kd to " + String(val));
+        Serial.println("Set Kd to " + String(val, 10));
       }
       else if (input[3] == 'i') {
         *Ki = val;
         Serial.println("Set Ki to " + String(val));
       }
+    }
+    else if (input[2] == 'l') {
+      if (input[3] == 'p') {
+        steeringKpp = steeringKpp * 2.0;
+        steeringKdp = steeringKdp * 2.0;
+      }
+      else if(input[3] == 'd') {
+        steeringKpp = steeringKpp / 2.0;
+        steeringKdp = steeringKdp / 2.0;
+      }
+      Serial.println("Set kp to " + String(steeringKpp, 10) + " kd to " + String(steeringKdp, 10));
     }
     if (input[2] == 'c' || input[2] == 'p' || input[2] == 'n' || input[2] == 'j')
       Serial.println("Setting steering control mode " + mode);
@@ -704,10 +808,6 @@ void handleSerial(const s8 *input, s32 nBytes)
   case 'e':
   case 'E': //Pressure REgulator
   {
-    //f64 pos = atof(input + 2);
-    //f64 angle = (closeAngle - openAngle)*pos + openAngle;
-    //Serial.println("Setting servo valve position " + String(angle));
-    //extensionServo.write(angle);
     f64 amnt = atof(input + 2);
     u8 amount = (s32)(amnt*255.0 + 0.5);
     Serial.println("Setting pressure regulator to " + String(amnt) + " " + String(amount));
@@ -720,11 +820,60 @@ void handleSerial(const s8 *input, s32 nBytes)
     s32 reg = atoi(input + 2);
     if (reg < 1 || reg > N_TURN_ACT)
       return;
-    f64 amount = atof(input + 4);
-    Serial.println("Setting valve " + String(reg) + " to " + String(amount) + " input string " + String(input));
-    //analogWrite(regulatorPins[reg - 1], (s32)(amount));
-    ACTUATE_REGULATOR(reg - 1, amount);
-    //Serial.println("pwm amount " + String(MAP_VAL(amount, actuatorCalibs[reg - 1].sig.a, actuatorCalibs[reg - 1].sig.b, actuatorCalibs[reg - 1].sig.c, actuatorCalibs[reg - 1].sig.d)));
+
+    if (input[4] == 'k')
+    {
+      f64 val = atof(input + 7);
+      if (input[5] == 'p') {
+        pressurePs[reg - 1] = val;
+        Serial.println("Set reg " + String(reg) + " Kp to " + String(val));
+      }
+      else if (input[5] == 'd') {
+        pressureDs[reg - 1] = val;
+        Serial.println("Set reg " + String(reg) + " Kd to " + String(val));
+      }
+      else if (input[5] == 'i') {
+        pressureIs[reg - 1] = val;
+        Serial.println("Set reg " + String(reg) + " Ki to " + String(val));
+      }
+    } 
+    else if (input[4] == 'r')
+    {
+      Serial.println("Pressure in actuator " + String(reg) + " = " + String(analogRead(pressureSensorPins[reg - 1]) / 1024.0));
+    }
+    else 
+    {
+      f64 amount = atof(input + 4);
+      Serial.println("Setting pressure " + String(reg) + " to " + String(amount) + " input string " + String(input));
+      //analogWrite(regulatorPins[reg - 1], (s32)(amount));
+      pressureSetPoints[reg - 1] = amount;
+      //Serial.println("pwm amount " + String(MAP_VAL(amount, actuatorCalibs[reg - 1].sig.a, actuatorCalibs[reg - 1].sig.b, actuatorCalibs[reg - 1].sig.c, actuatorCalibs[reg - 1].sig.d)));
+    }
+    break;
+  }
+  case 'v':
+  case 'V':
+  {
+    f64 pos = atof(input + 2);
+    f64 angle = (closeAngle - openAngle)*pos + openAngle;
+    Serial.println("Setting servo valve position " + String(angle));
+    extensionServo.write(angle);
+    break;
+  }
+  case 's':
+  case 'S':
+  {
+    f64 step = 10;
+    if (input[1] == 's')
+      desTrackPos.y += step;
+    else if (input[1] == 'a')
+      desTrackPos.x += step;
+    else if (input[1] == 'w')
+      desTrackPos.y -= step;
+    else if (input[1] == 'd')
+      desTrackPos.x -= step;
+
+    trackWarmupCount = 0;
     break;
   }
   default:
@@ -801,6 +950,7 @@ void setup()
   pinMode(pwmAPin, OUTPUT);  // PWM for A
   pinMode(dirAPin, OUTPUT);  // dir for A
 
+  resetTracking();
                              //regulator Pins
   for (s32 ii = 0; ii < N_TURN_ACT; ii++) {
     pinMode(regulatorPins[ii], OUTPUT);

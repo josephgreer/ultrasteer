@@ -364,6 +364,7 @@ public:
   }
 
   f64 &operator()(s32 r, s32 c) { return m_data[r][c]; }
+  f64 operator()(s32 r, s32 c) const { return m_data[r][c]; }
 
   Matrixf64<M,N> operator=(const Matrixf64<M,N> &rhs)
   {
