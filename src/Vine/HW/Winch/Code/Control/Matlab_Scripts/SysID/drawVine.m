@@ -1,7 +1,6 @@
-function handles = drawVine(ls,d, handles)
-assert(length(ls) == 3);
-
-kappa = lengthsToKappa(ls,d);
+function handles = drawVine(xs,d, handles)
+n_actuators = 3;
+assert(length(xs) == n_actuators || length(xs) == n_actuators+2);
 
 npoints = 100;
 
@@ -18,14 +17,25 @@ set(handles.baseCircle, 'YData', baseCircle(:,2));
 set(handles.baseCircle, 'ZData', baseCircle(:,3));
 
 % main length
-ll = mean(ls);
 
-kappa = lengthsToKappa(ls,d);
-kappa = max(kappa, 1e-6);
-r = 1/kappa;
+if(length(xs) == n_actuators)
+    ls = xs;
+    ll = mean(ls);
+    kappa = lengthsToKappa(ls,d);
+    kappa = max(kappa, 1e-6);
+    r = 1/kappa;
+    phi = lengthsToPhi(ls);
+    
+    [theta2,ll2,phi2] = lengthsToLThetaPhiNonUniform(ls,d,actuatorThetas());
+    r = ll2/theta2;
+    phi = phi2;
+    kappa = 1/r;
+    ll = ll2;
+    
+    assert(true);%abs(theta2/ll2 - kappa) < 1e-4 && abs(ll2-ll)<1e-4 && min(abs(phi2-phi),2*pi-abs(phi2-phi)) < 1e-4);
+end
 
 act_thetas = actuatorThetas();
-phi = lengthsToPhi(ls);
 phis = act_thetas-phi;
 rs = r-d*cos(phis);
 ts = ls./rs;
