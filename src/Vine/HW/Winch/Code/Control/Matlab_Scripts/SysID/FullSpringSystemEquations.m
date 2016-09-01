@@ -29,7 +29,7 @@ turn_dir = turn_dir(1:2,2);
 f(2:3) = -kt*turn_dir*theta;
 
 for i=1:n_actuators
-    act_dir = Rz(psis(i));
+    act_dir = Rz(psis(i)) ;
     act_dir = act_dir(:,1);
     r = d*act_dir;
     moment = cross(r,k(i)*l_minus_leq(i)*[0; 0; -1]);
