@@ -27,7 +27,7 @@ R = diag([strengthSigma^2*ones(nActuators,1); thetaSigma^2]);
 Q = eye(2)*measurementSigma^2;
 Sigma = 1e-1*eye(nActuators+1);                                                                % initial sigma
 xest = xact;%[50; 300; 200; 0.5];
-;
+
 display(sprintf('f64 strengths[3] = {%f, %f, %f};', xact(1), xact(2), xact(3)));
 display(sprintf('f64 thetas[3] = {%f, %f, %f};', xact(4)+deltaThetas(1), xact(4)+deltaThetas(2), xact(4)+deltaThetas(3)));
 display(sprintf('f64 E0[4] = {%f, %f, %f, %f};', Sigma(1,1), Sigma(2,2), Sigma(3,3), Sigma(4,4)));
