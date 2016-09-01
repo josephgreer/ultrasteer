@@ -105,11 +105,11 @@ R0 = 8/2*1e-3;
 
 h = figure;
 subplot(2,2,1);
-slims = R0./L0s;
-d0sFromLs = d0sFromLs/R0;
+slims = L0s/W0;
+d0sFromLs = d0sFromLs/W0;
 plot(slims, d0sFromLs,'k','LineWidth',2);
-xlabel('R/l_0');
-ylabel('D/W');
+xlabel('l_0/W_{max}');
+ylabel('D/w');
 xlim([min(slims) max(slims)]);
 set(gca, 'FontSize', 10, 'FontName', 'Times New Roman');
 %title('L_0 vs. Max Cross-Section Diameter');
