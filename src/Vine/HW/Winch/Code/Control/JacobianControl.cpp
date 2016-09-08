@@ -436,7 +436,7 @@ s32 g_count = 0;
 #endif
 void JacobianBoxConstraintControl::Update(Vecf64<N_TURN_ACT> &qs, Vecf64<N_TURN_ACT> &dqs, Vecf64<2> dx)
 {
-  Vecf64 <N_TURN_ACT> dq = BVLS<2, N_TURN_ACT>(m_J, dx, m_q*(-1.0), m_q*(-1.0) + 1.0);
+  Vecf64 <N_TURN_ACT> dq = BVLS<2, N_TURN_ACT>(m_J, dx, m_q*(-1.0), m_q*(-1.0) + MAX_ACTUATOR_PRESSURE);
 
 #if 0
   if (dq.magnitude() < EPS && dx.magnitude() > EPS) {

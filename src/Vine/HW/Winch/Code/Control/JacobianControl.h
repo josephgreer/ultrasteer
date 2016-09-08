@@ -3,6 +3,8 @@
 
 #include "Common.h"
 
+#define MAX_ACTUATOR_PRESSURE 0.4
+
 class ActuatorMapper
 {
 public:
