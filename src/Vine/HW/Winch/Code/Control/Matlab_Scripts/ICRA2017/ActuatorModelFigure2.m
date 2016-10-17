@@ -122,4 +122,4 @@ pause(0.5);
 tightfig;
 pause(0.5);
 
-export_fig -transparent ActuatorPlots2.pdf
+%export_fig -transparent ActuatorPlots2.pdf

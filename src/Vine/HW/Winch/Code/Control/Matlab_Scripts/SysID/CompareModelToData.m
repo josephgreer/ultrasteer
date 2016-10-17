@@ -26,7 +26,7 @@ for i=1:length(files)
     
     maxContraction = 1-(D0/(numLinks*L0));
     
-    contractions = linspace(0,maxContraction,5);
+    contractions = linspace(0.04,maxContraction,5);
     forces = zeros(size(contractions));
     for i=1:length(contractions)
         e = contractions(i);
@@ -47,6 +47,6 @@ for i=1:length(files)
         forcesReturn(i) = data(i,3)*4.4452016; % in newtons
     end
     plot(es,forces,'r');
-    %plot(es,forcesReturn,'r');
+    plot(es,forcesReturn,'r');
 end
 

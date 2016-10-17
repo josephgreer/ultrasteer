@@ -11,6 +11,8 @@ src/Vine/HW/Winch/Code/Control/Debug/*
 src/Vine/HW/Winch/Code/Control/Release/*
 src/Vine/HW/Winch/Code/Control/__vm/*
 src/Vine/HW/Winch/Code/Control/.vs/*
+src/Vine/HW/Winch/UI/venv
+src/Vine/HW/Winch/UI/venv/*
 *.DS_Store
 ._*
 *~*

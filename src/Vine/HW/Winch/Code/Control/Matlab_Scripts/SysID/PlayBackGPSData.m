@@ -1,7 +1,7 @@
 clearvars -except positionFrames; clc; close all;
 
-gpsFile = 'Data/EMTracker/Trial2/scan.gps2';
-pressureFile = 'Data/EMTracker/Trial2/Pressure.mat';
+gpsFile = 'Data/EMTracker/Trial4/scan.gps2';
+pressureFile = 'Data/EMTracker/Trial4/Pressure.mat';
 
 load(pressureFile);
 addpath('../../../../../../../MATLAB_CurveFit/LabelData/');

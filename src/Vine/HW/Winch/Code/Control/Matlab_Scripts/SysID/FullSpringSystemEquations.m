@@ -1,7 +1,7 @@
 % x = [l_1;...l_n_act] (what we are solving for) \in R^{n_actuators + 2}
 % k = [spring stiffnesses of actuators; spring stiffness of main channel; torsional spring stiffness] \in R^{n_actuators+2}
 % leq = equilibrium lengths of springs \in R^{n_actuators+1}
-function f = FullSpringSystemEquations(x, k, leq, d, psis)
+function f = FullSpringSystemEquations(x, k, leq, d, psis, torGamma)
 x = real(x);
 
 n_actuators = length(leq)-1;
@@ -26,7 +26,7 @@ assert(n_actuators == 3);
 turn_dir = Rz(phi);
 turn_dir = turn_dir(1:2,2);
 
-f(2:3) = -kt*turn_dir*theta;
+f(2:3) = -(kt*theta)^torGamma*turn_dir;
 
 for i=1:n_actuators
     act_dir = Rz(psis(i)) ;
