@@ -67,6 +67,7 @@ u8 dirLast = 0;
 u32 lastTime = 0;
 f64 desPos = 0;
 f64 desVel = 0;
+f64 desPres = 0;
 u32 count = 0;
 f64 integralError = 0;
 f64 lastPos = 0;
@@ -86,7 +87,6 @@ CONTROL_MODE controlMode = CM_POS;
 
 u8 unwindDir = 1;
 
-
 void loop() 
 {
   f64 pos = encoder.read();
@@ -97,10 +97,12 @@ void loop()
   
   f64 error, derror;
 
+  handlePopState(pos);
+
+  vel = 0.2*(pos-lastPos)/dt + 0.8*lastVel;
   if(controlMode == CM_POS) {
     error = desPos-pos;
   } else {
-    vel = 0.2*(pos-lastPos)/dt + 0.8*lastVel;
     error = desVel-vel;
     lastVel = vel;
   }
@@ -161,15 +163,60 @@ void loop()
       digitalWrite(dirAPin, dir);
       dirLast = dir;
     }
-    if(count++ % 2000 == 0 && controlMode == CM_POS)
-      Serial.println("Des Pos " +  String(desPos) + " Pos " + String(pos) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
-    else if(count % 2000 == 0 && controlMode == CM_VEL)
-      Serial.println("DesVel " + String(desVel) + " Vel " + String(vel) + " Dir " + String((s32)dir) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
-    else if(count % 2000 == 0 && controlMode == CM_THROTTLE)
-      Serial.println("DesVel " + String(desVel) + " Vel " + String(vel) + " Dir " + String((s32)dir) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
+    if(count++ % 2000 == 0)
+      Serial.println("Des Pos " +  String(desPos) + " Pos " + String(pos) + " DesVel " + String(desVel) + " Vel " + String(vel) + " Pressure " + String(desPres) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
     analogWrite(pwmAPin, u);
   }
 
+}
+
+void SetVel(f64 vel)
+{
+  desVel = vel; 
+}
+
+u32 zeroPoint = 0;
+
+f64 unwindSign = -1;
+f64 popVel = -20;
+f64 nonPopVel = -50;
+f64 popPressure = 1.0;
+f64 nonPopPressure = 0.6;
+
+//encoder tick of first actuator
+f64 firstAct = 20000;
+f64 actSpacing = 8000;
+u8 currAct = 0;
+
+u8 defaultPop = true;
+
+void SetMode(u8 mode)
+{
+  controlMode = (CONTROL_MODE)mode;
+  desVel = integralError = 0;
+  errorLast = 0;
+  desPos = lastPos;
+  integralError = 0;
+  lastVel = 0;
+}
+
+void SetPop(bool pop)
+{
+  if(controlMode == CM_THROTTLE) {
+    desPres = pop ? popPressure : nonPopPressure;
+    s32 amount = (s32)(255.0*(desPres));
+    analogWrite(pressurePin, amount);
+    SetVel(pop ? popVel : nonPopVel);
+  }
+}
+
+void handlePopState(f64 encoderTick)
+{
+  if(controlMode == CM_THROTTLE && unwindSign*(encoderTick-zeroPoint) > (firstAct+currAct*actSpacing)) {
+    currAct = currAct+1;
+
+    Serial.println("act " + String(currAct+1));
+  }
 }
 
 #define BUFFER_LEN 20
@@ -185,23 +232,21 @@ void serialEvent()
       case 'm':   // switch mode 
       {
         String mode;
+        CONTROL_MODE mm;
         if(input[2] == 'v') {               //velocity
-          controlMode = CM_VEL;
+          mm = CM_VEL;
           mode = "velocity";
         } else if(input[2] == 'p') {        //position
-          controlMode = CM_POS;
+          mm = CM_POS;
           mode = "position";
         } else if(input[2] == 't') {        //throttle
-          controlMode = CM_THROTTLE;
+          mm = CM_THROTTLE;
           mode = "throttle";
         }
-        desVel = integralError = 0;
-        errorLast = 0;
-        desPos = lastPos;
-        integralError = 0;
-        lastVel = 0;
+
+        SetMode(mm);
         
-        Serial.println("Control mode switched to " + mode);
+        Serial.println("Control mode switched to " + mode);   
         break;
       }
       case 'q':  // decrement set point. interpretation depends on mode
@@ -255,9 +300,15 @@ void serialEvent()
       case 'l':
       case 'L':
       {
-        f64 amnt = atof(&input[2]);
-
-        s32 amount = (s32)(amnt*255.0);
+        f64 amnt;
+        if(input[2] == 'i') {
+          desPres = min(max(atof(&input[4])+desPres,0),1);
+        } else if(input[2] == 'd') {
+          desPres = min(max(desPres-atof(&input[4]),0),1);
+        } else {
+          desPres = min(max(atof(&input[4]),0),1);
+        }
+        s32 amount = (s32)(desPres*255.0);
 
         Serial.println("Setting pressure to " + String(amnt,6) + " pwm " + String(amount));
         analogWrite(pressurePin, amount);
@@ -279,7 +330,7 @@ void serialEvent()
       }
       case 'p':   //Pause
       case 'P':
-      
+      {
         desVel = integralError = 0;
         errorLast = 0;
         desPos = lastPos;
@@ -288,11 +339,31 @@ void serialEvent()
 
         Serial.println("Pause");
         break;
+      }
+      case 't':
+      case 'T':
+      {
+        Serial.println("Setting mode to throttle");
+        SetMode(CM_THROTTLE);
+        
+        bool turn = input[2] == 'y';
+        String mm = turn ? "on" : "off";
+        SetPop(!turn);
+        Serial.println("Turning " + mm);
+        break;
+      }
+      case 'z':
+      case 'Z':
+      {
+        zeroPoint = encoder.read();
+        Serial.println("Zero point = " + String(zeroPoint));
+        break;
+      }
       default:
         break;
-    }   
+    }
+    memset(input,0,BUFFER_LEN);
   }
-  memset(input,0,BUFFER_LEN);
 }
 
 // --------------------------
