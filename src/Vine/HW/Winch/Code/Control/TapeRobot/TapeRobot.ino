@@ -179,9 +179,9 @@ u32 zeroPoint = 0;
 
 f64 unwindSign = -1;
 f64 popVel = -20;
-f64 nonPopVel = -50;
+f64 nonPopVel = -100;
 f64 popPressure = 1.0;
-f64 nonPopPressure = 0.6;
+f64 nonPopPressure = 0.4;
 
 //encoder tick of first actuator
 f64 firstAct = 20000;

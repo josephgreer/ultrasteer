@@ -65,8 +65,8 @@ textBoxVars['TurnNoTurn'] = Tkinter.StringVar()
 
 textBoxVars['Increment'].set('10')
 textBoxVars['Decrement'].set('10')
-textBoxVars['IncPressure'].set('0.1')
-textBoxVars['DecPressure'].set('0.1')
+textBoxVars['IncPressure'].set('0.6')
+textBoxVars['DecPressure'].set('0.6')
 textBoxVars['ActuatorIdx'].set('1')
 textBoxVars['TurnNoTurn'].set(turnLabels[turnNoTurns[currentAct]])
 
