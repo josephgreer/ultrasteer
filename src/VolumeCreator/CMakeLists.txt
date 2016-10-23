@@ -10,8 +10,14 @@ IF (VTK_FOUND)
    INCLUDE(${VTK_USE_FILE})
 ENDIF(VTK_FOUND)
 
-INCLUDE_DIRECTORIES(${OPENCV_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} ../Segment ../RPFileReader ../RTUltrasteer 
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/armadillo/include)
+INCLUDE_DIRECTORIES(
+   ${OpenCV_INCLUDE_DIRS}
+   ${CMAKE_CURRENT_SOURCE_DIR} 
+   ../Segment 
+   ../RPFileReader 
+   ../RTUltrasteer 
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../external/armadillo/include
+	)
 
 SET(VolumeCreatorHeaders VolumeCreator.h CubeVisualizer.h)
 SET(VolumeCreatorSources VolumeCreator.cpp CubeVisualizer.cpp)

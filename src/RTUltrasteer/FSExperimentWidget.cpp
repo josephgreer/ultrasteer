@@ -839,7 +839,7 @@ namespace Nf
     arma::mat trackerz = Matrix44d::FromCvMat(rp.gps2.pose).ToArmaMatrix4x4().submat(arma::span(0,2), arma::span(2,2));
     arma::mat usz = Matrix44d::FromCvMat(snap.gps.pose).ToArmaMatrix4x4().submat(arma::span(0,2), arma::span(2,2));
     angle = 180.0/PI*std::acos(arma::dot(trackerz/norm(trackerz), usz/norm(usz)));
-    angle = min(angle, 180-angle);
+    angle = MIN(angle, 180-angle);
     angle = 90-angle;
   }
 

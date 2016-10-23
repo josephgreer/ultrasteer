@@ -20,6 +20,7 @@ typedef struct {
 
 using namespace Nf;
 
+
 static void releaseRPData(RPData *rp)
 {
 	if(rp->b8)
@@ -104,7 +105,7 @@ TEST(Basics, NeedleEstimator)
 
       if(display) {
         //cvShowImage("Yep", display); 
-        cv::imshow("Yep", cv::Mat(display));
+        cvShowImage("Yep", display);
         cvWaitKey(5);
       }
 			releaseRPData(&curr);
