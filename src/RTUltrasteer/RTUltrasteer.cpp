@@ -57,6 +57,7 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   ADD_BOOL_PARAMETER(m_fsExperimentFileWidgetVisible, "Show FS Experiment File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_fsExperimentStreamWidgetVisible, "Show FS Experiment Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_fsSimpleStreamWidgetVisible, "Show FS Simple Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
+  ADD_BOOL_PARAMETER(m_vineWidgetVisible, "Show Vine Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
 
   CreateUSVisualizer();
   CreateMenuDock();
@@ -72,6 +73,7 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   CreateFSExperimentFileDock();
   CreateFSExperimentStreamDock();
   CreateFSSimpleStreamDock();
+	CreateVineWidget();
 
   QTreeWidgetItem * rt = new QTreeWidgetItem(m_params);
   rt->setText(0, this->GetName());
@@ -128,6 +130,10 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   QTreeWidgetItem * rpFSSSW = new QTreeWidgetItem(m_params);
   rpFSSSW->setText(0, "FSSimpleStream");
   CreateUIElements(rpFSSSW, *m_fsSimpleStreamWidget, m_fsSimpleStreamWidget->GetChildWidgets());
+
+  QTreeWidgetItem * rpVine = new QTreeWidgetItem(m_params);
+  rpVine->setText(0, "RPVine");
+  CreateUIElements(rpVine, *m_vineWidget, m_vineWidget->GetChildWidgets());
 
   //Add to our map of root dock windows
   m_roots[std::string("USDock")].dock = m_usDock;
@@ -195,6 +201,11 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   m_roots[std::string("FSSimpleStreamDock")].root = rpFSSSW;
   m_roots[std::string("FSSimpleStreamDock")].resize = (Resizable *)m_fsSimpleStreamWidget;
   m_roots[std::string("FSSimpleStreamDock")].collection = (ParameterCollection *)m_fsSimpleStreamWidget;
+  m_roots[std::string("VineWidget")].dock = m_vineWidgetDock;
+  m_roots[std::string("VineWidget")].param = m_vineWidgetVisible.get();
+  m_roots[std::string("VineWidget")].root = rpVine;
+  m_roots[std::string("VineWidget")].resize = (Resizable *)m_vineWidget;
+  m_roots[std::string("VineWidget")].collection = (ParameterCollection *)m_vineWidget;
 
   QDockWidget *last = NULL;
   for(std::map < std::string, DockWidgetInfo >::iterator i=m_roots.begin(); i!=m_roots.end(); i++) {
@@ -1129,8 +1140,16 @@ void RTUltrasteer::CreateFSSimpleStreamDock()
   m_FSExperimentStreamDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
 
-
-
+void RTUltrasteer::CreateVineWidget()
+{
+  m_vineWidgetDock = new QDockWidget(tr("VineWidget"), this);
+  m_vineWidgetDock->setAllowedAreas(Qt::AllDockWidgetAreas);
+  
+  m_vineWidget = new Nf::VineWidget(m_vineWidgetDock);
+  m_vineWidgetDock->setWidget(m_vineWidget);
+    
+  m_vineWidgetDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
+}
 
 void RTUltrasteer::CreateMenuDock()
 {

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
+ <class>TapeRobot</class>
+ <widget class="QWidget" name="TapeRobot">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1281</width>
+    <width>999</width>
     <height>1250</height>
    </rect>
   </property>
@@ -15,7 +15,7 @@
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
-    <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,0,0,0,0,0,0,0,0,0">
+    <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,0,0,0,0,0,0,0,0,0,0">
      <item>
       <widget class="QPushButton" name="posMode">
        <property name="sizePolicy">
@@ -257,10 +257,10 @@
        </item>
       </layout>
      </item>
+     <item>
+      <widget class="QTextEdit" name="textEdit"/>
+     </item>
     </layout>
-   </item>
-   <item>
-    <widget class="QTextEdit" name="textEdit"/>
    </item>
   </layout>
  </widget>

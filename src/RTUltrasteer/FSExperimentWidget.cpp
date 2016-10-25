@@ -846,6 +846,7 @@ namespace Nf
   void FSSimpleWidget::HandleFrame(RPData &rp)
   {
     char forceString[200] = {0};
+#ifdef USE_FORCE_SENSOR
     if(m_forceSensorInitialized->GetValue()) {
       s32 rv = m_forceSensor->AcquireFTData();
       if(rv != 0)
@@ -860,6 +861,7 @@ namespace Nf
       sprintf(forceString, "Force: {%f, %f, %f}, Torque: {%f, %f, %f}", rp.force.force.x, rp.force.force.y, rp.force.force.z,
         rp.force.torque.x, rp.force.torque.y, rp.force.torque.z);
     }
+#endif
     SpoofRPDataWithNeedleTipCalibration(rp, &m_ntCalibrator, 0);
 
     if(m_snap2.b8)

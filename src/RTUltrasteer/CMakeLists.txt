@@ -40,12 +40,12 @@ INCLUDE_DIRECTORIES(
 ) 
 
 SET(ultrasteerSrcs main.cpp RTUltrasteer.cpp ChartWidget.cpp USVisualizerWidget.cpp VTKTransferFunctionWidget.cpp FileWidget.cpp Resizable.cpp ImageViewerWidget.cpp RPWidget.cpp RobotHardwareWidget.cpp RobotControlsWidget.cpp Teleoperation2DWidget.cpp
-	PFVisualizerWidget.cpp EstimatorWidget.cpp SaveDataWidget.cpp EMCalibrationWidget.cpp NeedleTipCalibrationPP.cpp TeleoperationVisualizationWidget.cpp RobotStatusWidget.cpp FSExperimentWidget.cpp)
+	PFVisualizerWidget.cpp EstimatorWidget.cpp SaveDataWidget.cpp EMCalibrationWidget.cpp NeedleTipCalibrationPP.cpp TeleoperationVisualizationWidget.cpp RobotStatusWidget.cpp FSExperimentWidget.cpp TapeRobotWidget.cpp VineWidget.cpp)
 
 SET(ultrasteerHeaders RTUltrasteer.h USVisualizerWidget.h ChartWidget.h UICore.h VTKTransferFunctionWidget.h FileWidget.h Resizable.h ImageViewerWidget.h RPWidget.h RobotHardwareWidget.h RobotControlsWidget.h Teleoperation2DWidget.h MouseInteractorStylePP.h
-	PFVisualizerWidget.h EstimatorWidget.h SaveDataWidget.h EMCalibrationWidget.h NeedleTipCalibrationPP.h TeleoperationVisualizationWidget.h RobotStatusWidget.h FSExperimentWidget.h)
+	PFVisualizerWidget.h EstimatorWidget.h SaveDataWidget.h EMCalibrationWidget.h NeedleTipCalibrationPP.h TeleoperationVisualizationWidget.h RobotStatusWidget.h FSExperimentWidget.h TapeRobotWidget.h VineWidget.h)
 
-SET(ultrasteerUI RTUltrasteer.ui FileWidget.ui RobotControlsWidget.ui SaveDataWidget.ui RobotStatusWidget.ui)
+SET(ultrasteerUI RTUltrasteer.ui FileWidget.ui RobotControlsWidget.ui SaveDataWidget.ui RobotStatusWidget.ui TapeRobot.ui)
 
 SET(ultrasteerResources RTUltrasteer.qrc)
 
@@ -82,6 +82,7 @@ SET_TARGET_PROPERTIES(RTUltrasteer PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:wind
 
 
 TARGET_LINK_LIBRARIES(RTUltrasteer Segment VolumeCreator ControlAlgorithms 3DMouse RPFileReader RobotHardware RPFileWriter alglib ${OpenCV_LIBS} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${UlteriusDir}/lib/ulterius_old.lib
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/liblapack.lib ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/libblas.lib ${CMAKE_CURRENT_SOURCE_DIR}/../../external/nano17/libs/NIDAQMX.lib 
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/liblapack.lib ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/libblas.lib winmm.lib
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/nano17/libs/NIDAQMX.lib 
   debug ${CMAKE_CURRENT_SOURCE_DIR}/../../external/nano17/libs/Debug/Force_Sensor_2010.lib optimized ${CMAKE_CURRENT_SOURCE_DIR}/../../external/nano17/libs/Release/Force_Sensor_2010.lib winmm.lib)
 

@@ -8,7 +8,7 @@
 #include <vtkAxesActor.h>
 #include <vtkTextActor.h>
 
-#define USE_FORCE_SENSOR
+//#define USE_FORCE_SENSOR
 namespace Nf
 {
   class ExperimentCalibrationData : public ParameterCollection
