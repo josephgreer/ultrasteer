@@ -47,7 +47,7 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   ADD_BOOL_PARAMETER(m_usDockVisible, "Show Full US Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_rpFileWidgetVisible, "Show Incremental Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_rpStreamingWidgetVisible, "Show Streaming Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
-  ADD_BOOL_PARAMETER(m_estimatorFileWidgetVisible, "Show ParticleFilter File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
+  ADD_BOOL_PARAMETER(m_estimatorFileWidgetVisible, "Show ParticleFilter File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_estimatorStreamingWidgetVisible, "Show ParticleFilter Streaming Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_robotHWWidgetVisible, "Show Robot HW Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_teleoperation2DFileWidgetVisible, "Show 2D Teleoperation File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
@@ -57,7 +57,7 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   ADD_BOOL_PARAMETER(m_fsExperimentFileWidgetVisible, "Show FS Experiment File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_fsExperimentStreamWidgetVisible, "Show FS Experiment Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_fsSimpleStreamWidgetVisible, "Show FS Simple Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
-  ADD_BOOL_PARAMETER(m_vineWidgetVisible, "Show Vine Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
+  ADD_BOOL_PARAMETER(m_vineWidgetVisible, "Show Vine Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
 
   CreateUSVisualizer();
   CreateMenuDock();
@@ -132,7 +132,7 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   CreateUIElements(rpFSSSW, *m_fsSimpleStreamWidget, m_fsSimpleStreamWidget->GetChildWidgets());
 
   QTreeWidgetItem * rpVine = new QTreeWidgetItem(m_params);
-  rpVine->setText(0, "RPVine");
+  rpVine->setText(0, "Vine");
   CreateUIElements(rpVine, *m_vineWidget, m_vineWidget->GetChildWidgets());
 
   //Add to our map of root dock windows
