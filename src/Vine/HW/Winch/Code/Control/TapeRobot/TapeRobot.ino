@@ -83,6 +83,8 @@ f64 Kpv = 1;
 f64 Kdv = 0;
 f64 Kiv = 0.01;
 
+f64 minTension = 5.0;
+
 CONTROL_MODE controlMode = CM_POS;
 
 u8 unwindDir = 1;
@@ -143,12 +145,8 @@ void loop()
     {
       u = Kpv*error + Kdv*derror + Kiv*integralError;
   
-      if(u < 0) {
-        dir = 1;
-        u = abs(u);
-      }
-      if(dir == unwindDir) {
-        u = 0;
+      if(u < minTension) {
+        u = minTension;
         integralError = 0;
         derror = 0;
         dir = 1-unwindDir;
@@ -350,6 +348,15 @@ void serialEvent()
         String mm = turn ? "on" : "off";
         SetPop(!turn);
         Serial.println("Turning " + mm);
+        break;
+      }
+      case 'y':
+      case 'Y':
+      {
+        minTension = atof(&input[2]);
+
+        
+        Serial.println("Setting min tension to " + String(minTension));
         break;
       }
       case 'z':
