@@ -5,11 +5,13 @@
 #include <QThread>
 #include <QGridLayout>
 #include <QTimer>
+#include <vtkInteractorStyleImage.h>
+#include <vtkPointPicker.h>
+#include "opencv2/highgui.hpp"
 #include "UICore.h"
 #include "Resizable.h"
 #include "ImageViewerWidget.h"
 #include "TapeRobotWidget.h"
-#include "opencv2/highgui.hpp"
 
 namespace Nf
 {
@@ -17,21 +19,31 @@ namespace Nf
 	class SerialReceiveThread; 
 	class CameraThread;
 
-  class VineWidget : public ResizableQWidget, public ParameterCollection
+  class VineWidget : public ResizableQWidget, public ParameterCollection, public vtkInteractorStyleImage
   {
     Q_OBJECT 
 
 		friend class BasicThread;
 		friend class CameraThread;
 
+	public:
+    vtkTypeMacro(VineWidget, vtkInteractorStyleImage);
+
   protected:
     std::tr1::shared_ptr < ImageViewerWidget> m_imageViewer;
     std::tr1::shared_ptr < TapeRobotWidget > m_tapeWidget;
     QGridLayout *m_layout;
 
+		vtkSmartPointer < vtkPointPicker > m_pointPicker;
+
 		std::tr1::shared_ptr < Nf::FileParameter > m_videoFile;
 		std::tr1::shared_ptr < Nf::BoolParameter > m_useWebcam;
 		std::tr1::shared_ptr < Nf::BoolParameter > m_run;
+		std::tr1::shared_ptr < Nf::Vec3dParameter > m_lowerBounds;
+		std::tr1::shared_ptr < Nf::Vec3dParameter > m_upperBounds;
+		std::tr1::shared_ptr < Nf::BoolParameter > m_showMask;
+
+		cv::Mat m_mask;
 
 		CLASS_CALLBACK(SetupVideoInput, VineWidget);
 		void SetupVideoInput();
@@ -44,6 +56,7 @@ namespace Nf
 		std::tr1::shared_ptr < cv::VideoCapture > m_cap;
 
 		RPData m_data;
+		Vec2d m_imCoords;
 
 	signals:
 		void stopCameraThread();
@@ -57,6 +70,8 @@ namespace Nf
     ~VineWidget();
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
+
+		virtual void OnLeftButtonDown();
 
     std::vector < QVTKWidget * > GetChildWidgets();
   };

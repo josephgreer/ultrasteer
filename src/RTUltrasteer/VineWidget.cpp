@@ -1,7 +1,16 @@
 #include "VineWidget.h"
+#include <vtkRendererCollection.h>
 
 namespace Nf
 {
+
+	static bool validCoords(Vec2d coords, const IplImage *im)
+	{
+		if(0 <= coords.x && coords.x < im->width && 0 <= coords.y && coords.y < im->height)
+			return true;
+		return false;
+	}
+
 	//////////////////////////////////////////////////////
 	/// BEGIN VINEWIDGET
 	//////////////////////////////////////////////////////
@@ -9,9 +18,17 @@ namespace Nf
     : Nf::ParameterCollection(name)
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
 		, m_cap(NULL)
+		, m_imCoords(-1,-1)
   {
     m_imageViewer = std::tr1::shared_ptr<ImageViewerWidget>(new ImageViewerWidget(parent));
 		m_tapeWidget = std::tr1::shared_ptr<TapeRobotWidget>(new TapeRobotWidget(parent));
+
+    m_pointPicker = vtkSmartPointer<vtkPointPicker>::New();
+		m_pointPicker->SetTolerance(0.0);
+		m_pointPicker->PickFromListOn();
+		m_pointPicker->AddPickList(m_imageViewer->GetActor());
+		m_imageViewer->GetWindowInteractor()->SetPicker(m_pointPicker);
+		m_imageViewer->GetWindowInteractor()->SetInteractorStyle(this);
 
     m_layout = new QGridLayout(parent);
     m_layout->addWidget((QWidget *)(m_imageViewer.get()), 0, 0);
@@ -29,6 +46,9 @@ namespace Nf
     ADD_OPEN_FILE_PARAMETER(m_videoFile, "Video File",CALLBACK_POINTER(SetupVideoInput, VineWidget), this, BASE_PATH_CAT("VineVideos/Vine1.mov"), "(*.mov)");
 		ADD_BOOL_PARAMETER(m_useWebcam, "Use Webcam", CALLBACK_POINTER(SetupVideoInput, VineWidget), this, false);
 		ADD_BOOL_PARAMETER(m_run, "Run", CALLBACK_POINTER(SetupVideoInput, VineWidget), this, false);
+		ADD_VEC3D_PARAMETER(m_lowerBounds, "Lower Bounds", NULL, this, Vec3d(255,255,255), Vec3d(0,0,0), Vec3d(179,255,255), Vec3d(1,1,1));
+		ADD_VEC3D_PARAMETER(m_upperBounds, "Upper Bounds", NULL, this, Vec3d(0,0,0), Vec3d(0,0,0), Vec3d(179,255,255), Vec3d(1,1,1));
+		ADD_BOOL_PARAMETER(m_showMask, "Show Mask", NULL, this, false);
   }
 
   VineWidget::~VineWidget()
@@ -37,10 +57,29 @@ namespace Nf
 
 	void VineWidget::SetImage(bool resetView)
 	{
+
 		m_cameraMutex.lock();
-		m_imageViewer->SetImage(&m_data, RPF_COLOR);
+		if(validCoords(m_imCoords, m_data.color)) {
+			cvDrawCircle(m_data.color, cvPoint((s32)(m_imCoords.x+0.5), (s32)(m_imCoords.y+0.5)), 5, cvScalar(1, 0, 0), 5);
+		}
+
+		cv::Mat hsv;
+		cv::cvtColor(cv::cvarrToMat(m_data.color), hsv, CV_RGB2HSV);
+		Vec3d lb,ub; lb = m_lowerBounds->GetValue(); ub = m_upperBounds->GetValue();
+		cv::inRange(hsv, cv::Scalar(lb.x, lb.y, lb.z), cv::Scalar(ub.x, ub.y, ub.z), m_mask);
+
+		if(m_showMask->GetValue()) {
+			IplImage im = m_mask;
+			m_data.b8 = cvCloneImage(&im);
+			m_imageViewer->SetImage(&m_data, RPF_BPOST8);
+		} else {
+			m_imageViewer->SetImage(&m_data, RPF_COLOR);
+		}
+
 		if(resetView)
 			m_imageViewer->ResetView();
+		m_imageViewer->GetWindowInteractor()->SetPicker(m_pointPicker);
+		m_imageViewer->GetWindowInteractor()->SetInteractorStyle(this);
 		m_cameraMutex.unlock();
 	}
 
@@ -57,6 +96,30 @@ namespace Nf
     m_imageViewer->UpdateSize(QSize(3*sz.width()/4-10, sz.height()));
     m_tapeWidget->UpdateSize(QSize(sz.width()/4-10, sz.height()));
   }
+
+	void VineWidget::OnLeftButtonDown()
+	{      
+		vtkSmartPointer < vtkRenderWindowInteractor > interactor = m_imageViewer->GetWindowInteractor();
+		m_pointPicker->Pick(interactor->GetEventPosition()[0], interactor->GetEventPosition()[1], 0,  // always zero.
+			interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer());
+		double ima[3];
+		m_pointPicker->GetPickPosition(ima);
+
+		//Spacing
+		m_cameraMutex.lock();
+		f64 *spacing = m_imageViewer->GetImageData()->GetSpacing();
+		m_imCoords = Vec2d(-ima[0]/spacing[0], -ima[1]/spacing[1]);
+
+		cv::Rect roi((s32)(m_imCoords.x+0.5)-2, (s32)(m_imCoords.y+0.5)-2, 4,4);
+		cv::Mat subRegion = cv::cvarrToMat(m_data.color);
+		subRegion = subRegion(roi);
+		cv::Mat hsv;
+		cv::cvtColor(subRegion, hsv, CV_RGB2HSV);
+		cv::Scalar val = cv::mean(hsv);
+		m_lowerBounds->SetValue(Vec3d(val(0)-10,val(1)-10,val(2)-10));
+		m_upperBounds->SetValue(Vec3d(val(0)+10,val(1)+10,val(2)+10));
+		m_cameraMutex.unlock();
+	}
 
   std::vector < QVTKWidget * > VineWidget::GetChildWidgets()
   {
@@ -159,24 +222,26 @@ namespace Nf
 	void CameraThread::execute()
 	{
 		cv::Mat frame;
-		(*m_vineWidget->m_cap) >> frame;
+		if(m_vineWidget->m_cap->isOpened()) {
+			(*m_vineWidget->m_cap) >> frame;
 
-		RPData rp;
-		IplImage im = frame;
-		rp.color = &im;
-		rp.mpp = Vec2d(100,100);
-		rp.gps.pose = Matrix44d::I().ToCvMat();
-		rp.gps.pos = Vec3d(0,0,0);
+			RPData rp;
+			IplImage im = frame;
+			rp.color = &im;
+			rp.mpp = Vec2d(1000,1000);
+			rp.gps.pose = Matrix44d::I().ToCvMat();
+			rp.gps.pos = Vec3d(0,0,0);
 
-		m_vineWidget->m_cameraMutex.lock();
-		m_vineWidget->m_data.Release();
-		m_vineWidget->m_data = rp.Clone();
-		cvCvtColor(rp.color, m_vineWidget->m_data.color, CV_BGR2RGB);
-		m_vineWidget->m_cameraMutex.unlock();
+			m_vineWidget->m_cameraMutex.lock();
+			m_vineWidget->m_data.Release();
+			m_vineWidget->m_data = rp.Clone();
+			cvCvtColor(rp.color, m_vineWidget->m_data.color, CV_BGR2RGB);
+			m_vineWidget->m_cameraMutex.unlock();
 
-		emit SetMainImage(m_firstTime);
+			emit SetMainImage(m_firstTime);
 
-		m_firstTime = false;
+			m_firstTime = false;
+		}
 	}
 	//////////////////////////////////////////////////////
 	/// BEGIN CameraThread

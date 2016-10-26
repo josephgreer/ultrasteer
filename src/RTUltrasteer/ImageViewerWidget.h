@@ -54,6 +54,7 @@ namespace Nf
     virtual void SetDataSpacing(const RPData *rp);
     virtual vtkSmartPointer < vtkRenderWindowInteractor > GetWindowInteractor() { return m_interactor; }
     virtual vtkSmartPointer < vtkRenderer > GetRenderer() { return m_renderer; }
+		virtual vtkSmartPointer < vtkActor > GetActor() { return (vtkActor *)m_imageActor.Get(); }
     vtkSmartPointer <vtkImageData> GetImageData() { return m_importer->GetOutput(); }
     virtual void ResetView();
   };
