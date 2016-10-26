@@ -63,14 +63,7 @@ namespace Nf
 			cvDrawCircle(m_data.color, cvPoint((s32)(m_imCoords.x+0.5), (s32)(m_imCoords.y+0.5)), 5, cvScalar(1, 0, 0), 5);
 		}
 
-		cv::Mat hsv;
-		cv::cvtColor(cv::cvarrToMat(m_data.color), hsv, CV_RGB2HSV);
-		Vec3d lb,ub; lb = m_lowerBounds->GetValue(); ub = m_upperBounds->GetValue();
-		cv::inRange(hsv, cv::Scalar(lb.x, lb.y, lb.z), cv::Scalar(ub.x, ub.y, ub.z), m_mask);
-
 		if(m_showMask->GetValue()) {
-			IplImage im = m_mask;
-			m_data.b8 = cvCloneImage(&im);
 			m_imageViewer->SetImage(&m_data, RPF_BPOST8);
 		} else {
 			m_imageViewer->SetImage(&m_data, RPF_COLOR);
@@ -116,8 +109,8 @@ namespace Nf
 		cv::Mat hsv;
 		cv::cvtColor(subRegion, hsv, CV_RGB2HSV);
 		cv::Scalar val = cv::mean(hsv);
-		m_lowerBounds->SetValue(Vec3d(val(0)-10,val(1)-10,val(2)-10));
-		m_upperBounds->SetValue(Vec3d(val(0)+10,val(1)+10,val(2)+10));
+		m_lowerBounds->SetValue(Vec3d(val(0)-20,val(1)-70,val(2)-30));
+		m_upperBounds->SetValue(Vec3d(val(0)+20,val(1)+70,val(2)+30));
 		m_cameraMutex.unlock();
 	}
 
@@ -219,11 +212,21 @@ namespace Nf
 		m_firstTime = true;
 	}
 
+	std::vector < Squarei > findExpandAndClusterContours(IplImage *colorMask, f32 expand, bool minArea = false, bool shrinkBack = false);
+	CvRect SquareiToCvRect(const Squarei &sq);
+
 	void CameraThread::execute()
 	{
-		cv::Mat frame;
+		cv::Mat raw,frame;
 		if(m_vineWidget->m_cap->isOpened()) {
-			(*m_vineWidget->m_cap) >> frame;
+			(*m_vineWidget->m_cap) >> raw;
+
+			if(raw.size().width > 640) {
+				f64 scale = 640.0/(f64)raw.size().width;
+				cv::resize(raw, frame, cv::Size(640,raw.size().height*scale));
+			} else {
+				frame = raw;
+			}
 
 			RPData rp;
 			IplImage im = frame;
@@ -231,6 +234,26 @@ namespace Nf
 			rp.mpp = Vec2d(1000,1000);
 			rp.gps.pose = Matrix44d::I().ToCvMat();
 			rp.gps.pos = Vec3d(0,0,0);
+			
+			cv::Mat mask;
+			cv::Mat hsv;
+			cv::cvtColor(cv::cvarrToMat(rp.color), hsv, CV_BGR2HSV);
+			Vec3d lb,ub; lb = m_vineWidget->m_lowerBounds->GetValue(); ub = m_vineWidget->m_upperBounds->GetValue();
+			cv::inRange(hsv, cv::Scalar(lb.x, lb.y, lb.z), cv::Scalar(ub.x, ub.y, ub.z), mask);
+
+			IplImage mmask = mask;
+			rp.b8 = &mmask;
+			std::vector < Squarei > rects = findExpandAndClusterContours(rp.b8, 1,false,true);
+
+			cv::Rect bestRect(0,0,0,0);
+			for(s32 i=0; i<rects.size(); i++) {
+				if(rects[i].Area() > bestRect.area()) {
+					bestRect = SquareiToCvRect(rects[i]);
+				}
+			}
+
+			cv::rectangle(cv::cvarrToMat(rp.b8), bestRect, cvScalar(255), 5);
+			cv::rectangle(cv::cvarrToMat(rp.color), bestRect, cvScalar(255,0,0), 5);
 
 			m_vineWidget->m_cameraMutex.lock();
 			m_vineWidget->m_data.Release();

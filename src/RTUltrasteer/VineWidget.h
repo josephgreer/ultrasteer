@@ -43,8 +43,6 @@ namespace Nf
 		std::tr1::shared_ptr < Nf::Vec3dParameter > m_upperBounds;
 		std::tr1::shared_ptr < Nf::BoolParameter > m_showMask;
 
-		cv::Mat m_mask;
-
 		CLASS_CALLBACK(SetupVideoInput, VineWidget);
 		void SetupVideoInput();
 		

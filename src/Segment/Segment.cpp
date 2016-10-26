@@ -466,7 +466,7 @@ namespace Nf
   //////////////////////////////////////////////////
   //Begin static image processing helper functions
   //////////////////////////////////////////////////
-  static CvRect SquareiToCvRect(const Squarei &sq)
+  CvRect SquareiToCvRect(const Squarei &sq)
   {
     return cvRect(sq.ul.x, sq.ul.y, sq.lr.x-sq.ul.x, sq.lr.y-sq.ul.y);
   }
@@ -542,7 +542,7 @@ namespace Nf
   //Automatically find, expand, and cluster contours.  
   //A threshold is established for smallest contours.  If minArea is true, then this threshold is set
   //to 1/2 the area of the largest contour
-  static std::vector < Squarei > findExpandAndClusterContours(IplImage *colorMask, f32 expand, bool minArea = false, bool shrinkBack = false)
+  std::vector < Squarei > findExpandAndClusterContours(IplImage *colorMask, f32 expand, bool minArea = false, bool shrinkBack = false)
   {
     CvMemStorage *storage = cvCreateMemStorage();
     CvSeq *cons;
