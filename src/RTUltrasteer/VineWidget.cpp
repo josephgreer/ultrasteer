@@ -59,9 +59,6 @@ namespace Nf
 	{
 
 		m_cameraMutex.lock();
-		if(validCoords(m_imCoords, m_data.color)) {
-			cvDrawCircle(m_data.color, cvPoint((s32)(m_imCoords.x+0.5), (s32)(m_imCoords.y+0.5)), 5, cvScalar(1, 0, 0), 5);
-		}
 
 		if(m_showMask->GetValue()) {
 			m_imageViewer->SetImage(&m_data, RPF_BPOST8);
@@ -196,7 +193,19 @@ namespace Nf
 	/// END SerialReceiveThread
 	//////////////////////////////////////////////////////
 
-	
+	static cv::Rect clampRectToImage(cv::Rect rect, cv::Mat mat)
+	{
+		Vec2i tl;
+		Vec2i br;
+		tl.x = MAX(MIN(rect.tl().x,mat.size().width-1), 0);
+		tl.y = MAX(MIN(rect.tl().y,mat.size().height-1), 0);
+		
+		br.x = MAX(MIN(rect.br().x,mat.size().width-1), 0);
+		br.y = MAX(MIN(rect.br().y,mat.size().height-1), 0);
+
+		return cv::Rect(cv::Point(tl.x, tl.y), cv::Point(br.x, br.y));
+	}
+
 	//////////////////////////////////////////////////////
 	/// BEGIN CameraThread
 	//////////////////////////////////////////////////////
@@ -243,7 +252,9 @@ namespace Nf
 
 			IplImage mmask = mask;
 			rp.b8 = &mmask;
-			std::vector < Squarei > rects = findExpandAndClusterContours(rp.b8, 1,false,true);
+			IplImage *tempIm = cvCloneImage(rp.b8);
+			std::vector < Squarei > rects = findExpandAndClusterContours(tempIm, 1,false,true);
+			cvReleaseImage(&tempIm);
 
 			cv::Rect bestRect(0,0,0,0);
 			for(s32 i=0; i<rects.size(); i++) {
@@ -252,7 +263,15 @@ namespace Nf
 				}
 			}
 
-			cv::rectangle(cv::cvarrToMat(rp.b8), bestRect, cvScalar(255), 5);
+			cv::Mat temp = cv::cvarrToMat(rp.b8);
+			cv::Rect roi = clampRectToImage(cv::Rect(bestRect.br().x-10, 0, 20, temp.size().height),temp);
+			temp = temp(roi);
+			cv::Moments mom = cv::moments(temp);
+			Vec2d headCen(mom.m10/mom.m00+roi.tl().x, mom.m01/mom.m00+roi.tl().y);
+			//cv::circle(cv::cvarrToMat(rp.b8), cv::Point(headCen.x, headCen.y), 5, cv::Scalar(255), 5);
+			cv::circle(cv::cvarrToMat(rp.color), cv::Point(headCen.x, headCen.y), 5, cv::Scalar(0,0,255), 5);
+
+			//cv::rectangle(cv::cvarrToMat(rp.b8), bestRect, cvScalar(255), 5);
 			cv::rectangle(cv::cvarrToMat(rp.color), bestRect, cvScalar(255,0,0), 5);
 
 			m_vineWidget->m_cameraMutex.lock();

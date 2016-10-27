@@ -30,5 +30,7 @@ ADD_LIBRARY(RPFileReader STATIC
     RPUlterius.cpp
     RPProcess.cpp
     RPProcess.h
+	Serial.h
+	Serial.cpp
 )
 
