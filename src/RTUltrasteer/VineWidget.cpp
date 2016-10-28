@@ -19,9 +19,12 @@ namespace Nf
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
 		, m_cap(NULL)
 		, m_imCoords(-1,-1)
+		, m_oddDirection(-1)		//Direction odd actuators move you in the image
+		, m_actuatorIndex(1)
   {
     m_imageViewer = std::tr1::shared_ptr<ImageViewerWidget>(new ImageViewerWidget(parent));
 		m_tapeWidget = std::tr1::shared_ptr<TapeRobotWidget>(new TapeRobotWidget(parent));
+		m_serial = std::tr1::shared_ptr<CSerial>(new CSerial());
 
     m_pointPicker = vtkSmartPointer<vtkPointPicker>::New();
 		m_pointPicker->SetTolerance(0.0);
@@ -40,7 +43,22 @@ namespace Nf
 		m_cameraThread = std::tr1::shared_ptr < CameraThread >(new CameraThread(this));
 		
 		connect(this, SIGNAL(stopCameraThread()), m_cameraThread.get(), SLOT(stopThread()));
-		connect(this, SIGNAL(stopSerialReceiveThread()), m_cameraThread.get(), SLOT(stopThread()));
+		connect(this, SIGNAL(stopSerialReceiveThread()), m_serialThread.get(), SLOT(stopThread()));
+
+		// HW Button Signals
+		connect(this->m_tapeWidget->ui.posMode, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.velMode, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.throttleMode, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.increment, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.decrement, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.incrementPressure, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.decPressure, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.setZeroPoint, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.turn, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.dontTurn, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.pause, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+
+		connect(m_serialThread.get(), SIGNAL(incrementActuator()), this, SLOT(ActuatorIncrement()));
 
     ADD_CHILD_COLLECTION(m_imageViewer.get());
     ADD_OPEN_FILE_PARAMETER(m_videoFile, "Video File",CALLBACK_POINTER(SetupVideoInput, VineWidget), this, BASE_PATH_CAT("VineVideos/Vine1.mov"), "(*.mov)");
@@ -49,11 +67,95 @@ namespace Nf
 		ADD_VEC3D_PARAMETER(m_lowerBounds, "Lower Bounds", NULL, this, Vec3d(255,255,255), Vec3d(0,0,0), Vec3d(179,255,255), Vec3d(1,1,1));
 		ADD_VEC3D_PARAMETER(m_upperBounds, "Upper Bounds", NULL, this, Vec3d(0,0,0), Vec3d(0,0,0), Vec3d(179,255,255), Vec3d(1,1,1));
 		ADD_BOOL_PARAMETER(m_showMask, "Show Mask", NULL, this, false);
+		ADD_INT_PARAMETER(m_comPort, "Com Port", CALLBACK_POINTER(InitSerial, VineWidget), this, 1, 1, 20, 1);
+		ADD_BOOL_PARAMETER(m_serialInit, "Init Serial", CALLBACK_POINTER(InitSerial, VineWidget), this, false);
+		ADD_BOOL_PARAMETER(m_pixelDeadband, "Pixel Deadband", NULL, this, 50.0, 1.0, 200.0, 1.0);
   }
 
   VineWidget::~VineWidget()
   {
   }
+
+	void VineWidget::ActuatorIncrement(s32 index)
+	{
+		m_actuatorIndex = index;
+	}
+
+	void VineWidget::HWButtonPushed()
+	{
+		QPushButton *button = (QPushButton *)sender();
+
+		if(!m_serial->IsOpened()) {
+			NTrace("Serial is not opened\n");
+			return;
+		}
+
+		if(button == m_tapeWidget->ui.posMode) {
+			const char *str = "m p\n";
+			this->m_serial->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.velMode){
+			const char *str = "m v\n";
+			this->m_serial->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.throttleMode) {
+			const char *str = "m t\n";
+			this->m_serial->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.increment) {
+			char str[20] = {0}; strcpy(str, "w ");
+			strcat(str, m_tapeWidget->ui.incValue->text().toStdString().c_str());
+			strcat(str, "\n");
+			this->m_serial->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.decrement) {
+			char str[20] = {0}; strcpy(str, "q ");
+			strcat(str, m_tapeWidget->ui.decValue->text().toStdString().c_str());
+			strcat(str, "\n");
+			this->m_serial->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.incrementPressure) {
+			char str[20] = {0}; strcpy(str, "l i ");
+			strcat(str, m_tapeWidget->ui.incPressureValue->text().toStdString().c_str());
+			strcat(str, "\n");
+			this->m_serial->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.decPressure) {
+			char str[20] = {0}; strcpy(str, "l d ");
+			strcat(str, m_tapeWidget->ui.incPressureValue->text().toStdString().c_str());
+			strcat(str, "\n");
+			this->m_serial->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.setZeroPoint) {
+			const char *str = "z\n";
+			this->m_serial->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.turn) {
+			const char *str = "t y\n";
+			this->m_serial->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.dontTurn) {
+			const char *str = "t n\n";
+			this->m_serial->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.pause) {
+			const char *str = "p\n";
+			this->m_serial->SendData(str, strlen(str));
+		} else {
+			NTrace("hmmm... ");
+			assert(0);
+		}
+	}
+
+	void VineWidget::InitSerial()
+	{
+		if(m_serialThread->isRunning()) {
+			emit stopSerialReceiveThread();
+			m_serialThread->wait();
+		}
+
+		if(m_serial->IsOpened())
+			m_serial->Close();
+
+		if(m_serialInit->GetValue()) {
+			bool rv = m_serial->Open(m_comPort->GetValue(), 115200);
+			if(rv != true) {
+				m_serialInit->SetValue(false);
+				return;
+			}
+			m_serialThread->start();
+		}
+	}
 
 	void VineWidget::SetImage(bool resetView)
 	{
@@ -66,6 +168,7 @@ namespace Nf
 			m_imageViewer->SetImage(&m_data, RPF_COLOR);
 		}
 
+		m_desiredRow = m_data.color->height/2.0;
 		if(resetView)
 			m_imageViewer->ResetView();
 		m_imageViewer->GetWindowInteractor()->SetPicker(m_pointPicker);
@@ -180,14 +283,36 @@ namespace Nf
 	//////////////////////////////////////////////////////
 	/// BEGIN SerialReceiveThread
 	//////////////////////////////////////////////////////
+#define SERIAL_SZ
 	SerialReceiveThread::SerialReceiveThread(VineWidget *vine)
 		: BasicThread(vine)
 	{
+		m_data = new char[SERIAL_SZ];
+	}
+
+	SerialReceiveThread::~SerialReceiveThread()
+	{
+		delete m_data;
+		m_data = NULL;
 	}
 
 	void SerialReceiveThread::execute()
 	{
-		s32 x = 0;
+		if(!m_vineWidget->m_serial->IsOpened()) {
+			msleep(100);
+			return;
+		}
+
+		s32 rcvSz = this->m_vineWidget->m_serial->ReadData(m_data, SERIAL_SZ);
+
+		m_vineWidget->m_tapeWidget->ui.textEdit->append(m_data);
+
+		s32 actIdx = 0;
+		if(sscanf(m_data, "act %d", &actIdx) == 1) {
+			incrementActuator(actIdx);
+		}
+
+		memset(m_data, 0, rcvSz);
 	}
 	//////////////////////////////////////////////////////
 	/// END SerialReceiveThread
@@ -229,6 +354,11 @@ namespace Nf
 		cv::Mat raw,frame;
 		if(m_vineWidget->m_cap->isOpened()) {
 			(*m_vineWidget->m_cap) >> raw;
+
+			if(raw.empty()) {
+				msleep(100);
+				return;
+			}
 
 			if(raw.size().width > 640) {
 				f64 scale = 640.0/(f64)raw.size().width;

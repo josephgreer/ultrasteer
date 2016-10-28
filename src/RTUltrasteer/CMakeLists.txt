@@ -83,6 +83,6 @@ SET_TARGET_PROPERTIES(RTUltrasteer PROPERTIES LINK_FLAGS_RELEASE /SUBSYSTEM:wind
 
 TARGET_LINK_LIBRARIES(RTUltrasteer Segment VolumeCreator ControlAlgorithms 3DMouse RPFileReader RobotHardware RPFileWriter alglib ${OpenCV_LIBS} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${ITK_LIBRARIES} ${VTK_LIBRARIES} ${UlteriusDir}/lib/ulterius_old.lib
   ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/liblapack.lib ${CMAKE_CURRENT_SOURCE_DIR}/../../external/lapack/libblas.lib winmm.lib
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/nano17/libs/NIDAQMX.lib 
-  debug ${CMAKE_CURRENT_SOURCE_DIR}/../../external/nano17/libs/Debug/Force_Sensor_2010.lib optimized ${CMAKE_CURRENT_SOURCE_DIR}/../../external/nano17/libs/Release/Force_Sensor_2010.lib winmm.lib)
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../external/nano17/libs/NIDAQMX.lib) 
+  #debug ${CMAKE_CURRENT_SOURCE_DIR}/../../external/nano17/libs/Debug/Force_Sensor_2010.lib optimized ${CMAKE_CURRENT_SOURCE_DIR}/../../external/nano17/libs/Release/Force_Sensor_2010.lib winmm.lib)
 

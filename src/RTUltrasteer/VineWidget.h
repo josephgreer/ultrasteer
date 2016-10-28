@@ -12,6 +12,7 @@
 #include "Resizable.h"
 #include "ImageViewerWidget.h"
 #include "TapeRobotWidget.h"
+#include "Serial.h"
 
 namespace Nf
 {
@@ -25,6 +26,7 @@ namespace Nf
 
 		friend class BasicThread;
 		friend class CameraThread;
+		friend class SerialReceiveThread;
 
 	public:
     vtkTypeMacro(VineWidget, vtkInteractorStyleImage);
@@ -34,6 +36,10 @@ namespace Nf
     std::tr1::shared_ptr < TapeRobotWidget > m_tapeWidget;
     QGridLayout *m_layout;
 
+		s32 m_oddDirection;
+		s32 m_actuatorIndex;
+		f64 m_desiredRow;
+
 		vtkSmartPointer < vtkPointPicker > m_pointPicker;
 
 		std::tr1::shared_ptr < Nf::FileParameter > m_videoFile;
@@ -42,9 +48,15 @@ namespace Nf
 		std::tr1::shared_ptr < Nf::Vec3dParameter > m_lowerBounds;
 		std::tr1::shared_ptr < Nf::Vec3dParameter > m_upperBounds;
 		std::tr1::shared_ptr < Nf::BoolParameter > m_showMask;
+		std::tr1::shared_ptr < Nf::IntParameter > m_comPort;
+		std::tr1::shared_ptr < Nf::BoolParameter > m_serialInit;
+		std::tr1::shared_ptr < Nf::FloatParameter > m_pixelDeadband;
 
 		CLASS_CALLBACK(SetupVideoInput, VineWidget);
 		void SetupVideoInput();
+
+		CLASS_CALLBACK(InitSerial, VineWidget);
+		void InitSerial();
 		
 		std::tr1::shared_ptr < SerialReceiveThread > m_serialThread;
 		std::tr1::shared_ptr < CameraThread > m_cameraThread;
@@ -52,6 +64,7 @@ namespace Nf
 		QMutex m_cameraMutex;
 
 		std::tr1::shared_ptr < cv::VideoCapture > m_cap;
+		std::tr1::shared_ptr < CSerial > m_serial;
 
 		RPData m_data;
 		Vec2d m_imCoords;
@@ -62,6 +75,8 @@ namespace Nf
 
 	public slots:
 		void SetImage(bool resetView);
+		void HWButtonPushed();
+		void ActuatorIncrement(s32 index);
 
   public:
     VineWidget(QWidget *parent, const char *name = "Tape Robot Widget");
@@ -102,8 +117,13 @@ namespace Nf
 
 	public:
 		SerialReceiveThread(VineWidget *vine);
+		virtual ~SerialReceiveThread();
+
+signals:
+		void incrementActuator(s32 index);
 
 	protected:
+		char *m_data;
 		void execute();
 	};
 

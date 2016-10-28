@@ -15,8 +15,6 @@ namespace Nf
     TapeRobotWidget(QWidget *parent = 0, Qt::WFlags flags = 0);
     ~TapeRobotWidget();
 
-  private:
-
     Ui::TapeRobot ui;
   };
 

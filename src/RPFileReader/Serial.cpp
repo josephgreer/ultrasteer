@@ -1,6 +1,5 @@
 // Serial.cpp
 
-#include "stdafx.h"
 #include "Serial.h"
 
 CSerial::CSerial()
