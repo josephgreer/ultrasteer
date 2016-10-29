@@ -298,17 +298,16 @@ void serialEvent()
       case 'l':
       case 'L':
       {
-        f64 amnt;
         if(input[2] == 'i') {
           desPres = min(max(atof(&input[4])+desPres,0),1);
         } else if(input[2] == 'd') {
           desPres = min(max(desPres-atof(&input[4]),0),1);
         } else {
-          desPres = min(max(atof(&input[4]),0),1);
+          desPres = min(max(atof(&input[2]),0),1);
         }
         s32 amount = (s32)(desPres*255.0);
 
-        Serial.println("Setting pressure to " + String(amnt,6) + " pwm " + String(amount));
+        Serial.println("Setting pressure to " + String(desPres,6) + " pwm " + String(amount));
         analogWrite(pressurePin, amount);
         break;
       }
