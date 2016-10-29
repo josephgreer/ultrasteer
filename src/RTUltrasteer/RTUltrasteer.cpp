@@ -382,11 +382,11 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
 
       QDoubleSpinBox *sb = new QDoubleSpinBox(m_params);
       sb->setDecimals(50);
-      sb->setMinimum(EL_VALUE2(vec3ds[i]->GetMin(),jj));
-      sb->setMaximum(EL_VALUE2(vec3ds[i]->GetMax(),jj));
-      sb->setSingleStep(EL_VALUE2(vec3ds[i]->GetStep(),jj));
+      sb->setMinimum(EL_VALUE(vec3ds[i]->GetMin(),jj));
+      sb->setMaximum(EL_VALUE(vec3ds[i]->GetMax(),jj));
+      sb->setSingleStep(EL_VALUE(vec3ds[i]->GetStep(),jj));
       sb->setMaximumWidth(8*8);
-      sb->setValue(EL_VALUE2(vec3ds[i]->GetValue(),jj));
+      sb->setValue(EL_VALUE(vec3ds[i]->GetValue(),jj));
       sbs->obj[jj] = (QObject *)sb;
 
       m_params->setItemWidget(grandChild, 1, sb); 
@@ -416,11 +416,11 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
 
       QDoubleSpinBox *sb = new QDoubleSpinBox(m_params);
       sb->setDecimals(50);
-      sb->setMinimum(EL_VALUE2(vec3fs[i]->GetMin(),jj));
-      sb->setMaximum(EL_VALUE2(vec3fs[i]->GetMax(),jj));
-      sb->setSingleStep(EL_VALUE2(vec3fs[i]->GetStep(),jj));
+      sb->setMinimum(EL_VALUE(vec3fs[i]->GetMin(),jj));
+      sb->setMaximum(EL_VALUE(vec3fs[i]->GetMax(),jj));
+      sb->setSingleStep(EL_VALUE(vec3fs[i]->GetStep(),jj));
       sb->setMaximumWidth(8*8);
-      sb->setValue(EL_VALUE2(vec3fs[i]->GetValue(),jj));
+      sb->setValue(EL_VALUE(vec3fs[i]->GetValue(),jj));
       sbs->obj[jj] = (QObject *)sb;
 
       m_params->setItemWidget(grandChild, 1, sb); 
@@ -449,11 +449,11 @@ void RTUltrasteer::CreateUIElements(QTreeWidgetItem *parent, Nf::ParameterCollec
       grandChild->setText(0, labels[jj]);
 
       QSpinBox *sb = new QSpinBox(m_params);
-      sb->setMinimum(EL_VALUE2(vec3is[i]->GetMin(),jj));
-      sb->setMaximum(EL_VALUE2(vec3is[i]->GetMax(),jj));
-      sb->setSingleStep(EL_VALUE2(vec3is[i]->GetStep(),jj));
+      sb->setMinimum(EL_VALUE(vec3is[i]->GetMin(),jj));
+      sb->setMaximum(EL_VALUE(vec3is[i]->GetMax(),jj));
+      sb->setSingleStep(EL_VALUE(vec3is[i]->GetStep(),jj));
       sb->setMaximumWidth(8*8);
-      sb->setValue(EL_VALUE2(vec3is[i]->GetValue(),jj));
+      sb->setValue(EL_VALUE(vec3is[i]->GetValue(),jj));
       sbs->obj[jj] = (QObject *)sb;
 
       m_params->setItemWidget(grandChild, 1, sb); 
