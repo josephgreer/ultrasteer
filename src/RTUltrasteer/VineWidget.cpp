@@ -58,7 +58,8 @@ namespace Nf
 		connect(this->m_tapeWidget->ui.dontTurn, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 		connect(this->m_tapeWidget->ui.pause, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 
-		connect(m_serialThread.get(), SIGNAL(incrementActuator()), this, SLOT(ActuatorIncrement()));
+		connect(m_serialThread.get(), SIGNAL(incrementActuator(s32)), this, SLOT(ActuatorIncrement(s32)));
+		connect(m_serialThread.get(), SIGNAL(textUpdate(QString)), this, SLOT(UpdateText(QString)));
 
     ADD_CHILD_COLLECTION(m_imageViewer.get());
     ADD_OPEN_FILE_PARAMETER(m_videoFile, "Video File",CALLBACK_POINTER(SetupVideoInput, VineWidget), this, BASE_PATH_CAT("VineVideos/Vine1.mov"), "(*.mov)");
@@ -66,19 +67,33 @@ namespace Nf
 		ADD_BOOL_PARAMETER(m_run, "Run", CALLBACK_POINTER(SetupVideoInput, VineWidget), this, false);
 		ADD_VEC3D_PARAMETER(m_lowerBounds, "Lower Bounds", NULL, this, Vec3d(255,255,255), Vec3d(0,0,0), Vec3d(179,255,255), Vec3d(1,1,1));
 		ADD_VEC3D_PARAMETER(m_upperBounds, "Upper Bounds", NULL, this, Vec3d(0,0,0), Vec3d(0,0,0), Vec3d(179,255,255), Vec3d(1,1,1));
-		ADD_BOOL_PARAMETER(m_showMask, "Show Mask", NULL, this, false);
-		ADD_INT_PARAMETER(m_comPort, "Com Port", CALLBACK_POINTER(InitSerial, VineWidget), this, 1, 1, 20, 1);
+		ADD_VEC3D_PARAMETER(m_lowerBoundsObstacle, "Lower Bounds Obstacle", NULL, this, Vec3d(255,255,255), Vec3d(0,0,0), Vec3d(179,255,255), Vec3d(1,1,1));
+		ADD_VEC3D_PARAMETER(m_upperBoundsObstacle, "Upper Bounds Obstacle", NULL, this, Vec3d(0,0,0), Vec3d(0,0,0), Vec3d(179,255,255), Vec3d(1,1,1));
+		ADD_VEC3D_PARAMETER(m_calibratePadding, "Calibrate Padding", NULL, this, Vec3d(10,25,35), Vec3d(0,0,0), Vec3d(179,255,255), Vec3d(1,1,1));
+		ADD_INT_PARAMETER(m_comPort, "Com Port", CALLBACK_POINTER(InitSerial, VineWidget), this, 6, 1, 20, 1);
 		ADD_BOOL_PARAMETER(m_serialInit, "Init Serial", CALLBACK_POINTER(InitSerial, VineWidget), this, false);
-		ADD_BOOL_PARAMETER(m_pixelDeadband, "Pixel Deadband", NULL, this, 50.0, 1.0, 200.0, 1.0);
+    ADD_ENUM_PARAMETER(m_displayMode, "Display Modality", NULL, this, QtEnums::DisplayModality::DM_BPOST32, "DisplayModality");
+		ADD_INT_PARAMETER(m_calibrateObject, "Calibrate Object", NULL, this, 0, 0, 1, 1);
+
+		RPData rp;
+		m_imageViewer->SetImage(&rp, RPF_COLOR);
   }
 
   VineWidget::~VineWidget()
   {
   }
 
+	void VineWidget::UpdateText(QString text)
+	{
+		m_tapeWidget->ui.textEdit->moveCursor (QTextCursor::End);
+		m_tapeWidget->ui.textEdit->insertPlainText (text);
+		m_tapeWidget->ui.textEdit->moveCursor (QTextCursor::End);
+	}
+
 	void VineWidget::ActuatorIncrement(s32 index)
 	{
 		m_actuatorIndex = index;
+		this->m_tapeWidget->ui.actIndex->setText(QString::number(m_actuatorIndex));
 	}
 
 	void VineWidget::HWButtonPushed()
@@ -112,7 +127,6 @@ namespace Nf
 		} else if(button == m_tapeWidget->ui.incrementPressure) {
 			char str[20] = {0}; strcpy(str, "l i ");
 			strcat(str, m_tapeWidget->ui.incPressureValue->text().toStdString().c_str());
-			strcat(str, "\n");
 			this->m_serial->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.decPressure) {
 			char str[20] = {0}; strcpy(str, "l d ");
@@ -162,11 +176,7 @@ namespace Nf
 
 		m_cameraMutex.lock();
 
-		if(m_showMask->GetValue()) {
-			m_imageViewer->SetImage(&m_data, RPF_BPOST8);
-		} else {
-			m_imageViewer->SetImage(&m_data, RPF_COLOR);
-		}
+		m_imageViewer->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
 
 		m_desiredRow = m_data.color->height/2.0;
 		if(resetView)
@@ -209,8 +219,16 @@ namespace Nf
 		cv::Mat hsv;
 		cv::cvtColor(subRegion, hsv, CV_RGB2HSV);
 		cv::Scalar val = cv::mean(hsv);
-		m_lowerBounds->SetValue(Vec3d(val(0)-20,val(1)-70,val(2)-30));
-		m_upperBounds->SetValue(Vec3d(val(0)+20,val(1)+70,val(2)+30));
+		Vec3d padding = m_calibratePadding->GetValue();
+		Vec3d lb(val(0)-padding.x,val(1)-padding.y,val(2)-padding.z);
+		Vec3d ub(val(0)+padding.x,255,val(2)+padding.z);
+		if(m_calibrateObject->GetValue() == 0) {
+			m_lowerBounds->SetValue(lb);
+			m_upperBounds->SetValue(ub);
+		} else {
+			m_lowerBoundsObstacle->SetValue(lb);
+			m_upperBoundsObstacle->SetValue(ub);
+		}
 		m_cameraMutex.unlock();
 	}
 
@@ -283,11 +301,12 @@ namespace Nf
 	//////////////////////////////////////////////////////
 	/// BEGIN SerialReceiveThread
 	//////////////////////////////////////////////////////
-#define SERIAL_SZ
+#define SERIAL_SZ 1024
 	SerialReceiveThread::SerialReceiveThread(VineWidget *vine)
 		: BasicThread(vine)
 	{
 		m_data = new char[SERIAL_SZ];
+		memset(m_data, 0, SERIAL_SZ);
 	}
 
 	SerialReceiveThread::~SerialReceiveThread()
@@ -305,14 +324,18 @@ namespace Nf
 
 		s32 rcvSz = this->m_vineWidget->m_serial->ReadData(m_data, SERIAL_SZ);
 
-		m_vineWidget->m_tapeWidget->ui.textEdit->append(m_data);
+		if(rcvSz > 0) {
+			emit textUpdate(m_data);
 
-		s32 actIdx = 0;
-		if(sscanf(m_data, "act %d", &actIdx) == 1) {
-			incrementActuator(actIdx);
+			s32 actIdx = 0;
+			if(sscanf(m_data, "act %d", &actIdx) == 1) {
+				incrementActuator(actIdx);
+			}
+
+			memset(m_data, 0, rcvSz);
+		} else {
+			msleep(10);
 		}
-
-		memset(m_data, 0, rcvSz);
 	}
 	//////////////////////////////////////////////////////
 	/// END SerialReceiveThread
@@ -349,6 +372,35 @@ namespace Nf
 	std::vector < Squarei > findExpandAndClusterContours(IplImage *colorMask, f32 expand, bool minArea = false, bool shrinkBack = false);
 	CvRect SquareiToCvRect(const Squarei &sq);
 
+	std::pair < std::vector < Squarei >, cv::Mat > CameraThread::CalculateBoundingRects(const cv::Mat hsv, const Vec3d &lb, const Vec3d &ub)
+	{
+		cv::Mat mask;
+		cv::inRange(hsv, cv::Scalar(lb.x, lb.y, lb.z), cv::Scalar(ub.x, ub.y, ub.z), mask);
+
+		IplImage mmask = mask;
+		IplImage *tempIm = cvCloneImage(&mmask);
+		std::vector < Squarei > rects = findExpandAndClusterContours(tempIm, 1, false,true);
+		cvReleaseImage(&tempIm);
+
+		return std::pair < std::vector < Squarei >, cv::Mat > (rects, mask);
+	}
+
+	std::pair < Squarei, Vec2d > CameraThread::FindRobotParameters(const std::vector < Squarei > &rects, const cv::Mat mask)
+	{
+		Squarei bestRect(Vec2d(0,0),Vec2d(0,0));
+		for(s32 i=0; i<rects.size(); i++) {
+			if(rects[i].Area() > bestRect.Area()) {
+				bestRect = rects[i];
+			}
+		}
+
+		cv::Rect roi = clampRectToImage(cv::Rect(bestRect.lr.x-10, 0, 20, mask.size().height),mask);
+		cv::Moments mom = cv::moments(mask(roi));
+		Vec2d headCen(mom.m10/mom.m00+roi.tl().x, mom.m01/mom.m00+roi.tl().y);
+
+		return std::pair < Squarei, Vec2d >(bestRect, headCen);
+	}
+
 	void CameraThread::execute()
 	{
 		cv::Mat raw,frame;
@@ -373,36 +425,27 @@ namespace Nf
 			rp.mpp = Vec2d(1000,1000);
 			rp.gps.pose = Matrix44d::I().ToCvMat();
 			rp.gps.pos = Vec3d(0,0,0);
-			
-			cv::Mat mask;
+
 			cv::Mat hsv;
 			cv::cvtColor(cv::cvarrToMat(rp.color), hsv, CV_BGR2HSV);
-			Vec3d lb,ub; lb = m_vineWidget->m_lowerBounds->GetValue(); ub = m_vineWidget->m_upperBounds->GetValue();
-			cv::inRange(hsv, cv::Scalar(lb.x, lb.y, lb.z), cv::Scalar(ub.x, ub.y, ub.z), mask);
 
-			IplImage mmask = mask;
-			rp.b8 = &mmask;
-			IplImage *tempIm = cvCloneImage(rp.b8);
-			std::vector < Squarei > rects = findExpandAndClusterContours(tempIm, 1,false,true);
-			cvReleaseImage(&tempIm);
+			std::pair < std::vector < Squarei >, cv::Mat > robotRes = CalculateBoundingRects(hsv, m_vineWidget->m_lowerBounds->GetValue(), m_vineWidget->m_upperBounds->GetValue());
+			std::pair < Squarei, Vec2d > robotParams = FindRobotParameters(robotRes.first, robotRes.second);
+			Squarei robotRect = robotParams.first; Vec2d headCen = robotParams.second; 
 
-			cv::Rect bestRect(0,0,0,0);
-			for(s32 i=0; i<rects.size(); i++) {
-				if(rects[i].Area() > bestRect.area()) {
-					bestRect = SquareiToCvRect(rects[i]);
-				}
+			cv::circle(cv::cvarrToMat(rp.color), cv::Point(headCen.x, headCen.y), 5, cv::Scalar(0,0,255), 5);
+			cv::rectangle(cv::cvarrToMat(rp.color), SquareiToCvRect(robotRect), cvScalar(255,0,0), 5);
+
+			std::pair < std::vector < Squarei >, cv::Mat > obstacleRes = CalculateBoundingRects(hsv, m_vineWidget->m_lowerBoundsObstacle->GetValue(), m_vineWidget->m_upperBoundsObstacle->GetValue());
+			std::vector < Squarei > obstacleBBs = obstacleRes.first;
+			for(s32 i=0; i<obstacleBBs.size(); i++) {
+				cv::rectangle(cv::cvarrToMat(rp.color), SquareiToCvRect(obstacleBBs[i]), cvScalar(0,255,0), 5);
 			}
 
-			cv::Mat temp = cv::cvarrToMat(rp.b8);
-			cv::Rect roi = clampRectToImage(cv::Rect(bestRect.br().x-10, 0, 20, temp.size().height),temp);
-			temp = temp(roi);
-			cv::Moments mom = cv::moments(temp);
-			Vec2d headCen(mom.m10/mom.m00+roi.tl().x, mom.m01/mom.m00+roi.tl().y);
-			//cv::circle(cv::cvarrToMat(rp.b8), cv::Point(headCen.x, headCen.y), 5, cv::Scalar(255), 5);
-			cv::circle(cv::cvarrToMat(rp.color), cv::Point(headCen.x, headCen.y), 5, cv::Scalar(0,0,255), 5);
-
-			//cv::rectangle(cv::cvarrToMat(rp.b8), bestRect, cvScalar(255), 5);
-			cv::rectangle(cv::cvarrToMat(rp.color), bestRect, cvScalar(255,0,0), 5);
+			IplImage maskRobot = robotRes.second;
+			IplImage maskObstacles = obstacleRes.second;
+			rp.b8 = &maskRobot;
+			rp.dis = &maskObstacles;
 
 			m_vineWidget->m_cameraMutex.lock();
 			m_vineWidget->m_data.Release();

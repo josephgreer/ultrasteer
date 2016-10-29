@@ -47,10 +47,13 @@ namespace Nf
 		std::tr1::shared_ptr < Nf::BoolParameter > m_run;
 		std::tr1::shared_ptr < Nf::Vec3dParameter > m_lowerBounds;
 		std::tr1::shared_ptr < Nf::Vec3dParameter > m_upperBounds;
-		std::tr1::shared_ptr < Nf::BoolParameter > m_showMask;
+		std::tr1::shared_ptr < Nf::Vec3dParameter > m_lowerBoundsObstacle;
+		std::tr1::shared_ptr < Nf::Vec3dParameter > m_upperBoundsObstacle;
+		std::tr1::shared_ptr < Nf::Vec3dParameter > m_calibratePadding;
 		std::tr1::shared_ptr < Nf::IntParameter > m_comPort;
 		std::tr1::shared_ptr < Nf::BoolParameter > m_serialInit;
-		std::tr1::shared_ptr < Nf::FloatParameter > m_pixelDeadband;
+		std::tr1::shared_ptr < Nf::EnumParameter > m_displayMode;
+		std::tr1::shared_ptr < Nf::IntParameter > m_calibrateObject; // 0 = Robot, 1 = Obstacles
 
 		CLASS_CALLBACK(SetupVideoInput, VineWidget);
 		void SetupVideoInput();
@@ -77,6 +80,7 @@ namespace Nf
 		void SetImage(bool resetView);
 		void HWButtonPushed();
 		void ActuatorIncrement(s32 index);
+		void UpdateText(QString text);
 
   public:
     VineWidget(QWidget *parent, const char *name = "Tape Robot Widget");
@@ -121,6 +125,7 @@ namespace Nf
 
 signals:
 		void incrementActuator(s32 index);
+		void textUpdate(QString text);
 
 	protected:
 		char *m_data;
@@ -140,6 +145,9 @@ signals:
 
 	protected:
 		bool m_firstTime; 
+
+		std::pair < std::vector < Squarei >, cv::Mat > CalculateBoundingRects(const cv::Mat hsv, const Vec3d &lb, const Vec3d &ub);
+		std::pair < Squarei, Vec2d > FindRobotParameters(const std::vector < Squarei > &rects, const cv::Mat mask);
 
 		void setup();
 		void execute();
