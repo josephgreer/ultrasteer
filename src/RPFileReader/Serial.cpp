@@ -36,10 +36,10 @@ BOOL CSerial::Open( int nPort, int nBaud )
  	memset( &m_OverlappedWrite, 0, sizeof( OVERLAPPED ) );
 
 	COMMTIMEOUTS CommTimeOuts;
-	CommTimeOuts.ReadIntervalTimeout = 0xFFFFFFFF;
+	CommTimeOuts.ReadIntervalTimeout = 5;
 	CommTimeOuts.ReadTotalTimeoutMultiplier = 0;
 	CommTimeOuts.ReadTotalTimeoutConstant = 0;
-	CommTimeOuts.WriteTotalTimeoutMultiplier = 0;
+	CommTimeOuts.WriteTotalTimeoutMultiplier = 5;
 	CommTimeOuts.WriteTotalTimeoutConstant = 5000;
 	SetCommTimeouts( m_hIDComDev, &CommTimeOuts );
 
@@ -106,19 +106,54 @@ BOOL CSerial::WriteCommByte( unsigned char ucByte )
 
 }
 
-int CSerial::SendData( const char *buffer, int size )
+BOOL CSerial::SendData( const char * lpBuf, DWORD dwToWrite )
 {
+   OVERLAPPED osWrite = {0};
+   DWORD dwWritten;
+   DWORD dwRes;
+   BOOL fRes;
 
-	if( !m_bOpened || m_hIDComDev == NULL ) return( 0 );
+	 // Create this write operation's OVERLAPPED structure's hEvent.
+	 osWrite.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	 if (osWrite.hEvent == NULL) {
+		 // error creating overlapped event handle
+		 return FALSE;
+	 }
 
-	DWORD dwBytesWritten = 0;
-	int i;
-	for( i=0; i<size; i++ ){
-		WriteCommByte( buffer[i] );
-		dwBytesWritten++;
-		}
+	 // Issue write.
+	 if (!WriteFile(m_hIDComDev, lpBuf, dwToWrite, &dwWritten, &osWrite)) {
+		 if (GetLastError() != ERROR_IO_PENDING) { 
+			 // WriteFile failed, but isn't delayed. Report error and abort.
+			 fRes = FALSE;
+		 } else {
+			 // Write is pending.
+			 dwRes = WaitForSingleObject(osWrite.hEvent, INFINITE);
+			 switch(dwRes)
+			 {
+				 // OVERLAPPED structure's event has been signaled. 
+			 case WAIT_OBJECT_0:
+				 if (!GetOverlappedResult(m_hIDComDev, &osWrite, &dwWritten, FALSE))
+					 fRes = FALSE;
+				 else
+					 // Write operation completed successfully.
+					 fRes = TRUE;
+				 break;
 
-	return( (int) dwBytesWritten );
+			 default:
+				 // An error has occurred in WaitForSingleObject.
+				 // This usually indicates a problem with the
+				 // OVERLAPPED structure's event handle.
+				 fRes = FALSE;
+				 break;
+			 }
+		 }
+	 } else {
+		 // WriteFile completed immediately.
+		 fRes = TRUE;
+	 }
+
+   CloseHandle(osWrite.hEvent);
+   return fRes;
 
 }
 

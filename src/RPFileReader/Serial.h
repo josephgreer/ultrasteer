@@ -26,7 +26,7 @@ public:
 	BOOL Close( void );
 
 	int ReadData( void *, int );
-	int SendData( const char *, int );
+	BOOL SendData( const char * lpBuf, DWORD dwToWrite );
 	int ReadDataWaiting( void );
 
 	BOOL IsOpened( void ){ return( m_bOpened ); }
