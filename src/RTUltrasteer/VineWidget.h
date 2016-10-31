@@ -20,6 +20,25 @@ namespace Nf
 	class SerialReceiveThread; 
 	class CameraThread;
 
+	enum TAPE_ROBOT_STATE {
+		TRS_FREE_GROWING = 0,
+		TRS_AVOIDING_OBSTACLE = 1,
+	};
+
+	enum TAPE_ROBOT_ACTION {
+		TRA_DO_NOTHING = 0,
+		TRA_TURN_POS = 1,
+		TRA_TURN_NEG = 2,
+	};
+
+#define MIN_DISTANCE_TO_OBSTACLE 60
+
+	struct ObstacleAvoidanceParams
+	{
+		TAPE_ROBOT_ACTION turnDir;														// Direction we turned to avoid obstacle
+		s32 beginIndex;																				// Actuator index at which avoidance was initiated
+	};
+
   class VineWidget : public ResizableQWidget, public ParameterCollection, public vtkInteractorStyleImage
   {
     Q_OBJECT 
@@ -36,9 +55,14 @@ namespace Nf
     std::tr1::shared_ptr < TapeRobotWidget > m_tapeWidget;
     QGridLayout *m_layout;
 
-		s32 m_oddDirection;
-		s32 m_actuatorIndex;
-		f64 m_desiredRow;
+		s32 m_oddDirection;																		// Direction odd actuators move you in the image
+		s32 m_actuatorIndex;																	// Next actuator to be released
+		s32 m_obstacleAvoidanceActuatorStartIndex;						// Actuator index at which obstacle avoidance maneuvar began
+		Vec2d m_growingDirection;															// The direction the vine is growing in the image
+		TAPE_ROBOT_STATE m_controlState;											// What state are we controling the robot in
+		TAPE_ROBOT_ACTION m_queuedAction;											// What action do we want the robot to take when the robot reaches its next tape
+		bool m_pop;																						// Whether to pop the tape or not. Based on m_queuedAction and m_oddDirection. Used for monitoring only.
+		ObstacleAvoidanceParams m_obstacleAvoidanceParams;		// Parameters of obstacle avoidance maneuvar
 
 		vtkSmartPointer < vtkPointPicker > m_pointPicker;
 
@@ -81,6 +105,7 @@ namespace Nf
 		void HWButtonPushed();
 		void ActuatorIncrement(s32 index);
 		void UpdateText(QString text);
+		void SetRobotAction(TAPE_ROBOT_ACTION action);
 
   public:
     VineWidget(QWidget *parent, const char *name = "Tape Robot Widget");
@@ -142,12 +167,18 @@ signals:
 
 	signals:
 		void SetMainImage(bool);
+		void RobotActionSet(TAPE_ROBOT_ACTION action);
+
+	public slots:
+		void ActuatorIncrement(s32 idx);
 
 	protected:
 		bool m_firstTime; 
 
 		std::pair < std::vector < Squarei >, cv::Mat > CalculateBoundingRects(const cv::Mat hsv, const Vec3d &lb, const Vec3d &ub);
 		std::pair < Squarei, Vec2d > FindRobotParameters(const std::vector < Squarei > &rects, const cv::Mat mask);
+		Vec2d FindClosestObstacleDelta(Vec2d headPos, const std::vector < Squarei > &rects);
+		void DrawDetails(cv::Mat &im, const Vec2d &headCen, const std::vector < Squarei > &obstacleRects, const Squarei &robotRect);
 
 		void setup();
 		void execute();

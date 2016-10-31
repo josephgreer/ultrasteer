@@ -504,6 +504,26 @@ namespace Nf
         return y - lr.y;
     }
 
+		T DeltaX(T x) const
+		{
+      if(x < ul.x)
+        return ul.x - x;
+      if(ul.x <= x && x <= lr.x)
+        return 0;
+      else
+        return lr.x-x;
+		}
+
+    T DeltaY(T y) const
+    {
+      if(y < ul.y)
+        return ul.y - y;
+      if(ul.y <= y && y <= lr.y)
+        return 0;
+      else
+        return lr.y-y;
+    }
+
     static bool less(const Square & l, const Square & r)
     {
       return l.Area() < r.Area();

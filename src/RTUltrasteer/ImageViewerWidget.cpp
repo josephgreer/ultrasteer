@@ -37,6 +37,9 @@ namespace Nf
     m_importer = vtkSmartPointer<vtkImageImport>::New();
     m_imageActor = vtkSmartPointer<vtkImageActor>::New();
     m_renderer = vtkSmartPointer<vtkRenderer>::New();
+		m_flip = vtkSmartPointer<vtkImageFlip>::New();
+
+		ADD_BOOL_PARAMETER(m_flipImage, "Flip Image", NULL, this, true);
 
     m_interactor = vtkSmartPointer<vtkRenderWindowInteractor>::New();    
   }
@@ -105,15 +108,30 @@ namespace Nf
       m_importer->SetImportVoidPointer(im->imageData);
       m_importer->Modified();
       m_importer->Update();
+
+			if(m_flipImage->GetValue()) {
+				m_flip->Modified();
+				m_flip->Update();
+			}
     }
 
     // Initialize
     if(!m_init) {
+			if(m_flipImage->GetValue()) {
+				m_flip->SetOutputScalarType(VTK_UNSIGNED_CHAR);
+				m_flip->SetInputData(m_importer->GetOutput());
+				m_flip->Update();
+				m_flip->SetFilteredAxis(0);
+			}
       vtkMatrix4x4 *mat = m_imageActor->GetMatrix();
       if(mat == NULL || arma::norm(arma::eye(4,4)-Matrix44d::FromVtkMatrix4x4(mat).ToArmaMatrix4x4()) < 1e-3) {
         m_imageActor->RotateZ(180);
       }
-      m_imageActor->SetInputData(m_importer->GetOutput());
+			if(m_flipImage->GetValue()) {
+				m_imageActor->SetInputData(m_flip->GetOutput());
+			} else {
+				m_imageActor->SetInputData(m_importer->GetOutput());
+			}
       m_renderer->AddActor(m_imageActor);
 
       this->GetRenderWindow()->AddRenderer(m_renderer);
