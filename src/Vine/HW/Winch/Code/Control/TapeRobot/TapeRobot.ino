@@ -94,6 +94,8 @@ f64 firstAct = 10000;
 f64 actSpacing = 10000;
 u8 currAct = 0;
 
+f64 lowPassDesVel = 0;
+
 void loop() 
 {
   f64 pos = encoder.read();
@@ -106,11 +108,13 @@ void loop()
 
   handlePopState(pos);
 
+  lowPassDesVel = lowPassDesVel*0.9999+(1-0.9999)*desVel;
+
   vel = 0.2*(pos-lastPos)/dt + 0.8*lastVel;
   if(controlMode == CM_POS) {
     error = desPos-pos;
   } else {
-    error = desVel-vel;
+    error = lowPassDesVel-vel;
     lastVel = vel;
   }
   derror = error-errorLast;
@@ -177,6 +181,8 @@ void loop()
 
 void SetVel(f64 vel)
 {
+  if(abs(vel) < abs(desVel))
+    lowPassDesVel = vel;
   desVel = vel; 
 }
 
@@ -186,13 +192,14 @@ f64 unwindSign = -1;
 f64 popVel = -15;
 f64 nonPopVel = -150;
 f64 popPressure = 0.85;
-f64 nonPopPressure = 0.4;
+f64 nonPopPressure = 0.35;
 
 u8 defaultPop = true;
 
 void SetMode(u8 mode)
 {
   controlMode = (CONTROL_MODE)mode;
+  lowPassDesVel = 0;
   desVel = integralError = 0;
   errorLast = 0;
   desPos = lastPos;
@@ -330,7 +337,7 @@ void serialEvent()
       case 'p':   //Pause
       case 'P':
       {
-        desVel = integralError = 0;
+        lowPassDesVel = desVel = integralError = 0;
         errorLast = 0;
         desPos = lastPos;
         integralError = 0;
