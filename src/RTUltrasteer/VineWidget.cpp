@@ -19,11 +19,13 @@ namespace Nf
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
 		, m_cap(NULL)
 		, m_imCoords(-1,-1)
-		, m_oddDirection(-1)		
-		, m_actuatorIndex(1)
+		, m_oddDirection(1)		
+		, m_actuatorIndex(-1)
 		, m_controlState(TRS_FREE_GROWING)
 		, m_queuedAction(TRA_DO_NOTHING)
 		, m_growingDirection(1,0)
+		, m_pop(false)
+		, m_actionIndex(-1)
   {
     m_imageViewer = std::tr1::shared_ptr<ImageViewerWidget>(new ImageViewerWidget(parent));
 		m_tapeWidget = std::tr1::shared_ptr<TapeRobotWidget>(new TapeRobotWidget(parent));
@@ -61,10 +63,11 @@ namespace Nf
 		connect(this->m_tapeWidget->ui.dontTurn, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 		connect(this->m_tapeWidget->ui.pause, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 
-		connect(m_serialThread.get(), SIGNAL(incrementActuator(s32)), this, SLOT(ActuatorIncrement(s32)));
-		connect(m_serialThread.get(), SIGNAL(incrementActuator(s32)), m_cameraThread.get(), SLOT(ActuatorIncrement(s32)));
+		connect(m_serialThread.get(), SIGNAL(incrementActuator(int)), this, SLOT(ActuatorIncrement(int)));
+		connect(m_serialThread.get(), SIGNAL(incrementActuator(int)), m_cameraThread.get(), SLOT(ActuatorInc(int)));
 		connect(m_serialThread.get(), SIGNAL(textUpdate(QString)), this, SLOT(UpdateText(QString)));
-		connect(m_cameraThread.get(), SIGNAL(RobotActionSet(TAPE_ROBOT_ACTION)), this, SLOT(SetRobotAction(TAPE_ROBOT_ACTION)));
+		connect(m_cameraThread.get(), SIGNAL(RobotActionSet(int)), this, SLOT(SetRobotAction(int)));
+		connect(m_cameraThread.get(), SIGNAL(LogUpdate(QString)), this, SLOT(UpdateLog(QString)));
 
     ADD_CHILD_COLLECTION(m_imageViewer.get());
     ADD_OPEN_FILE_PARAMETER(m_videoFile, "Video File",CALLBACK_POINTER(SetupVideoInput, VineWidget), this, BASE_PATH_CAT("VineVideos/Vine1.mov"), "(*.mov)");
@@ -95,48 +98,66 @@ namespace Nf
 		m_tapeWidget->ui.textEdit->moveCursor (QTextCursor::End);
 	}
 
-	void VineWidget::ActuatorIncrement(s32 index)
+	void VineWidget::UpdateLog(QString text)
+	{
+		m_tapeWidget->ui.textLog->moveCursor (QTextCursor::End);
+		m_tapeWidget->ui.textLog->insertPlainText (text);
+		m_tapeWidget->ui.textLog->moveCursor (QTextCursor::End);
+	}
+
+	void VineWidget::ActuatorIncrement(int index)
 	{
 		m_actuatorIndex = index;
 		this->m_tapeWidget->ui.actIndex->setText(QString::number(m_actuatorIndex));
-	}
-
-	void VineWidget::SetRobotAction(TAPE_ROBOT_ACTION action)
-	{
-		m_queuedAction = action;
 
 		const char *noTurnCmd = "t n";
 		const char *turnCmd = "t y";
+
+		if(index == m_actionIndex) {
+			if(m_pop) {
+				m_serial->SendData(noTurnCmd, strlen(noTurnCmd)); 
+			} else {
+				m_serial->SendData(turnCmd, strlen(turnCmd));
+			}
+			UpdateLog(QString("ActuatorIncrement Actuator = " + QString::number(index) + QString(" pop = ") + QString::number(m_pop) + QString("\n")));
+			m_actionIndex = -1;
+		}
+	}
+
+	void VineWidget::SetRobotAction(int action)
+	{
+		m_queuedAction = (TAPE_ROBOT_ACTION)action;
 
 		switch(action) {
 		case TRA_DO_NOTHING:
 			{
 				m_pop = true;
-				m_serial->SendData(noTurnCmd, strlen(noTurnCmd)); 
+				const char *cmd = "t n";
+				m_serial->SendData(cmd, strlen(cmd));
 				break;
 			}
 		case TRA_TURN_POS:
 			{
 				// if its an odd actuator and odd actuators turn us positive then turn
-				if(m_actuatorIndex&0x1 && m_oddDirection >= 0) {
+				if((m_actuatorIndex+1)&0x1 && m_oddDirection >= 0) {
 					m_pop = false;
-					m_serial->SendData(turnCmd, strlen(turnCmd));
 				} else {
 					m_pop = true;
-					m_serial->SendData(noTurnCmd, strlen(noTurnCmd));
 				}
+				m_actionIndex = m_actuatorIndex+1;
+				UpdateLog(QString("Turn pos pop = ") + QString::number(m_pop) + QString(" Actuator = ") + QString::number(m_actuatorIndex) + QString("\n"));
 				break;
 			}
 		case TRA_TURN_NEG:
 			{
 				// if its an odd actuator and odd actuators turn us negative then turn
-				if(m_actuatorIndex&0x1 && m_oddDirection < 0) {
+				if((m_actuatorIndex+1)&0x1 && m_oddDirection < 0) {
 					m_pop = false;
-					m_serial->SendData(turnCmd, strlen(turnCmd));
 				} else {
 					m_pop = true;
-					m_serial->SendData(noTurnCmd, strlen(noTurnCmd));
 				}
+				m_actionIndex = m_actuatorIndex+1;
+				UpdateLog(QString("Turn neg pop = ") + QString::number(m_pop) + QString(" Actuator = ") + QString::number(m_actuatorIndex) + QString("\n"));
 				break;
 			}
 		default:
@@ -374,16 +395,17 @@ namespace Nf
 		s32 rcvSz = this->m_vineWidget->m_serial->ReadData(m_data, SERIAL_SZ);
 
 		if(rcvSz > 0) {
-			emit textUpdate(m_data);
 
 			s32 actIdx = 0;
 			if(sscanf(m_data, "act %d", &actIdx) == 1) {
 				incrementActuator(actIdx);
+			} else {
+				emit textUpdate(m_data);
 			}
 
 			memset(m_data, 0, rcvSz);
 		} else {
-			msleep(10);
+			msleep(5);
 		}
 	}
 	//////////////////////////////////////////////////////
@@ -403,6 +425,10 @@ namespace Nf
 		return cv::Rect(cv::Point(tl.x, tl.y), cv::Point(br.x, br.y));
 	}
 
+	
+
+#define MIN_DISTANCE_TO_OBSTACLE 75
+
 	//////////////////////////////////////////////////////
 	/// BEGIN CameraThread
 	//////////////////////////////////////////////////////
@@ -418,7 +444,7 @@ namespace Nf
 		m_firstTime = true;
 	}
 
-	std::vector < Squarei > findExpandAndClusterContours(IplImage *colorMask, f32 expand, bool minArea = false, bool shrinkBack = false);
+	std::vector < Squarei > findExpandAndClusterContours(IplImage *colorMask, f32 expand, bool minArea = false, bool shrinkBack = false, f64 distThresh = 3.0);
 	CvRect SquareiToCvRect(const Squarei &sq);
 
 	std::pair < std::vector < Squarei >, cv::Mat > CameraThread::CalculateBoundingRects(const cv::Mat hsv, const Vec3d &lb, const Vec3d &ub)
@@ -426,9 +452,17 @@ namespace Nf
 		cv::Mat mask;
 		cv::inRange(hsv, cv::Scalar(lb.x, lb.y, lb.z), cv::Scalar(ub.x, ub.y, ub.z), mask);
 
+		cv::Mat filteredMask;
+		
+		s32 morph_size = 3;
+		cv::Mat element = getStructuringElement(0, cv::Size(2*morph_size + 1, 2*morph_size+1), cv::Point(morph_size, morph_size));
+		//cv::morphologyEx(mask, filteredMask, cv::MORPH_DILATE, element); 
+		cv::erode(mask, filteredMask, element);
+		mask = filteredMask;
+
 		IplImage mmask = mask;
 		IplImage *tempIm = cvCloneImage(&mmask);
-		std::vector < Squarei > rects = findExpandAndClusterContours(tempIm, 1, false,true);
+		std::vector < Squarei > rects = findExpandAndClusterContours(tempIm, 1, false,false, 30.0);
 		cvReleaseImage(&tempIm);
 
 		return std::pair < std::vector < Squarei >, cv::Mat > (rects, mask);
@@ -437,13 +471,16 @@ namespace Nf
 	std::pair < Squarei, Vec2d > CameraThread::FindRobotParameters(const std::vector < Squarei > &rects, const cv::Mat mask)
 	{
 		Squarei bestRect(Vec2d(0,0),Vec2d(0,0));
+		Squarei currRect;
 		for(s32 i=0; i<rects.size(); i++) {
-			if(rects[i].Area() > bestRect.Area()) {
+			currRect = rects[i];
+			currRect.weight = 0;
+			if(currRect.Area() > bestRect.Area()) {
 				bestRect = rects[i];
 			}
 		}
 
-		cv::Rect roi = clampRectToImage(cv::Rect(bestRect.lr.x-10, 0, 20, mask.size().height),mask);
+		cv::Rect roi = clampRectToImage(cv::Rect(bestRect.lr.x-20, 0, 20, mask.size().height),mask);
 		cv::Moments mom = cv::moments(mask(roi));
 		Vec2d headCen(mom.m10/mom.m00+roi.tl().x, mom.m01/mom.m00+roi.tl().y);
 
@@ -467,7 +504,7 @@ namespace Nf
 		return smallestDelta;
 	}
 
-	void CameraThread::ActuatorIncrement(s32 index)
+	void CameraThread::ActuatorInc(int index)
 	{	
 		switch(m_vineWidget->m_controlState) {
 			case TRS_FREE_GROWING:
@@ -482,23 +519,36 @@ namespace Nf
 							action = TRA_TURN_NEG;
 						else
 							action = TRA_TURN_POS;
-							
-						emit RobotActionSet(action);
+						
+						emit LogUpdate(QString("index = ") + QString::number(index) + (action == TRA_TURN_NEG ? QString(" turn neg\n") : QString(" turn pos\n")));
+						emit RobotActionSet((int)action);
 						m_vineWidget->m_controlState = TRS_FREE_GROWING;
+					} else {
+						TAPE_ROBOT_ACTION action = TRA_DO_NOTHING;
+						//emit LogUpdate(QString("index = ") + QString::number(index) + QString(" do nothing\n"));
+						emit RobotActionSet((int)action);
 					}
 					break;
 				}
 			}
 	}
 
-	void CameraThread::DrawDetails(cv::Mat &im, const Vec2d &headCen, const std::vector < Squarei > &obstacleRects, const Squarei &robotRect)
+	void CameraThread::DrawDetails(DRAW_DETAILS details, cv::Mat &im, const Vec2d &headCen, const std::vector < Squarei > &obstacleRects, const Squarei &robotRect, const std::vector < Squarei > &robotRects)
 	{
-		cv::circle(im, cv::Point(headCen.x, headCen.y), 5, cv::Scalar(0,0,255), 5);
-		cv::rectangle(im, SquareiToCvRect(robotRect), cvScalar(255,0,0), 5);
-
-		for(s32 i=0; i<obstacleRects.size(); i++) {
-			cv::rectangle(im, SquareiToCvRect(obstacleRects[i]), cvScalar(0,255,0), 5);
+		if(details & DD_OBSTACLES) {
+			for(s32 i=0; i<obstacleRects.size(); i++) {
+				cv::rectangle(im, SquareiToCvRect(obstacleRects[i]), cvScalar(0,255,0), 5);
+			}
 		}
+
+		if(details & DD_ROBOT) {
+			for(s32 i=0; i<robotRects.size(); i++) {
+				cv::rectangle(im, SquareiToCvRect(robotRects[i]), cvScalar(255,0,0), 5);
+			}
+		}
+
+		cv::circle(im, cv::Point(headCen.x, headCen.y), 5, cv::Scalar(0,0,255), 5);
+		cv::rectangle(im, SquareiToCvRect(robotRect), cvScalar(0,0,255), 5);
 
 		cv::Point currPoint(10,20);
 		cv::Size sz;
@@ -606,12 +656,27 @@ namespace Nf
 					if(deltaObstacle.magnitude() < MIN_DISTANCE_TO_OBSTACLE && deltaObstacle.dot(m_vineWidget->m_growingDirection) > 0) {
 						m_vineWidget->m_obstacleAvoidanceParams.beginIndex = m_vineWidget->m_actuatorIndex;
 
+						if((m_vineWidget->m_actuatorIndex+1)&0x1 && m_vineWidget->m_oddDirection < 0) //odd index and odd turns neg
+							m_vineWidget->m_obstacleAvoidanceParams.turnDir = TRA_TURN_NEG;
+						else if((m_vineWidget->m_actuatorIndex+1)&0x1)			// odd index and odd turns pos
+							m_vineWidget->m_obstacleAvoidanceParams.turnDir = TRA_TURN_POS;
+						else if(m_vineWidget->m_oddDirection < 0)			// even index and odd turns neg so even turns pos
+							m_vineWidget->m_obstacleAvoidanceParams.turnDir = TRA_TURN_POS;
+						else																					// even index and odd turns pos so even turns neg
+							m_vineWidget->m_obstacleAvoidanceParams.turnDir = TRA_TURN_NEG;
+
+						emit LogUpdate(QString("Begining obstacle avoidance actuator = ") + QString::number(m_vineWidget->m_actuatorIndex) + (m_vineWidget->m_obstacleAvoidanceParams.turnDir == TRA_TURN_POS ? QString(" turning postive\n") : QString(" turning negative\n")));
+
+#if 0
 						if(headCen.y > rp.color->height/2.0)
 							m_vineWidget->m_obstacleAvoidanceParams.turnDir = TRA_TURN_NEG;
 						else
 							m_vineWidget->m_obstacleAvoidanceParams.turnDir = TRA_TURN_POS;
+#endif
 
-						emit RobotActionSet(m_vineWidget->m_obstacleAvoidanceParams.turnDir);
+						m_vineWidget->m_controlState = TRS_AVOIDING_OBSTACLE;
+
+						emit RobotActionSet((int)m_vineWidget->m_obstacleAvoidanceParams.turnDir);
 					}
 					break;
 				}
@@ -621,7 +686,9 @@ namespace Nf
 				}
 			}
 
-			DrawDetails(frame, headCen, obstacleRes.first, robotParams.first);
+			DrawDetails(DD_OBSTACLES, frame, headCen, obstacleRes.first, robotParams.first, robotRes.first);
+			//DrawDetails(DD_ROBOT, robotRes.second, headCen, obstacleRes.first, robotParams.first, robotRes.first);
+			//DrawDetails(DD_OBSTACLES, obstacleRes.second, headCen, obstacleRes.first, robotParams.first, robotRes.first);
 
 			IplImage maskRobot = robotRes.second;
 			IplImage maskObstacles = obstacleRes.second;

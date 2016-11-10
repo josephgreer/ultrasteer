@@ -89,6 +89,11 @@ CONTROL_MODE controlMode = CM_POS;
 
 u8 unwindDir = 1;
 
+//encoder tick of first actuator
+f64 firstAct = 10000;
+f64 actSpacing = 10000;
+u8 currAct = 0;
+
 void loop() 
 {
   f64 pos = encoder.read();
@@ -161,7 +166,9 @@ void loop()
       digitalWrite(dirAPin, dir);
       dirLast = dir;
     }
-    if(count++ % 2000 == 0)
+    if(count % 499 == 0)
+      Serial.println("act " + String(currAct+1));
+    if(count++ % 2000 == 0) 
       Serial.println("Des Pos " +  String(desPos) + " Pos " + String(pos) + " DesVel " + String(desVel) + " Vel " + String(vel) + " Pressure " + String(desPres) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
     analogWrite(pwmAPin, u);
   }
@@ -176,15 +183,10 @@ void SetVel(f64 vel)
 u32 zeroPoint = 0;
 
 f64 unwindSign = -1;
-f64 popVel = -20;
-f64 nonPopVel = -100;
-f64 popPressure = 1.0;
+f64 popVel = -15;
+f64 nonPopVel = -150;
+f64 popPressure = 0.85;
 f64 nonPopPressure = 0.4;
-
-//encoder tick of first actuator
-f64 firstAct = 20000;
-f64 actSpacing = 8000;
-u8 currAct = 0;
 
 u8 defaultPop = true;
 
@@ -363,6 +365,7 @@ void serialEvent()
       {
         zeroPoint = encoder.read();
         Serial.println("Zero point = " + String(zeroPoint));
+        currAct = 0;
         break;
       }
       default:

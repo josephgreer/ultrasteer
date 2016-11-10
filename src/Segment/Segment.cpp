@@ -542,7 +542,7 @@ namespace Nf
   //Automatically find, expand, and cluster contours.  
   //A threshold is established for smallest contours.  If minArea is true, then this threshold is set
   //to 1/2 the area of the largest contour
-  std::vector < Squarei > findExpandAndClusterContours(IplImage *colorMask, f32 expand, bool minArea = false, bool shrinkBack = false)
+  std::vector < Squarei > findExpandAndClusterContours(IplImage *colorMask, f32 expand, bool minArea = false, bool shrinkBack = false, f64 distThresh = 3)
   {
     CvMemStorage *storage = cvCreateMemStorage();
     CvSeq *cons;
@@ -583,7 +583,7 @@ namespace Nf
           //TODO: Figure out parameter
           //combine rects if they're close
 #if 1
-          if(i->Dist(*j) < 3) {
+          if(i->Dist(*j) < distThresh) {
 #else
           if(i->Overlaps(*j)) {
 #endif
