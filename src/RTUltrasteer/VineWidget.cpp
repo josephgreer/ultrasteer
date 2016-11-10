@@ -22,10 +22,8 @@ namespace Nf
 		, m_oddDirection(1)		
 		, m_actuatorIndex(-1)
 		, m_controlState(TRS_FREE_GROWING)
-		, m_queuedAction(TRA_DO_NOTHING)
 		, m_growingDirection(1,0)
-		, m_pop(false)
-		, m_actionIndex(-1)
+		, m_obstacleEndIndex(-1)
   {
     m_imageViewer = std::tr1::shared_ptr<ImageViewerWidget>(new ImageViewerWidget(parent));
 		m_tapeWidget = std::tr1::shared_ptr<TapeRobotWidget>(new TapeRobotWidget(parent));
@@ -113,56 +111,14 @@ namespace Nf
 		const char *noTurnCmd = "t n";
 		const char *turnCmd = "t y";
 
-		if(index == m_actionIndex) {
-			if(m_pop) {
+		if(m_actionQueue.find(index) != m_actionQueue.end() && m_actionQueue[index].valid) {
+			if(m_actionQueue[index].pop) {
 				m_serial->SendData(noTurnCmd, strlen(noTurnCmd)); 
 			} else {
 				m_serial->SendData(turnCmd, strlen(turnCmd));
 			}
-			UpdateLog(QString("ActuatorIncrement Actuator = " + QString::number(index) + QString(" pop = ") + QString::number(m_pop) + QString("\n")));
-			m_actionIndex = -1;
-		}
-	}
-
-	void VineWidget::SetRobotAction(int action)
-	{
-		m_queuedAction = (TAPE_ROBOT_ACTION)action;
-
-		switch(action) {
-		case TRA_DO_NOTHING:
-			{
-				m_pop = true;
-				const char *cmd = "t n";
-				m_serial->SendData(cmd, strlen(cmd));
-				break;
-			}
-		case TRA_TURN_POS:
-			{
-				// if its an odd actuator and odd actuators turn us positive then turn
-				if((m_actuatorIndex+1)&0x1 && m_oddDirection >= 0) {
-					m_pop = false;
-				} else {
-					m_pop = true;
-				}
-				m_actionIndex = m_actuatorIndex+1;
-				UpdateLog(QString("Turn pos pop = ") + QString::number(m_pop) + QString(" Actuator = ") + QString::number(m_actuatorIndex) + QString("\n"));
-				break;
-			}
-		case TRA_TURN_NEG:
-			{
-				// if its an odd actuator and odd actuators turn us negative then turn
-				if((m_actuatorIndex+1)&0x1 && m_oddDirection < 0) {
-					m_pop = false;
-				} else {
-					m_pop = true;
-				}
-				m_actionIndex = m_actuatorIndex+1;
-				UpdateLog(QString("Turn neg pop = ") + QString::number(m_pop) + QString(" Actuator = ") + QString::number(m_actuatorIndex) + QString("\n"));
-				break;
-			}
-		default:
-			assert(0);
-			break;
+			m_actionQueue[index].valid = false;
+			UpdateLog(QString("ActuatorIncrement Actuator = " + QString::number(index) + QString(" pop = ") + QString::number(m_actionQueue[index].pop) + QString("\n")));
 		}
 	}
 
@@ -427,7 +383,7 @@ namespace Nf
 
 	
 
-#define MIN_DISTANCE_TO_OBSTACLE 75
+#define MIN_DISTANCE_TO_OBSTACLE 100
 
 	//////////////////////////////////////////////////////
 	/// BEGIN CameraThread
@@ -513,21 +469,8 @@ namespace Nf
 				}
 			case TRS_AVOIDING_OBSTACLE:
 				{
-					if(index > m_vineWidget->m_obstacleAvoidanceParams.beginIndex+2) {
-						TAPE_ROBOT_ACTION action;
-						if(m_vineWidget->m_obstacleAvoidanceParams.turnDir == TRA_TURN_POS)
-							action = TRA_TURN_NEG;
-						else
-							action = TRA_TURN_POS;
-						
-						emit LogUpdate(QString("index = ") + QString::number(index) + (action == TRA_TURN_NEG ? QString(" turn neg\n") : QString(" turn pos\n")));
-						emit RobotActionSet((int)action);
+					if(index == m_vineWidget->m_obstacleEndIndex)
 						m_vineWidget->m_controlState = TRS_FREE_GROWING;
-					} else {
-						TAPE_ROBOT_ACTION action = TRA_DO_NOTHING;
-						//emit LogUpdate(QString("index = ") + QString::number(index) + QString(" do nothing\n"));
-						emit RobotActionSet((int)action);
-					}
 					break;
 				}
 			}
@@ -556,34 +499,8 @@ namespace Nf
 		f64 fontScale = 0.5;
 		s32 thickness = 1;
 		s32 baseLine;
-
-		// Left or right
-		std::string txt = "Queued Action: ";
-		switch(m_vineWidget->m_queuedAction)
-		{
-		case TRA_DO_NOTHING:
-			{
-				txt += "Going Straight";
-				break;
-			}
-		case TRA_TURN_POS:
-			{
-				txt += "Turning Positive";
-				break;
-			}
-		case TRA_TURN_NEG:
-			{
-				txt += "Turning Negative";
-				break;
-			}
-		}
 		
-		sz = cv::getTextSize(txt, fontFace, fontScale, thickness, &baseLine); 
-		currPoint.y += sz.height;
-		cv::putText(im, txt, currPoint, fontFace, fontScale, cvScalar(255,0,0), thickness);
-		currPoint.y += sz.height;
-		
-		txt = "Operation Mode: ";
+		std::string txt = "Operation Mode: ";
 		switch(m_vineWidget->m_controlState)
 		{
 		case TRS_FREE_GROWING:
@@ -598,12 +515,19 @@ namespace Nf
 			}
 		}
 
+		bool pop = true;
+
+		for(s32 i=0; i<m_vineWidget->m_actuatorIndex; i++) {
+			if(m_vineWidget->m_actionQueue.find(i) != m_vineWidget->m_actionQueue.end())
+				pop = m_vineWidget->m_actionQueue[i].pop;
+		}
+
 		sz = cv::getTextSize(txt, fontFace, fontScale, thickness, &baseLine); 
 		currPoint.y += sz.height;
 		cv::putText(im, txt, currPoint, fontFace, fontScale, cvScalar(255,0,0), thickness);
 		currPoint.y += sz.height;
 
-		if(m_vineWidget->m_pop)
+		if(pop)
 			txt = "Pop";
 		else
 			txt = "Don't pop";
@@ -654,29 +578,27 @@ namespace Nf
 				{
 					// if we're close to an obstacle and growing towards it, initiate pop sequence
 					if(deltaObstacle.magnitude() < MIN_DISTANCE_TO_OBSTACLE && deltaObstacle.dot(m_vineWidget->m_growingDirection) > 0) {
-						m_vineWidget->m_obstacleAvoidanceParams.beginIndex = m_vineWidget->m_actuatorIndex;
 
-						if((m_vineWidget->m_actuatorIndex+1)&0x1 && m_vineWidget->m_oddDirection < 0) //odd index and odd turns neg
-							m_vineWidget->m_obstacleAvoidanceParams.turnDir = TRA_TURN_NEG;
-						else if((m_vineWidget->m_actuatorIndex+1)&0x1)			// odd index and odd turns pos
-							m_vineWidget->m_obstacleAvoidanceParams.turnDir = TRA_TURN_POS;
-						else if(m_vineWidget->m_oddDirection < 0)			// even index and odd turns neg so even turns pos
-							m_vineWidget->m_obstacleAvoidanceParams.turnDir = TRA_TURN_POS;
-						else																					// even index and odd turns pos so even turns neg
-							m_vineWidget->m_obstacleAvoidanceParams.turnDir = TRA_TURN_NEG;
+						QueuedRobotAction action; action.pop = false; action.valid = true;
+						m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+1] = action;
+						action.pop = true;
+						m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+2] = action;
+						action.pop = false;
+						m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+4] = action;
+						action.pop = true;
+						m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+5] = action;
 
-						emit LogUpdate(QString("Begining obstacle avoidance actuator = ") + QString::number(m_vineWidget->m_actuatorIndex) + (m_vineWidget->m_obstacleAvoidanceParams.turnDir == TRA_TURN_POS ? QString(" turning postive\n") : QString(" turning negative\n")));
+						char stringDesc[200] = {0};
+						sprintf(stringDesc, "Beginning obstacle avoidance, actuator %d, pop = %d, actuator %d, pop = %d, actuator = %d, pop = %d, actuator = %d pop = %d\n", 
+							m_vineWidget->m_actuatorIndex+1,m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+1].pop,
+							m_vineWidget->m_actuatorIndex+2,m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+2].pop,
+							m_vineWidget->m_actuatorIndex+4,m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+4].pop,
+							m_vineWidget->m_actuatorIndex+5,m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+5].pop);
 
-#if 0
-						if(headCen.y > rp.color->height/2.0)
-							m_vineWidget->m_obstacleAvoidanceParams.turnDir = TRA_TURN_NEG;
-						else
-							m_vineWidget->m_obstacleAvoidanceParams.turnDir = TRA_TURN_POS;
-#endif
+						emit LogUpdate(QString(stringDesc));
 
 						m_vineWidget->m_controlState = TRS_AVOIDING_OBSTACLE;
-
-						emit RobotActionSet((int)m_vineWidget->m_obstacleAvoidanceParams.turnDir);
+						m_vineWidget->m_obstacleEndIndex = m_vineWidget->m_actuatorIndex+5;
 					}
 					break;
 				}

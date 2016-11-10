@@ -25,16 +25,16 @@ namespace Nf
 		TRS_AVOIDING_OBSTACLE = 1,
 	};
 
-	enum TAPE_ROBOT_ACTION {
-		TRA_DO_NOTHING = 0,
-		TRA_TURN_POS = 1,
-		TRA_TURN_NEG = 2,
-	};
-
-	struct ObstacleAvoidanceParams
+	struct QueuedRobotAction
 	{
-		TAPE_ROBOT_ACTION turnDir;														// Direction we turned to avoid obstacle
-		s32 beginIndex;																				// Actuator index at which avoidance was initiated
+		bool valid;
+		bool pop;
+
+		QueuedRobotAction()
+		{
+			valid = false;
+			pop = false;
+		}
 	};
 
   class VineWidget : public ResizableQWidget, public ParameterCollection, public vtkInteractorStyleImage
@@ -57,8 +57,9 @@ namespace Nf
 		s32 m_actuatorIndex;																								// Next actuator to be released
 		Vec2d m_growingDirection;																						// The direction the vine is growing in the image
 		TAPE_ROBOT_STATE m_controlState;																		// What state are we controling the robot in
-		std::vector < std::pair < s32, bool > m_actionQueue;								// Queue of actions to take
-		ObstacleAvoidanceParams m_obstacleAvoidanceParams;									// Parameters of obstacle avoidance maneuvar
+		std::map < s32, QueuedRobotAction > m_actionQueue;									// Queue of actions to take
+
+		s32 m_obstacleEndIndex;
 
 		vtkSmartPointer < vtkPointPicker > m_pointPicker;
 
@@ -101,7 +102,6 @@ namespace Nf
 		void HWButtonPushed();
 		void ActuatorIncrement(int index);
 		void UpdateText(QString text);
-		void SetRobotAction(int action);
 		void UpdateLog(QString text);
 
   public:
@@ -171,11 +171,10 @@ signals:
 
 	signals:
 		void SetMainImage(bool);
-		void RobotActionSet(int action);
-		void LogUpdate(QString text);
+		void LogUpdate(QString);
 
 	public slots:
-		void ActuatorInc(int idx);
+		void ActuatorInc(int index);
 
 	protected:
 		bool m_firstTime; 
