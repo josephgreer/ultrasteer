@@ -15,7 +15,7 @@
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
-    <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,0,0,0,0,0,0,0,0,0,0">
+    <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,0,0,0,0,0,0,0,0,0,0,0">
      <item>
       <widget class="QPushButton" name="posMode">
        <property name="sizePolicy">
@@ -124,7 +124,7 @@
        <item>
         <widget class="QLineEdit" name="incPressureValue">
          <property name="text">
-          <string>0.6</string>
+          <string>0.1</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -148,7 +148,7 @@
        <item>
         <widget class="QLineEdit" name="decPressureValue">
          <property name="text">
-          <string>0.6</string>
+          <string>0.1</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -259,6 +259,9 @@
      </item>
      <item>
       <widget class="QTextEdit" name="textEdit"/>
+     </item>
+     <item>
+      <widget class="QTextEdit" name="textLog"/>
      </item>
     </layout>
    </item>
