@@ -75,6 +75,7 @@ namespace Nf
 		std::tr1::shared_ptr < Nf::BoolParameter > m_serialInit;
 		std::tr1::shared_ptr < Nf::EnumParameter > m_displayMode;
 		std::tr1::shared_ptr < Nf::IntParameter > m_calibrateObject; // 0 = Robot, 1 = Obstacles
+		std::tr1::shared_ptr < Nf::BoolParameter > m_writeVideo;
 
 		CLASS_CALLBACK(SetupVideoInput, VineWidget);
 		void SetupVideoInput();
@@ -88,6 +89,7 @@ namespace Nf
 		QMutex m_cameraMutex;
 
 		std::tr1::shared_ptr < cv::VideoCapture > m_cap;
+		std::tr1::shared_ptr < cv::VideoWriter > m_writer;
 		std::tr1::shared_ptr < CSerial > m_serial;
 
 		RPData m_data;
@@ -182,7 +184,7 @@ signals:
 		std::pair < std::vector < Squarei >, cv::Mat > CalculateBoundingRects(const cv::Mat hsv, const Vec3d &lb, const Vec3d &ub);
 		std::pair < Squarei, Vec2d > FindRobotParameters(const std::vector < Squarei > &rects, const cv::Mat mask);
 		Vec2d FindClosestObstacleDelta(Vec2d headPos, const std::vector < Squarei > &rects);
-		void DrawDetails(DRAW_DETAILS details, cv::Mat &im, const Vec2d &headCen, const std::vector < Squarei > &obstacleRects, const Squarei &robotRect, const std::vector < Squarei > &robotRects);
+		void DrawDetails(DRAW_DETAILS details, cv::Mat &im, const Vec2d &headCen, const Vec2d &deltaObstacle, const std::vector < Squarei > &obstacleRects, const Squarei &robotRect, const std::vector < Squarei > &robotRects);
 
 		void setup();
 		void execute();
