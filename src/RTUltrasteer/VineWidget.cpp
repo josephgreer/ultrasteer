@@ -20,7 +20,7 @@ namespace Nf
 		, m_cap(NULL)
 		, m_imCoords(-1,-1)
 		, m_oddDirection(1)		
-		, m_actuatorIndex(-1)
+		, m_actuatorIndex(1)
 		, m_controlState(TRS_FREE_GROWING)
 		, m_growingDirection(1,0)
 		, m_obstacleEndIndex(-1)
@@ -28,6 +28,7 @@ namespace Nf
     m_imageViewer = std::tr1::shared_ptr<ImageViewerWidget>(new ImageViewerWidget(parent));
 		m_tapeWidget = std::tr1::shared_ptr<TapeRobotWidget>(new TapeRobotWidget(parent));
 		m_serial = std::tr1::shared_ptr<CSerial>(new CSerial());
+		m_writer = std::tr1::shared_ptr<cv::VideoWriter>(NULL);
 
     m_pointPicker = vtkSmartPointer<vtkPointPicker>::New();
 		m_pointPicker->SetTolerance(0.0);
@@ -80,6 +81,7 @@ namespace Nf
 		ADD_BOOL_PARAMETER(m_serialInit, "Init Serial", CALLBACK_POINTER(InitSerial, VineWidget), this, false);
     ADD_ENUM_PARAMETER(m_displayMode, "Display Modality", NULL, this, QtEnums::DisplayModality::DM_BPOST32, "DisplayModality");
 		ADD_INT_PARAMETER(m_calibrateObject, "Calibrate Object", NULL, this, 0, 0, 1, 1);
+		ADD_BOOL_PARAMETER(m_writeVideo, "Write Video", NULL, this, false);
 
 		RPData rp;
 		m_imageViewer->SetImage(&rp, RPF_COLOR);
@@ -383,7 +385,7 @@ namespace Nf
 
 	
 
-#define MIN_DISTANCE_TO_OBSTACLE 100
+#define MIN_DISTANCE_TO_OBSTACLE 160
 
 	//////////////////////////////////////////////////////
 	/// BEGIN CameraThread
@@ -452,7 +454,7 @@ namespace Nf
 		for(s32 i=0; i<rects.size(); i++) {
 			delta = Vec2d(rects[i].DeltaX(headPos.x),	rects[i].DeltaY(headPos.y));
 			deltaMag = delta.magnitudeSquared();
-			if(deltaMag < closestDist) {
+			if(delta.dot(m_vineWidget->m_growingDirection) > 0 && deltaMag < closestDist) {
 				smallestDelta = delta;
 				closestDist = deltaMag;
 			}
@@ -476,7 +478,7 @@ namespace Nf
 			}
 	}
 
-	void CameraThread::DrawDetails(DRAW_DETAILS details, cv::Mat &im, const Vec2d &headCen, const std::vector < Squarei > &obstacleRects, const Squarei &robotRect, const std::vector < Squarei > &robotRects)
+	void CameraThread::DrawDetails(DRAW_DETAILS details, cv::Mat &im, const Vec2d &headCen, const Vec2d &deltaObstacle, const std::vector < Squarei > &obstacleRects, const Squarei &robotRect, const std::vector < Squarei > &robotRects)
 	{
 		if(details & DD_OBSTACLES) {
 			for(s32 i=0; i<obstacleRects.size(); i++) {
@@ -490,52 +492,84 @@ namespace Nf
 			}
 		}
 
-		cv::circle(im, cv::Point(headCen.x, headCen.y), 5, cv::Scalar(0,0,255), 5);
-		cv::rectangle(im, SquareiToCvRect(robotRect), cvScalar(0,0,255), 5);
+		//cv::rectangle(im, SquareiToCvRect(robotRect), cvScalar(0,0,0), 3);
+		cv::Point p1(headCen.x, headCen.y); cv::Point p2(deltaObstacle.x, deltaObstacle.y);
+		p2 = p1+p2;
+		cv::clipLine(cv::Rect(0,0,im.cols, im.rows), p1, p2);
+		cv::circle(im, p1, 10, cv::Scalar(0,0,255), -1);
+		cv::arrowedLine(im, p1, p2, cv::Scalar(0,0,255), 3, CV_AA, 0, 0.1);
 
 		cv::Point currPoint(10,20);
+		cv::Rect textRect(10, 20, 0, 0);
+
 		cv::Size sz;
 		s32 fontFace = CV_FONT_HERSHEY_SIMPLEX;
 		f64 fontScale = 0.5;
 		s32 thickness = 1;
 		s32 baseLine;
+
+		std::string txt1, txt2, txt3;
 		
-		std::string txt = "Operation Mode: ";
+		txt1 = "Operation Mode: ";
 		switch(m_vineWidget->m_controlState)
 		{
 		case TRS_FREE_GROWING:
 			{
-				txt += "Free Growing";
+				txt1 += "Free Growing";
 				break;
 			}
 		case TRS_AVOIDING_OBSTACLE:
 			{
-				txt += "Avoiding Obstacle";
+				txt1 += "Avoiding Obstacle";
 				break;
 			}
 		}
+		
 
 		bool pop = true;
 
-		for(s32 i=0; i<m_vineWidget->m_actuatorIndex; i++) {
+		for(s32 i=0; i<=m_vineWidget->m_actuatorIndex; i++) {
 			if(m_vineWidget->m_actionQueue.find(i) != m_vineWidget->m_actionQueue.end())
 				pop = m_vineWidget->m_actionQueue[i].pop;
 		}
 
-		sz = cv::getTextSize(txt, fontFace, fontScale, thickness, &baseLine); 
-		currPoint.y += sz.height;
-		cv::putText(im, txt, currPoint, fontFace, fontScale, cvScalar(255,0,0), thickness);
-		currPoint.y += sz.height;
-
 		if(pop)
-			txt = "Pop";
+			txt2 = "Pop";
 		else
-			txt = "Don't pop";
+			txt2 = "Don't pop";
 
-		sz = cv::getTextSize(txt, fontFace, fontScale, thickness, &baseLine); 
+		txt3 = "Turn Actuator Index: " + QString::number(m_vineWidget->m_actuatorIndex).toStdString();
+
+		sz = cv::getTextSize(txt1, fontFace, fontScale, thickness, &baseLine); 
+		textRect.width = MAX(textRect.width, sz.width);
+		textRect.height += 2*sz.height;
+
+		sz = cv::getTextSize(txt2, fontFace, fontScale, thickness, &baseLine); 
+		textRect.width = MAX(textRect.width, sz.width);
+		textRect.height += 2*sz.height;
+
+		sz = cv::getTextSize(txt3, fontFace, fontScale, thickness, &baseLine); 
+		textRect.width = MAX(textRect.width, sz.width);
+		textRect.height += 2*sz.height;
+
+#if 0
+		cv::rectangle(im, textRect, cv::Scalar(0,0,0), -1);
+
+		sz = cv::getTextSize(txt1, fontFace, fontScale, thickness, &baseLine); 
 		currPoint.y += sz.height;
-		cv::putText(im, txt, currPoint, fontFace, fontScale, cvScalar(255,0,0), thickness);
+		cv::putText(im, txt1, currPoint, fontFace, fontScale, cvScalar(255,255,255), thickness);
 		currPoint.y += sz.height;
+
+		sz = cv::getTextSize(txt2, fontFace, fontScale, thickness, &baseLine); 
+		currPoint.y += sz.height;
+		cv::putText(im, txt2, currPoint, fontFace, fontScale, cvScalar(255,255,255), thickness);
+		currPoint.y += sz.height;
+
+		sz = cv::getTextSize(txt3, fontFace, fontScale, thickness, &baseLine); 
+		currPoint.y += sz.height;
+		cv::putText(im, txt3, currPoint, fontFace, fontScale, cvScalar(255,255,255), thickness);
+		currPoint.y += sz.height;
+#endif
 	}
 
 	void CameraThread::execute()
@@ -578,27 +612,28 @@ namespace Nf
 				{
 					// if we're close to an obstacle and growing towards it, initiate pop sequence
 					if(deltaObstacle.magnitude() < MIN_DISTANCE_TO_OBSTACLE && deltaObstacle.dot(m_vineWidget->m_growingDirection) > 0) {
+						s32 actuatorBaseIndex = m_vineWidget->m_actuatorIndex == 1 ? m_vineWidget->m_actuatorIndex : m_vineWidget->m_actuatorIndex+1;
 
 						QueuedRobotAction action; action.pop = false; action.valid = true;
-						m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+1] = action;
+						m_vineWidget->m_actionQueue[actuatorBaseIndex+0] = action;
 						action.pop = true;
-						m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+2] = action;
+						m_vineWidget->m_actionQueue[actuatorBaseIndex+1] = action;
 						action.pop = false;
-						m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+4] = action;
+						m_vineWidget->m_actionQueue[actuatorBaseIndex+3] = action;
 						action.pop = true;
-						m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+5] = action;
+						m_vineWidget->m_actionQueue[actuatorBaseIndex+4] = action;
 
 						char stringDesc[200] = {0};
 						sprintf(stringDesc, "Beginning obstacle avoidance, actuator %d, pop = %d, actuator %d, pop = %d, actuator = %d, pop = %d, actuator = %d pop = %d\n", 
-							m_vineWidget->m_actuatorIndex+1,m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+1].pop,
-							m_vineWidget->m_actuatorIndex+2,m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+2].pop,
-							m_vineWidget->m_actuatorIndex+4,m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+4].pop,
-							m_vineWidget->m_actuatorIndex+5,m_vineWidget->m_actionQueue[m_vineWidget->m_actuatorIndex+5].pop);
+							actuatorBaseIndex+0,m_vineWidget->m_actionQueue[actuatorBaseIndex+0].pop,
+							actuatorBaseIndex+1,m_vineWidget->m_actionQueue[actuatorBaseIndex+1].pop,
+							actuatorBaseIndex+3,m_vineWidget->m_actionQueue[actuatorBaseIndex+3].pop,
+							actuatorBaseIndex+4,m_vineWidget->m_actionQueue[actuatorBaseIndex+4].pop);
 
 						emit LogUpdate(QString(stringDesc));
 
 						m_vineWidget->m_controlState = TRS_AVOIDING_OBSTACLE;
-						m_vineWidget->m_obstacleEndIndex = m_vineWidget->m_actuatorIndex+5;
+						m_vineWidget->m_obstacleEndIndex = m_vineWidget->m_actuatorIndex+4;
 					}
 					break;
 				}
@@ -608,7 +643,7 @@ namespace Nf
 				}
 			}
 
-			DrawDetails(DD_OBSTACLES, frame, headCen, obstacleRes.first, robotParams.first, robotRes.first);
+			DrawDetails(DD_OBSTACLES, frame, headCen, deltaObstacle, obstacleRes.first, robotParams.first, robotRes.first);
 			//DrawDetails(DD_ROBOT, robotRes.second, headCen, obstacleRes.first, robotParams.first, robotRes.first);
 			//DrawDetails(DD_OBSTACLES, obstacleRes.second, headCen, obstacleRes.first, robotParams.first, robotRes.first);
 
@@ -624,6 +659,18 @@ namespace Nf
 			m_vineWidget->m_cameraMutex.unlock();
 
 			emit SetMainImage(m_firstTime);
+
+			if(m_vineWidget->m_writeVideo->GetValue()) {
+				if(m_vineWidget->m_writer == NULL) {
+					m_vineWidget->m_writer = std::tr1::shared_ptr < cv::VideoWriter > (new cv::VideoWriter());
+					bool rv = m_vineWidget->m_writer->open(std::string("C:/Users/Joey/Videos/test.avi"), -1/*cv::VideoWriter::fourcc('X','2','6','4')*/, 15.0, cv::Size(frame.cols, frame.rows));
+					s32 x = 0;
+				}
+				m_vineWidget->m_writer->write(frame);
+			} else if(!m_vineWidget->m_writeVideo->GetValue() && m_vineWidget->m_writer != NULL) {
+				m_vineWidget->m_writer->release();
+				m_vineWidget->m_writer = NULL;
+			}
 
 			m_firstTime = false;
 		}

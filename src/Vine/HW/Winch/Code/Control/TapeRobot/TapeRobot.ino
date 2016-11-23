@@ -90,8 +90,8 @@ CONTROL_MODE controlMode = CM_POS;
 u8 unwindDir = 1;
 
 //encoder tick of first actuator
-f64 firstAct = 10000;
-f64 actSpacing = 10000;
+f64 firstAct = 9000;
+f64 actSpacing = 11250;
 u8 currAct = 0;
 
 f64 lowPassDesVel = 0;
@@ -189,10 +189,10 @@ void SetVel(f64 vel)
 u32 zeroPoint = 0;
 
 f64 unwindSign = -1;
-f64 popVel = -15;
+f64 popVel = -30;
 f64 nonPopVel = -150;
-f64 popPressure = 0.85;
-f64 nonPopPressure = 0.35;
+f64 popPressure = 1;
+f64 nonPopPressure = 0.4;
 
 u8 defaultPop = true;
 
