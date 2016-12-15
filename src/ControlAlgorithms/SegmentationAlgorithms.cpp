@@ -5,6 +5,10 @@
 
 #include "SegmentationAlgorithms.h"
 
+#include "opencv2/imgproc.hpp"
+#if CV_MAJOR_VERSION >= 3
+#include "opencv2/imgproc/imgproc_c.h"
+#endif
 
 namespace Nf {
 
@@ -84,17 +88,17 @@ namespace Nf {
     IplImage* mask_all = cvCreateImage(s, d, 1);
     IplImage* gray_all = cvCreateImage(s, d, 1);
     cvAbsDiff(R, G, diff);
-    cvThreshold(diff, mask_all, 1, 255, THRESH_BINARY);
+    cvThreshold(diff, mask_all, 1, 255, CV_THRESH_BINARY);
     cvZero(gray_all);
     cvCopy(rawGray, gray_all, mask_all);
 
     // remove doppler noise below a low value
-    cvThreshold(gray_all,gray,8.0,255,THRESH_TOZERO);
+    cvThreshold(gray_all,gray,8.0,255,CV_THRESH_TOZERO);
     cvZero(gray);    
     cvCopy(gray_all, gray, binary);
 
     // set a binary mask for all remaining doppler
-    cvThreshold(gray, binary, 1, 255, THRESH_BINARY);
+    cvThreshold(gray, binary, 1, 255, CV_THRESH_BINARY);
 
     // clean up
     cvReleaseImage(&R);
@@ -113,9 +117,9 @@ namespace Nf {
     using namespace cv;
 
     // dilate
-    Mat tempMask(dopplerAllBin);
+    Mat tempMask = cvarrToMat(dopplerAllBin);
     int erosion_size = 3;
-    Mat element = getStructuringElement(MORPH_ELLIPSE,
+    Mat element = getStructuringElement(cv::MORPH_ELLIPSE,
       Size( 2*erosion_size + 1, 2*erosion_size+1 ),
       Point( erosion_size, erosion_size ) );
     dilate(tempMask,tempMask,element);
@@ -124,8 +128,8 @@ namespace Nf {
     int largest_area=0;
     int largest_contour_index=0;
     Rect bounding_rect;
-    vector<vector<Point>> contours;
-    vector<cv::Vec4i> hierarchy;
+    std::vector<std::vector<Point>> contours;
+    std::vector<cv::Vec4i> hierarchy;
 
     Mat temp_image;
     tempMask.copyTo(temp_image);
@@ -200,7 +204,6 @@ namespace Nf {
     cvSaveImage("F:/doppler.jpg", data.color);
     cvSaveImage("F:/binary.jpg",binary);
     cvSaveImage("F:/gray.jpg",gray);
-    imwrite("F:/graySingle.jpg",gray_mat);
 
     // Clean up
     cvReleaseImage(&binary);

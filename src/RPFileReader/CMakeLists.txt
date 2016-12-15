@@ -15,7 +15,7 @@ IF (VTK_FOUND)
 ENDIF(VTK_FOUND)
 
 INCLUDE_DIRECTORIES(
-	${OPENCV_INCLUDE_DIRS} 
+	${OpenCV_INCLUDE_DIRS} 
 	${CMAKE_CURRENT_SOURCE_DIR}/../Segment
 	${CMAKE_CURRENT_SOURCE_DIR}/../UlteriusDataGrabber
 	${UlteriusDir}/inc
@@ -30,5 +30,7 @@ ADD_LIBRARY(RPFileReader STATIC
     RPUlterius.cpp
     RPProcess.cpp
     RPProcess.h
+	Serial.h
+	Serial.cpp
 )
 

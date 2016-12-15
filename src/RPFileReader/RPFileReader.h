@@ -3,6 +3,8 @@
 #include <Windows.h>
 #include "RTCore.h"
 
+#include <map>
+
 #include <cv.h>
 #include <cxcore.h>
 #include <highgui.h>
@@ -110,7 +112,7 @@ namespace Nf
 
     GPS_Data operator=(const GPS_Data &rhs)
     {
-      rhs.pose.copyTo(this->pose);
+			this->pose.copyTo(rhs.pose);
       this->pos = rhs.pos;
       this->posaer = rhs.posaer;
       memcpy(&this->offset[0], &rhs.offset[0], sizeof(double)*5);

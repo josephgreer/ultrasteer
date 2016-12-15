@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <deque>
+#include <map>
 #include "RTCore.h"
 #include "UICore.h"
 

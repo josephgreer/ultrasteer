@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Control", "Control.vcxproj", "{E34C7D5F-A766-420E-A9DF-2D2C98E6775A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PC Test", "PCTest.vcxproj", "{D63D6103-B7DC-4AFB-B297-8A004F12FCAF}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PressureRegulator", "PressureRegulator.vcxproj", "{C5F80730-F44F-4478-BDAE-6634EFC2CA88}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E34C7D5F-A766-420E-A9DF-2D2C98E6775A}.Debug|x64.ActiveCfg = Debug|x64
+		{E34C7D5F-A766-420E-A9DF-2D2C98E6775A}.Debug|x64.Build.0 = Debug|x64
+		{E34C7D5F-A766-420E-A9DF-2D2C98E6775A}.Debug|x86.ActiveCfg = Debug|Win32
+		{E34C7D5F-A766-420E-A9DF-2D2C98E6775A}.Debug|x86.Build.0 = Debug|Win32
+		{E34C7D5F-A766-420E-A9DF-2D2C98E6775A}.Release|x64.ActiveCfg = Release|x64
+		{E34C7D5F-A766-420E-A9DF-2D2C98E6775A}.Release|x64.Build.0 = Release|x64
+		{E34C7D5F-A766-420E-A9DF-2D2C98E6775A}.Release|x86.ActiveCfg = Release|Win32
+		{E34C7D5F-A766-420E-A9DF-2D2C98E6775A}.Release|x86.Build.0 = Release|Win32
+		{D63D6103-B7DC-4AFB-B297-8A004F12FCAF}.Debug|x64.ActiveCfg = Debug|x64
+		{D63D6103-B7DC-4AFB-B297-8A004F12FCAF}.Debug|x64.Build.0 = Debug|x64
+		{D63D6103-B7DC-4AFB-B297-8A004F12FCAF}.Debug|x86.ActiveCfg = Debug|Win32
+		{D63D6103-B7DC-4AFB-B297-8A004F12FCAF}.Debug|x86.Build.0 = Debug|Win32
+		{D63D6103-B7DC-4AFB-B297-8A004F12FCAF}.Release|x64.ActiveCfg = Release|x64
+		{D63D6103-B7DC-4AFB-B297-8A004F12FCAF}.Release|x64.Build.0 = Release|x64
+		{D63D6103-B7DC-4AFB-B297-8A004F12FCAF}.Release|x86.ActiveCfg = Release|Win32
+		{D63D6103-B7DC-4AFB-B297-8A004F12FCAF}.Release|x86.Build.0 = Release|Win32
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Debug|x64.ActiveCfg = Debug|Win32
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Debug|x86.ActiveCfg = Debug|Win32
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Debug|x86.Build.0 = Debug|Win32
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Release|x64.ActiveCfg = Release|Win32
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Release|x86.ActiveCfg = Release|Win32
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

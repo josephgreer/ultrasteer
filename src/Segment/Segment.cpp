@@ -10,6 +10,11 @@ using namespace alglib;
 #define MAIN_MODEL_DEG 2
 #define INITIAL_MODEL_DEG 2
 
+#include "opencv2/imgproc/imgproc.hpp"
+#if CV_MAJOR_VERSION >= 3
+#include "opencv2/imgproc/imgproc_c.h"
+#endif
+
 namespace Nf
 {
   static void makeFlat(std::vector < NeedlePoint > &flat, const std::vector < NeedleFrame > &collection)
@@ -461,7 +466,7 @@ namespace Nf
   //////////////////////////////////////////////////
   //Begin static image processing helper functions
   //////////////////////////////////////////////////
-  static CvRect SquareiToCvRect(const Squarei &sq)
+  CvRect SquareiToCvRect(const Squarei &sq)
   {
     return cvRect(sq.ul.x, sq.ul.y, sq.lr.x-sq.ul.x, sq.lr.y-sq.ul.y);
   }
@@ -537,7 +542,7 @@ namespace Nf
   //Automatically find, expand, and cluster contours.  
   //A threshold is established for smallest contours.  If minArea is true, then this threshold is set
   //to 1/2 the area of the largest contour
-  static std::vector < Squarei > findExpandAndClusterContours(IplImage *colorMask, f32 expand, bool minArea = false, bool shrinkBack = false)
+  std::vector < Squarei > findExpandAndClusterContours(IplImage *colorMask, f32 expand, bool minArea = false, bool shrinkBack = false)
   {
     CvMemStorage *storage = cvCreateMemStorage();
     CvSeq *cons;
@@ -616,8 +621,10 @@ namespace Nf
     cvNormalizeHist(hist, 1.0f);
     f32 total = 0;
     s32 i=255;
+		
+		cv::Mat histMat = cv::cvarrToMat(hist->bins);
     for(; i>=0; i--){
-      total += cvQueryHistValue_1D(hist, i);
+      total += histMat.at<f32>(i);
       if(total >= frac)
         break;
     }
@@ -868,6 +875,7 @@ namespace Nf
     for(s32 i=0; i < (s32)rects[0].size(); i++) {
       cvSetImageROI(colorMask, SquareiToCvRect(rects[0][i]));
       cvSetImageROI(bmode, SquareiToCvRect(rects[0][i]));
+
       cvCalcHist(&bmode, hist, 0);
       thresholds[i] = calcThresh(hist, m_threshFrac->GetValue());
       cvInRangeS(bmode, cvScalar(thresholds[i]), cvScalar(255), colorMask);
@@ -900,7 +908,11 @@ namespace Nf
     if(m_displayMode->GetValue() == QtEnums::DM_BPOST8 && !m_showColorMask->GetValue())
       B82BGRA(bmode, m_disImage);
     else if(m_displayMode->GetValue() == QtEnums::DM_BPOST32 && !m_showColorMask->GetValue())
+#if CV_MAJOR_VERSION >= 3
+      cvCopy(color, m_disImage);
+#else
       cvCopyImage(color, m_disImage);
+#endif
     else
       B82BGRA(m_colorMask[0], m_disImage);
 
@@ -952,7 +964,11 @@ namespace Nf
 
 
     if(false) {
+#if CV_MAJOR_VERSION >= 3
+      cvCopy(color, m_disImage);
+#else
       cvCopyImage(color, m_disImage);
+#endif
       for(s32 i=0; i<rects[0].size(); i++) {
         cvDrawRect(m_disImage, cvPoint(rects[0][i].ul.x, rects[0][i].ul.y), cvPoint(rects[0][i].lr.x, rects[0][i].lr.y),
           cvScalar(0, 255, 0));

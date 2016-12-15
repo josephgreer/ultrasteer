@@ -7,6 +7,16 @@ src/Nano17/*
 src/Nano17
 src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data
 src/MATLAB_CurveFit/NeedleSimulationsParticleFilter/ctests/data/*
+src/Vine/HW/Winch/Code/Control/Debug/*
+src/Vine/HW/Winch/Code/Control/Release/*
+src/Vine/HW/Winch/Code/Control/__vm/*
+src/Vine/HW/Winch/Code/Control/.vs/*
+src/Vine/HW/Winch/UI/venv
+src/Vine/HW/Winch/UI/venv/*
+src/Vine/HW/Winch/UI/.idea
+src/Vine/HW/Winch/UI/.idea/*
+src/Vine/HW/Winch/UI/....idea
+src/Vine/HW/Winch/UI/....idea/*
 *.DS_Store
 ._*
 *~*
@@ -14,3 +24,8 @@ IndividualDefines.h
 !data/solidworks/meat_vice/*pdf
 !src/Vine/**/*pdf
 src/Vine/**/._*pdf
+src/Vine/**/cvxgen_test/*
+!src/Vine**/cvxgen_test/cvxgen_test.vcxproj
+!src/Vine**/cvxgen_test/cvxgen_test.sln
+*.mexmaci64
+*.filters

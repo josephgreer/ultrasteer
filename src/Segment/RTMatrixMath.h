@@ -475,10 +475,10 @@ namespace Nf
     Square(const Vec2 < T > & xy, int weight = 0) : ul(xy), lr(xy), weight(weight) {}
     Square(const Vec2 < T > & ul, const Vec2 < T > & lr, int weight = 0)
     {
-      this->ul.x = min(ul.x, lr.x);
-      this->ul.y = min(ul.y, lr.y);
-      this->lr.x = max(ul.x, lr.x);
-      this->lr.y = max(ul.y, lr.y);
+      this->ul.x = MIN(ul.x, lr.x);
+      this->ul.y = MIN(ul.y, lr.y);
+      this->lr.x = MAX(ul.x, lr.x);
+      this->lr.y = MAX(ul.y, lr.y);
       this->weight = weight;
     }
 
@@ -502,6 +502,26 @@ namespace Nf
         return 0;
       else
         return y - lr.y;
+    }
+
+		T DeltaX(T x) const
+		{
+      if(x < ul.x)
+        return ul.x - x;
+      if(ul.x <= x && x <= lr.x)
+        return 0;
+      else
+        return lr.x-x;
+		}
+
+    T DeltaY(T y) const
+    {
+      if(y < ul.y)
+        return ul.y - y;
+      if(ul.y <= y && y <= lr.y)
+        return 0;
+      else
+        return lr.y-y;
     }
 
     static bool less(const Square & l, const Square & r)

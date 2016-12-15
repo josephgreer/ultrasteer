@@ -839,13 +839,14 @@ namespace Nf
     arma::mat trackerz = Matrix44d::FromCvMat(rp.gps2.pose).ToArmaMatrix4x4().submat(arma::span(0,2), arma::span(2,2));
     arma::mat usz = Matrix44d::FromCvMat(snap.gps.pose).ToArmaMatrix4x4().submat(arma::span(0,2), arma::span(2,2));
     angle = 180.0/PI*std::acos(arma::dot(trackerz/norm(trackerz), usz/norm(usz)));
-    angle = min(angle, 180-angle);
+    angle = MIN(angle, 180-angle);
     angle = 90-angle;
   }
 
   void FSSimpleWidget::HandleFrame(RPData &rp)
   {
     char forceString[200] = {0};
+#ifdef USE_FORCE_SENSOR
     if(m_forceSensorInitialized->GetValue()) {
       s32 rv = m_forceSensor->AcquireFTData();
       if(rv != 0)
@@ -860,6 +861,7 @@ namespace Nf
       sprintf(forceString, "Force: {%f, %f, %f}, Torque: {%f, %f, %f}", rp.force.force.x, rp.force.force.y, rp.force.force.z,
         rp.force.torque.x, rp.force.torque.y, rp.force.torque.z);
     }
+#endif
     SpoofRPDataWithNeedleTipCalibration(rp, &m_ntCalibrator, 0);
 
     if(m_snap2.b8)

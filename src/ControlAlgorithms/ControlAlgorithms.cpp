@@ -430,7 +430,7 @@ namespace Nf {
     Vec3d py_world = p + R*Vec3d(0.0,5.0,0.0);
     pz_img = RobotPtToImagePt(pz_world);
     py_img = RobotPtToImagePt(py_world);
-    mmToNextScan = max(MAX_OPEN_LOOP_INSERTION-insertionSinceLastManualScan(),0.0);
+    mmToNextScan = MAX(MAX_OPEN_LOOP_INSERTION-insertionSinceLastManualScan(),0.0);
     targetDepthReached = CheckCompletion();
 
 #ifdef GPS3_SAVING

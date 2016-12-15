@@ -11,6 +11,7 @@
 #include <vtkImageMapper.h>
 #include <vtkActor2D.h>
 #include <vtkImageActor.h>
+#include <vtkImageFlip.h>
 #include <vtkRenderWindowInteractor.h>
 #include <vtkInteractorStyleImage.h>
 #include <vtkRenderer.h>
@@ -41,11 +42,13 @@ namespace Nf
     vtkSmartPointer < vtkImageActor > m_imageActor;
     vtkSmartPointer < vtkRenderer > m_renderer;
     vtkSmartPointer < vtkRenderWindowInteractor > m_interactor;
+		vtkSmartPointer < vtkImageFlip > m_flip;
     RPData m_rp;
     IplImage *m_temp;
     bool m_init;
     bool m_useTrackball;
     Matrix44d m_cal;        //Calibration Matrix for transducer (maps image coords to world coords)
+		std::tr1::shared_ptr < BoolParameter > m_flipImage;
 
   public:
     ImageViewerWidget(QWidget *parent, const char *name = "Image Viewer Widget");
@@ -54,6 +57,7 @@ namespace Nf
     virtual void SetDataSpacing(const RPData *rp);
     virtual vtkSmartPointer < vtkRenderWindowInteractor > GetWindowInteractor() { return m_interactor; }
     virtual vtkSmartPointer < vtkRenderer > GetRenderer() { return m_renderer; }
+		virtual vtkSmartPointer < vtkActor > GetActor() { return (vtkActor *)m_imageActor.Get(); }
     vtkSmartPointer <vtkImageData> GetImageData() { return m_importer->GetOutput(); }
     virtual void ResetView();
   };
