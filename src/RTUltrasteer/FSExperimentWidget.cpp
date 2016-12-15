@@ -661,7 +661,7 @@ namespace Nf
 
     m_bottomRow->addWidget(m_hwWidget.get(), 0, 0);
     m_bottomRow->addWidget(m_saveDataWidget.get(), 0, 1);
-    m_layout->addLayout(m_bottomRow.get(), 1, 0, 1, 2);
+    m_layout->addLayout(m_bottomRow.get(), 0, 0, 1, 2);
   }
 
   void FSExperimentStreamingWidget::UpdateSize(QSize sz)

@@ -7,7 +7,7 @@
 #include <QTimer>
 #include <vtkInteractorStyleImage.h>
 #include <vtkPointPicker.h>
-#include "opencv2/highgui.hpp"
+#include "opencv2/highgui/highgui.hpp"
 #include "UICore.h"
 #include "Resizable.h"
 #include "ImageViewerWidget.h"
