@@ -6,7 +6,7 @@ namespace Nf
     : QFrame(parent, flags)
     , m_dcInsertVal(1)
     , m_dcInsertAngle(0)
-    , m_dcInsertDist(40)
+    , m_dcInsertDist(100)
   {
     // Set up the gui
     ui.setupUi(this);
@@ -126,7 +126,7 @@ namespace Nf
 
   void RobotControlsWidget::DCInsert()
   {
-    m_robot->DutyCycleSteer(this->m_dcInsertVal, this->m_dcInsertAngle, this->m_dcInsertDist);
+    m_robot->DutyCycleSteer(this->m_dcInsertVal, m_robot->getRollAngle(), this->m_dcInsertDist);
   }
 
   void RobotControlsWidget::CancelDCInsert()

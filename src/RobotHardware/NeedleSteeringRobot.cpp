@@ -198,13 +198,7 @@ void NeedleSteeringRobot::OnPollTimeout(void)
 	double currentIns = m_InsertionDevice.GetMM();
 	if (    abs( currentIns ) > abs( m_DC_InsTarg )       )
 	{
-		// Stop insertion 
-		m_InsertionDevice.SetVelocity(0.0);
-		// Stop polling timer
-		polling_timer.stop();
-		// Cancel dwell timer
-		if( dwell_timer.isActive() )
-			dwell_timer.stop();
+    this->cancelDutyCycling();
 	}
 	// If roll has reached dwell position 
 	double currentRot = m_RollDevice.GetAngle();
