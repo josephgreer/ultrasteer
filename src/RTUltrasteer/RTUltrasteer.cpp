@@ -55,9 +55,10 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   ADD_BOOL_PARAMETER(m_emCalibrationFileWidgetVisible, "Show EM Calibration File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_emCalibrationStreamWidgetVisible, "Show EM Calibration Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_fsExperimentFileWidgetVisible, "Show FS Experiment File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
-  ADD_BOOL_PARAMETER(m_fsExperimentStreamWidgetVisible, "Show FS Experiment Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
+  ADD_BOOL_PARAMETER(m_fsExperimentStreamWidgetVisible, "Show FS Experiment Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_fsSimpleStreamWidgetVisible, "Show FS Simple Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_vineWidgetVisible, "Show Vine Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
+  ADD_BOOL_PARAMETER(m_porcineCadaverWidgetVisible, "Show Cadaver Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
 
   CreateUSVisualizer();
   CreateMenuDock();
@@ -74,6 +75,7 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   CreateFSExperimentStreamDock();
   CreateFSSimpleStreamDock();
 	CreateVineWidget();
+  CreatePorcineCadaverWidgetDock();
 
   QTreeWidgetItem * rt = new QTreeWidgetItem(m_params);
   rt->setText(0, this->GetName());
@@ -134,6 +136,10 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   QTreeWidgetItem * rpVine = new QTreeWidgetItem(m_params);
   rpVine->setText(0, "Vine");
   CreateUIElements(rpVine, *m_vineWidget, m_vineWidget->GetChildWidgets());
+
+  QTreeWidgetItem * rpPCD = new QTreeWidgetItem(m_params);
+  rpRHW->setText(0, "Cadaver Widget");
+  CreateUIElements(rpRHW, *m_porcineCadaverWidget, m_porcineCadaverWidget->GetChildWidgets());
 
   //Add to our map of root dock windows
   m_roots[std::string("USDock")].dock = m_usDock;
@@ -206,6 +212,11 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   m_roots[std::string("VineWidget")].root = rpVine;
   m_roots[std::string("VineWidget")].resize = (Resizable *)m_vineWidget;
   m_roots[std::string("VineWidget")].collection = (ParameterCollection *)m_vineWidget;
+  m_roots[std::string("CadaverWidgetDock")].dock = m_porcineCadaverWidgetDock;
+  m_roots[std::string("CadaverWidgetDock")].param = m_porcineCadaverWidgetVisible.get();
+  m_roots[std::string("CadaverWidgetDock")].root = rpPCD;
+  m_roots[std::string("CadaverWidgetDock")].resize = (Resizable *)m_porcineCadaverWidget;
+  m_roots[std::string("CadaverWidgetDock")].collection = (ParameterCollection *)m_porcineCadaverWidget;
 
   QDockWidget *last = NULL;
   for(std::map < std::string, DockWidgetInfo >::iterator i=m_roots.begin(); i!=m_roots.end(); i++) {
@@ -1056,6 +1067,19 @@ void RTUltrasteer::CreateRobotHWDock()
 
   m_robotHWDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
 }
+
+void RTUltrasteer::CreatePorcineCadaverWidgetDock()
+{
+  m_porcineCadaverWidgetDock = new QDockWidget(tr("CadaverDock"), this);
+  m_porcineCadaverWidgetDock->setAllowedAreas(Qt::AllDockWidgetAreas);
+
+  m_porcineCadaverWidget = new Nf::PorcineCadaverWidget(m_robotHWDock);
+  m_porcineCadaverWidget->setRobot(&m_robot);
+  m_porcineCadaverWidgetDock->setWidget(m_porcineCadaverWidget);
+
+  m_robotHWDock->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
+}
+
 
 void RTUltrasteer::CreateTeleoperation2DFileDock()
 {

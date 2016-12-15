@@ -25,6 +25,7 @@
 #include "ControlAlgorithms.h"
 #include "FSExperimentWidget.h"
 #include "VineWidget.h"
+#include "PorcineCadaverWidget.h"
 
 namespace Nf
 {
@@ -750,6 +751,8 @@ public:
 		
     std::tr1::shared_ptr < Nf::BoolParameter > m_vineWidgetVisible;
 
+    std::tr1::shared_ptr < Nf::BoolParameter > m_porcineCadaverWidgetVisible;
+
     void onSetDocksVisible();
     CLASS_CALLBACK(onSetDocksVisible, RTUltrasteer);
 
@@ -806,6 +809,9 @@ private:
 		QDockWidget *m_vineWidgetDock;
 		Nf::VineWidget *m_vineWidget;
 
+		QDockWidget *m_porcineCadaverWidgetDock;
+		Nf::PorcineCadaverWidget *m_porcineCadaverWidget;
+
     NeedleSteeringRobot m_robot;
     Nf::ControlAlgorithms m_control;
     Mouse3DInput m_mouse;
@@ -825,6 +831,7 @@ private:
     void CreateFSExperimentStreamDock();
     void CreateFSSimpleStreamDock();
 		void CreateVineWidget();
+    void CreatePorcineCadaverWidgetDock();
     void resizeEvent(QResizeEvent *event);
     void Resize();
 
