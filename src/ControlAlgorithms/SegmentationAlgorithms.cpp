@@ -5,7 +5,7 @@
 
 #include "SegmentationAlgorithms.h"
 
-#include "opencv2/imgproc.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
 #if CV_MAJOR_VERSION >= 3
 #include "opencv2/imgproc/imgproc_c.h"
 #endif

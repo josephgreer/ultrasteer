@@ -112,7 +112,7 @@ namespace Nf
 
     GPS_Data operator=(const GPS_Data &rhs)
     {
-			this->pose.copyTo(rhs.pose);
+      rhs.pose.copyTo(this->pose);
       this->pos = rhs.pos;
       this->posaer = rhs.posaer;
       memcpy(&this->offset[0], &rhs.offset[0], sizeof(double)*5);

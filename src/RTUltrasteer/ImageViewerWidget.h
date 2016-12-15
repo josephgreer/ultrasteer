@@ -24,6 +24,7 @@
 #include <vtkInteractorStyleImage.h>
 #include <vtkImageMapper3D.h>
 #include <vtkImageData.h>
+#include <vtkImageCast.h>
 #include <QtDebug>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -43,6 +44,7 @@ namespace Nf
     vtkSmartPointer < vtkRenderer > m_renderer;
     vtkSmartPointer < vtkRenderWindowInteractor > m_interactor;
 		vtkSmartPointer < vtkImageFlip > m_flip;
+    vtkSmartPointer < vtkImageCast > m_flipCast;
     RPData m_rp;
     IplImage *m_temp;
     bool m_init;
