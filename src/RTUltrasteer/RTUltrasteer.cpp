@@ -138,8 +138,8 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   CreateUIElements(rpVine, *m_vineWidget, m_vineWidget->GetChildWidgets());
 
   QTreeWidgetItem * rpPCD = new QTreeWidgetItem(m_params);
-  rpRHW->setText(0, "Cadaver Widget");
-  CreateUIElements(rpRHW, *m_porcineCadaverWidget, m_porcineCadaverWidget->GetChildWidgets());
+  rpPCD->setText(0, "Cadaver Widget");
+  CreateUIElements(rpPCD, *m_porcineCadaverWidget, m_porcineCadaverWidget->GetChildWidgets());
 
   //Add to our map of root dock windows
   m_roots[std::string("USDock")].dock = m_usDock;

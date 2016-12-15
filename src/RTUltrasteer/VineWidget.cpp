@@ -336,6 +336,8 @@ namespace Nf
 		while(m_running) {
 			execute();
 		}
+
+    cleanup();
 	}
 
 	void BasicThread::stopThread()

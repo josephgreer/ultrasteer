@@ -3,7 +3,7 @@
 
 namespace Nf
 {
-#define MAX_TIMESTEPS 4000
+#define MAX_TIMESTEPS 500000
   SaveDataWidget::SaveDataWidget(QWidget *parent, Qt::WFlags flags)
     : ResizableQFrame(parent, QSize(VIS_WIDTH, VIS_HEIGHT))
     , m_memB8(NULL)
@@ -124,6 +124,7 @@ namespace Nf
     std::string name = fname.substr(fname.find_last_of("/")+1,std::string::npos);
     name = name.substr(0, name.find_last_of("."));
 
+#if 0
     //TODO: Save The Data
     std::tr1::shared_ptr < RPFileWriterCollection > rpw(new RPFileWriterCollection(std::string(dir+std::string("/")+name).c_str(), &header));
     if(m_dataToSave.size() > 0 && m_dataToSave.front().b8 != NULL)
@@ -146,6 +147,21 @@ namespace Nf
     }
 
     rpw->Cleanup(&header);
+#else
+    arma::mat force;
+    for(s32 i=0; i<m_dataToSave.size(); i++) {
+      arma::mat row = arma::zeros(1,6);
+      row(0,0) = m_dataToSave[i].force.force.x; 
+      row(0,1) = m_dataToSave[i].force.force.y;
+      row(0,2) = m_dataToSave[i].force.force.z;
+      row(0,3) = m_dataToSave[i].force.torque.x; 
+      row(0,4) = m_dataToSave[i].force.torque.y;
+      row(0,5) = m_dataToSave[i].force.torque.z;
+      force = arma::join_vert(force, row);
+    }
+
+    force.save(std::string(dir+std::string("/force.mat")).c_str(), arma::raw_ascii);
+#endif
     FreeData();
     ui.progressBar->setValue(0);
   }

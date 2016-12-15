@@ -127,6 +127,7 @@ namespace Nf
 
 		virtual void setup() { return; }
 		virtual void execute() = 0;
+    virtual void cleanup() { return; }
 
 	public:
 		BasicThread();

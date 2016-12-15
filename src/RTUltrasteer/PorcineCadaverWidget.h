@@ -2,6 +2,7 @@
 #define PorcineCadaverWidget_H
 
 #include <QGridLayout>
+#include <qtimer.h>
 #include "UICore.h"
 #include "Resizable.h"
 #include "NeedleSteeringRobot.h"
@@ -17,7 +18,7 @@ namespace Nf
 		Q_OBJECT
 
 	public:
-		ForceSensorThread();
+		ForceSensorThread(std::tr1::shared_ptr < SaveDataWidget > saveDataWidget);
 		virtual ~ForceSensorThread();
 
     std::vector < RPData > GetUpdatedData();
@@ -26,8 +27,11 @@ namespace Nf
     QMutex m_dataMutex;
     std::vector < RPData > m_data;
     std::tr1::shared_ptr < cForceSensor > m_forceSensor;
+    std::tr1::shared_ptr < SaveDataWidget > m_saveDataWidget;
 
+    void setup();
 		void execute();
+    void cleanup();
 	};
 
   class PorcineCadaverWidget : public ResizableQWidget, public ParameterCollection
@@ -41,6 +45,7 @@ namespace Nf
     std::tr1::shared_ptr < RobotHardwareWidget > m_hwWidget;
     std::tr1::shared_ptr < SaveDataWidget > m_saveDataWidget;
 		std::tr1::shared_ptr < ForceSensorThread > m_forceThread;
+    QTimer m_heartbeat;
 
   public:
     PorcineCadaverWidget(QWidget *parent);
@@ -48,9 +53,20 @@ namespace Nf
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
 
+    //initForceSensor
+    std::tr1::shared_ptr < Nf::BoolParameter > m_initForceSensor;
+    void onInitForceSensor();
+    CLASS_CALLBACK(onInitForceSensor, PorcineCadaverWidget);
+
     std::vector < QVTKWidget * > GetChildWidgets();
 
     void setRobot(NeedleSteeringRobot* robot);
+
+  public slots:
+    void heartbeat();
+
+signals:
+    void stopForceSensorThread();
   };
 }
 
