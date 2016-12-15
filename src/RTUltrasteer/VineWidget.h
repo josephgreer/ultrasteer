@@ -123,14 +123,13 @@ namespace Nf
 		Q_OBJECT 
 
 	protected:
-		VineWidget *m_vineWidget;
 		bool m_running;
 
 		virtual void setup() { return; }
 		virtual void execute() = 0;
 
 	public:
-		BasicThread(VineWidget *vine);
+		BasicThread();
 		bool isRunning() { return m_running; }
 
 	public slots:
@@ -153,6 +152,7 @@ signals:
 		void textUpdate(QString text);
 
 	protected:
+    VineWidget *m_vineWidget;
 		char *m_data;
 		void execute();
 	};
@@ -173,6 +173,7 @@ signals:
 		void ActuatorIncrement(s32 idx);
 
 	protected:
+    VineWidget *m_vineWidget;
 		bool m_firstTime; 
 
 		std::pair < std::vector < Squarei >, cv::Mat > CalculateBoundingRects(const cv::Mat hsv, const Vec3d &lb, const Vec3d &ub);
