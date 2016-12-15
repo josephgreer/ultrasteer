@@ -324,9 +324,8 @@ namespace Nf
 	//////////////////////////////////////////////////////
 	/// BEGIN BasicThread
 	//////////////////////////////////////////////////////
-	BasicThread::BasicThread(VineWidget *vine)
-		: m_vineWidget(vine)
-		, m_running(false)
+	BasicThread::BasicThread()
+		: m_running(false)
 	{
 	}
 
@@ -352,7 +351,7 @@ namespace Nf
 	//////////////////////////////////////////////////////
 #define SERIAL_SZ 1024
 	SerialReceiveThread::SerialReceiveThread(VineWidget *vine)
-		: BasicThread(vine)
+		: BasicThread()
 	{
 		m_data = new char[SERIAL_SZ];
 		memset(m_data, 0, SERIAL_SZ);
@@ -407,7 +406,7 @@ namespace Nf
 	/// BEGIN CameraThread
 	//////////////////////////////////////////////////////
 	CameraThread::CameraThread(VineWidget *vine)
-		: BasicThread(vine)
+		: BasicThread()
 		, m_firstTime(false)
 	{
 		connect(this, SIGNAL(SetMainImage(bool)), vine, SLOT(SetImage(bool)));

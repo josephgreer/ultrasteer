@@ -7,8 +7,8 @@ namespace Nf
     : Nf::ParameterCollection("Robot Hardware Widget")
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
     , m_saveDataWidget(new SaveDataWidget(parent))
-    , m_forceSensor(new cForceSensor())
     , m_hwWidget(new RobotHardwareWidget(this))
+    , m_forceThread(new ForceSensorThread())
   {
     m_layout = new QGridLayout(parent);
     this->setLayout(m_layout);
@@ -45,4 +45,32 @@ namespace Nf
   {
     m_hwWidget->setRobot(robot);
   }
+
+  ////////////////////////////////////////////////////////////////////
+  /// Begin ForceSensorThread
+  ////////////////////////////////////////////////////////////////////
+  ForceSensorThread::ForceSensorThread()
+    : m_forceSensor(new cForceSensor())
+  {
+  }
+
+  ForceSensorThread::~ForceSensorThread()
+  {
+  }
+
+  void ForceSensorThread::execute()
+  {
+  }
+
+
+  std::vector < RPData > ForceSensorThread::GetUpdatedData()
+  {
+
+    return m_data;
+  }
+
+
+  ////////////////////////////////////////////////////////////////////
+  /// End ForceSensorThread
+  ////////////////////////////////////////////////////////////////////
 }
