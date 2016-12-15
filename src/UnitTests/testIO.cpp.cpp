@@ -249,3 +249,22 @@ TEST(IO, ForceData)
     }
   }
 }
+
+TEST(Webcam, Vine)
+{
+  cv::VideoCapture cam(0);
+
+  if(!cam.isOpened()) {
+    return;
+  }
+  
+  cv::Mat im;
+  while(true) {
+    cam.read(im);
+    IplImage imim = (IplImage)im;
+    cvShowImage("Yep", &imim);
+    im.release();
+    cvWaitKey(1000);
+  }
+
+}

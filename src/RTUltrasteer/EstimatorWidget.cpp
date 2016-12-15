@@ -1395,6 +1395,7 @@ namespace Nf
     , m_saveDataWidget(new SaveDataWidget(parent))
     , m_bottomRow(new QGridLayout(parent))
     , m_tpHistory(std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(1, Vec3d(1, 1, 0))))
+    , m_saveOffFrame(false)
   {
     m_bottomRow->addWidget(m_hwWidget.get(), 0, 0);
     m_bottomRow->addWidget(m_saveDataWidget.get(), 0, 1, Qt::Alignment(Qt::AlignTop));
@@ -1414,6 +1415,8 @@ namespace Nf
     ADD_BOOL_PARAMETER(m_showPastTipPoints, "Show Past Tip Points", NULL, this, false);
     ADD_BOOL_PARAMETER(m_collectPastTipPoints, "Collect Past Tip Points", NULL, this, false);
     ADD_ACTION_PARAMETER(m_clearPastPoints, "Clear Past Tip Points", CALLBACK_POINTER(onClearPastPoints, EstimatorStreamingWidget), this, false);
+    ADD_ACTION_PARAMETER(m_addPoint, "Add GPS Point", CALLBACK_POINTER(onAddPoint, EstimatorStreamingWidget), this, false);
+    ADD_ACTION_PARAMETER(m_saveOffPoints, "Save Off Point", CALLBACK_POINTER(onSaveOffPoints, EstimatorStreamingWidget), this, false);
 
     ADD_CHILD_COLLECTION(m_hwWidget.get());
 
@@ -1479,6 +1482,16 @@ namespace Nf
   void EstimatorStreamingWidget::onClearPastPoints()
   {
     m_pastTipPoints.clear();
+  }
+
+  void EstimatorStreamingWidget::onAddPoint()
+  {
+    this->m_saveOffFrame = true;
+  }
+
+  void EstimatorStreamingWidget::onSaveOffPoints()
+  {
+    this->m_gpsPoints.save("C:/Joey/points.mat", arma::raw_ascii);
   }
 
   static RPFileHeader RPFileHeader_uDataDesc(const uDataDesc &desc)
@@ -1574,9 +1587,15 @@ namespace Nf
     if(m_collectPastTipPoints->GetValue())
       m_pastTipPoints.push_back(rp.gps2.pos);
 
+    if(this->m_saveOffFrame) {
+      this->m_gpsPoints = arma::join_vert(this->m_gpsPoints, rp.gps2.pos.ToArmaVec().t());
+      this->m_saveOffFrame = false;
+    }
+
     RPStreamingWidget::HandleFrame(rp);
     HandleExtras();
   }
+
 
   void EstimatorStreamingWidget::HandleExtras()
   {

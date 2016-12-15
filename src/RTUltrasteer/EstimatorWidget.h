@@ -245,6 +245,8 @@ namespace Nf
     std::tr1::shared_ptr < QGridLayout > m_bottomRow;
     std::tr1::shared_ptr < PointCloudVisualizer > m_tpHistory;
 
+    arma::mat m_gpsPoints;
+
     NeedleSteeringRobot *m_robot;
     EstimatorState m_state;      
     NSCommand m_u; 
@@ -253,6 +255,8 @@ namespace Nf
     EMNeedleTipCalibrator m_ntCalibrator;
 
     std::vector < Vec3d > m_pastTipPoints;
+
+    bool m_saveOffFrame;
 
   public:
     EstimatorStreamingWidget(QWidget *parent, const char *name = "Estimator Streaming Widget");
@@ -293,6 +297,14 @@ namespace Nf
     std::tr1::shared_ptr < Nf::BoolParameter > m_clearPastPoints;
     void onClearPastPoints();
     CLASS_CALLBACK(onClearPastPoints, EstimatorStreamingWidget);
+    
+    std::tr1::shared_ptr < Nf::BoolParameter > m_addPoint;
+    void onAddPoint();
+    CLASS_CALLBACK(onAddPoint, EstimatorStreamingWidget);
+    
+    std::tr1::shared_ptr < Nf::BoolParameter > m_saveOffPoints;
+    void onSaveOffPoints();
+    CLASS_CALLBACK(onSaveOffPoints, EstimatorStreamingWidget);
 
     virtual void HandleExtras();
     virtual void HandleFrame(RPData &rp);
