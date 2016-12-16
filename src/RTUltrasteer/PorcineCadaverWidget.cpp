@@ -105,6 +105,7 @@ namespace Nf
       throw std::runtime_error("Error intializing force sensor");
     }
     msleep(100);
+    m_forceSensor->Zero_Force_Sensor();
   }
 
   void ForceSensorThread::execute()
