@@ -20,6 +20,8 @@ namespace Nf
     void enableArticulation(bool);
     void setRobot(NeedleSteeringRobot*);
 
+    Ui::RobotControlsWidgetClass ui;
+
   private:
     NeedleSteeringRobot *m_robot;
     bool m_displayTimerOn;
@@ -31,8 +33,6 @@ namespace Nf
     f64 m_dcInsertAngle;
     f64 m_dcInsertVal;
     f64 m_dcInsertDist;
-
-    Ui::RobotControlsWidgetClass ui;
 
     public slots:
       void RotPosInc(void);

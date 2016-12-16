@@ -50,6 +50,7 @@ namespace Nf
   void PorcineCadaverWidget::setRobot(NeedleSteeringRobot* robot)
   {
     m_hwWidget->setRobot(robot);
+    m_forceThread->SetWidget(m_hwWidget);
   }
 
   void PorcineCadaverWidget::onInitForceSensor()
@@ -90,6 +91,11 @@ namespace Nf
   {
   }
 
+  void ForceSensorThread::SetWidget(std::tr1::shared_ptr < RobotHardwareWidget > hwWidget)
+  {
+    m_hwWidget = hwWidget;
+  }
+
   void ForceSensorThread::setup()
   {
     m_forceSensor->Set_Calibration_File_Loc("C:/Joey/ultrasteer/src/Nano17/FT14057.cal"); 
@@ -114,6 +120,10 @@ namespace Nf
     m_forceSensor->GetTorqueReading(torque);
     rp.force.torque = Vec3d(torque[0], torque[1], torque[2]);
 
+    rp.u.v = m_hwWidget->GetRCWidget()->ui.insertion_pos->value();
+    rp.u.dtheta = m_hwWidget->GetRCWidget()->ui.roll_pos->value();
+    rp.u.dutyCycle = m_hwWidget->GetRCWidget()->ui.articulation_pos->value();
+    rp.u.tick = timeGetTime();
 
     m_dataMutex.lock();
     m_data.push_back(rp);

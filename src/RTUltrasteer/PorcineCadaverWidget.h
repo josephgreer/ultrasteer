@@ -20,6 +20,7 @@ namespace Nf
 	public:
 		ForceSensorThread(std::tr1::shared_ptr < SaveDataWidget > saveDataWidget);
 		virtual ~ForceSensorThread();
+    void SetWidget(std::tr1::shared_ptr < RobotHardwareWidget > hwWidget);
 
     std::vector < RPData > GetUpdatedData();
 
@@ -28,6 +29,7 @@ namespace Nf
     std::vector < RPData > m_data;
     std::tr1::shared_ptr < cForceSensor > m_forceSensor;
     std::tr1::shared_ptr < SaveDataWidget > m_saveDataWidget;
+    std::tr1::shared_ptr < RobotHardwareWidget > m_hwWidget;
 
     void setup();
 		void execute();

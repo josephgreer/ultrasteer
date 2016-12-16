@@ -150,13 +150,17 @@ namespace Nf
 #else
     arma::mat force;
     for(s32 i=0; i<m_dataToSave.size(); i++) {
-      arma::mat row = arma::zeros(1,6);
+      arma::mat row = arma::zeros(1,10);
       row(0,0) = m_dataToSave[i].force.force.x; 
       row(0,1) = m_dataToSave[i].force.force.y;
       row(0,2) = m_dataToSave[i].force.force.z;
       row(0,3) = m_dataToSave[i].force.torque.x; 
       row(0,4) = m_dataToSave[i].force.torque.y;
       row(0,5) = m_dataToSave[i].force.torque.z;
+      row(0,6) = m_dataToSave[i].u.tick;
+      row(0,7) = m_dataToSave[i].u.v;
+      row(0,8) = m_dataToSave[i].u.dtheta;
+      row(0,9) = m_dataToSave[i].u.dutyCycle;
       force = arma::join_vert(force, row);
     }
 
