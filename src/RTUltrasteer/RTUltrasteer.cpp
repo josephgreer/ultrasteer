@@ -41,9 +41,18 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
     , m_usDock(NULL)
     , m_usVis(NULL)
     , m_mouse(this)
+		, m_rpFileDock(NULL)
+		, m_rpStreamingDock(NULL)
+		, m_estimatorFileDock(NULL)
+		,	m_estimatorStreamingDock(NULL)
+		, m_teleoperation2DFileDock(NULL)
+		, m_teleoperation2DStreamDock(NULL)
+		, m_EMCalibrationFileDock(NULL)
+		, m_EMCalibrationStreamDock(NULL)
 {
   ui.setupUi(this);
 
+#if 0
   ADD_BOOL_PARAMETER(m_usDockVisible, "Show Full US Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_rpFileWidgetVisible, "Show Incremental Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_rpStreamingWidgetVisible, "Show Streaming Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
@@ -57,10 +66,12 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   ADD_BOOL_PARAMETER(m_fsExperimentFileWidgetVisible, "Show FS Experiment File Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_fsExperimentStreamWidgetVisible, "Show FS Experiment Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
   ADD_BOOL_PARAMETER(m_fsSimpleStreamWidgetVisible, "Show FS Simple Stream Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, false);
+#endif
   ADD_BOOL_PARAMETER(m_vineWidgetVisible, "Show Vine Dock", CALLBACK_POINTER(onSetDocksVisible, RTUltrasteer), this, true);
-
-  CreateUSVisualizer();
+	
   CreateMenuDock();
+#if 0
+  CreateUSVisualizer();
   CreateRPFileDock();
   CreateRPStreamingDock();
   CreateEstimatorFileDock();
@@ -72,9 +83,11 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   CreateEMCalibrationStreamDock();
   CreateFSExperimentFileDock();
   CreateFSExperimentStreamDock();
-  CreateFSSimpleStreamDock();
+	CreateFSSimpleStreamDock();
+#endif
 	CreateVineWidget();
 
+#if 0
   QTreeWidgetItem * rt = new QTreeWidgetItem(m_params);
   rt->setText(0, this->GetName());
   CreateUIElements(rt, *this, std::vector<QVTKWidget *>());
@@ -130,11 +143,13 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   QTreeWidgetItem * rpFSSSW = new QTreeWidgetItem(m_params);
   rpFSSSW->setText(0, "FSSimpleStream");
   CreateUIElements(rpFSSSW, *m_fsSimpleStreamWidget, m_fsSimpleStreamWidget->GetChildWidgets());
+#endif
 
   QTreeWidgetItem * rpVine = new QTreeWidgetItem(m_params);
   rpVine->setText(0, "Vine");
   CreateUIElements(rpVine, *m_vineWidget, m_vineWidget->GetChildWidgets());
 
+#if 0
   //Add to our map of root dock windows
   m_roots[std::string("USDock")].dock = m_usDock;
   m_roots[std::string("USDock")].param = m_usDockVisible.get();
@@ -201,6 +216,7 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   m_roots[std::string("FSSimpleStreamDock")].root = rpFSSSW;
   m_roots[std::string("FSSimpleStreamDock")].resize = (Resizable *)m_fsSimpleStreamWidget;
   m_roots[std::string("FSSimpleStreamDock")].collection = (ParameterCollection *)m_fsSimpleStreamWidget;
+#endif
   m_roots[std::string("VineWidget")].dock = m_vineWidgetDock;
   m_roots[std::string("VineWidget")].param = m_vineWidgetVisible.get();
   m_roots[std::string("VineWidget")].root = rpVine;

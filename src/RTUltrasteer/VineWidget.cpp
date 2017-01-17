@@ -1,5 +1,6 @@
 #include "VineWidget.h"
 #include <vtkRendererCollection.h>
+#include <armadillo>
 
 namespace Nf
 {
@@ -165,9 +166,15 @@ namespace Nf
 			const char *str = "z\n";
 			this->m_serial->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.turn) {
+			const char *str1 = "z\n";
+			this->m_serial->SendData(str1, strlen(str1));
+			Sleep(100);
 			const char *str = "t y\n";
 			this->m_serial->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.dontTurn) {
+			const char *str1 = "z\n";
+			this->m_serial->SendData(str1, strlen(str1));
+			Sleep(100);
 			const char *str = "t n\n";
 			this->m_serial->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.pause) {
@@ -438,9 +445,14 @@ namespace Nf
 			}
 		}
 
-		cv::Rect roi = clampRectToImage(cv::Rect(bestRect.lr.x-20, 0, 20, mask.size().height),mask);
+#if 1
+		cv::Rect roi = clampRectToImage(cv::Rect(bestRect.ul.x-20, 0, 20, mask.size().height),mask);
 		cv::Moments mom = cv::moments(mask(roi));
 		Vec2d headCen(mom.m10/mom.m00+roi.tl().x, mom.m01/mom.m00+roi.tl().y);
+#else
+		Vec2d headCen((bestRect.ul.x+bestRect.lr.x)/2.0, (bestRect.ul.y+bestRect.lr.y)/2.0);
+		NTrace("headCen %f %f\n", headCen.x, headCen.y);
+#endif
 
 		return std::pair < Squarei, Vec2d >(bestRect, headCen);
 	}
@@ -496,7 +508,7 @@ namespace Nf
 		cv::Point p1(headCen.x, headCen.y); cv::Point p2(deltaObstacle.x, deltaObstacle.y);
 		p2 = p1+p2;
 		cv::clipLine(cv::Rect(0,0,im.cols, im.rows), p1, p2);
-		cv::circle(im, p1, 10, cv::Scalar(0,0,255), -1);
+		cv::circle(im, p1, 10, cv::Scalar(255,0,0), -1);
 		cv::arrowedLine(im, p1, p2, cv::Scalar(0,0,255), 3, CV_AA, 0, 0.1);
 
 		cv::Point currPoint(10,20);
@@ -552,7 +564,7 @@ namespace Nf
 		textRect.width = MAX(textRect.width, sz.width);
 		textRect.height += 2*sz.height;
 
-#if 0
+#if 1
 		cv::rectangle(im, textRect, cv::Scalar(0,0,0), -1);
 
 		sz = cv::getTextSize(txt1, fontFace, fontScale, thickness, &baseLine); 
@@ -572,8 +584,18 @@ namespace Nf
 #endif
 	}
 
+	u32 g_begTick = 0;
+	u32 g_count = 0;
 	void CameraThread::execute()
 	{
+		if(++g_count == 100) {
+			u32 currTick = timeGetTime();
+			u32 total = currTick - g_begTick;
+			NTrace("Time = %f\n", total/100.0);
+			g_begTick = currTick;
+			g_count = 0;
+		}
+		
 		cv::Mat raw,frame;
 		if(m_vineWidget->m_cap->isOpened()) {
 			(*m_vineWidget->m_cap) >> raw;
@@ -606,6 +628,9 @@ namespace Nf
 			Squarei robotRect = robotParams.first; Vec2d headCen = robotParams.second; 
 
 			Vec2d deltaObstacle = FindClosestObstacleDelta(headCen, obstacleRes.first);
+			arma::vec row = arma::zeros<arma::vec>(4);
+			row(0) = headCen.x; row(1) = headCen.y; row(2) = deltaObstacle.x; row(3) = deltaObstacle.y;
+			g_points = arma::join_vert(g_points, row.t());
 
 			switch(m_vineWidget->m_controlState) {
 			case TRS_FREE_GROWING:

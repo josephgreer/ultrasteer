@@ -1,0 +1,14 @@
+Tape Robot Widget++Video File->OpenFile== C:/Joey/ultrasteer/data/VineVideos/Vine1.mov
+Tape Robot Widget++Use Webcam->Bool== 1
+Tape Robot Widget++Run->Bool== 0
+Tape Robot Widget++Init Serial->Bool== 0
+Tape Robot Widget++Write Video->Bool== 0
+Tape Robot Widget++Com Port->Int== 6
+Tape Robot Widget++Calibrate Object->Int== 1
+Tape Robot Widget++Lower Bounds->Vec3d== 18.125000 34.437500 105.750000
+Tape Robot Widget++Upper Bounds->Vec3d== 30.125000 255.000000 212.750000
+Tape Robot Widget++Lower Bounds Obstacle->Vec3d== 56.750000 22.250000 75.812500
+Tape Robot Widget++Upper Bounds Obstacle->Vec3d== 82.750000 255.000000 145.812500
+Tape Robot Widget++Calibrate Padding->Vec3d== 10.000000 25.000000 35.000000
+Tape Robot Widget++Display Modality->Enum== 8
+Tape Robot Widget++Image Viewer Widget++Flip Image->Bool== 1

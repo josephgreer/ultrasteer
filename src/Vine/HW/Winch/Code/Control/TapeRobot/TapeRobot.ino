@@ -75,26 +75,35 @@ f64 lastVel = 0;
 
 // Position Constants
 f64 Kpp = 0.08;
-f64 Kdp = 0;
+f64 Kdp = 0.008;
 f64 Kip = 0.00005;
 
 // Velocity Constants
 f64 Kpv = 1;
-f64 Kdv = 0;
+f64 Kdv = 0.1;
 f64 Kiv = 0.01;
 
-f64 minTension = 5.0;
+f64 minTension = 0;
 
 CONTROL_MODE controlMode = CM_POS;
 
 u8 unwindDir = 1;
 
 //encoder tick of first actuator
-f64 firstAct = 9000;
-f64 actSpacing = 11250;
+f64 firstAct = 21650;
+f64 actSpacing = 18155;
 u8 currAct = 0;
+u8 bad = 0;
+
+f64 badVel = 0;
+f64 badPos = 0;
+f64 badLastPos = 0;
+f64 badLastVel = 0;
+f64 badDt = 0;
 
 f64 lowPassDesVel = 0;
+f64 alpha = 0.995;
+f64 alphaPos = 0.2;
 
 void loop() 
 {
@@ -103,14 +112,33 @@ void loop()
   f64 dt = (f64)(currTime-lastTime)/(1000.0);
   f64 u;
   f64 vel;
+
+  if(currTime == lastTime) {
+    Serial.println("WTF");
+    return;
+  }
+  lastTime = currTime;
   
   f64 error, derror;
 
   handlePopState(pos);
 
-  lowPassDesVel = lowPassDesVel*0.9999+(1-0.9999)*desVel;
+  lowPassDesVel = lowPassDesVel*alpha+(1-alpha)*desVel;
 
-  vel = 0.2*(pos-lastPos)/dt + 0.8*lastVel;
+  vel = alphaPos*(pos-lastPos)/dt + (1-alphaPos)*lastVel;
+  if(isnan(vel) || isinf(vel) || bad) {
+    analogWrite(pressurePin, 0);
+    if(!bad) {
+      badVel = vel;
+      badPos = pos;
+      badLastPos = lastPos;
+      badDt = dt;
+      badLastVel = lastVel;
+    }
+    Serial.println("vel= " + String(badVel) + " pos= " +String(badPos) + " lastPos= " + String(badLastPos) + " dt= " + String(badDt,10));
+    bad = 1;
+    return;
+  }
   if(controlMode == CM_POS) {
     error = desPos-pos;
   } else {
@@ -122,7 +150,6 @@ void loop()
     
   errorLast = error;
   derror /= dt;
-  lastTime = currTime;
   lastPos = pos;
 
   s8 dir = 0;
@@ -130,7 +157,7 @@ void loop()
   switch(controlMode) {
     case CM_POS:
     {
-      u = Kpp*error + Kdp*derror + Kip*integralError;
+      u = Kpp*error + -Kdp*vel + Kip*integralError;
   
       if(u < 0) {
         dir = 1;
@@ -141,7 +168,7 @@ void loop()
     }
     case CM_VEL:
     {
-      u = Kpv*error + Kdv*derror + Kiv*integralError;
+      u = Kpv*error - Kdv*vel + Kiv*integralError;
   
       if(u < 0) {
         dir = 1;
@@ -170,8 +197,8 @@ void loop()
       digitalWrite(dirAPin, dir);
       dirLast = dir;
     }
-    if(count % 499 == 0)
-      Serial.println("act " + String(currAct+1));
+//    if(count % 499 == 0)
+//      Serial.println("act " + String(currAct+1));
     if(count++ % 2000 == 0) 
       Serial.println("Des Pos " +  String(desPos) + " Pos " + String(pos) + " DesVel " + String(desVel) + " Vel " + String(vel) + " Pressure " + String(desPres) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
     analogWrite(pwmAPin, u);
@@ -189,10 +216,10 @@ void SetVel(f64 vel)
 u32 zeroPoint = 0;
 
 f64 unwindSign = -1;
-f64 popVel = -30;
-f64 nonPopVel = -150;
+f64 popVel = -500;
+f64 nonPopVel = -500;
 f64 popPressure = 1;
-f64 nonPopPressure = 0.4;
+f64 nonPopPressure = 0.6;
 
 u8 defaultPop = true;
 
@@ -213,7 +240,9 @@ void SetPop(bool pop)
     desPres = pop ? popPressure : nonPopPressure;
     s32 amount = (s32)(255.0*(desPres));
     analogWrite(pressurePin, amount);
-    SetVel(pop ? popVel : nonPopVel);
+    desVel = pop ? popVel : nonPopVel;
+    if(abs(desVel) < abs(lowPassDesVel))
+      lowPassDesVel = desVel;
   }
 }
 
@@ -223,6 +252,7 @@ void handlePopState(f64 encoderTick)
     currAct = currAct+1;
 
     Serial.println("act " + String(currAct+1));
+//    SetPop(false);
   }
 }
 
