@@ -16,6 +16,9 @@ int encoderPinA = 2;
 int encoderPinB = 3; 
 int pressurePin = 9;
 
+s32 ledPins[2] = {13,12};
+bool ledPinsOn[2] = {false,false};
+
 // Program Scope Variables
 Encoder encoder(encoderPinA, encoderPinB);
 f64 countPerRev = 1024;
@@ -41,6 +44,9 @@ void setup()
   pinMode(encoderPinB, INPUT);
 
   pinMode(pressurePin, OUTPUT);
+
+  pinMode(ledPins[0], OUTPUT);
+  pinMode(ledPins[1], OUTPUT);
   
   // Init Motor 
   analogWrite(pwmAPin, 0);     // set to not be spinning (0/255)
@@ -90,8 +96,9 @@ CONTROL_MODE controlMode = CM_POS;
 u8 unwindDir = 1;
 
 //encoder tick of first actuator
-f64 firstAct = 21650;
-f64 actSpacing = 18155;
+f64 firstAct = 11000;
+f64 actSpacing = 23000;
+f64 popFudgeFactor = 300;
 u8 currAct = 0;
 u8 bad = 0;
 
@@ -216,10 +223,11 @@ void SetVel(f64 vel)
 u32 zeroPoint = 0;
 
 f64 unwindSign = -1;
-f64 popVel = -500;
-f64 nonPopVel = -500;
+f64 popVel = -300;
+f64 nonPopVel = -300;
 f64 popPressure = 1;
-f64 nonPopPressure = 0.6;
+f64 nonPopPressure = 0.4;
+f64 firstPressure = 0.4;
 
 u8 defaultPop = true;
 
@@ -234,6 +242,7 @@ void SetMode(u8 mode)
   lastVel = 0;
 }
 
+bool isPop = false;
 void SetPop(bool pop)
 {
   if(controlMode == CM_THROTTLE) {
@@ -243,15 +252,25 @@ void SetPop(bool pop)
     desVel = pop ? popVel : nonPopVel;
     if(abs(desVel) < abs(lowPassDesVel))
       lowPassDesVel = desVel;
+
+    digitalWrite(ledPins[1], pop ? HIGH : LOW);
+
+    isPop = pop;  
   }
 }
 
+u8 numPops = 0;
+
 void handlePopState(f64 encoderTick)
 {
-  if(controlMode == CM_THROTTLE && unwindSign*(encoderTick-zeroPoint) > (firstAct+currAct*actSpacing)) {
+  if(controlMode == CM_THROTTLE && unwindSign*(encoderTick-zeroPoint) > (firstAct+currAct*actSpacing+numPops*popFudgeFactor)) {
     currAct = currAct+1;
 
     Serial.println("act " + String(currAct+1));
+    if(isPop)
+      numPops++;
+    digitalWrite(ledPins[0], ledPinsOn[0] ? LOW : HIGH);
+    ledPinsOn[0] = !ledPinsOn[0];
 //    SetPop(false);
   }
 }
@@ -306,6 +325,14 @@ void serialEvent()
           desVel += increment;
           
         Serial.println("Incrementing " + String(increment));
+        break;
+      }
+      case 'b':
+      case 'B':
+      {
+        s32 num = atoi(input+2)-1;
+        digitalWrite(ledPins[num],ledPinsOn[num] ? LOW : HIGH);
+        ledPinsOn[num] = !ledPinsOn[num];
         break;
       }
       case 'K':   //set Kp/Kd/Ki
@@ -381,7 +408,7 @@ void serialEvent()
       {
         Serial.println("Setting mode to throttle");
         SetMode(CM_THROTTLE);
-        
+
         bool turn = input[2] == 'y';
         String mm = turn ? "on" : "off";
         SetPop(!turn);
