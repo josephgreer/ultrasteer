@@ -215,6 +215,7 @@ void loop()
 
 void SetVel(f64 vel)
 {
+  Serial.println("Set vel " + String(vel,6));
   if(abs(vel) < abs(desVel))
     lowPassDesVel = vel;
   desVel = vel; 
@@ -223,11 +224,11 @@ void SetVel(f64 vel)
 u32 zeroPoint = 0;
 
 f64 unwindSign = -1;
-f64 popVel = -300;
-f64 nonPopVel = -300;
+f64 popVel = -500;
+f64 nonPopVel = -500;
 f64 popPressure = 1;
-f64 nonPopPressure = 0.4;
-f64 firstPressure = 0.4;
+f64 nonPopPressure = 0.55;
+f64 firstPressure = 0.55;
 
 u8 defaultPop = true;
 
@@ -247,6 +248,8 @@ void SetPop(bool pop)
 {
   if(controlMode == CM_THROTTLE) {
     desPres = pop ? popPressure : nonPopPressure;
+    if(currAct == 0)
+      desPres = firstPressure;
     s32 amount = (s32)(255.0*(desPres));
     analogWrite(pressurePin, amount);
     desVel = pop ? popVel : nonPopVel;
@@ -260,7 +263,7 @@ void SetPop(bool pop)
 }
 
 u8 numPops = 0;
-
+bool pops[8] = {false, false, true, false, false, true, false, false};
 void handlePopState(f64 encoderTick)
 {
   if(controlMode == CM_THROTTLE && unwindSign*(encoderTick-zeroPoint) > (firstAct+currAct*actSpacing+numPops*popFudgeFactor)) {
@@ -271,6 +274,7 @@ void handlePopState(f64 encoderTick)
       numPops++;
     digitalWrite(ledPins[0], ledPinsOn[0] ? LOW : HIGH);
     ledPinsOn[0] = !ledPinsOn[0];
+//    SetPop(pops[currAct]);
 //    SetPop(false);
   }
 }

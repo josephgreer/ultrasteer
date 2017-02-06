@@ -392,7 +392,7 @@ namespace Nf
 
 	
 
-#define MIN_DISTANCE_TO_OBSTACLE 160
+#define MIN_DISTANCE_TO_OBSTACLE 280
 
 	//////////////////////////////////////////////////////
 	/// BEGIN CameraThread
@@ -419,9 +419,9 @@ namespace Nf
 
 		cv::Mat filteredMask;
 		
-		s32 morph_size = 3;
+		s32 morph_size = 2;
 		cv::Mat element = getStructuringElement(0, cv::Size(2*morph_size + 1, 2*morph_size+1), cv::Point(morph_size, morph_size));
-		//cv::morphologyEx(mask, filteredMask, cv::MORPH_DILATE, element); 
+		cv::morphologyEx(mask, filteredMask, cv::MORPH_DILATE, element); 
 		cv::erode(mask, filteredMask, element);
 		mask = filteredMask;
 
@@ -446,7 +446,7 @@ namespace Nf
 		}
 
 #if 1
-		cv::Rect roi = clampRectToImage(cv::Rect(bestRect.ul.x-20, 0, 20, mask.size().height),mask);
+		cv::Rect roi = clampRectToImage(cv::Rect(bestRect.lr.x-20, 0, 20, mask.size().height),mask);
 		cv::Moments mom = cv::moments(mask(roi));
 		Vec2d headCen(mom.m10/mom.m00+roi.tl().x, mom.m01/mom.m00+roi.tl().y);
 #else
@@ -641,24 +641,21 @@ namespace Nf
 
 						QueuedRobotAction action; action.pop = false; action.valid = true;
 						m_vineWidget->m_actionQueue[actuatorBaseIndex+0] = action;
-						action.pop = true;
-						m_vineWidget->m_actionQueue[actuatorBaseIndex+1] = action;
 						action.pop = false;
-						m_vineWidget->m_actionQueue[actuatorBaseIndex+3] = action;
+						m_vineWidget->m_actionQueue[actuatorBaseIndex+1] = action;
 						action.pop = true;
-						m_vineWidget->m_actionQueue[actuatorBaseIndex+4] = action;
+						m_vineWidget->m_actionQueue[actuatorBaseIndex+2] = action;
 
 						char stringDesc[200] = {0};
-						sprintf(stringDesc, "Beginning obstacle avoidance, actuator %d, pop = %d, actuator %d, pop = %d, actuator = %d, pop = %d, actuator = %d pop = %d\n", 
+						sprintf(stringDesc, "Beginning obstacle avoidance, actuator %d, pop = %d, actuator %d, pop = %d, actuator = %d, pop = %d\n",
 							actuatorBaseIndex+0,m_vineWidget->m_actionQueue[actuatorBaseIndex+0].pop,
 							actuatorBaseIndex+1,m_vineWidget->m_actionQueue[actuatorBaseIndex+1].pop,
-							actuatorBaseIndex+3,m_vineWidget->m_actionQueue[actuatorBaseIndex+3].pop,
-							actuatorBaseIndex+4,m_vineWidget->m_actionQueue[actuatorBaseIndex+4].pop);
+							actuatorBaseIndex+2,m_vineWidget->m_actionQueue[actuatorBaseIndex+2].pop);
 
 						emit LogUpdate(QString(stringDesc));
 
 						m_vineWidget->m_controlState = TRS_AVOIDING_OBSTACLE;
-						m_vineWidget->m_obstacleEndIndex = m_vineWidget->m_actuatorIndex+4;
+						m_vineWidget->m_obstacleEndIndex = actuatorBaseIndex+2;
 					}
 					break;
 				}
@@ -688,7 +685,7 @@ namespace Nf
 			if(m_vineWidget->m_writeVideo->GetValue()) {
 				if(m_vineWidget->m_writer == NULL) {
 					m_vineWidget->m_writer = std::tr1::shared_ptr < cv::VideoWriter > (new cv::VideoWriter());
-					bool rv = m_vineWidget->m_writer->open(std::string("C:/Users/Joey/Videos/test.avi"), -1/*cv::VideoWriter::fourcc('X','2','6','4')*/, 15.0, cv::Size(frame.cols, frame.rows));
+					bool rv = m_vineWidget->m_writer->open(std::string("C:/Users/Joey/Videos/test.avi"), -1/*cv::VideoWriter::fourcc('X','2','6','4')*/, 10.0, cv::Size(frame.cols, frame.rows));
 					s32 x = 0;
 				}
 				m_vineWidget->m_writer->write(frame);
