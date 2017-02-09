@@ -18,36 +18,24 @@ namespace Nf
   VineWidget::VineWidget(QWidget *parent, const char *name)
     : Nf::ParameterCollection(name)
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
-		, m_cap(NULL)
-		, m_imCoords(-1,-1)
-		, m_oddDirection(1)		
-		, m_actuatorIndex(1)
-		, m_controlState(TRS_FREE_GROWING)
-		, m_growingDirection(1,0)
-		, m_obstacleEndIndex(-1)
   {
-    m_imageViewer = std::tr1::shared_ptr<ImageViewerWidget>(new ImageViewerWidget(parent));
 		m_tapeWidget = std::tr1::shared_ptr<TapeRobotWidget>(new TapeRobotWidget(parent));
-		m_serial = std::tr1::shared_ptr<CSerial>(new CSerial());
-		m_writer = std::tr1::shared_ptr<cv::VideoWriter>(NULL);
+		for(s32 i=0; i<2; i++) {
+			m_serials[i] = std::tr1::shared_ptr<CSerial>(new CSerial());
+			m_serialBuffers[i] = std::tr1::shared_ptr<CircularBuffer>(new CircularBuffer());
+		}
 
-    m_pointPicker = vtkSmartPointer<vtkPointPicker>::New();
-		m_pointPicker->SetTolerance(0.0);
-		m_pointPicker->PickFromListOn();
-		m_pointPicker->AddPickList(m_imageViewer->GetActor());
-		m_imageViewer->GetWindowInteractor()->SetPicker(m_pointPicker);
-		m_imageViewer->GetWindowInteractor()->SetInteractorStyle(this);
+		m_mainPressure = 0;
+		for(s32 i=0; i<3; i++)
+			m_actuatorPressures[i] = 0;
 
     m_layout = new QGridLayout(parent);
-    m_layout->addWidget((QWidget *)(m_imageViewer.get()), 0, 0);
-    m_layout->addWidget((QWidget *)(m_tapeWidget.get()), 0, 1);
+    m_layout->addWidget((QWidget *)(m_tapeWidget.get()), 0, 0);
     m_layout->setContentsMargins(0,0,5,0);
     this->setLayout(m_layout);
 
 		m_serialThread = std::tr1::shared_ptr < SerialReceiveThread >(new SerialReceiveThread(this));
-		m_cameraThread = std::tr1::shared_ptr < CameraThread >(new CameraThread(this));
 		
-		connect(this, SIGNAL(stopCameraThread()), m_cameraThread.get(), SLOT(stopThread()));
 		connect(this, SIGNAL(stopSerialReceiveThread()), m_serialThread.get(), SLOT(stopThread()));
 
 		// HW Button Signals
@@ -58,34 +46,24 @@ namespace Nf
 		connect(this->m_tapeWidget->ui.decrement, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 		connect(this->m_tapeWidget->ui.incrementPressure, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 		connect(this->m_tapeWidget->ui.decPressure, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
-		connect(this->m_tapeWidget->ui.setZeroPoint, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
-		connect(this->m_tapeWidget->ui.turn, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
-		connect(this->m_tapeWidget->ui.dontTurn, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 		connect(this->m_tapeWidget->ui.pause, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.regInc_1, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.regInc_2, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.regInc_3, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.regDec_1, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.regDec_2, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.regDec_3, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.beginSteering, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.pauseSteering, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.straighten, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.calibrateJacobian, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 
-		connect(m_serialThread.get(), SIGNAL(incrementActuator(int)), this, SLOT(ActuatorIncrement(int)));
-		connect(m_serialThread.get(), SIGNAL(incrementActuator(int)), m_cameraThread.get(), SLOT(ActuatorInc(int)));
 		connect(m_serialThread.get(), SIGNAL(textUpdate(QString)), this, SLOT(UpdateText(QString)));
-		connect(m_cameraThread.get(), SIGNAL(RobotActionSet(int)), this, SLOT(SetRobotAction(int)));
-		connect(m_cameraThread.get(), SIGNAL(LogUpdate(QString)), this, SLOT(UpdateLog(QString)));
+		connect(m_serialThread.get(), SIGNAL(pressureUpdate(double,double,double,double)), this, SLOT(UpdatePressures(double,double,double,double)));
+		connect(m_serialThread.get(), SIGNAL(extensionUpdate(double,double,double)), this, SLOT(UpdateExtensions(double,double,double)));
 
-    ADD_CHILD_COLLECTION(m_imageViewer.get());
-    ADD_OPEN_FILE_PARAMETER(m_videoFile, "Video File",CALLBACK_POINTER(SetupVideoInput, VineWidget), this, BASE_PATH_CAT("VineVideos/Vine1.mov"), "(*.mov)");
-		ADD_BOOL_PARAMETER(m_useWebcam, "Use Webcam", CALLBACK_POINTER(SetupVideoInput, VineWidget), this, false);
-		ADD_BOOL_PARAMETER(m_run, "Run", CALLBACK_POINTER(SetupVideoInput, VineWidget), this, false);
-		ADD_VEC3D_PARAMETER(m_lowerBounds, "Lower Bounds", NULL, this, Vec3d(255,255,255), Vec3d(0,0,0), Vec3d(179,255,255), Vec3d(1,1,1));
-		ADD_VEC3D_PARAMETER(m_upperBounds, "Upper Bounds", NULL, this, Vec3d(0,0,0), Vec3d(0,0,0), Vec3d(179,255,255), Vec3d(1,1,1));
-		ADD_VEC3D_PARAMETER(m_lowerBoundsObstacle, "Lower Bounds Obstacle", NULL, this, Vec3d(255,255,255), Vec3d(0,0,0), Vec3d(179,255,255), Vec3d(1,1,1));
-		ADD_VEC3D_PARAMETER(m_upperBoundsObstacle, "Upper Bounds Obstacle", NULL, this, Vec3d(0,0,0), Vec3d(0,0,0), Vec3d(179,255,255), Vec3d(1,1,1));
-		ADD_VEC3D_PARAMETER(m_calibratePadding, "Calibrate Padding", NULL, this, Vec3d(10,25,35), Vec3d(0,0,0), Vec3d(179,255,255), Vec3d(1,1,1));
-		ADD_INT_PARAMETER(m_comPort, "Com Port", CALLBACK_POINTER(InitSerial, VineWidget), this, 6, 1, 20, 1);
+		ADD_VEC2I_PARAMETER(m_comPorts, "Com Ports", CALLBACK_POINTER(InitSerial, VineWidget), this, Vec2i(6,3), Vec2i(1,1), Vec2i(20,20), Vec2i(1,1));
 		ADD_BOOL_PARAMETER(m_serialInit, "Init Serial", CALLBACK_POINTER(InitSerial, VineWidget), this, false);
-    ADD_ENUM_PARAMETER(m_displayMode, "Display Modality", NULL, this, QtEnums::DisplayModality::DM_BPOST32, "DisplayModality");
-		ADD_INT_PARAMETER(m_calibrateObject, "Calibrate Object", NULL, this, 0, 0, 1, 1);
-		ADD_BOOL_PARAMETER(m_writeVideo, "Write Video", NULL, this, false);
-
-		RPData rp;
-		m_imageViewer->SetImage(&rp, RPF_COLOR);
   }
 
   VineWidget::~VineWidget()
@@ -106,80 +84,98 @@ namespace Nf
 		m_tapeWidget->ui.textLog->moveCursor (QTextCursor::End);
 	}
 
-	void VineWidget::ActuatorIncrement(int index)
+	void VineWidget::UpdatePressures(double p1, double p2, double p3, double t)
 	{
-		m_actuatorIndex = index;
-		this->m_tapeWidget->ui.actIndex->setText(QString::number(m_actuatorIndex));
+		m_tapeWidget->ui.regulatorAmount_1->display(p1);
+		m_tapeWidget->ui.regulatorAmount_2->display(p2);
+		m_tapeWidget->ui.regulatorAmount_3->display(p3);
+		m_tapeWidget->ui.steeringBoardRate->display(t);
+	}
 
-		const char *noTurnCmd = "t n";
-		const char *turnCmd = "t y";
-
-		if(m_actionQueue.find(index) != m_actionQueue.end() && m_actionQueue[index].valid) {
-			if(m_actionQueue[index].pop) {
-				m_serial->SendData(noTurnCmd, strlen(noTurnCmd)); 
-			} else {
-				m_serial->SendData(turnCmd, strlen(turnCmd));
-			}
-			m_actionQueue[index].valid = false;
-			UpdateLog(QString("ActuatorIncrement Actuator = " + QString::number(index) + QString(" pop = ") + QString::number(m_actionQueue[index].pop) + QString("\n")));
-		}
+	void VineWidget::UpdateExtensions(double e1, double e2, double t)
+	{
+		m_tapeWidget->ui.extensionAmount->display(e1);
+		m_tapeWidget->ui.extensionVel->display(e2);
+		m_tapeWidget->ui.motorBoardRate->display(t);
 	}
 
 	void VineWidget::HWButtonPushed()
 	{
 		QPushButton *button = (QPushButton *)sender();
 
-		if(!m_serial->IsOpened()) {
+		if(!m_serials[0]->IsOpened() || !m_serials[1]->IsOpened()) {
 			NTrace("Serial is not opened\n");
 			return;
 		}
 
+		std::string command;
 		if(button == m_tapeWidget->ui.posMode) {
 			const char *str = "m p\n";
-			this->m_serial->SendData(str, strlen(str));
+			this->m_serials[0]->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.velMode){
 			const char *str = "m v\n";
-			this->m_serial->SendData(str, strlen(str));
+			this->m_serials[0]->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.throttleMode) {
 			const char *str = "m t\n";
-			this->m_serial->SendData(str, strlen(str));
+			this->m_serials[0]->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.increment) {
 			char str[20] = {0}; strcpy(str, "w ");
 			strcat(str, m_tapeWidget->ui.incValue->text().toStdString().c_str());
 			strcat(str, "\n");
-			this->m_serial->SendData(str, strlen(str));
+			this->m_serials[0]->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.decrement) {
 			char str[20] = {0}; strcpy(str, "q ");
 			strcat(str, m_tapeWidget->ui.decValue->text().toStdString().c_str());
 			strcat(str, "\n");
-			this->m_serial->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.incrementPressure) {
-			char str[20] = {0}; strcpy(str, "l i ");
-			strcat(str, m_tapeWidget->ui.incPressureValue->text().toStdString().c_str());
-			this->m_serial->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.decPressure) {
-			char str[20] = {0}; strcpy(str, "l d ");
-			strcat(str, m_tapeWidget->ui.incPressureValue->text().toStdString().c_str());
-			strcat(str, "\n");
-			this->m_serial->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.setZeroPoint) {
-			const char *str = "z\n";
-			this->m_serial->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.turn) {
-			const char *str1 = "z\n";
-			this->m_serial->SendData(str1, strlen(str1));
-			Sleep(100);
-			const char *str = "t y\n";
-			this->m_serial->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.dontTurn) {
-			const char *str1 = "z\n";
-			this->m_serial->SendData(str1, strlen(str1));
-			Sleep(100);
-			const char *str = "t n\n";
-			this->m_serial->SendData(str, strlen(str));
+			this->m_serials[0]->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.pause) {
 			const char *str = "p\n";
-			this->m_serial->SendData(str, strlen(str));
+			this->m_serials[0]->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.regInc_1) {
+			m_actuatorPressures[1-1] += atof(m_tapeWidget->ui.regIncAmount_1->text().toStdString().c_str());
+			command = "l 1 " + std::to_string((long double)m_actuatorPressures[1-1]) + "\n";
+			this->m_serials[1]->SendData(command.c_str(), command.length());
+		} else if(button == m_tapeWidget->ui.regInc_2) {
+			m_actuatorPressures[2-1] += atof(m_tapeWidget->ui.regIncAmount_2->text().toStdString().c_str());
+			command = "l 2 " + std::to_string((long double)m_actuatorPressures[2-1]) + "\n";
+			this->m_serials[1]->SendData(command.c_str(), command.length());
+		} else if(button == m_tapeWidget->ui.regInc_3) {
+			m_actuatorPressures[3-1] += atof(m_tapeWidget->ui.regIncAmount_3->text().toStdString().c_str());
+			command = "l 3 " + std::to_string((long double)m_actuatorPressures[3-1]) + "\n";
+			this->m_serials[1]->SendData(command.c_str(), command.length());
+		} else if(button == m_tapeWidget->ui.regDec_1) {
+			m_actuatorPressures[1-1] -= atof(m_tapeWidget->ui.regIncAmount_1->text().toStdString().c_str());
+			command = "l 1 " + std::to_string((long double)m_actuatorPressures[1-1]) + "\n";
+			this->m_serials[1]->SendData(command.c_str(), command.length());
+		} else if(button == m_tapeWidget->ui.regDec_2) {
+			m_actuatorPressures[2-1] -= atof(m_tapeWidget->ui.regIncAmount_2->text().toStdString().c_str());
+			command = "l 2 " + std::to_string((long double)m_actuatorPressures[2-1]) + "\n";
+			this->m_serials[1]->SendData(command.c_str(), command.length());
+		} else if(button == m_tapeWidget->ui.regDec_3) {
+			m_actuatorPressures[3-1] -= atof(m_tapeWidget->ui.regIncAmount_3->text().toStdString().c_str());
+			command = "l 3 " + std::to_string((long double)m_actuatorPressures[3-1]) + "\n";
+			this->m_serials[1]->SendData(command.c_str(), command.length());
+		} else if(button == m_tapeWidget->ui.beginSteering) {
+			const char *str = "c p\n";
+			this->m_serials[1]->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.pauseSteering) {
+			const char *str = "c n\n";
+			this->m_serials[1]->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.straighten) {
+			const char *str = "c h\n";
+			this->m_serials[1]->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.calibrateJacobian) {
+			const char *str = "c c\n";
+			this->m_serials[1]->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.incrementPressure) {
+			char str[20] = {0}; strcpy(str, "e i ");
+			strcat(str, m_tapeWidget->ui.incPressureValue->text().toStdString().c_str());
+			this->m_serials[1]->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.decPressure) {
+			char str[20] = {0}; strcpy(str, "e d ");
+			strcat(str, m_tapeWidget->ui.decPressureValue->text().toStdString().c_str());
+			strcat(str, "\n");
+			this->m_serials[1]->SendData(str, strlen(str));
 		} else {
 			NTrace("hmmm... ");
 			assert(0);
@@ -193,31 +189,22 @@ namespace Nf
 			m_serialThread->wait();
 		}
 
-		if(m_serial->IsOpened())
-			m_serial->Close();
-
-		if(m_serialInit->GetValue()) {
-			bool rv = m_serial->Open(m_comPort->GetValue(), 115200);
-			if(rv != true) {
-				m_serialInit->SetValue(false);
-				return;
-			}
-			m_serialThread->start();
+		for(s32 i=0; i<2; i++) {
+			if(m_serials[i]->IsOpened())
+				m_serials[i]->Close();
 		}
-	}
 
-	void VineWidget::SetImage(bool resetView)
-	{
-
-		m_cameraMutex.lock();
-
-		m_imageViewer->SetImage(&m_data, (RP_TYPE)m_displayMode->GetValue());
-
-		if(resetView)
-			m_imageViewer->ResetView();
-		m_imageViewer->GetWindowInteractor()->SetPicker(m_pointPicker);
-		m_imageViewer->GetWindowInteractor()->SetInteractorStyle(this);
-		m_cameraMutex.unlock();
+		s32 comPorts[2] = {m_comPorts->GetValue().x, m_comPorts->GetValue().y};
+		if(m_serialInit->GetValue()) {
+			for(s32 i=0; i<2; i++) {
+				bool rv = m_serials[i]->Open(comPorts[i], 57600);
+				if(rv != true) {
+					m_serialInit->SetValue(false);
+					return;
+				}
+				m_serialThread->start();
+			}
+		}
 	}
 
   void VineWidget::UpdateGeometry()
@@ -230,80 +217,120 @@ namespace Nf
     s32 ml, mr, mu, mb;
     ResizableQWidget::UpdateSize(sz);
     m_layout->getContentsMargins(&ml, &mu, &mr, &mb);
-    m_imageViewer->UpdateSize(QSize(3*sz.width()/4-10, sz.height()));
-    m_tapeWidget->UpdateSize(QSize(sz.width()/4-10, sz.height()));
+    m_tapeWidget->UpdateSize(QSize(sz.width()-10, sz.height()));
   }
-
-	void VineWidget::OnLeftButtonDown()
-	{      
-		vtkSmartPointer < vtkRenderWindowInteractor > interactor = m_imageViewer->GetWindowInteractor();
-		m_pointPicker->Pick(interactor->GetEventPosition()[0], interactor->GetEventPosition()[1], 0,  // always zero.
-			interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer());
-		double ima[3];
-		m_pointPicker->GetPickPosition(ima);
-
-		//Spacing
-		m_cameraMutex.lock();
-		f64 *spacing = m_imageViewer->GetImageData()->GetSpacing();
-		m_imCoords = Vec2d(-ima[0]/spacing[0], -ima[1]/spacing[1]);
-		m_imCoords.x = this->m_data.color->width-1-m_imCoords.x;
-
-		cv::Rect roi((s32)(m_imCoords.x+0.5)-2, (s32)(m_imCoords.y+0.5)-2, 4,4);
-		cv::Mat subRegion = cv::cvarrToMat(m_data.color);
-		subRegion = subRegion(roi);
-		cv::Mat hsv;
-		cv::cvtColor(subRegion, hsv, CV_RGB2HSV);
-		cv::Scalar val = cv::mean(hsv);
-		Vec3d padding = m_calibratePadding->GetValue();
-		Vec3d lb(val(0)-padding.x,val(1)-padding.y,val(2)-padding.z);
-		Vec3d ub(val(0)+padding.x,255,val(2)+padding.z);
-		if(m_calibrateObject->GetValue() == 0) {
-			m_lowerBounds->SetValue(lb);
-			m_upperBounds->SetValue(ub);
-		} else {
-			m_lowerBoundsObstacle->SetValue(lb);
-			m_upperBoundsObstacle->SetValue(ub);
-		}
-		m_cameraMutex.unlock();
-	}
 
   std::vector < QVTKWidget * > VineWidget::GetChildWidgets()
   {
     std::vector < QVTKWidget * > res;
-    res.push_back(m_imageViewer.get());
     return res;
   }
-
-	void VineWidget::SetupVideoInput()
-	{
-		if(m_cameraThread->isRunning()) {
-			emit stopCameraThread();
-			m_cameraThread->wait();
-		}
-
-		if(m_cap != NULL) {
-			if(m_cap->isOpened())
-				m_cap->release();
-			m_cap = NULL;
-		}
-
-		if(m_run->GetValue()) {
-			if(this->m_useWebcam->GetValue()) {
-				m_cap = std::tr1::shared_ptr < cv::VideoCapture > (new cv::VideoCapture(0));
-			} else {
-				m_cap = std::tr1::shared_ptr < cv::VideoCapture > (new cv::VideoCapture(this->m_videoFile->GetValue()));
-			}
-			if(m_cap->isOpened()) {
-				m_cameraThread->start();
-			} else {
-				m_cap->release();
-				m_cap = NULL;
-				m_run->SetValue(false);
-			}
-		}
-	}
 	//////////////////////////////////////////////////////
 	/// END VINEWIDGET
+	//////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////
+	/// BEGIN CIRCULAR_BUFF
+	//////////////////////////////////////////////////////
+	CircularBuffer::CircularBuffer()
+		: m_headIndex(-1)
+		, m_tailIndex(0)
+	{
+		memset(m_data,0,CIRCULAR_BUFF_SZ);
+	}
+
+	void CircularBuffer::InsertData(const u8 *data, s32 dataSz)
+	{
+		s32 amountToCopy = dataSz;
+		if(amountToCopy > 0 && m_headIndex < 0)
+			m_headIndex = 0;
+		const u8 *dataPtr = data;
+		if(dataSz > CIRCULAR_BUFF_SZ) {
+			dataPtr = data+dataSz-CIRCULAR_BUFF_SZ;
+		}
+
+		if(m_tailIndex >= m_headIndex) {
+			s32 copyAmount = MIN(amountToCopy,CIRCULAR_BUFF_SZ-m_tailIndex);
+			memcpy(m_data+m_tailIndex, dataPtr, copyAmount);
+			m_tailIndex += copyAmount;
+			if(m_tailIndex >= CIRCULAR_BUFF_SZ)
+				m_tailIndex -= CIRCULAR_BUFF_SZ;
+			amountToCopy -= copyAmount;
+			dataPtr += copyAmount;
+		}
+		if(amountToCopy > 0) {
+			s32 copyAmount = MIN(amountToCopy,CIRCULAR_BUFF_SZ-m_tailIndex);
+			memcpy(m_data+m_tailIndex, dataPtr, copyAmount);
+			m_headIndex += MAX(copyAmount-(m_headIndex-m_tailIndex),0);
+			m_tailIndex += copyAmount;
+			if(m_tailIndex >= CIRCULAR_BUFF_SZ)
+				m_tailIndex -= CIRCULAR_BUFF_SZ;
+		}
+	}
+
+	s32 CircularBuffer::GetLength()
+	{
+		if(m_headIndex < 0)
+			return 0;
+		if(m_headIndex < m_tailIndex)
+			return m_tailIndex-m_headIndex;
+		else
+			return m_tailIndex+CIRCULAR_BUFF_SZ-m_headIndex;
+	}
+
+	s32 CircularBuffer::GetAvailableData(s8 **data)
+	{
+		s32 len = GetLength();
+		*data = NULL;
+		if(len == 0) {
+			return 0;
+		}
+		*data = &m_dataReturn[0];
+		s8 *dataPtr = &m_dataReturn[0];
+
+		s32 amountToCopy = len;
+		if(amountToCopy > CIRCULAR_BUFF_SZ-m_headIndex) {
+			s32 copyAmount = CIRCULAR_BUFF_SZ-m_headIndex;
+			memcpy(dataPtr, &m_data[m_headIndex], copyAmount);
+			amountToCopy -= copyAmount;
+			dataPtr += copyAmount;
+
+			memcpy(dataPtr, &m_data[0], amountToCopy);
+		} else {
+			memcpy(dataPtr, &m_data[m_headIndex], amountToCopy);
+		}
+
+		return len;
+
+	}
+
+	s8 CircularBuffer::GetElement(s32 index)
+	{
+		if(index >= GetLength())
+			assert(0);
+
+		if(m_headIndex+index < CIRCULAR_BUFF_SZ)
+			return m_data[m_headIndex+index];
+		else
+			return m_data[index-(CIRCULAR_BUFF_SZ-m_headIndex)];
+	}
+
+	void CircularBuffer::DeleteElements(s32 elementCount)
+	{
+		if(elementCount >= GetLength()) {
+			m_headIndex = -1;
+			m_tailIndex = 0;
+			return;
+		}
+
+		if(elementCount >= CIRCULAR_BUFF_SZ-m_headIndex)
+			m_headIndex = elementCount-CIRCULAR_BUFF_SZ-m_headIndex;
+		else
+			m_headIndex += elementCount;
+	}
+
+	//////////////////////////////////////////////////////
+	/// END CIRCULAR_BUFF
 	//////////////////////////////////////////////////////
 	
 	
@@ -352,352 +379,46 @@ namespace Nf
 
 	void SerialReceiveThread::execute()
 	{
-		if(!m_vineWidget->m_serial->IsOpened()) {
+		if(!m_vineWidget->m_serials[0]->IsOpened() || !m_vineWidget->m_serials[1]->IsOpened()) {
 			msleep(100);
 			return;
 		}
 
-		s32 rcvSz = this->m_vineWidget->m_serial->ReadData(m_data, SERIAL_SZ);
+		for(s32 i=0; i<2; i++) {
+			s32 rcvSz = this->m_vineWidget->m_serials[i]->ReadData(m_data, SERIAL_SZ);
 
-		if(rcvSz > 0) {
+			if(rcvSz > 0) {
+				m_vineWidget->m_serialBuffers[i]->InsertData((u8 *)m_data, rcvSz);
+				s8* cdata;
+				s32 dataSz = m_vineWidget->m_serialBuffers[i]->GetAvailableData(&cdata);
+				bool isGood = false;
+				for(s32 jj=0; jj<dataSz; jj++) {
+					s32 pos;
+					if(cdata[jj] == 'P') {
+						f32 ps[3] = {0}; f32 tt;
+						if(sscanf(&cdata[jj], "P %f, %f, %f, %f%n", &ps[0], &ps[1], &ps[2],&tt,&pos) == 4 && cdata[jj+pos] == ';') {
+							emit pressureUpdate((f64)ps[0],(f64)ps[1],(f64)ps[2],(f64)tt);
+							isGood = true;
+						}
+						break;
+					} else if(cdata[jj] == 'E') {
+						f32 es[2] = {0};
+						if(sscanf(&cdata[jj], "E %f, %f%n", &es[0], &es[1],&pos) == 3 && cdata[jj+pos] == ';')
+							emit extensionUpdate((f64)es[0],(f64)es[1],0);
+						isGood = true;
+						break;
+					}
+				}
+				if(isGood)
+					m_vineWidget->m_serialBuffers[i]->DeleteElements(dataSz);
 
-			s32 actIdx = 0;
-			if(sscanf(m_data, "act %d", &actIdx) == 1) {
-				incrementActuator(actIdx);
-			} else {
-				emit textUpdate(m_data);
+				memset(m_data, 0, rcvSz);
+			} else if(i==1) {
+				return;
 			}
-
-			memset(m_data, 0, rcvSz);
-		} else {
-			msleep(5);
 		}
 	}
 	//////////////////////////////////////////////////////
 	/// END SerialReceiveThread
-	//////////////////////////////////////////////////////
-
-	static cv::Rect clampRectToImage(cv::Rect rect, cv::Mat mat)
-	{
-		Vec2i tl;
-		Vec2i br;
-		tl.x = MAX(MIN(rect.tl().x,mat.size().width-1), 0);
-		tl.y = MAX(MIN(rect.tl().y,mat.size().height-1), 0);
-		
-		br.x = MAX(MIN(rect.br().x,mat.size().width-1), 0);
-		br.y = MAX(MIN(rect.br().y,mat.size().height-1), 0);
-
-		return cv::Rect(cv::Point(tl.x, tl.y), cv::Point(br.x, br.y));
-	}
-
-	
-
-#define MIN_DISTANCE_TO_OBSTACLE 280
-
-	//////////////////////////////////////////////////////
-	/// BEGIN CameraThread
-	//////////////////////////////////////////////////////
-	CameraThread::CameraThread(VineWidget *vine)
-		: BasicThread(vine)
-		, m_firstTime(false)
-	{
-		connect(this, SIGNAL(SetMainImage(bool)), vine, SLOT(SetImage(bool)));
-	}
-
-	void CameraThread::setup()
-	{
-		m_firstTime = true;
-	}
-
-	std::vector < Squarei > findExpandAndClusterContours(IplImage *colorMask, f32 expand, bool minArea = false, bool shrinkBack = false, f64 distThresh = 3.0);
-	CvRect SquareiToCvRect(const Squarei &sq);
-
-	std::pair < std::vector < Squarei >, cv::Mat > CameraThread::CalculateBoundingRects(const cv::Mat hsv, const Vec3d &lb, const Vec3d &ub)
-	{
-		cv::Mat mask;
-		cv::inRange(hsv, cv::Scalar(lb.x, lb.y, lb.z), cv::Scalar(ub.x, ub.y, ub.z), mask);
-
-		cv::Mat filteredMask;
-		
-		s32 morph_size = 2;
-		cv::Mat element = getStructuringElement(0, cv::Size(2*morph_size + 1, 2*morph_size+1), cv::Point(morph_size, morph_size));
-		cv::morphologyEx(mask, filteredMask, cv::MORPH_DILATE, element); 
-		cv::erode(mask, filteredMask, element);
-		mask = filteredMask;
-
-		IplImage mmask = mask;
-		IplImage *tempIm = cvCloneImage(&mmask);
-		std::vector < Squarei > rects = findExpandAndClusterContours(tempIm, 1, false,false, 30.0);
-		cvReleaseImage(&tempIm);
-
-		return std::pair < std::vector < Squarei >, cv::Mat > (rects, mask);
-	}
-
-	std::pair < Squarei, Vec2d > CameraThread::FindRobotParameters(const std::vector < Squarei > &rects, const cv::Mat mask)
-	{
-		Squarei bestRect(Vec2d(0,0),Vec2d(0,0));
-		Squarei currRect;
-		for(s32 i=0; i<rects.size(); i++) {
-			currRect = rects[i];
-			currRect.weight = 0;
-			if(currRect.Area() > bestRect.Area()) {
-				bestRect = rects[i];
-			}
-		}
-
-#if 1
-		cv::Rect roi = clampRectToImage(cv::Rect(bestRect.lr.x-20, 0, 20, mask.size().height),mask);
-		cv::Moments mom = cv::moments(mask(roi));
-		Vec2d headCen(mom.m10/mom.m00+roi.tl().x, mom.m01/mom.m00+roi.tl().y);
-#else
-		Vec2d headCen((bestRect.ul.x+bestRect.lr.x)/2.0, (bestRect.ul.y+bestRect.lr.y)/2.0);
-		NTrace("headCen %f %f\n", headCen.x, headCen.y);
-#endif
-
-		return std::pair < Squarei, Vec2d >(bestRect, headCen);
-	}
-
-	Vec2d CameraThread::FindClosestObstacleDelta(Vec2d headPos, const std::vector < Squarei > &rects)
-	{
-		f64 closestDist = 1e10;
-		Vec2d smallestDelta;
-		f64 deltaMag;
-		Vec2d delta;
-		for(s32 i=0; i<rects.size(); i++) {
-			delta = Vec2d(rects[i].DeltaX(headPos.x),	rects[i].DeltaY(headPos.y));
-			deltaMag = delta.magnitudeSquared();
-			if(delta.dot(m_vineWidget->m_growingDirection) > 0 && deltaMag < closestDist) {
-				smallestDelta = delta;
-				closestDist = deltaMag;
-			}
-		}
-		return smallestDelta;
-	}
-
-	void CameraThread::ActuatorInc(int index)
-	{	
-		switch(m_vineWidget->m_controlState) {
-			case TRS_FREE_GROWING:
-				{
-					break;
-				}
-			case TRS_AVOIDING_OBSTACLE:
-				{
-					if(index == m_vineWidget->m_obstacleEndIndex)
-						m_vineWidget->m_controlState = TRS_FREE_GROWING;
-					break;
-				}
-			}
-	}
-
-	void CameraThread::DrawDetails(DRAW_DETAILS details, cv::Mat &im, const Vec2d &headCen, const Vec2d &deltaObstacle, const std::vector < Squarei > &obstacleRects, const Squarei &robotRect, const std::vector < Squarei > &robotRects)
-	{
-		if(details & DD_OBSTACLES) {
-			for(s32 i=0; i<obstacleRects.size(); i++) {
-				cv::rectangle(im, SquareiToCvRect(obstacleRects[i]), cvScalar(0,255,0), 5);
-			}
-		}
-
-		if(details & DD_ROBOT) {
-			for(s32 i=0; i<robotRects.size(); i++) {
-				cv::rectangle(im, SquareiToCvRect(robotRects[i]), cvScalar(255,0,0), 5);
-			}
-		}
-
-		//cv::rectangle(im, SquareiToCvRect(robotRect), cvScalar(0,0,0), 3);
-		cv::Point p1(headCen.x, headCen.y); cv::Point p2(deltaObstacle.x, deltaObstacle.y);
-		p2 = p1+p2;
-		cv::clipLine(cv::Rect(0,0,im.cols, im.rows), p1, p2);
-		cv::circle(im, p1, 10, cv::Scalar(255,0,0), -1);
-		cv::arrowedLine(im, p1, p2, cv::Scalar(0,0,255), 3, CV_AA, 0, 0.1);
-
-		cv::Point currPoint(10,20);
-		cv::Rect textRect(10, 20, 0, 0);
-
-		cv::Size sz;
-		s32 fontFace = CV_FONT_HERSHEY_SIMPLEX;
-		f64 fontScale = 0.5;
-		s32 thickness = 1;
-		s32 baseLine;
-
-		std::string txt1, txt2, txt3;
-		
-		txt1 = "Operation Mode: ";
-		switch(m_vineWidget->m_controlState)
-		{
-		case TRS_FREE_GROWING:
-			{
-				txt1 += "Free Growing";
-				break;
-			}
-		case TRS_AVOIDING_OBSTACLE:
-			{
-				txt1 += "Avoiding Obstacle";
-				break;
-			}
-		}
-		
-
-		bool pop = true;
-
-		for(s32 i=0; i<=m_vineWidget->m_actuatorIndex; i++) {
-			if(m_vineWidget->m_actionQueue.find(i) != m_vineWidget->m_actionQueue.end())
-				pop = m_vineWidget->m_actionQueue[i].pop;
-		}
-
-		if(pop)
-			txt2 = "Pop";
-		else
-			txt2 = "Don't pop";
-
-		txt3 = "Turn Actuator Index: " + QString::number(m_vineWidget->m_actuatorIndex).toStdString();
-
-		sz = cv::getTextSize(txt1, fontFace, fontScale, thickness, &baseLine); 
-		textRect.width = MAX(textRect.width, sz.width);
-		textRect.height += 2*sz.height;
-
-		sz = cv::getTextSize(txt2, fontFace, fontScale, thickness, &baseLine); 
-		textRect.width = MAX(textRect.width, sz.width);
-		textRect.height += 2*sz.height;
-
-		sz = cv::getTextSize(txt3, fontFace, fontScale, thickness, &baseLine); 
-		textRect.width = MAX(textRect.width, sz.width);
-		textRect.height += 2*sz.height;
-
-#if 1
-		cv::rectangle(im, textRect, cv::Scalar(0,0,0), -1);
-
-		sz = cv::getTextSize(txt1, fontFace, fontScale, thickness, &baseLine); 
-		currPoint.y += sz.height;
-		cv::putText(im, txt1, currPoint, fontFace, fontScale, cvScalar(255,255,255), thickness);
-		currPoint.y += sz.height;
-
-		sz = cv::getTextSize(txt2, fontFace, fontScale, thickness, &baseLine); 
-		currPoint.y += sz.height;
-		cv::putText(im, txt2, currPoint, fontFace, fontScale, cvScalar(255,255,255), thickness);
-		currPoint.y += sz.height;
-
-		sz = cv::getTextSize(txt3, fontFace, fontScale, thickness, &baseLine); 
-		currPoint.y += sz.height;
-		cv::putText(im, txt3, currPoint, fontFace, fontScale, cvScalar(255,255,255), thickness);
-		currPoint.y += sz.height;
-#endif
-	}
-
-	u32 g_begTick = 0;
-	u32 g_count = 0;
-	void CameraThread::execute()
-	{
-		if(++g_count == 100) {
-			u32 currTick = timeGetTime();
-			u32 total = currTick - g_begTick;
-			NTrace("Time = %f\n", total/100.0);
-			g_begTick = currTick;
-			g_count = 0;
-		}
-		
-		cv::Mat raw,frame;
-		if(m_vineWidget->m_cap->isOpened()) {
-			(*m_vineWidget->m_cap) >> raw;
-
-			if(raw.empty()) {
-				msleep(100);
-				return;
-			}
-
-			if(raw.size().width > 640) {
-				f64 scale = 640.0/(f64)raw.size().width;
-				cv::resize(raw, frame, cv::Size(640,raw.size().height*scale));
-			} else {
-				frame = raw;
-			}
-
-			RPData rp;
-			IplImage im = frame;
-			rp.color = &im;
-			rp.mpp = Vec2d(1000,1000);
-			rp.gps.pose = Matrix44d::I().ToCvMat();
-			rp.gps.pos = Vec3d(0,0,0);
-
-			cv::Mat hsv;
-			cv::cvtColor(cv::cvarrToMat(rp.color), hsv, CV_BGR2HSV);
-
-			std::pair < std::vector < Squarei >, cv::Mat > robotRes = CalculateBoundingRects(hsv, m_vineWidget->m_lowerBounds->GetValue(), m_vineWidget->m_upperBounds->GetValue());
-			std::pair < Squarei, Vec2d > robotParams = FindRobotParameters(robotRes.first, robotRes.second);
-			std::pair < std::vector < Squarei >, cv::Mat > obstacleRes = CalculateBoundingRects(hsv, m_vineWidget->m_lowerBoundsObstacle->GetValue(), m_vineWidget->m_upperBoundsObstacle->GetValue());
-			Squarei robotRect = robotParams.first; Vec2d headCen = robotParams.second; 
-
-			Vec2d deltaObstacle = FindClosestObstacleDelta(headCen, obstacleRes.first);
-			arma::vec row = arma::zeros<arma::vec>(4);
-			row(0) = headCen.x; row(1) = headCen.y; row(2) = deltaObstacle.x; row(3) = deltaObstacle.y;
-			g_points = arma::join_vert(g_points, row.t());
-
-			switch(m_vineWidget->m_controlState) {
-			case TRS_FREE_GROWING:
-				{
-					// if we're close to an obstacle and growing towards it, initiate pop sequence
-					if(deltaObstacle.magnitude() < MIN_DISTANCE_TO_OBSTACLE && deltaObstacle.dot(m_vineWidget->m_growingDirection) > 0) {
-						s32 actuatorBaseIndex = m_vineWidget->m_actuatorIndex == 1 ? m_vineWidget->m_actuatorIndex : m_vineWidget->m_actuatorIndex+1;
-
-						QueuedRobotAction action; action.pop = false; action.valid = true;
-						m_vineWidget->m_actionQueue[actuatorBaseIndex+0] = action;
-						action.pop = false;
-						m_vineWidget->m_actionQueue[actuatorBaseIndex+1] = action;
-						action.pop = true;
-						m_vineWidget->m_actionQueue[actuatorBaseIndex+2] = action;
-
-						char stringDesc[200] = {0};
-						sprintf(stringDesc, "Beginning obstacle avoidance, actuator %d, pop = %d, actuator %d, pop = %d, actuator = %d, pop = %d\n",
-							actuatorBaseIndex+0,m_vineWidget->m_actionQueue[actuatorBaseIndex+0].pop,
-							actuatorBaseIndex+1,m_vineWidget->m_actionQueue[actuatorBaseIndex+1].pop,
-							actuatorBaseIndex+2,m_vineWidget->m_actionQueue[actuatorBaseIndex+2].pop);
-
-						emit LogUpdate(QString(stringDesc));
-
-						m_vineWidget->m_controlState = TRS_AVOIDING_OBSTACLE;
-						m_vineWidget->m_obstacleEndIndex = actuatorBaseIndex+2;
-					}
-					break;
-				}
-			case TRS_AVOIDING_OBSTACLE:
-				{
-					break;
-				}
-			}
-
-			DrawDetails(DD_OBSTACLES, frame, headCen, deltaObstacle, obstacleRes.first, robotParams.first, robotRes.first);
-			//DrawDetails(DD_ROBOT, robotRes.second, headCen, obstacleRes.first, robotParams.first, robotRes.first);
-			//DrawDetails(DD_OBSTACLES, obstacleRes.second, headCen, obstacleRes.first, robotParams.first, robotRes.first);
-
-			IplImage maskRobot = robotRes.second;
-			IplImage maskObstacles = obstacleRes.second;
-			rp.b8 = &maskRobot;
-			rp.dis = &maskObstacles;
-
-			m_vineWidget->m_cameraMutex.lock();
-			m_vineWidget->m_data.Release();
-			m_vineWidget->m_data = rp.Clone();
-			cvCvtColor(rp.color, m_vineWidget->m_data.color, CV_BGR2RGB);
-			m_vineWidget->m_cameraMutex.unlock();
-
-			emit SetMainImage(m_firstTime);
-
-			if(m_vineWidget->m_writeVideo->GetValue()) {
-				if(m_vineWidget->m_writer == NULL) {
-					m_vineWidget->m_writer = std::tr1::shared_ptr < cv::VideoWriter > (new cv::VideoWriter());
-					bool rv = m_vineWidget->m_writer->open(std::string("C:/Users/Joey/Videos/test.avi"), -1/*cv::VideoWriter::fourcc('X','2','6','4')*/, 10.0, cv::Size(frame.cols, frame.rows));
-					s32 x = 0;
-				}
-				m_vineWidget->m_writer->write(frame);
-			} else if(!m_vineWidget->m_writeVideo->GetValue() && m_vineWidget->m_writer != NULL) {
-				m_vineWidget->m_writer->release();
-				m_vineWidget->m_writer = NULL;
-			}
-
-			m_firstTime = false;
-		}
-	}
-	//////////////////////////////////////////////////////
-	/// BEGIN CameraThread
 	//////////////////////////////////////////////////////
 }

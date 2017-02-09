@@ -20,7 +20,8 @@ f64 openAngle = 70;
 f64 closeAngle = 90;
 
 
-s32 regulatorPins[N_TURN_ACT] = { 10, 11, 9 };
+//s32 regulatorPins[N_TURN_ACT] = { 10, 11, 9 };
+s32 regulatorPins[N_TURN_ACT] = { 9, 10, 11 };
 JacobianControl *jc = (JacobianControl *)new JacobianBoxConstraintControl();
 KFJacobianEstimator je;
 bool setJacobian = false;
@@ -75,11 +76,28 @@ bool invalidPos = true;
 s8 input[BUFFER_LEN] = { 0 };
 s32 nBytes = 0;
 
+f64 currPressures[N_TURN_ACT] = { 0 };
+
+f64 pressureSetPoints[N_TURN_ACT] = { 0 };
+f64 pressurePs[N_TURN_ACT] = { 0.3, 0.3, 0.3 };
+f64 pressureDs[N_TURN_ACT] = { 0.01,0.01,0.01 };//p 0.005, 0.005, 0.005 };
+f64 pressureIs[N_TURN_ACT] = { 1e-4,1e-4,1e-4 };// 1e-3, 1e-3, 1e-3 };
+f64 pressureActuatorLast[N_TURN_ACT] = { 0 };
+f64 pressureLowPassError[N_TURN_ACT] = { 0 };
+f64 pressureErrorLast[N_TURN_ACT] = { 0 };
+f64 pressureIntegralError[N_TURN_ACT] = { 0 };
+s32 pressureSensorPins[N_TURN_ACT] = { A1,A2,A5 };
+u32 lastTimePressureVisited = 0;
+f64 aveTimePerPressureLoop = 0;
+u32 count = 0;
+
 //#define DO_TEST
 
 #ifdef DO_TEST
 void runTest();
 #endif
+
+f64 g_totTime = 0;
 
 void loop()
 {
@@ -87,6 +105,7 @@ void loop()
   u32 currTime = micros();
   f64 dt = ((f64)currTime - (f64)lastTime) / ((f64)1e6);
   lastTime = currTime;
+  g_totTime += dt;
 
 #ifdef DO_TEST
   delay(100);
@@ -95,15 +114,23 @@ void loop()
   delay(10000);
 #endif
 
-  //MOTOR CONTROL
-  controlMotors(dt);
+  ////MOTOR CONTROL
+  //controlMotors(dt);
+
 
   //PRESSURE CONTROL
-  controlPressures();
+  //controlPressures();
 
   if (!invalidPos) {
     //STEERING CONTROL
     controlSteering();
+  }
+
+  if ((count++) % 1000 == 0) {
+    for (s32 i = 0; i < N_TURN_ACT; i++)
+      currPressures[i] = analogRead(pressureSensorPins[i]) / 1024.0;
+    Serial.println("P " + String(currPressures[0], 5) + ", " + String(currPressures[1], 5) + ", " + String(currPressures[2], 5) + ", " + String(1/(g_totTime/1000.0),6) + ";");
+    g_totTime = 0;
   }
 
   //SERIAL HANDLER
@@ -212,18 +239,6 @@ ActuatorMapper *mapper[N_TURN_ACT];
 #define REGULATE_PRESSURE(amnt) (analogWrite(pressurePin, (s32)((f64)255.0*amnt)))
 
 s32 g_changeCount = 0;
-
-f64 pressureSetPoints[N_TURN_ACT] = { 0 };
-f64 pressurePs[N_TURN_ACT] = { 0.3, 0.3, 0.3 };
-f64 pressureDs[N_TURN_ACT] = { 0.01,0.01,0.01 };//p 0.005, 0.005, 0.005 };
-f64 pressureIs[N_TURN_ACT] = { 1e-4,1e-4,1e-4 };// 1e-3, 1e-3, 1e-3 };
-f64 pressureActuatorLast[N_TURN_ACT] = { 0 };
-f64 pressureLowPassError[N_TURN_ACT] = { 0 };
-f64 pressureErrorLast[N_TURN_ACT] = { 0 };
-f64 pressureIntegralError[N_TURN_ACT] = { 0 };
-s32 pressureSensorPins[N_TURN_ACT] = { A1,A2,A3 };
-u32 lastTimePressureVisited = 0;
-f64 aveTimePerPressureLoop = 0;
 
 void resetTracking()
 {
@@ -510,7 +525,6 @@ f64 errorLastPosMotor = 0;
 u8 dirLastMotor = 0;
 f64 desPosMotor = 0;
 f64 desVelMotor = 0;
-u32 count = 0;
 f64 integralErrorMotor = 0;
 f64 lastPosMotor = 0;
 f64 lastVelMotor = 0;
@@ -667,7 +681,7 @@ void controlPressure(s32 i, f64 dt)
   f64 u = 0;
   f64 actuatorAmount = 0;
 
-  currPressure = analogRead(pressureSensorPins[i]) / 1024.0;
+  currPressure = analogRead(pressureSensorPins[i])/1024.0;
   error = pressureSetPoints[i] - currPressure;
   pressureLowPassError[i] = error*0.1 + pressureLowPassError[i] * (1 - 0.1);
   derror = (pressureLowPassError[i] - pressureErrorLast[i]) / dt;
@@ -931,7 +945,7 @@ void handleSerial(const s8 *input, s32 nBytes)
     {
       f64 amount = atof(input + 4);
       Serial.println("Setting pressure " + String(reg) + " to " + String(amount) + " input string " + String(input));
-      //analogWrite(regulatorPins[reg - 1], (s32)(amount));
+      //ACTUATE_REGULATOR(reg - 1, amount);
       pressureSetPoints[reg - 1] = amount;
       //Serial.println("pwm amount " + String(MAP_VAL(amount, actuatorCalibs[reg - 1].sig.a, actuatorCalibs[reg - 1].sig.b, actuatorCalibs[reg - 1].sig.c, actuatorCalibs[reg - 1].sig.d)));
     }
@@ -1047,6 +1061,9 @@ void setup()
   pinMode(pressurePin, OUTPUT);
   digitalWrite(pressurePin, LOW);
 
+  for (s32 i = 0; i < N_TURN_ACT; i++)
+    pinMode(pressureSensorPins[i], INPUT);
+
   // Encoder Pins
   pinMode(encoderPinA, INPUT);
   pinMode(encoderPinB, INPUT);
@@ -1059,7 +1076,7 @@ void setup()
   actuatorCalibs[1] = ActuatorCalibration(Vecf64<2>(0, 0));// , Sigmoid(0.049058, 0.976153, 182.573890, 0.028746));
   actuatorCalibs[2] = ActuatorCalibration(Vecf64<2>(0, 0));// , Sigmoid(0.011475, 0.971715, 144.373752, 0.042064));
 
-  mapper[0] = (ActuatorMapper *)new DeadbandMapper(103.0 / 255.0, 200);
+  mapper[0] = (ActuatorMapper *)new DeadbandMapper(103.0 / 255.0, 255);
   mapper[1] = (ActuatorMapper *)new DeadbandMapper(103.0 / 255.0, 255);
   mapper[2] = (ActuatorMapper *)new DeadbandMapper(103.0 / 255.0, 255);
 
