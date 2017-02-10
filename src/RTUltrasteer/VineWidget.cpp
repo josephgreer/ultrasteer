@@ -584,6 +584,7 @@ namespace Nf
 #endif
 	}
 
+	arma::mat g_points;
 	u32 g_begTick = 0;
 	u32 g_count = 0;
 	void CameraThread::execute()
@@ -593,12 +594,16 @@ namespace Nf
 			u32 total = currTick - g_begTick;
 			NTrace("Time = %f\n", total/100.0);
 			g_begTick = currTick;
-			g_count = 0;
+			//g_count = 0;
 		}
 		
 		cv::Mat raw,frame;
 		if(m_vineWidget->m_cap->isOpened()) {
 			(*m_vineWidget->m_cap) >> raw;
+
+			if(g_count == 105) {
+				g_points.save("C:/Users/Joey/Documents/points.txt", arma::raw_ascii);
+			}
 
 			if(raw.empty()) {
 				msleep(100);
@@ -630,7 +635,8 @@ namespace Nf
 			Vec2d deltaObstacle = FindClosestObstacleDelta(headCen, obstacleRes.first);
 			arma::vec row = arma::zeros<arma::vec>(4);
 			row(0) = headCen.x; row(1) = headCen.y; row(2) = deltaObstacle.x; row(3) = deltaObstacle.y;
-			g_points = arma::join_vert(g_points, row.t());
+			if(g_count >= 63)
+				g_points = arma::join_vert(g_points, row.t());
 
 			switch(m_vineWidget->m_controlState) {
 			case TRS_FREE_GROWING:
