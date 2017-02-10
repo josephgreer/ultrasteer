@@ -71,7 +71,7 @@ namespace Nf
 		void HWButtonPushed();
 		void UpdateText(QString text);
 		void UpdateLog(QString text);
-		void UpdatePressures(double p1, double p2, double p3, double t);
+		void UpdatePressures(double p1, double p2, double p3, double t, double tx, double ty, double c);
 		void UpdateExtensions(double e1, double e2, double t);
 
   public:
@@ -115,7 +115,7 @@ namespace Nf
 
 signals:
 		void textUpdate(QString text);
-		void pressureUpdate(double p1, double p2, double p3, double t);
+		void pressureUpdate(double p1, double p2, double p3, double t, double tx, double ty, double c);
 		void extensionUpdate(double e1, double e2, double t);
 
 	protected:

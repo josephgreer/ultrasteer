@@ -59,7 +59,7 @@ namespace Nf
 		connect(this->m_tapeWidget->ui.calibrateJacobian, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 
 		connect(m_serialThread.get(), SIGNAL(textUpdate(QString)), this, SLOT(UpdateText(QString)));
-		connect(m_serialThread.get(), SIGNAL(pressureUpdate(double,double,double,double)), this, SLOT(UpdatePressures(double,double,double,double)));
+		connect(m_serialThread.get(), SIGNAL(pressureUpdate(double,double,double,double,double,double,double)), this, SLOT(UpdatePressures(double,double,double,double,double,double,double)));
 		connect(m_serialThread.get(), SIGNAL(extensionUpdate(double,double,double)), this, SLOT(UpdateExtensions(double,double,double)));
 
 		ADD_VEC2I_PARAMETER(m_comPorts, "Com Ports", CALLBACK_POINTER(InitSerial, VineWidget), this, Vec2i(6,3), Vec2i(1,1), Vec2i(20,20), Vec2i(1,1));
@@ -84,12 +84,21 @@ namespace Nf
 		m_tapeWidget->ui.textLog->moveCursor (QTextCursor::End);
 	}
 
-	void VineWidget::UpdatePressures(double p1, double p2, double p3, double t)
+#define SLIDER_POS(x)((s32)(99*(x)/0.15))
+
+	void VineWidget::UpdatePressures(double p1, double p2, double p3, double t, double tx, double ty, double c)
 	{
-		m_tapeWidget->ui.regulatorAmount_1->display(p1);
-		m_tapeWidget->ui.regulatorAmount_2->display(p2);
-		m_tapeWidget->ui.regulatorAmount_3->display(p3);
+		QString text;
+		m_tapeWidget->ui.regulatorAmount_1->display(text.sprintf("%.3f",p1));
+		m_tapeWidget->ui.regulatorAmount_2->display(text.sprintf("%.3f",p2));
+		m_tapeWidget->ui.regulatorAmount_3->display(text.sprintf("%.3f",p3));
 		m_tapeWidget->ui.steeringBoardRate->display(t);
+		m_tapeWidget->ui.track_x->display(tx);
+		m_tapeWidget->ui.track_y->display(ty);
+		m_tapeWidget->ui.track_c->display(c);
+		m_tapeWidget->ui.regVert_1->setSliderPosition(SLIDER_POS(p1));
+		m_tapeWidget->ui.regVert_2->setSliderPosition(SLIDER_POS(p2));
+		m_tapeWidget->ui.regVert_3->setSliderPosition(SLIDER_POS(p3));
 	}
 
 	void VineWidget::UpdateExtensions(double e1, double e2, double t)
@@ -168,13 +177,16 @@ namespace Nf
 			const char *str = "c c\n";
 			this->m_serials[1]->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.incrementPressure) {
-			char str[20] = {0}; strcpy(str, "e i ");
-			strcat(str, m_tapeWidget->ui.incPressureValue->text().toStdString().c_str());
+			m_mainPressure += atof(m_tapeWidget->ui.incPressureValue->text().toStdString().c_str());
+			m_mainPressure = MAX(MIN(m_mainPressure,1),0);
+			char str[20] = {0}; strcpy(str, "e ");
+			strcat(str, std::to_string((long double)m_mainPressure).c_str());
 			this->m_serials[1]->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.decPressure) {
-			char str[20] = {0}; strcpy(str, "e d ");
-			strcat(str, m_tapeWidget->ui.decPressureValue->text().toStdString().c_str());
-			strcat(str, "\n");
+			m_mainPressure -= atof(m_tapeWidget->ui.incPressureValue->text().toStdString().c_str());
+			m_mainPressure = MAX(MIN(m_mainPressure,1),0);
+			char str[20] = {0}; strcpy(str, "e ");
+			strcat(str, std::to_string((long double)m_mainPressure).c_str());
 			this->m_serials[1]->SendData(str, strlen(str));
 		} else {
 			NTrace("hmmm... ");
@@ -395,9 +407,9 @@ namespace Nf
 				for(s32 jj=0; jj<dataSz; jj++) {
 					s32 pos;
 					if(cdata[jj] == 'P') {
-						f32 ps[3] = {0}; f32 tt;
-						if(sscanf(&cdata[jj], "P %f, %f, %f, %f%n", &ps[0], &ps[1], &ps[2],&tt,&pos) == 4 && cdata[jj+pos] == ';') {
-							emit pressureUpdate((f64)ps[0],(f64)ps[1],(f64)ps[2],(f64)tt);
+						f32 ps[3] = {0}; f32 tt; f32 trackx, tracky,trackConf;
+						if(sscanf(&cdata[jj], "P %f, %f, %f, %f, %f, %f, %f%n", &ps[0], &ps[1], &ps[2],&tt,&trackx,&tracky,&trackConf,&pos) == 7 && cdata[jj+pos] == ';') {
+							emit pressureUpdate((f64)ps[0],(f64)ps[1],(f64)ps[2],(f64)tt,trackx,tracky,trackConf);
 							isGood = true;
 						}
 						break;

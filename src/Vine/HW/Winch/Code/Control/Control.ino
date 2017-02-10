@@ -91,72 +91,6 @@ u32 lastTimePressureVisited = 0;
 f64 aveTimePerPressureLoop = 0;
 u32 count = 0;
 
-//#define DO_TEST
-
-#ifdef DO_TEST
-void runTest();
-#endif
-
-f64 g_totTime = 0;
-
-void loop()
-{
-  TIME_LOOP(MainLoop, 5000000);
-  u32 currTime = micros();
-  f64 dt = ((f64)currTime - (f64)lastTime) / ((f64)1e6);
-  lastTime = currTime;
-  g_totTime += dt;
-
-#ifdef DO_TEST
-  delay(100);
-  Serial.println("About to run test");
-  runTest();
-  delay(10000);
-#endif
-
-  ////MOTOR CONTROL
-  //controlMotors(dt);
-
-
-  //PRESSURE CONTROL
-  //controlPressures();
-
-  if (!invalidPos) {
-    //STEERING CONTROL
-    controlSteering();
-  }
-
-  if ((count++) % 1000 == 0) {
-    for (s32 i = 0; i < N_TURN_ACT; i++)
-      currPressures[i] = analogRead(pressureSensorPins[i]) / 1024.0;
-    Serial.println("P " + String(currPressures[0], 5) + ", " + String(currPressures[1], 5) + ", " + String(currPressures[2], 5) + ", " + String(1/(g_totTime/1000.0),6) + ";");
-    g_totTime = 0;
-  }
-
-  //SERIAL HANDLER
-#if 1
-  if (Serial.available()) {
-    nBytes = Serial.readBytes(input, BUFFER_LEN);
-    handleSerial(input, nBytes);
-    memset(input, 0, nBytes);
-  }
-#endif
-
-#ifdef SLA_SERIAL
-  if (slaSerial.available()) {
-    nBytes = slaSerial.readBytes(input, BUFFER_LEN);
-    handleSlaSerial((u8 *)input, nBytes);
-    memset(input, 0, nBytes);
-  }
-#else
-  if (Serial1.available()) {
-    nBytes = Serial1.readBytes(input, BUFFER_LEN);
-    handleSlaSerial((u8 *)input, nBytes);
-    memset(input, 0, nBytes);
-  }
-#endif
-}
-
 //Actuator effort
 //Actuator effect = a+(b-a)/(1+10^(d*(c-x))
 struct Sigmoid
@@ -224,6 +158,7 @@ Vecf64<2> trackPos;
 Vecf64<2> trackPosLast;
 Vecf64<2> scenePos;
 Vecf64<2> desTrackPos(320, 240);
+f64 trackConf = 0;
 
 u32 lastTimeSteeringVisited = 0;
 
@@ -670,6 +605,74 @@ void sendSlaTrackingPacket(u8 *buffer, s32 trackRow, s32 trackCol)
 }
 #endif
 
+//#define DO_TEST
+
+#ifdef DO_TEST
+void runTest();
+#endif
+
+f64 g_totTime = 0;
+
+void loop()
+{
+  TIME_LOOP(MainLoop, 5000000);
+  u32 currTime = micros();
+  f64 dt = ((f64)currTime - (f64)lastTime) / ((f64)1e6);
+  lastTime = currTime;
+  g_totTime += dt;
+
+#ifdef DO_TEST
+  delay(100);
+  Serial.println("About to run test");
+  runTest();
+  delay(10000);
+#endif
+
+  ////MOTOR CONTROL
+  //controlMotors(dt);
+
+
+  //PRESSURE CONTROL
+  controlPressures();
+
+  if (!invalidPos) {
+    //STEERING CONTROL
+    controlSteering();
+  }
+
+  count++;
+  if (g_totTime>100e-3) {
+    for (s32 i = 0; i < N_TURN_ACT; i++)
+      currPressures[i] = analogRead(pressureSensorPins[i]) / 1024.0;
+    Serial.println("P " + String(pressureLowPassError[0], 5) + ", " + String(pressureLowPassError[1], 5) + ", " + String(pressureLowPassError[2], 5) + ", " + String(1 / (g_totTime / count), 6) + ", " + String(trackPos.x) + ", " + String(trackPos.y) + ", " + String(trackConf) + ";");
+    g_totTime = 0;
+    count = 0;
+  }
+
+  //SERIAL HANDLER
+#if 1
+  if (Serial.available()) {
+    nBytes = Serial.readBytes(input, BUFFER_LEN);
+    handleSerial(input, nBytes);
+    memset(input, 0, nBytes);
+  }
+#endif
+
+#ifdef SLA_SERIAL
+  if (slaSerial.available()) {
+    nBytes = slaSerial.readBytes(input, BUFFER_LEN);
+    handleSlaSerial((u8 *)input, nBytes);
+    memset(input, 0, nBytes);
+  }
+#else
+  if (Serial1.available()) {
+    nBytes = Serial1.readBytes(input, BUFFER_LEN);
+    handleSlaSerial((u8 *)input, nBytes);
+    memset(input, 0, nBytes);
+  }
+#endif
+}
+
 static s32 g_pressureCount = 0;
 
 void controlPressure(s32 i, f64 dt)
@@ -683,12 +686,12 @@ void controlPressure(s32 i, f64 dt)
 
   currPressure = analogRead(pressureSensorPins[i])/1024.0;
   error = pressureSetPoints[i] - currPressure;
-  pressureLowPassError[i] = error*0.1 + pressureLowPassError[i] * (1 - 0.1);
+  pressureLowPassError[i] = currPressure*1e-2 + pressureLowPassError[i] * (1 - 1e-2);
   derror = (pressureLowPassError[i] - pressureErrorLast[i]) / dt;
 
   kTerm = error*pressurePs[i];
   iTerm = pressureIntegralError[i] * pressureIs[i];
-  dTerm = derror*pressureDs[i];
+  dTerm = -derror*pressureDs[i];
 
   u = kTerm + iTerm + dTerm;
   if (0 < u+pressureActuatorLast[i] && u+pressureActuatorLast[i] < 1)
@@ -1007,6 +1010,7 @@ void handleSlaSerial(const u8 *input, s32 nBytes)
 
   trackPos = Vecf64<2>((f64)trackCol, (f64)trackRow);
   scenePos = Vecf64<2>((f64)sceneCol8/256.0, (f64)sceneRow8/256.0);
+  trackConf = input[16];
   invalidPos = false;
 
   if ((serialCount++ % TRACE_COUNT_TRACKS) == 0 && printOutTracks) {
