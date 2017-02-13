@@ -21,8 +21,8 @@ jump = 2;
 % fixY = linspace(begin(2),ed(2), endIdx-beginIdx+1).';
 % pos(beginIdx:endIdx,:) = [fixX fixY];
 
-d1 = designfilt('lowpassiir','FilterOrder',2, ...
-    'HalfPowerFrequency',0.6,'DesignMethod','butter');
+d1 = designfilt('lowpassiir','FilterOrder',4, ...
+    'HalfPowerFrequency',0.25,'DesignMethod','butter');
 lowPassPos = zeros(size(pos));
 lowPassPos(:,1) = filtfilt(d1,pos(:,1));
 lowPassPos(:,2) = filtfilt(d1,pos(:,2));
@@ -45,9 +45,12 @@ daspect([1 1 1]);
 % segment
 
 figure;
-scatter(lowPassPos(:,1),lowPassPos(:,2));
-legend('lp robot head position');
+scatter(lowPassPos(:,1),lowPassPos(:,2),'LineWidth',2);
+legend('head position');
+grid on;
+box on;
 daspect([1 1 1]);
+axis ij;
 
 figure;
 hold on;
