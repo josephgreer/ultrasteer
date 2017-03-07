@@ -55,9 +55,9 @@ enum CONTROL_MODE {
 enum STEERING_CONTROL_MODE {
   SCM_NOTHING = 0,
   SCM_CALIBRATE,
-  SCM_CALIBRATE_INCREMENTAL,
   SCM_CALIBRATE_PAUSE,
   SCM_POS,
+  SCM_CALIBRATE_ON_THE_FLY,
   SCM_CALIBRATE_KIN
 };
 
@@ -146,19 +146,27 @@ f64 incrementalCalibTime = 0.3;
 f64 incrementalCalibRestTime = 15;
 f64 calibTime = 0;
 f64 aveTimePerLoop = 0;
+f64 timeBetweenOnTheFlyCalibrations = 10;
 s8 currCalibAct = -1;
 Vecf64<2> calibStartTrackPos(0, 0);
 bool wroteCalibration = false;
 
+f64 totalCalibTimeOnTheFly = 0.5;
+f64 totalRestTimeOnTheFly = 0.5;
+
 s32 outputCount = 0;
 
-#define CALIB_AMNT 0.15
+#define CALIB_AMNT 0.2
+
+f64 calibAmntsOnTheFly[N_TURN_ACT] = { 0.2, 0.11, 0.2 };
 
 Vecf64<2> trackPos;
 Vecf64<2> trackPosLast;
 Vecf64<2> scenePos;
 Vecf64<2> desTrackPos(320, 240);
 f64 trackConf = 0;
+
+f64 savedPressureSetPoints[N_TURN_ACT] = { 0 };
 
 u32 lastTimeSteeringVisited = 0;
 
@@ -168,10 +176,10 @@ u8 calibPWM = 0;
 
 ActuatorMapper *mapper[N_TURN_ACT];
 
-#define HOME_PRESSURE 0.6
+#define HOME_PRESSURE 0.5
 
 #define ACTUATE_REGULATOR(r,amnt) (analogWrite(regulatorPins[r], mapper[r]->MapVal(amnt)))
-#define REGULATE_PRESSURE(amnt) (analogWrite(pressurePin, (s32)((f64)255.0*amnt)))
+#define REGULATE_PRESSURE(amnt) (analogWrite(pressurePin, (s32)(MIN((f64)255.0*amnt,128))))
 
 s32 g_changeCount = 0;
 
@@ -266,69 +274,6 @@ void controlSteering()
 
     break;
   }
-  case SCM_CALIBRATE_INCREMENTAL:
-  {
-    bool incrementBin = false;
-    bool doneResting = false;
-
-    calibTime += dt;
-    if (calibTime >= incrementalCalibTime*(calibPWM >> CALIB_BIN_DS))
-      incrementBin = true;
-    else
-      calibStartTrackPos += scenePos;
-
-    if ((calibTime >= incrementalCalibTime*(MAX_REGULATOR_PWM / CALIB_BIN_DOWNSAMPLE) + totalRestTime) || currCalibAct == -1) {
-      Serial.println("Done resting actuator " + String((s32)currCalibAct));
-      doneResting = true;
-      incrementBin = false;
-    }
-    else if (calibTime >= incrementalCalibTime*(MAX_REGULATOR_PWM / CALIB_BIN_DOWNSAMPLE)) {
-      return;
-    }
-
-    if (incrementBin) {
-      Vecf64<2> delta = scenePos + calibStartTrackPos;
-      Serial.println(String((s32)currCalibAct) + ", " + String(calibPWM) + ", " + String(delta.x) + ", " + String(delta.y));
-#if 0 
-      calibTrackDisplacements[currCalibAct][(calibPWM >> CALIB_BIN_DS)] = delta;
-#endif
-      calibPWM += (1 << CALIB_BIN_DS);
-      if (calibPWM >= MAX_REGULATOR_PWM)
-        calibPWM = 0;
-
-      ACTUATE_REGULATOR(currCalibAct, calibPWM / 256.0);
-
-      calibStartTrackPos = Vecf64<2>(0, 0);
-    }
-    if (doneResting) {
-      if (currCalibAct >= 0)
-        analogWrite(regulatorPins[currCalibAct], 0);
-      currCalibAct++;
-      Serial.println("Incrementing Calibrator to " + String((s32)currCalibAct));
-      if (currCalibAct >= N_TURN_ACT) {
-
-        for (s32 ii = 0; ii < N_TURN_ACT; ii++)
-          ACTUATE_REGULATOR(ii, 0);
-
-        steeringControlMode = SCM_NOTHING;
-
-#if 0
-        for (s32 jj = 0; jj < N_TURN_ACT; jj++) {
-          String calibString = "Actuator " + String(jj) + " Calibration\n";
-          for (s32 ii = 0; ii < (s32)(MAX_REGULATOR_PWM / CALIB_BIN_DOWNSAMPLE); ii++) {
-            calibString += String(ii << CALIB_BIN_DS) + ", " + String(calibTrackDisplacements[jj][ii].magnitude()) + ", ";
-          }
-          Serial.println(calibString);
-        }
-#endif
-      }
-      calibStartTrackPos = Vecf64<2>(0, 0);
-      ACTUATE_REGULATOR(currCalibAct, 0);
-      calibTime = 0;
-    }
-
-    break;
-  }
   case SCM_CALIBRATE_PAUSE:
   {
     calibStartTrackPos = trackPos;
@@ -336,6 +281,14 @@ void controlSteering()
   }
   case SCM_POS:
   {
+    calibTime += dt;
+
+    if (calibTime >= timeBetweenOnTheFlyCalibrations) {
+      steeringControlMode = SCM_CALIBRATE_ON_THE_FLY;
+      calibTime = 0;
+      currCalibAct = -1;
+    }
+
     //je.PrintState();
     if (trackPos.x == -1.0 && trackPos.y == -1.0) {
       resetTracking();
@@ -369,8 +322,10 @@ void controlSteering()
       Serial.println("error=" + (String)(error)+"\n proprotional=" + String(proportional) + "\n deriv=" + String(deriv) + "\n integral=" +
         String(integral) + "\n u=" + String(u) + "\n dqs= " + String(dqs) + "\n qs= " + String(qs));
     }
-    for (s32 ii = 0; ii < N_TURN_ACT; ii++)
+    for (s32 ii = 0; ii < N_TURN_ACT; ii++) {
       pressureSetPoints[ii] = qs[ii];
+      savedPressureSetPoints[ii] = qs[ii];
+    }
 
     if (trackPosLast.x > 0 && trackPosLast.y > 0) {
       // Don't update if user manually specified track change
@@ -388,6 +343,57 @@ void controlSteering()
       integralErrorTrack.x += error.x;
       integralErrorTrack.y += error.y;
     }
+    break;
+  }
+  case SCM_CALIBRATE_ON_THE_FLY:
+  {
+    bool transition = false;
+    bool doneResting = false;
+
+    if (currCalibAct == -1) {
+      transition = true;
+    }
+
+    calibTime += dt;
+    if (calibTime >= totalCalibTimeOnTheFly)
+      transition = true;
+
+    if (calibTime >= totalCalibTimeOnTheFly + totalRestTimeOnTheFly) {
+      Serial.println("Done resting actuator " + String((s32)currCalibAct));
+      doneResting = true;
+    }
+
+    if (transition) {
+      Vecf64<2> delta = trackPos - calibStartTrackPos;
+
+      if (currCalibAct >= 0 && !wroteCalibration) {
+        actuatorCalibs[currCalibAct].offset = delta*(1.0 / calibAmntsOnTheFly[currCalibAct])*(aveTimePerLoop / totalCalibTimeOnTheFly);
+        for (s32 jj = 0; jj < N_TURN_ACT; jj++)
+          pressureSetPoints[jj] = savedPressureSetPoints[jj];
+      }
+      wroteCalibration = true;
+    }
+    if (doneResting) {
+      wroteCalibration = false;
+      calibTime = 0;
+      currCalibAct++;
+      if (currCalibAct >= N_TURN_ACT) {
+        steeringControlMode = SCM_POS;
+        currCalibAct = -1;
+
+        Vecf64<2> offsets[N_TURN_ACT] = { 0 };
+        for (s32 ii = 0; ii < N_TURN_ACT; ii++)
+          offsets[ii] = actuatorCalibs[ii].offset;
+        JJ = Matrixf64<2, N_TURN_ACT>::FromCols(offsets);
+        JJ.Print("JJ");
+
+        je.Initialize(JJ);
+      }
+      calibStartTrackPos = trackPos;
+      if (currCalibAct >= 0)
+        pressureSetPoints[currCalibAct] = calibAmntsOnTheFly[currCalibAct]+savedPressureSetPoints[currCalibAct];
+    }
+
     break;
   }
   case SCM_CALIBRATE_KIN:
@@ -765,11 +771,6 @@ void handleSerial(const s8 *input, s32 nBytes)
       steeringControlMode = SCM_CALIBRATE;
       mode = "calibrate";
     }
-    else if (input[2] == 'i') {
-      steeringControlMode = SCM_CALIBRATE_INCREMENTAL;
-      currCalibAct = (s32)(atoi(&input[4]));
-      mode = "calibration incremental";
-    }
     else if (input[2] == 'r') {
       steeringControlMode = SCM_CALIBRATE_PAUSE;
       mode = "calibration paused";
@@ -801,7 +802,6 @@ void handleSerial(const s8 *input, s32 nBytes)
       for (s32 jj = 0; jj < N_TURN_ACT; jj++)
         pressureSetPoints[jj] = 0;
 
-      REGULATE_PRESSURE(HOME_PRESSURE);
       resetTracking();
     }
     else if (input[2] == 'k') {

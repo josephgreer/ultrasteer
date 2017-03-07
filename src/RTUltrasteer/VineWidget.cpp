@@ -415,7 +415,7 @@ namespace Nf
 						break;
 					} else if(cdata[jj] == 'E') {
 						f32 es[2] = {0};
-						if(sscanf(&cdata[jj], "E %f, %f%n", &es[0], &es[1],&pos) == 3 && cdata[jj+pos] == ';')
+						if(sscanf(&cdata[jj], "E %f, %f%n", &es[0], &es[1],&pos) == 2 && cdata[jj+pos] == ';')
 							emit extensionUpdate((f64)es[0],(f64)es[1],0);
 						isGood = true;
 						break;
