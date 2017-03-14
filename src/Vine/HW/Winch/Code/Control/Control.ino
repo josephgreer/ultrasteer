@@ -23,7 +23,7 @@ f64 closeAngle = 90;
 //s32 regulatorPins[N_TURN_ACT] = { 10, 11, 9 };
 s32 regulatorPins[N_TURN_ACT] = { 9, 10, 11 };
 JacobianControl *jc = (JacobianControl *)new JacobianBoxConstraintControl();
-KFJacobianEstimator je;
+EKFJacobianEstimator je;
 bool setJacobian = false;
 
 s32 pressurePin = 3;
@@ -57,7 +57,9 @@ enum STEERING_CONTROL_MODE {
   SCM_CALIBRATE,
   SCM_CALIBRATE_PAUSE,
   SCM_POS,
-  SCM_CALIBRATE_ON_THE_FLY,
+  SCM_CALIBRATE_ON_THE_FLY_INIT,
+  SCM_CALIBRATE_ON_THE_FLY_PRESSURIZING,
+  SCM_CALIBRATE_ON_THE_FLY_DEPRESSURIZING,
   SCM_CALIBRATE_KIN
 };
 
@@ -125,6 +127,54 @@ struct ActuatorCalibration
   }
 };
 
+#define MAX_WINDOW_SZ 30
+class MaxFilter
+{
+protected:
+  f64 *m_values;
+  s32 m_newIdx;
+  f64 m_maxValue;
+
+public:
+  MaxFilter() 
+    : m_newIdx(0)
+    , m_maxValue(0)
+  {
+    m_values = new f64[MAX_WINDOW_SZ];
+    memset(&m_values[0], 0, sizeof(f64)*MAX_WINDOW_SZ);
+  }
+
+  f64 FindMaxValue()
+  {
+    f64 maxValue = 0;
+    for (s32 i = 0; i < MAX_WINDOW_SZ; i++)
+      maxValue = MAX(maxValue, m_values[i]);
+    return maxValue;
+  }
+
+  f64 AddNewValue(f64 val)
+  {
+    f64 oldValue = m_values[m_newIdx];
+    m_values[m_newIdx++] = val;
+    if (m_newIdx >= MAX_WINDOW_SZ)
+      m_newIdx = 0;
+
+    if (val > m_maxValue) {
+      m_maxValue = val;
+    }
+    else if (m_maxValue == oldValue) {
+      m_maxValue = FindMaxValue();
+    }
+    return m_maxValue;
+  }
+
+  f64 GetMaxValue()
+  {
+    return m_maxValue;
+  }
+
+};
+
 ActuatorCalibration actuatorCalibs[N_TURN_ACT];
 Matrixf64<2,N_TURN_ACT> JJ;
 
@@ -146,7 +196,7 @@ f64 incrementalCalibTime = 0.3;
 f64 incrementalCalibRestTime = 15;
 f64 calibTime = 0;
 f64 aveTimePerLoop = 0;
-f64 timeBetweenOnTheFlyCalibrations = 10;
+f64 timeBetweenOnTheFlyCalibrations = 4;
 s8 currCalibAct = -1;
 Vecf64<2> calibStartTrackPos(0, 0);
 bool wroteCalibration = false;
@@ -165,6 +215,14 @@ Vecf64<2> trackPosLast;
 Vecf64<2> scenePos;
 Vecf64<2> desTrackPos(320, 240);
 f64 trackConf = 0;
+Vecf64<N_TURN_ACT> actuatorAngles;
+f64 trackMax = 0;
+f64 trackMaxTime = 0;
+f64 trackMaxTimeTotal = 3;
+f64 rotationAngle = 0; 
+MaxFilter maxDisplacementFilter;
+f64 averageDisplacement = 0;
+f64 averageDisplacementAlpha = 0.9;
 
 f64 savedPressureSetPoints[N_TURN_ACT] = { 0 };
 
@@ -283,10 +341,9 @@ void controlSteering()
   {
     calibTime += dt;
 
-    if (calibTime >= timeBetweenOnTheFlyCalibrations) {
-      steeringControlMode = SCM_CALIBRATE_ON_THE_FLY;
+    if (calibTime >= timeBetweenOnTheFlyCalibrations && averageDisplacement < 2) {
+      steeringControlMode = SCM_CALIBRATE_ON_THE_FLY_INIT;
       calibTime = 0;
-      currCalibAct = -1;
     }
 
     //je.PrintState();
@@ -295,7 +352,7 @@ void controlSteering()
       break;
     }
     Vecf64<2> error = desTrackPos - trackPos;
-    lowPassError = error*1 + lowPassError*0.0;
+    lowPassError = error * 1 + lowPassError*0.0;
     Vecf64<2> derror = (lowPassError - errorLastTrack)*(1.0 / dt);
     errorLastTrack = lowPassError;
 
@@ -304,6 +361,8 @@ void controlSteering()
     if (trackPosChanged) {
       doOutput++;
       trackWarmupCount = 0;
+      Serial.println("Track pos changed");
+      calibTime = 0;
     }
 
     f64 steeringKdpAlpha = 1;// trackWarmupCount > 0 ? 1 : 0;// trackWarmupCount / (f64)(TRACK_WARMUP_COUNT_MAX);
@@ -327,17 +386,6 @@ void controlSteering()
       savedPressureSetPoints[ii] = qs[ii];
     }
 
-    if (trackPosLast.x > 0 && trackPosLast.y > 0) {
-      // Don't update if user manually specified track change
-      if (!trackPosChanged) {
-        if (setJacobian)
-          JJ = je.Update(z);
-        else
-          Matrixf64 < 2, N_TURN_ACT > JJBean = je.Update(z);
-      }
-    }
-    je.SetDq(dqs);
-    trackPosLast = trackPos;
     //anti windup
     if (0 < qs[0] && qs[0] < 1 && 0 < qs[1] && qs[1] < 1 && 0 < qs[2] && qs[2] < 1) {
       integralErrorTrack.x += error.x;
@@ -345,55 +393,56 @@ void controlSteering()
     }
     break;
   }
-  case SCM_CALIBRATE_ON_THE_FLY:
+  case SCM_CALIBRATE_ON_THE_FLY_INIT:
   {
-    bool transition = false;
-    bool doneResting = false;
-
-    if (currCalibAct == -1) {
-      transition = true;
-    }
-
+    // For consistentcy with initialization calibration
+    if (currCalibAct < 0)
+      currCalibAct = 0;
+    calibStartTrackPos = trackPos;
+    for (s32 i = 0; i < N_TURN_ACT; i++)
+      pressureSetPoints[i] = savedPressureSetPoints[i];
+    pressureSetPoints[currCalibAct] += calibAmntsOnTheFly[currCalibAct];
+    steeringControlMode = SCM_CALIBRATE_ON_THE_FLY_PRESSURIZING;
+    calibTime = 0;
+    break;
+  }
+  case SCM_CALIBRATE_ON_THE_FLY_PRESSURIZING:
+  {
     calibTime += dt;
-    if (calibTime >= totalCalibTimeOnTheFly)
-      transition = true;
-
-    if (calibTime >= totalCalibTimeOnTheFly + totalRestTimeOnTheFly) {
-      Serial.println("Done resting actuator " + String((s32)currCalibAct));
-      doneResting = true;
-    }
-
-    if (transition) {
-      Vecf64<2> delta = trackPos - calibStartTrackPos;
-
-      if (currCalibAct >= 0 && !wroteCalibration) {
-        actuatorCalibs[currCalibAct].offset = delta*(1.0 / calibAmntsOnTheFly[currCalibAct])*(aveTimePerLoop / totalCalibTimeOnTheFly);
-        for (s32 jj = 0; jj < N_TURN_ACT; jj++)
-          pressureSetPoints[jj] = savedPressureSetPoints[jj];
-      }
-      wroteCalibration = true;
-    }
-    if (doneResting) {
-      wroteCalibration = false;
+    if (calibTime >= totalCalibTimeOnTheFly) {
+      Vecf64<2> delta = (trackPos - calibStartTrackPos);
+#if 1
+      delta = delta*(aveTimePerLoop / totalCalibTimeOnTheFly);
+      Vecf64<N_TURN_ACT> dq;
+      dq(currCalibAct) = calibAmntsOnTheFly[currCalibAct];
+      JJ = je.UpdateDeadReckoning(delta, currCalibAct);
+#else
+      delta = delta*(aveTimePerLoop / totalCalibTimeOnTheFly)*(1.0 / calibAmntsOnTheFly[currCalibAct]);
+      JJ.SetCol(currCalibAct, delta);
+#endif
       calibTime = 0;
-      currCalibAct++;
-      if (currCalibAct >= N_TURN_ACT) {
-        steeringControlMode = SCM_POS;
+      for (s32 i = 0; i < N_TURN_ACT; i++)
+        pressureSetPoints[i] = savedPressureSetPoints[i];
+
+      steeringControlMode = SCM_POS;
+      currCalibAct = currCalibAct + 1;
+      if (currCalibAct >= N_TURN_ACT)
         currCalibAct = -1;
+      calibTime = 0;
 
-        Vecf64<2> offsets[N_TURN_ACT] = { 0 };
-        for (s32 ii = 0; ii < N_TURN_ACT; ii++)
-          offsets[ii] = actuatorCalibs[ii].offset;
-        JJ = Matrixf64<2, N_TURN_ACT>::FromCols(offsets);
-        JJ.Print("JJ");
-
-        je.Initialize(JJ);
-      }
-      calibStartTrackPos = trackPos;
-      if (currCalibAct >= 0)
-        pressureSetPoints[currCalibAct] = calibAmntsOnTheFly[currCalibAct]+savedPressureSetPoints[currCalibAct];
     }
-
+    break;
+  }
+  case SCM_CALIBRATE_ON_THE_FLY_DEPRESSURIZING:
+  {
+    calibTime += dt;
+    if (calibTime >= totalRestTimeOnTheFly) {
+      steeringControlMode = SCM_POS;
+      currCalibAct = currCalibAct + 1;
+      if (currCalibAct >= N_TURN_ACT)
+        currCalibAct = -1;
+      calibTime = 0;
+    }
     break;
   }
   case SCM_CALIBRATE_KIN:
@@ -460,6 +509,12 @@ void controlSteering()
     break;
   }
   }
+
+  Vecf64 <2> delta = trackPos - trackPosLast;
+  trackPosLast = trackPos;
+  f64 deltaMag = delta.magnitude();
+  maxDisplacementFilter.AddNewValue(deltaMag);
+  averageDisplacement = averageDisplacement*averageDisplacementAlpha + deltaMag*(1 - averageDisplacementAlpha);
 }
 
 f64 errorLastPosMotor = 0;
@@ -619,6 +674,8 @@ void runTest();
 
 f64 g_totTime = 0;
 
+bool g_printStatus = true;
+
 void loop()
 {
   TIME_LOOP(MainLoop, 5000000);
@@ -647,10 +704,14 @@ void loop()
   }
 
   count++;
-  if (g_totTime>100e-3) {
+  if (g_totTime>100e-3 && g_printStatus) {
+    Vecf64<N_TURN_ACT> angles = je.GetAngles();
+    f64 maxMag = maxDisplacementFilter.GetMaxValue();
     for (s32 i = 0; i < N_TURN_ACT; i++)
       currPressures[i] = analogRead(pressureSensorPins[i]) / 1024.0;
-    Serial.println("P " + String(pressureLowPassError[0], 5) + ", " + String(pressureLowPassError[1], 5) + ", " + String(pressureLowPassError[2], 5) + ", " + String(1 / (g_totTime / count), 6) + ", " + String(trackPos.x) + ", " + String(trackPos.y) + ", " + String(trackConf) + ";");
+    Serial.println("P " + String(pressureLowPassError[0], 5) + ", " + String(pressureLowPassError[1], 5) + ", " + String(pressureLowPassError[2], 5) + ", " + String(1 / (g_totTime / count), 6) + ", " + String(trackPos.x) + ", " + String(trackPos.y) + ", " + String(trackConf)
+      + ", " + String(angles(0),6) + ", " + String(angles(1), 6) + ", " + String(angles(2), 6)
+      + ", " + String(maxMag, 6) + ", " + String(averageDisplacement,6) + ", " + String(rotationAngle,6) + ";");
     g_totTime = 0;
     count = 0;
   }
@@ -1008,10 +1069,15 @@ void handleSlaSerial(const u8 *input, s32 nBytes)
   s32 sceneRow8 = (input[10]<<8) + (input[11] << 16) + (input[23]);
   s32 sceneCol8 = (input[8]<<8) + (input[9] << 16) + (input[22]);
 
+  s16 sceneRot7 = (s16)input[24] | ((s16)(input[25] << 8));
+
   trackPos = Vecf64<2>((f64)trackCol, (f64)trackRow);
   scenePos = Vecf64<2>((f64)sceneCol8/256.0, (f64)sceneRow8/256.0);
   trackConf = input[16];
   invalidPos = false;
+  f64 dtheta = sceneRot7 / 128.0;
+  rotationAngle = rotationAngle + dtheta;
+  je.IncrementTheta(-PI*dtheta / 180.0);
 
   if ((serialCount++ % TRACE_COUNT_TRACKS) == 0 && printOutTracks) {
     u32 currTime = millis();

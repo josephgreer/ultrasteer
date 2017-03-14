@@ -261,7 +261,7 @@ public:
   }
 
 #ifdef __AVR_ATmega2560__
-  String ToString()
+  String ToString() const
   {
     return "[" + String(this->x, 10) + ", " + String(this->y, 10) + "]";
   }

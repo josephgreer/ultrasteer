@@ -5,6 +5,7 @@
 #include <QThread>
 #include <QGridLayout>
 #include <QTimer>
+#include <qvector.h>
 #include <vtkInteractorStyleImage.h>
 #include <vtkPointPicker.h>
 #include "opencv2/highgui.hpp"
@@ -70,8 +71,7 @@ namespace Nf
 	public slots:
 		void HWButtonPushed();
 		void UpdateText(QString text);
-		void UpdateLog(QString text);
-		void UpdatePressures(double p1, double p2, double p3, double t, double tx, double ty, double c);
+		void UpdatePressures(QVector < double > values); 
 		void UpdateExtensions(double e1, double e2, double t);
 
   public:
@@ -115,7 +115,7 @@ namespace Nf
 
 signals:
 		void textUpdate(QString text);
-		void pressureUpdate(double p1, double p2, double p3, double t, double tx, double ty, double c);
+		void pressureUpdate(QVector < double > values);
 		void extensionUpdate(double e1, double e2, double t);
 
 	protected:

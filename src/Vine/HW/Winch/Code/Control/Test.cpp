@@ -13,7 +13,7 @@
 //#define RUN_CVX_TEST
 //#define RUN_EKF_JACOBIAN_TEST
 //#define RUN_BVLS_TEST
-#define RUN_KF_JACOBIAN_TEST
+//#define RUN_KF_JACOBIAN_TEST
 
 struct DeltaTestData
 {

@@ -141,9 +141,7 @@ protected:
   Vecf64<N_TURN_ACT> m_deltaTheta;
   Vecf64<N_TURN_ACT + 1> m_x;
   Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> m_E;
-  Vecf64<N_TURN_ACT> m_dq;
-  Vecf64<2> m_dz;
-  f64 m_alpha;
+  Vecf64<N_TURN_ACT> m_dqLast;
 
 public:
   EKFJacobianEstimator();
@@ -155,53 +153,15 @@ public:
   virtual void Initialize(const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &E, const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths);
   virtual void Initialize(const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &R, const Matrixf64<2, 2> &Q, const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &E, const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths);
 
-  virtual void SetDq(const Vecf64<N_TURN_ACT> &dq) 
-  {
-  	m_dq = m_dq*(1.0-m_alpha)+dq*m_alpha;
-  }
-
-  virtual void SetState(const Vecf64<N_TURN_ACT + 1> &x) { m_x = x; }
-  
+  virtual void IncrementTheta(f64 dtheta);
+  virtual void SetDq(const Vecf64<N_TURN_ACT> &dq) { m_dqLast = dq; }
   virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> &z);
   virtual Vecf64<N_TURN_ACT + 1> UpdateState(const Vecf64<2> &z);
-  virtual Vecf64<N_TURN_ACT+1> UpdateState(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq);
+  virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq);
+  virtual Vecf64<N_TURN_ACT+1> UpdateState(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq);
   Vecf64<N_TURN_ACT+1> GetState() { return m_x; }
-
-  void PrintState();
-};
-
-Matrixf64<2, N_TURN_ACT> unflattenVector(const Vecf64<2 * N_TURN_ACT> &v);
-Vecf64<2 * N_TURN_ACT> flattenMatrix(const Matrixf64<2, N_TURN_ACT> &m);
-
-class KFJacobianEstimator
-{
-protected:
-  Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> m_R;
-  Matrixf64<2, 2> m_Q;
-  Vecf64<2 * N_TURN_ACT> m_x;
-  Matrixf64<2 * N_TURN_ACT, 2* N_TURN_ACT> m_E;
-  Vecf64<N_TURN_ACT> m_dq;
-  Vecf64<2> m_dz;
-  f64 m_alpha;
-
-public:
-  KFJacobianEstimator();
-
-  void SetAlpha(f64 alpha) { m_alpha = alpha; }
-
-  virtual void SetJacobian(const Matrixf64<2, N_TURN_ACT>&J) { m_x = flattenMatrix(J); }
-
-  virtual void Initialize(const Matrixf64<2, N_TURN_ACT> &J);
-  virtual void Initialize(const Matrixf64<2, N_TURN_ACT> &J, const Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> &R, const Matrixf64<2, 2> &Q, const Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> &E);
-
-  virtual void SetDq(const Vecf64<N_TURN_ACT> &dq)
-  {
-    m_dq = m_dq*(1.0 - m_alpha) + dq*m_alpha;
-  }
-
-
-  virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> z);
-  virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq);
+  Matrixf64<2, N_TURN_ACT> UpdateDeadReckoning(const Vecf64<2> &z, s32 i);
+  Vecf64<N_TURN_ACT> GetAngles() { return (m_deltaTheta + m_x(N_TURN_ACT))*(180.0 / PI); }
 
   void PrintState();
 };

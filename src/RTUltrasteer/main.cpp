@@ -3,8 +3,9 @@
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
-    RTUltrasteer w;
-    w.showMaximized();
-    return a.exec();
+	qRegisterMetaType<QVector<double> >("QVector<double>");
+	QApplication a(argc, argv);
+	RTUltrasteer w;
+	w.showMaximized();
+	return a.exec();
 }

@@ -59,7 +59,7 @@ namespace Nf
 		connect(this->m_tapeWidget->ui.calibrateJacobian, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 
 		connect(m_serialThread.get(), SIGNAL(textUpdate(QString)), this, SLOT(UpdateText(QString)));
-		connect(m_serialThread.get(), SIGNAL(pressureUpdate(double,double,double,double,double,double,double)), this, SLOT(UpdatePressures(double,double,double,double,double,double,double)));
+		connect(m_serialThread.get(), SIGNAL(pressureUpdate(QVector < double >)), this, SLOT(UpdatePressures(QVector < double >)));
 		connect(m_serialThread.get(), SIGNAL(extensionUpdate(double,double,double)), this, SLOT(UpdateExtensions(double,double,double)));
 
 		ADD_VEC2I_PARAMETER(m_comPorts, "Com Ports", CALLBACK_POINTER(InitSerial, VineWidget), this, Vec2i(6,3), Vec2i(1,1), Vec2i(20,20), Vec2i(1,1));
@@ -77,28 +77,33 @@ namespace Nf
 		m_tapeWidget->ui.textEdit->moveCursor (QTextCursor::End);
 	}
 
-	void VineWidget::UpdateLog(QString text)
-	{
-		m_tapeWidget->ui.textLog->moveCursor (QTextCursor::End);
-		m_tapeWidget->ui.textLog->insertPlainText (text);
-		m_tapeWidget->ui.textLog->moveCursor (QTextCursor::End);
-	}
-
 #define SLIDER_POS(x)((s32)(99*(x)/0.15))
-
-	void VineWidget::UpdatePressures(double p1, double p2, double p3, double t, double tx, double ty, double c)
+	
+	// 0 = pressure_1, 1 = pressure_2, 2 = pressure_3
+	// 3 = steering board rate, 4 = track_x, 5 = track_y, 6 = track_c 
+	// 7 = act1, 8 = act2, 9 = act3, 
+	// 10 = maxTrackX, 11 = maxTrackY, 12 = integralAngle
+	void VineWidget::UpdatePressures(QVector < f64 > values)
 	{
 		QString text;
-		m_tapeWidget->ui.regulatorAmount_1->display(text.sprintf("%.3f",p1));
-		m_tapeWidget->ui.regulatorAmount_2->display(text.sprintf("%.3f",p2));
-		m_tapeWidget->ui.regulatorAmount_3->display(text.sprintf("%.3f",p3));
-		m_tapeWidget->ui.steeringBoardRate->display(t);
-		m_tapeWidget->ui.track_x->display(tx);
-		m_tapeWidget->ui.track_y->display(ty);
-		m_tapeWidget->ui.track_c->display(c);
-		m_tapeWidget->ui.regVert_1->setSliderPosition(SLIDER_POS(p1));
-		m_tapeWidget->ui.regVert_2->setSliderPosition(SLIDER_POS(p2));
-		m_tapeWidget->ui.regVert_3->setSliderPosition(SLIDER_POS(p3));
+		m_tapeWidget->ui.regulatorAmount_1->display(text.sprintf("%.3f",values[0]));
+		m_tapeWidget->ui.regulatorAmount_2->display(text.sprintf("%.3f",values[1]));
+		m_tapeWidget->ui.regulatorAmount_3->display(text.sprintf("%.3f",values[2]));
+		m_tapeWidget->ui.steeringBoardRate->display(values[3]);
+		m_tapeWidget->ui.track_x->display(values[4]);
+		m_tapeWidget->ui.track_y->display(values[5]);
+		m_tapeWidget->ui.track_c->display(values[6]);
+		m_tapeWidget->ui.regVert_1->setSliderPosition(SLIDER_POS(values[0]));
+		m_tapeWidget->ui.regVert_2->setSliderPosition(SLIDER_POS(values[1]));
+		m_tapeWidget->ui.regVert_3->setSliderPosition(SLIDER_POS(values[2]));
+
+		m_tapeWidget->ui.actuatorAngle_1->display(text.sprintf("%.3f",values[7]));
+		m_tapeWidget->ui.actuatorAngle_2->display(text.sprintf("%.3f",values[8]));
+		m_tapeWidget->ui.actuatorAngle_3->display(text.sprintf("%.3f",values[9]));
+		
+		m_tapeWidget->ui.visionData_1->display(text.sprintf("%.3f",values[10]));
+		m_tapeWidget->ui.visionData_2->display(text.sprintf("%.3f",values[11]));
+		m_tapeWidget->ui.visionData_3->display(text.sprintf("%.3f",values[12]));
 	}
 
 	void VineWidget::UpdateExtensions(double e1, double e2, double t)
@@ -408,8 +413,15 @@ namespace Nf
 					s32 pos;
 					if(cdata[jj] == 'P') {
 						f32 ps[3] = {0}; f32 tt; f32 trackx, tracky,trackConf;
-						if(sscanf(&cdata[jj], "P %f, %f, %f, %f, %f, %f, %f%n", &ps[0], &ps[1], &ps[2],&tt,&trackx,&tracky,&trackConf,&pos) == 7 && cdata[jj+pos] == ';') {
-							emit pressureUpdate((f64)ps[0],(f64)ps[1],(f64)ps[2],(f64)tt,trackx,tracky,trackConf);
+						f32 actValues[3] = {0}; f32 visionValues[3] = {0};
+						if(sscanf(&cdata[jj], "P %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f%n", &ps[0], &ps[1], &ps[2],&tt,&trackx,&tracky,&trackConf,
+							&actValues[0], &actValues[1], &actValues[2], &visionValues[0], &visionValues[1], &visionValues[2], &pos) == 13 && cdata[jj+pos] == ';') {
+							QVector < f64 > values(13); 
+							values[0] = ps[0]; values[1] = ps[1]; values[2] = ps[2];
+							values[3] = tt; values[4] = trackx; values[5] = tracky; values[6] = trackConf;
+							values[7] = actValues[0]; values[8] = actValues[1]; values[9] = actValues[2];
+							values[10] = visionValues[0]; values[11] = visionValues[1]; values[12] = visionValues[2];
+							emit pressureUpdate(values);
 							isGood = true;
 						}
 						break;
@@ -419,6 +431,14 @@ namespace Nf
 							emit extensionUpdate((f64)es[0],(f64)es[1],0);
 						isGood = true;
 						break;
+					} else if(cdata[jj] == 'J' && cdata[jj+1] == 'J') {
+						f64 es[9] = {0};
+						if(sscanf(&cdata[jj], "JJ=[%f %f %f;\n%f %f %f;\n%f %f %f%n];",&es[0],&es[1],&es[2],
+							&es[3],&es[4],&es[5],&es[6],&es[7],&es[8],&pos) > 0) {
+							cdata[jj+pos] = 0;
+							emit textUpdate(QString(&cdata[jj]));
+						}
+						
 					}
 				}
 				if(isGood)
