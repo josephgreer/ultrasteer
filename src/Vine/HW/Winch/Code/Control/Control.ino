@@ -307,7 +307,7 @@ void controlSteering()
       if (currCalibAct >= 0 && !wroteCalibration) {
         actuatorCalibs[currCalibAct].offset = delta*(1.0 / CALIB_AMNT)*(aveTimePerLoop / totalCalibTime);
         for (s32 jj = 0; jj < N_TURN_ACT; jj++)
-          pressureSetPoints[jj] = 0;
+          pressureSetPoints[jj] = savedPressureSetPoints[jj];
       }
       wroteCalibration = true;
     }
@@ -333,7 +333,7 @@ void controlSteering()
       }
       calibStartTrackPos = trackPos;
       if (currCalibAct >= 0)
-        pressureSetPoints[currCalibAct] = CALIB_AMNT;
+        pressureSetPoints[currCalibAct] += CALIB_AMNT;
     }
 
     break;
