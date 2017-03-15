@@ -786,6 +786,13 @@ Vecf64<N_TURN_ACT> BroydenJacobianEstimator::GetStrengths()
     mags(i) = m_J.Col(i).magnitude();
   return mags;
 }
+
+void BroydenJacobianEstimator::IncrementTheta(f64 dtheta)
+{
+  Matrixf64<2, 2> rot(cos(dtheta), -sin(dtheta), sin(dtheta), cos(dtheta));
+  for (s32 i = 0; i < N_TURN_ACT; i++)
+    m_J.SetCol(i, rot*m_J.Col(i));
+}
 ///////////////////////////////////////////////////////
 /// END BroydenJacobianEstimator
 ///////////////////////////////////////////////////////

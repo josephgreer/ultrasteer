@@ -219,6 +219,8 @@ public:
 
   virtual void Initialize(const Matrixf64<2, N_TURN_ACT> &J);
 
+  virtual void IncrementTheta(f64 dtheta);
+
   virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq);
   Vecf64<N_TURN_ACT> GetAngles();
   Vecf64<N_TURN_ACT> GetStrengths();

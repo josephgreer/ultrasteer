@@ -604,6 +604,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="posIntermittent">
+         <property name="text">
+          <string>Position Intermittent Open Loop</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="straighten">
          <property name="text">
           <string>Straighten</string>

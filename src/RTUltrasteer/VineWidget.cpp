@@ -56,6 +56,7 @@ namespace Nf
 		connect(this->m_tapeWidget->ui.regDec_3, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 		connect(this->m_tapeWidget->ui.beginSteering, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 		connect(this->m_tapeWidget->ui.openLoopSteering, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.posIntermittent, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 		connect(this->m_tapeWidget->ui.pauseSteering, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 		connect(this->m_tapeWidget->ui.straighten, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 		connect(this->m_tapeWidget->ui.calibrateJacobian, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
@@ -216,6 +217,9 @@ namespace Nf
 			this->m_serials[1]->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.calibrateJacobian) {
 			const char *str = "c c\n";
+			this->m_serials[1]->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.posIntermittent) {
+			const char *str = "c u\n";
 			this->m_serials[1]->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.button_up) {
 			const char *str = "d u\n";

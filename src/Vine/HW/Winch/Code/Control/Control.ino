@@ -58,6 +58,8 @@ enum STEERING_CONTROL_MODE {
   SCM_CALIBRATE_PAUSE,
   SCM_POS,
   SCM_POS_OL,
+  SCM_POS_INTERMITTENT_OL,
+  SCM_POS_INTERMITTENT_OL_PAUSE,
   SCM_CALIBRATE_ON_THE_FLY_INIT,
   SCM_CALIBRATE_ON_THE_FLY_PRESSURIZING,
   SCM_CALIBRATE_ON_THE_FLY_DEPRESSURIZING,
@@ -207,7 +209,7 @@ f64 totalRestTimeOnTheFly = 0.5;
 
 s32 outputCount = 0;
 
-#define CALIB_AMNT 0.2
+#define CALIB_AMNT 0.1
 
 f64 calibAmntsOnTheFly[N_TURN_ACT] = { 0.2, 0.11, 0.2 };
 
@@ -399,7 +401,86 @@ void controlSteering()
       integralErrorTrack.y += error.y;
     }
     break;
-  }  
+  }
+  case SCM_POS_INTERMITTENT_OL:
+  {
+    primaryControl = SCM_POS_INTERMITTENT_OL;
+    calibTime += dt;
+    //je.PrintState();
+    if (trackPos.x == -1.0 && trackPos.y == -1.0) {
+      resetTracking();
+      calibTime = 0;
+      steeringControlMode = SCM_POS_INTERMITTENT_OL_PAUSE;
+      break;
+    }
+    Vecf64<2> error = desTrackPos - trackPos;
+    lowPassError = error * 1 + lowPassError*0.0;
+    Vecf64<2> derror = (lowPassError - errorLastTrack)*(1.0 / dt);
+    errorLastTrack = lowPassError;
+
+    Vecf64<2> z = trackPos - trackPosLast;
+    bool trackPosChanged = (z.magnitude() > 1 && scenePos.magnitude() < z.magnitude() / 20.0);
+    if (trackPosChanged) {
+      doOutput++;
+      trackWarmupCount = 0;
+      Serial.println("Track pos changed");
+      calibTime = 0;
+    }
+
+    f64 steeringKdpAlpha = 1;// trackWarmupCount > 0 ? 1 : 0;// trackWarmupCount / (f64)(TRACK_WARMUP_COUNT_MAX);
+    trackWarmupCount = CLAMP(trackWarmupCount + 1, 0, TRACK_WARMUP_COUNT_MAX);
+    Vecf64<2> proportional = error*steeringKpp;
+    Vecf64<2> deriv = derror*steeringKdp*steeringKdpAlpha;
+    Vecf64<2> integral = integralErrorTrack*steeringKip;
+
+    if (trackPosChanged)
+      trackWarmupCount = 0;
+
+    Vecf64<2> u = proportional + deriv + integral;
+    Vecf64<N_TURN_ACT> qs, dqs;
+    jc->Update(qs, dqs, u, JJ);
+    if (false) {
+      Serial.println("error=" + (String)(error)+"\n proprotional=" + String(proportional) + "\n deriv=" + String(deriv) + "\n integral=" +
+        String(integral) + "\n u=" + String(u) + "\n dqs= " + String(dqs) + "\n qs= " + String(qs));
+    }
+    for (s32 ii = 0; ii < N_TURN_ACT; ii++) {
+      pressureSetPoints[ii] = qs[ii];
+      savedPressureSetPoints[ii] = qs[ii];
+    }
+
+    if (!trackPosChanged && calibTime >= 2) {
+      steeringControlMode = SCM_POS_INTERMITTENT_OL_PAUSE;
+      calibTime = 0;
+      resetTracking();
+    }
+
+    //anti windup
+    if (0 < qs[0] && qs[0] < 1 && 0 < qs[1] && qs[1] < 1 && 0 < qs[2] && qs[2] < 1) {
+      integralErrorTrack.x += error.x;
+      integralErrorTrack.y += error.y;
+    }
+    break;
+  }
+  case SCM_POS_INTERMITTENT_OL_PAUSE:
+  {
+    primaryControl = SCM_POS_INTERMITTENT_OL_PAUSE;
+    calibTime += dt;
+
+    if (calibTime >= timeBetweenOnTheFlyCalibrations && averageDisplacement < 2) {
+      steeringControlMode = SCM_CALIBRATE_ON_THE_FLY_INIT;
+      calibTime = 0;
+    }
+    Vecf64<2> z = trackPos - trackPosLast;
+    bool trackPosChanged = (z.magnitude() > 1 && scenePos.magnitude() < z.magnitude() / 20.0);
+    if (trackPosChanged) {
+      doOutput++;
+      trackWarmupCount = 0;
+      Serial.println("Track pos changed");
+      calibTime = 0;
+      steeringControlMode = SCM_POS_INTERMITTENT_OL;
+    }
+    break;
+  }
   case SCM_POS_OL:
   {
     primaryControl = SCM_POS_OL;
@@ -888,6 +969,10 @@ void handleSerial(const s8 *input, s32 nBytes)
       steeringControlMode = SCM_POS_OL;
       mode = "position open loop";
     }
+    else if (input[2] == 'u') {
+      steeringControlMode = SCM_POS_INTERMITTENT_OL_PAUSE;
+      mode = "position open loop intermittent";
+    }
     else if (input[2] == 'g') {
       steeringControlMode = SCM_CALIBRATE_KIN;
       mode = "kinematic";
@@ -1138,7 +1223,7 @@ void handleSlaSerial(const u8 *input, s32 nBytes)
   invalidPos = false;
   f64 dtheta = sceneRot7 / 128.0;
   rotationAngle = rotationAngle + dtheta;
-  //je.IncrementTheta(-PI*dtheta / 180.0);
+  je.IncrementTheta(PI*dtheta / 180.0);
 
   if ((serialCount++ % TRACE_COUNT_TRACKS) == 0 && printOutTracks) {
     u32 currTime = millis();
