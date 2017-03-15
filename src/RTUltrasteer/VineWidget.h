@@ -50,6 +50,8 @@ namespace Nf
     std::tr1::shared_ptr < TapeRobotWidget > m_tapeWidget;
 		std::tr1::shared_ptr < CircularBuffer > m_serialBuffers[2];
     QGridLayout *m_layout;
+		
+    bool eventFilter(QObject *obj, QEvent *event);
 
 		std::tr1::shared_ptr < Nf::Vec2iParameter > m_comPorts;
 		std::tr1::shared_ptr < Nf::BoolParameter > m_serialInit;

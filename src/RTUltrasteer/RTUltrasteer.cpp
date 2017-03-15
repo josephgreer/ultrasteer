@@ -30,7 +30,6 @@ namespace Nf
   }
 }
 
-
 using namespace Nf;
 
 RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
@@ -234,6 +233,8 @@ RTUltrasteer::RTUltrasteer(QWidget *parent, Qt::WFlags flags)
   connect(ui.actionSave_Parameters, SIGNAL(triggered(bool)), SLOT(onSaveParameters()));
   connect(ui.actionLoad_Parameters, SIGNAL(triggered(bool)), SLOT(onLoadParameters()));
 
+	m_params->installEventFilter(m_vineWidget);
+
   onSetDocksVisible();
   m_control.setRobot(&m_robot);
 }
@@ -263,7 +264,7 @@ void RTUltrasteer::Resize()
 {
   QSize totalSize = this->size();
   QSize menuSize = m_params->size();
-  s32 w = totalSize.width()-menuSize.width()-10;
+  s32 w = totalSize.width()-menuSize.width()-50;
 
   for(std::map<std::string, Nf::DockWidgetInfo >::iterator i=m_roots.begin(); i!=m_roots.end(); i++) {
     QSize sz = i->second.dock->size();

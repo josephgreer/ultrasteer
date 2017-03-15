@@ -65,6 +65,8 @@ protected:
 public:
   JacobianControl();
 
+  virtual void Reset();
+
   // Returns actuator q values to achieve end-effector displacement dx
   virtual void Update(Vecf64<N_TURN_ACT> &qs, Vecf64<N_TURN_ACT> &dqs, Vecf64<2> dx) = 0;
 
@@ -164,6 +166,62 @@ public:
   Vecf64<N_TURN_ACT> GetAngles() { return (m_deltaTheta + m_x(N_TURN_ACT))*(180.0 / PI); }
 
   void PrintState();
+};
+
+Matrixf64<2, N_TURN_ACT> unflattenVector(const Vecf64<2 * N_TURN_ACT> &v);
+Vecf64<2 * N_TURN_ACT> flattenMatrix(const Matrixf64<2, N_TURN_ACT> &m);
+
+class KFJacobianEstimator
+{
+protected:
+  Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> m_R;
+  Matrixf64<2, 2> m_Q;
+  Vecf64<2 * N_TURN_ACT> m_x;
+  Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> m_E;
+  Vecf64<N_TURN_ACT> m_dq;
+  Vecf64<2> m_dz;
+  f64 m_alpha;
+
+public:
+  KFJacobianEstimator();
+
+  void SetAlpha(f64 alpha) { m_alpha = alpha; }
+
+  virtual void SetJacobian(const Matrixf64<2, N_TURN_ACT>&J) { m_x = flattenMatrix(J); }
+
+  virtual void Initialize(const Matrixf64<2, N_TURN_ACT> &J);
+  virtual void Initialize(const Matrixf64<2, N_TURN_ACT> &J, const Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> &R, const Matrixf64<2, 2> &Q, const Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> &E);
+
+  virtual void SetDq(const Vecf64<N_TURN_ACT> &dq)
+  {
+    m_dq = m_dq*(1.0 - m_alpha) + dq*m_alpha;
+  }
+
+
+  virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> z);
+  virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq);
+  Vecf64<N_TURN_ACT> GetAngles();
+  Vecf64<N_TURN_ACT> GetStrengths();
+
+  void PrintState();
+};
+
+class BroydenJacobianEstimator
+{
+protected:
+  Matrixf64<2,N_TURN_ACT> m_J;
+  f64 m_nabla;
+
+public:
+  BroydenJacobianEstimator();
+
+  virtual void SetJacobian(const Matrixf64<2, N_TURN_ACT>&J) { m_J = J; }
+
+  virtual void Initialize(const Matrixf64<2, N_TURN_ACT> &J);
+
+  virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq);
+  Vecf64<N_TURN_ACT> GetAngles();
+  Vecf64<N_TURN_ACT> GetStrengths();
 };
 
 #endif

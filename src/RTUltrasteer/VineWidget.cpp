@@ -1,6 +1,7 @@
 #include "VineWidget.h"
 #include <vtkRendererCollection.h>
 #include <armadillo>
+#include <QKeyEvent>
 
 namespace Nf
 {
@@ -54,9 +55,14 @@ namespace Nf
 		connect(this->m_tapeWidget->ui.regDec_2, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 		connect(this->m_tapeWidget->ui.regDec_3, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 		connect(this->m_tapeWidget->ui.beginSteering, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.openLoopSteering, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 		connect(this->m_tapeWidget->ui.pauseSteering, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 		connect(this->m_tapeWidget->ui.straighten, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 		connect(this->m_tapeWidget->ui.calibrateJacobian, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.button_up, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.button_down, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.button_left, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
+		connect(this->m_tapeWidget->ui.button_right, SIGNAL(clicked()), this, SLOT(HWButtonPushed()));
 
 		connect(m_serialThread.get(), SIGNAL(textUpdate(QString)), this, SLOT(UpdateText(QString)));
 		connect(m_serialThread.get(), SIGNAL(pressureUpdate(QVector < double >)), this, SLOT(UpdatePressures(QVector < double >)));
@@ -111,6 +117,33 @@ namespace Nf
 		m_tapeWidget->ui.extensionAmount->display(e1);
 		m_tapeWidget->ui.extensionVel->display(e2);
 		m_tapeWidget->ui.motorBoardRate->display(t);
+	}
+
+
+	bool VineWidget::eventFilter(QObject *obj, QEvent *event)
+	{
+		if (event->type() == QEvent::KeyPress) {
+			QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+			if(!m_serials[0]->IsOpened() || !m_serials[1]->IsOpened()) {
+				return true;
+			}
+			if(keyEvent->key() == Qt::Key::Key_Up) {
+				const char *str = "d u\n";
+				this->m_serials[1]->SendData(str, strlen(str));
+			} else if(keyEvent->key() == Qt::Key::Key_Down) {
+				const char *str = "d d\n";
+				this->m_serials[1]->SendData(str, strlen(str));
+			} else if(keyEvent->key() == Qt::Key::Key_Left) {
+				const char *str = "d l\n";
+				this->m_serials[1]->SendData(str, strlen(str));
+			} else if(keyEvent->key() == Qt::Key::Key_Right) {
+				const char *str = "d r\n";
+				this->m_serials[1]->SendData(str, strlen(str));
+			} 
+		} else {
+			// standard event processing
+			return QObject::eventFilter(obj, event);
+		}
 	}
 
 	void VineWidget::HWButtonPushed()
@@ -172,6 +205,9 @@ namespace Nf
 		} else if(button == m_tapeWidget->ui.beginSteering) {
 			const char *str = "c p\n";
 			this->m_serials[1]->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.openLoopSteering) {
+			const char *str = "c o\n";
+			this->m_serials[1]->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.pauseSteering) {
 			const char *str = "c n\n";
 			this->m_serials[1]->SendData(str, strlen(str));
@@ -180,6 +216,18 @@ namespace Nf
 			this->m_serials[1]->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.calibrateJacobian) {
 			const char *str = "c c\n";
+			this->m_serials[1]->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.button_up) {
+			const char *str = "d u\n";
+			this->m_serials[1]->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.button_down) {
+			const char *str = "d d\n";
+			this->m_serials[1]->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.button_left) {
+			const char *str = "d l\n";
+			this->m_serials[1]->SendData(str, strlen(str));
+		} else if(button == m_tapeWidget->ui.button_right) {
+			const char *str = "d r\n";
 			this->m_serials[1]->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.incrementPressure) {
 			m_mainPressure += atof(m_tapeWidget->ui.incPressureValue->text().toStdString().c_str());

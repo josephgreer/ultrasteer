@@ -32,6 +32,15 @@ JacobianControl::JacobianControl()
   m_alpha = TIME_STEP / (TIME_STEP + 0.1);
 }
 
+void JacobianControl::Reset()
+{
+  for (s32 i = 0; i < N_TURN_ACT; i++) {
+    m_q(i) = 0;
+    m_lq(i) = 0;
+    m_ldq(i) = 0;
+  }
+}
+
 void JacobianControl::Update(Vecf64<N_TURN_ACT> &qs, Vecf64<N_TURN_ACT> &dqs, Vecf64<2> dx, const Matrixf64<2, N_TURN_ACT>&J)
 {
   m_J = J;
@@ -587,7 +596,7 @@ Matrixf64<2, N_TURN_ACT> EKFJacobianEstimator::Update(const Vecf64<2> &z, const 
 
 void EKFJacobianEstimator::IncrementTheta(f64 dtheta)
 {
-  m_x(N_TURN_ACT) += dtheta;
+  return;
 }
 
 Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq)
@@ -617,4 +626,166 @@ Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> &z, con
 }
 ///////////////////////////////////////////////////////
 /// END EKFJacobianEstimator
+///////////////////////////////////////////////////////
+
+Matrixf64<2, N_TURN_ACT> unflattenVector(const Vecf64<2 * N_TURN_ACT> &v)
+{
+  Matrixf64<2, N_TURN_ACT> res;
+  for (s32 c = 0; c < N_TURN_ACT; c++) {
+    res(0, c) = v(2 * c);
+    res(1, c) = v(2 * c + 1);
+  }
+  return res;
+}
+
+Vecf64<2 * N_TURN_ACT> flattenMatrix(const Matrixf64<2, N_TURN_ACT> &m)
+{
+  Vecf64<2 * N_TURN_ACT> res;
+  for (s32 i = 0; i < N_TURN_ACT; i++) {
+    res(2 * i + 0) = m(0, i);
+    res(2 * i + 1) = m(1, i);
+  }
+  return res;
+}
+
+///////////////////////////////////////////////////////
+/// BEGIN KFJacobianEstimator
+///////////////////////////////////////////////////////
+#define KF_VAR 1
+#define KF_MEASUREMENT_VAR 10
+#define KF_INIT_VAR 3
+
+KFJacobianEstimator::KFJacobianEstimator()
+{
+  m_alpha = 1.0;// TIME_STEP / (TIME_STEP + 0.1);
+  for (s32 i = 0; i < 2 * N_TURN_ACT; i++)
+    m_x(i) = 0;
+}
+
+void KFJacobianEstimator::Initialize(const Matrixf64<2, N_TURN_ACT> &J)
+{
+  f64 R[2 * N_TURN_ACT] = { 0 };
+  f64 E[2 * N_TURN_ACT] = { 0 };
+  for (s32 i = 0; i < 2 * N_TURN_ACT; i++) {
+    R[i] = KF_VAR;
+    E[i] = KF_INIT_VAR;
+  }
+  Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> RR = Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT>::Diagonal(R);
+  Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> EE = Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT>::Diagonal(E);
+  f64 Q[2] = { KF_MEASUREMENT_VAR,KF_MEASUREMENT_VAR };
+  Matrixf64<2, 2> QQ = Matrixf64<2, 2>::Diagonal(Q);
+
+  Initialize(J, RR, QQ, EE);
+}
+
+void KFJacobianEstimator::Initialize(const Matrixf64<2, N_TURN_ACT> &J, const Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> &R, const Matrixf64<2, 2> &Q, const Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> &E)
+{
+  m_x = flattenMatrix(J);
+
+  m_Q = Q;
+  m_R = R;
+  m_E = E;
+}
+
+Matrixf64<2, N_TURN_ACT> KFJacobianEstimator::Update(const Vecf64<2> z)
+{
+  return Update(z, m_dq);
+}
+
+Matrixf64<2, N_TURN_ACT> KFJacobianEstimator::Update(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq)
+{
+  Vecf64<2 * N_TURN_ACT> xtbar = m_x;
+  Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT> Etbar;
+  Etbar = m_E + m_R;
+
+  Matrixf64<2, 2 * N_TURN_ACT> Ct;
+  for (s32 i = 0; i < N_TURN_ACT; i++) {
+    Ct(0, 2 * i) = dq(i);
+    Ct(1, 2 * i + 1) = dq(i);
+  }
+
+  Matrixf64<2 * N_TURN_ACT, 2> Kt = Etbar*Ct.Transpose()*((Ct*Etbar*Ct.Transpose() + m_Q).Inverse());
+  m_x = xtbar + Kt*(z - Ct*xtbar);
+  m_E = (Matrixf64<2 * N_TURN_ACT, 2 * N_TURN_ACT>::Identity() - Kt*Ct)*Etbar;
+
+  return unflattenVector(m_x);
+}
+
+void KFJacobianEstimator::PrintState()
+{
+#ifdef __AVR_ATmega2560__
+  Matrixf64<2, N_TURN_ACT> J = unflattenVector(m_x);
+  J.Print("J");
+#endif
+}
+
+Vecf64<N_TURN_ACT> KFJacobianEstimator::GetAngles()
+{
+  Vecf64<N_TURN_ACT> thetas;
+  Matrixf64<2, N_TURN_ACT> JJ = unflattenVector(m_x);
+  for (s32 i = 0; i < N_TURN_ACT; i++) {
+    if (JJ.Col(i).magnitude() > 1e-3)
+      thetas(i) = JJ.Col(i).angle() * 180.0 / PI;
+    else
+      thetas(i) = 0;
+  }
+  return thetas;
+}
+
+Vecf64<N_TURN_ACT> KFJacobianEstimator::GetStrengths()
+{
+  Vecf64<N_TURN_ACT> mags;
+  Matrixf64<2, N_TURN_ACT> JJ = unflattenVector(m_x);
+  for (s32 i = 0; i < N_TURN_ACT; i++) {
+    mags(i) = JJ.Col(i).magnitude();
+  }
+  return mags;
+}
+///////////////////////////////////////////////////////
+/// END KFJacobianEstimator
+///////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////
+/// BEGIN BroydenJacobianEstimator
+///////////////////////////////////////////////////////
+BroydenJacobianEstimator::BroydenJacobianEstimator()
+  : m_nabla(0.5)
+{
+}
+
+void BroydenJacobianEstimator::Initialize(const Matrixf64<2, N_TURN_ACT> &J)
+{
+  m_J = J;
+}
+
+Matrixf64<2, N_TURN_ACT> BroydenJacobianEstimator::Update(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq)
+{
+  Matrixf64 <1, N_TURN_ACT> dqt;
+  for (s32 i = 0; i < N_TURN_ACT; i++)
+    dqt(0,i) = dq(i);
+  Vecf64<2> dzmjq = z - m_J*dq;
+  Matrixf64<2, 1> ddd;
+  for (s32 i = 0; i < 2; i++)
+    ddd(i, 0) = dzmjq(i);
+  m_J = m_J + (ddd*dqt) * (m_nabla / dq.magnitudeSquared());
+  return m_J;
+}
+
+Vecf64<N_TURN_ACT> BroydenJacobianEstimator::GetAngles()
+{
+  Vecf64 <N_TURN_ACT> angles;
+  for (s32 i = 0; i < N_TURN_ACT; i++)
+    angles(i) = m_J.Col(i).angle() * 180.0 / PI;
+  return angles;
+}
+
+Vecf64<N_TURN_ACT> BroydenJacobianEstimator::GetStrengths()
+{
+  Vecf64 <N_TURN_ACT> mags;
+  for (s32 i = 0; i < N_TURN_ACT; i++)
+    mags(i) = m_J.Col(i).magnitude();
+  return mags;
+}
+///////////////////////////////////////////////////////
+/// END BroydenJacobianEstimator
 ///////////////////////////////////////////////////////
