@@ -74,7 +74,8 @@ namespace Nf
 		void HWButtonPushed();
 		void UpdateText(QString text);
 		void UpdatePressures(QVector < double > values); 
-		void UpdateExtensions(double e1, double e2, double t);
+		void UpdateExtensions(QVector < double > values);
+		void UpdateConstants(QVector < double > values);
 
   public:
     VineWidget(QWidget *parent, const char *name = "Vine Robot Widget");
@@ -118,7 +119,8 @@ namespace Nf
 signals:
 		void textUpdate(QString text);
 		void pressureUpdate(QVector < double > values);
-		void extensionUpdate(double e1, double e2, double t);
+		void extensionUpdate(QVector < double > values);
+		void constantsUpdate(QVector < double > values);
 
 	protected:
 		char *m_data;

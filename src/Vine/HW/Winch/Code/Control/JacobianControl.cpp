@@ -496,8 +496,8 @@ Matrixf64<2, N_TURN_ACT> formJacobian(Vecf64<N_TURN_ACT + 1> x, Vecf64<N_TURN_AC
 /// BEGIN EKFJacobianEstimator
 ///////////////////////////////////////////////////////
 #define STRENGTH_VAR 400
-#define THETA_VAR 0.01
-#define MEASUREMENT_VAR 400
+#define THETA_VAR 1
+#define MEASUREMENT_VAR 5
 #define INIT_VAR 0.01
 
 EKFJacobianEstimator::EKFJacobianEstimator()
@@ -567,7 +567,7 @@ void EKFJacobianEstimator::Initialize(const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT
 Matrixf64<2, N_TURN_ACT> EKFJacobianEstimator::Update(const Vecf64<2> &z)
 {
   if (m_dqLast(0) > -10)
-    return Update(z, m_dqLast);
+    return Update(z, m_dqLast, 0);
 
   return formJacobian(m_x, m_deltaTheta);
 }
@@ -575,7 +575,7 @@ Matrixf64<2, N_TURN_ACT> EKFJacobianEstimator::Update(const Vecf64<2> &z)
 Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> &z) 
 {
   if (m_dqLast(0) > -10)
-    return UpdateState(z, m_dqLast); 
+    return UpdateState(z, m_dqLast, 0); 
 
   return m_x;
 }
@@ -588,20 +588,16 @@ Matrixf64<2, N_TURN_ACT> EKFJacobianEstimator::UpdateDeadReckoning(const Vecf64<
   return formJacobian(m_x, m_deltaTheta);
 }
 
-Matrixf64<2, N_TURN_ACT> EKFJacobianEstimator::Update(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq)
+Matrixf64<2, N_TURN_ACT> EKFJacobianEstimator::Update(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq, f64 dtheta)
 {
-  UpdateState(z, dq);
+  UpdateState(z, dq, dtheta);
   return formJacobian(m_x, m_deltaTheta);
 }
 
-void EKFJacobianEstimator::IncrementTheta(f64 dtheta)
+Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq, f64 dtheta)
 {
-  return;
-}
-
-Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq)
-{
-  Vecf64<N_TURN_ACT + 1> xtbar = m_x;
+  Vecf64 <N_TURN_ACT+1> saved = m_x;
+  Vecf64<N_TURN_ACT + 1> xtbar = m_x; xtbar(N_TURN_ACT) += dtheta;
   Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> Etbar;
   Etbar = m_E + m_R;
 
@@ -622,6 +618,10 @@ Vecf64<N_TURN_ACT + 1> EKFJacobianEstimator::UpdateState(const Vecf64<2> &z, con
   m_x = xtbar + Kt*(z - hxtbar);
   m_x(N_TURN_ACT) = fmod(m_x(N_TURN_ACT), 2 * PI);
   m_E = (Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1>::Identity() - Kt*Ht)*Etbar;
+
+  for (s32 i = 0; i < N_TURN_ACT; i++) {
+    m_x(i) = saved(i);
+  }
   return m_x;
 }
 ///////////////////////////////////////////////////////
@@ -756,6 +756,9 @@ BroydenJacobianEstimator::BroydenJacobianEstimator()
 void BroydenJacobianEstimator::Initialize(const Matrixf64<2, N_TURN_ACT> &J)
 {
   m_J = J;
+  for (s32 i = 0; i < N_TURN_ACT; i++) {
+    m_strengths(i) = J.Col(i).magnitude();
+  }
 }
 
 Matrixf64<2, N_TURN_ACT> BroydenJacobianEstimator::Update(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq)
@@ -767,7 +770,11 @@ Matrixf64<2, N_TURN_ACT> BroydenJacobianEstimator::Update(const Vecf64<2> z, con
   Matrixf64<2, 1> ddd;
   for (s32 i = 0; i < 2; i++)
     ddd(i, 0) = dzmjq(i);
-  m_J = m_J + (ddd*dqt) * (m_nabla / dq.magnitudeSquared());
+  Matrixf64<2,N_TURN_ACT> J = m_J + (ddd*dqt) * (m_nabla / dq.magnitudeSquared());
+  for (s32 i = 0; i < N_TURN_ACT; i++)
+    J.SetCol(i, J.Col(i)*(m_strengths(i) / J.Col(i).magnitude()));
+  m_J = J;
+
   return m_J;
 }
 
@@ -787,11 +794,12 @@ Vecf64<N_TURN_ACT> BroydenJacobianEstimator::GetStrengths()
   return mags;
 }
 
-void BroydenJacobianEstimator::IncrementTheta(f64 dtheta)
+Matrixf64<2, N_TURN_ACT> BroydenJacobianEstimator::IncrementTheta(f64 dtheta)
 {
   Matrixf64<2, 2> rot(cos(dtheta), -sin(dtheta), sin(dtheta), cos(dtheta));
   for (s32 i = 0; i < N_TURN_ACT; i++)
     m_J.SetCol(i, rot*m_J.Col(i));
+  return m_J;
 }
 ///////////////////////////////////////////////////////
 /// END BroydenJacobianEstimator

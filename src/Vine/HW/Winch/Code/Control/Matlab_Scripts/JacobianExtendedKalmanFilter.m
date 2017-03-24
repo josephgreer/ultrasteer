@@ -1,3 +1,4 @@
+
 % state xt = [s_1,...,s_n,nActuators,theta0]
 function [xt, Et] = JacobianExtendedKalmanFilter(zt, xt1, dq, Et1, R, Q, nActuators, deltaTheta)
 % propagate state
@@ -17,6 +18,7 @@ Ht(2,end) = cosSin(1,:)*(s.*dq);
 hxtbar = FormJacobian(xtbar,deltaTheta,nActuators)*dq;
 Kt = Etbar*Ht.'*inv(Ht*Etbar*Ht.'+Q);
 xt = xtbar+Kt*(zt-hxtbar);
+% xt(1:nActuators) = xt1(1:nActuators);
 xt(end) = wrapToPi(xt(end));
 Et = (eye(size(Etbar))-Kt*Ht)*Etbar;
 end

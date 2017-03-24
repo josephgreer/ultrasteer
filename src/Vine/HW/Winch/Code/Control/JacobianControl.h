@@ -155,15 +155,15 @@ public:
   virtual void Initialize(const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &E, const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths);
   virtual void Initialize(const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &R, const Matrixf64<2, 2> &Q, const Matrixf64<N_TURN_ACT + 1, N_TURN_ACT + 1> &E, const Vecf64<N_TURN_ACT> &thetas, const Vecf64<N_TURN_ACT> strengths);
 
-  virtual void IncrementTheta(f64 dtheta);
   virtual void SetDq(const Vecf64<N_TURN_ACT> &dq) { m_dqLast = dq; }
   virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> &z);
   virtual Vecf64<N_TURN_ACT + 1> UpdateState(const Vecf64<2> &z);
-  virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq);
-  virtual Vecf64<N_TURN_ACT+1> UpdateState(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq);
+  virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq, f64 dtheta);
+  virtual Vecf64<N_TURN_ACT+1> UpdateState(const Vecf64<2> &z, const Vecf64<N_TURN_ACT> &dq, f64 dtheta);
   Vecf64<N_TURN_ACT+1> GetState() { return m_x; }
   Matrixf64<2, N_TURN_ACT> UpdateDeadReckoning(const Vecf64<2> &z, s32 i);
   Vecf64<N_TURN_ACT> GetAngles() { return (m_deltaTheta + m_x(N_TURN_ACT))*(180.0 / PI); }
+  Vecf64<N_TURN_ACT> GetStrengths() { Vecf64<N_TURN_ACT> res; for (s32 i = 0; i < N_TURN_ACT; i++) { res(i) = m_x(i); } return res; }
 
   void PrintState();
 };
@@ -211,6 +211,7 @@ class BroydenJacobianEstimator
 protected:
   Matrixf64<2,N_TURN_ACT> m_J;
   f64 m_nabla;
+  Vecf64<N_TURN_ACT> m_strengths;
 
 public:
   BroydenJacobianEstimator();
@@ -219,7 +220,7 @@ public:
 
   virtual void Initialize(const Matrixf64<2, N_TURN_ACT> &J);
 
-  virtual void IncrementTheta(f64 dtheta);
+  virtual Matrixf64<2,N_TURN_ACT> IncrementTheta(f64 dtheta);
 
   virtual Matrixf64<2, N_TURN_ACT> Update(const Vecf64<2> z, const Vecf64<N_TURN_ACT> dq);
   Vecf64<N_TURN_ACT> GetAngles();

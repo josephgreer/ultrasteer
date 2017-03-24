@@ -2,14 +2,14 @@ clear; clc; close all;
 
 addpath('../cvxgen/');
 
-rng(10);
+rng(35);
 
 nActuators = 3;                                                              % number of turning actuators
 deltaThetas = mod(2*pi/3*[0:2],2*pi).';                                      % spacing between turning actuators
 theta0 = 0;                                                                  % angle of first actuator
 nPoints = 100;                                                               % number of time-steps for simulation
 saveQs = false;                                                              % whether or not to save q-vals for test
-loadQs = false;                                                              % whether or not to load q-vals for test
+loadQs = true;                                                              % whether or not to load q-vals for test
 strengthMean = 6;                                                          % mean strength
 strengthSigma = 0.5;                                                           % strength standard deviation
 measurementSigma = strengthMean*0.05;                                        % measurement noise variance
@@ -83,7 +83,7 @@ for i=1:nPoints
     [J,~] = FormJacobian(xact,deltaThetas,nActuators);
     
     % find the dq to best achieve delta_x_desired
-    dq = BVLS(Jest,delta_x_desired,-q,1-q);
+    dq = BVLS(J,delta_x_desired,-q,1-q);
     q = q+dq; 
     if(~all(0 <= q & q <= 1))
         yep = 0;
@@ -95,7 +95,7 @@ for i=1:nPoints
     % update the robot
     pos = pos+delta_x_actual;
     
-    %pause(1);
+%     pause(1);
     if(saveQs)
         qsave = [qsave q];
     end

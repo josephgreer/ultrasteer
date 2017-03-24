@@ -10,17 +10,17 @@ typedef unsigned long u32;
 typedef int s32;
 
 // Pin Declares
-int pwmAPin = 5;  
-int dirAPin = 8;  
-int encoderPinA = 2;
-int encoderPinB = 3; 
+int pwmPins[2] = { 5,6 };
+int dirPins[2] = { 8,7 };
+int encoderPinAs[2] = { 2,4 };
+int encoderPinBs = { 3,9 };
 int pressurePin = 9;
 
 s32 ledPins[2] = {13,12};
 bool ledPinsOn[2] = {false,false};
 
 // Program Scope Variables
-Encoder encoder(encoderPinA, encoderPinB);
+Encoder encoders[2] = { Encoder(encoderPinAs[0], encoderPinBs[0]), Encoder(encoderPinAs[1],encoderPinBs[1]) };
 f64 countPerRev = 1024;
 int counter = 0; 
 
@@ -68,16 +68,16 @@ enum CONTROL_MODE {
   CM_NONE = 3,
 };
 
-f64 errorLast = 0;
-u8 dirLast = 0;
+f64 errorLasts[2] = {0,0};
+u8 dirLast[2] = {0,0};
 u32 lastTime = 0;
-f64 desPos = 0;
-f64 desVel = 0;
-f64 desPres = 0;
+f64 desPoss[2] = {0,0};
+f64 desVels[2] = {0,0};
+f64 desPres[2] = {0,0};
 u32 count = 0;
-f64 integralError = 0;
-f64 lastPos = 0;
-f64 lastVel = 0;
+f64 integralErrors[2] = {0,0};
+f64 lastPoss[2] = {0,0};
+f64 lastVels[2] = {0,0};
 
 // Position Constants
 f64 Kpp = 0.08;

@@ -7,6 +7,9 @@
 #include <math.h>
 #include <Servo.h>
 #include "JacobianControl.h"
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
 //#define SLA_SERIAL
 
 // Pin Declares
@@ -27,6 +30,11 @@ BroydenJacobianEstimator je = BroydenJacobianEstimator();
 bool setJacobian = false;
 
 s32 pressurePin = 3;
+
+#define BNO
+#ifdef BNO
+Adafruit_BNO055 bno = Adafruit_BNO055(55);
+#endif
 
 #ifdef SLA_SERIAL
 int slaSerialPinRx = 2;
@@ -209,7 +217,7 @@ f64 totalRestTimeOnTheFly = 0.5;
 
 s32 outputCount = 0;
 
-#define CALIB_AMNT 0.1
+#define CALIB_AMNT 0.15
 
 f64 calibAmntsOnTheFly[N_TURN_ACT] = { 0.2, 0.11, 0.2 };
 
@@ -223,11 +231,13 @@ f64 trackMax = 0;
 f64 trackMaxTime = 0;
 f64 trackMaxTimeTotal = 3;
 f64 rotationAngle = 0; 
+f64 dthetaSave = 0;
 MaxFilter maxDisplacementFilter;
 f64 averageDisplacement = 0;
 f64 averageDisplacementAlpha = 0.9;
 Vecf64<2> u_ol(0, 0);
 Vecf64<3> dqCalib;
+bool outputKp = false;
 
 STEERING_CONTROL_MODE primaryControl = SCM_NOTHING;
 
@@ -332,6 +342,7 @@ void controlSteering()
         JJ.Print("JJ");
 
         je.Initialize(JJ);
+        rotationAngle = 0;
       }
       calibStartTrackPos = trackPos;
       if (currCalibAct >= 0)
@@ -350,10 +361,10 @@ void controlSteering()
     primaryControl = SCM_POS;
     calibTime += dt;
 
-    if (calibTime >= timeBetweenOnTheFlyCalibrations && averageDisplacement < 2) {
-      steeringControlMode = SCM_CALIBRATE_ON_THE_FLY_INIT;
-      calibTime = 0;
-    }
+    //if (calibTime >= timeBetweenOnTheFlyCalibrations && averageDisplacement < 2) {
+    //  steeringControlMode = SCM_CALIBRATE_ON_THE_FLY_INIT;
+    //  calibTime = 0;
+    //}
 
     //je.PrintState();
     if (trackPos.x == -1.0 && trackPos.y == -1.0) {
@@ -361,7 +372,7 @@ void controlSteering()
       break;
     }
     Vecf64<2> error = desTrackPos - trackPos;
-    lowPassError = error * 1 + lowPassError*0.0;
+    lowPassError = error * 1 + lowPassError*0;
     Vecf64<2> derror = (lowPassError - errorLastTrack)*(1.0 / dt);
     errorLastTrack = lowPassError;
 
@@ -374,10 +385,9 @@ void controlSteering()
       calibTime = 0;
     }
 
-    f64 steeringKdpAlpha = 1;// trackWarmupCount > 0 ? 1 : 0;// trackWarmupCount / (f64)(TRACK_WARMUP_COUNT_MAX);
     trackWarmupCount = CLAMP(trackWarmupCount + 1, 0, TRACK_WARMUP_COUNT_MAX);
     Vecf64<2> proportional = error*steeringKpp;
-    Vecf64<2> deriv = derror*steeringKdp*steeringKdpAlpha;
+    Vecf64<2> deriv = derror*steeringKdp;
     Vecf64<2> integral = integralErrorTrack*steeringKip;
 
     if (trackPosChanged)
@@ -529,20 +539,23 @@ void controlSteering()
         delta = (trackPos - calibStartTrackPos);
       else
         delta = (scenePos - calibStartTrackPos);
+
+      if (delta.magnitude() > 0.75) {
 #if 1
-      delta = delta*(aveTimePerLoop / totalCalibTimeOnTheFly);
-      JJ = je.Update(delta, dqCalib);
+        delta = delta*(aveTimePerLoop / totalCalibTimeOnTheFly);
+        //JJ = je.Update(delta, dqCalib);
 #else
 #if 0
-      delta = delta*(aveTimePerLoop / totalCalibTimeOnTheFly);
-      Vecf64<N_TURN_ACT> dq;
-      dq(currCalibAct) = calibAmntsOnTheFly[currCalibAct];
-      JJ = je.UpdateDeadReckoning(delta, currCalibAct);
+        delta = delta*(aveTimePerLoop / totalCalibTimeOnTheFly);
+        Vecf64<N_TURN_ACT> dq;
+        dq(currCalibAct) = calibAmntsOnTheFly[currCalibAct];
+        JJ = je.UpdateDeadReckoning(delta, currCalibAct);
 #else
-      delta = delta*(aveTimePerLoop / totalCalibTimeOnTheFly)*(1.0 / calibAmntsOnTheFly[currCalibAct]);
-      JJ.SetCol(currCalibAct, delta);
+        delta = delta*(aveTimePerLoop / totalCalibTimeOnTheFly)*(1.0 / calibAmntsOnTheFly[currCalibAct]);
+        JJ.SetCol(currCalibAct, delta);
 #endif
 #endif
+      }
       calibTime = 0;
       for (s32 i = 0; i < N_TURN_ACT; i++)
         pressureSetPoints[i] = savedPressureSetPoints[i];
@@ -638,6 +651,12 @@ void controlSteering()
   f64 deltaMag = delta.magnitude();
   maxDisplacementFilter.AddNewValue(deltaMag);
   averageDisplacement = averageDisplacement*averageDisplacementAlpha + deltaMag*(1 - averageDisplacementAlpha);
+  if (outputKp) {
+    for (s32 i = 0; i < 15; i++) {
+      Serial.println("K " + String(steeringKpp, 6) + ", " + String(steeringKdp, 6) + ";");
+    }
+  }
+  outputKp = false;
 }
 
 f64 errorLastPosMotor = 0;
@@ -833,11 +852,27 @@ void loop()
     f64 maxMag = maxDisplacementFilter.GetMaxValue();
     for (s32 i = 0; i < N_TURN_ACT; i++)
       currPressures[i] = analogRead(pressureSensorPins[i]) / 1024.0;
-    Serial.println("P " + String(pressureLowPassError[0], 5) + ", " + String(pressureLowPassError[1], 5) + ", " + String(pressureLowPassError[2], 5) + ", " + String(1 / (g_totTime / count), 6) + ", " + String(trackPos.x) + ", " + String(trackPos.y) + ", " + String(trackConf)
-      + ", " + String(angles(0),6) + ", " + String(angles(1), 6) + ", " + String(angles(2), 6)
-      + ", " + String(mags(0), 6) + ", " + String(mags(1),6) + ", " + String(mags(2),6) + ";");
+    //Serial.println("P " + String(pressureLowPassError[0], 5) + ", " + String(pressureLowPassError[1], 5) + ", " + String(pressureLowPassError[2], 5) + ", " + String(1 / (g_totTime / count), 6) + ", " + String(trackPos.x) + ", " + String(trackPos.y) + ", " + String(trackConf)
+    //  + ", " + String(angles(0),6) + ", " + String(angles(1), 6) + ", " + String(angles(2), 6)
+    //  + ", " + String(mags(0), 6) + ", " + String(mags(1),6) + ", " + String(rotationAngle,6) + ";");
     g_totTime = 0;
     count = 0;
+
+
+#ifdef BNO
+    sensors_event_t event;
+    imu::Vector<3u> gravity = bno.getVector(Adafruit_BNO055::adafruit_vector_type_t::VECTOR_GRAVITY);
+    Vecf64<3> grav; grav(0) = gravity.x(); grav(1) = gravity.y(); grav(2) = gravity.z();
+    grav.Print("Gravity");
+    bno.getEvent(&event);
+    //Serial.print(F("Orientation: "));
+    //Serial.print((float)event.orientation.x);
+    //Serial.print(F(" "));
+    //Serial.print((float)event.orientation.y);
+    //Serial.print(F(" "));
+    //Serial.print((float)event.orientation.z);
+    //Serial.println(F(""));
+#endif
   }
 
   //SERIAL HANDLER
@@ -993,8 +1028,10 @@ void handleSerial(const s8 *input, s32 nBytes)
     else if (input[2] == 'h') {
       steeringControlMode = SCM_NOTHING;
       mode = "none";
-      for (s32 jj = 0; jj < N_TURN_ACT; jj++)
+      for (s32 jj = 0; jj < N_TURN_ACT; jj++) {
         pressureSetPoints[jj] = 0;
+        savedPressureSetPoints[jj] = 0;
+      }
 
       resetTracking();
     }
@@ -1030,6 +1067,27 @@ void handleSerial(const s8 *input, s32 nBytes)
     }
     if (input[2] == 'c' || input[2] == 'p' || input[2] == 'n' || input[2] == 'j' || input[2] == 'g' || input[2] == 'h')
       Serial.println("Setting steering control mode " + mode);
+    break;
+  }
+  case 'i':
+  {
+    if (input[2] != 'r') {
+      f64 mul = 0;
+      if (input[2] == 'i') {
+        mul = 1.1;
+      }
+      else {
+        mul = 1 / 1.1;
+      }
+
+      if (input[3] == 'k')
+        steeringKpp *= mul;
+      else
+        steeringKdp *= mul;
+    }
+
+    outputKp = true;
+
     break;
   }
   case 'q':  // decrement set point. interpretation depends on mode
@@ -1223,7 +1281,11 @@ void handleSlaSerial(const u8 *input, s32 nBytes)
   invalidPos = false;
   f64 dtheta = sceneRot7 / 128.0;
   rotationAngle = rotationAngle + dtheta;
-  je.IncrementTheta(PI*dtheta / 180.0);
+  dtheta = dtheta*PI / 180.0;
+  Matrixf64<2, 2> rot(cos(dtheta), -sin(dtheta), sin(dtheta), cos(dtheta));
+  for (s32 i = 0; i < N_TURN_ACT; i++)
+    JJ.SetCol(i, rot*JJ.Col(i));
+  //JJ = je.IncrementTheta(PI*dtheta / 180.0);
 
   if ((serialCount++ % TRACE_COUNT_TRACKS) == 0 && printOutTracks) {
     u32 currTime = millis();
@@ -1232,6 +1294,24 @@ void handleSlaSerial(const u8 *input, s32 nBytes)
     serialCount = 1;
   }
 }
+
+#ifdef BNO
+void displaySensorDetails(void)
+{
+  sensor_t sensor;
+  bno.getSensor(&sensor);
+  Serial.println("------------------------------------");
+  Serial.print("Sensor:       "); Serial.println(sensor.name);
+  Serial.print("Driver Ver:   "); Serial.println(sensor.version);
+  Serial.print("Unique ID:    "); Serial.println(sensor.sensor_id);
+  Serial.print("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" xxx");
+  Serial.print("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" xxx");
+  Serial.print("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" xxx");
+  Serial.println("------------------------------------");
+  Serial.println("");
+  delay(500);
+}
+#endif
 
 // --------------------------
 // Initialize
@@ -1260,6 +1340,21 @@ void setup()
 #else
   Serial1.begin(57600);
   Serial1.setTimeout(5);
+#endif
+
+#ifdef BNO
+  if (!bno.begin())
+  {
+    /* There was a problem detecting the BNO055 ... check your connections */
+    Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+    while (1);
+  }
+
+  /* Use external crystal for better accuracy */
+  bno.setExtCrystalUse(true);
+
+  /* Display some basic information on this sensor */
+  displaySensorDetails();
 #endif
 
   // Output Pins
@@ -1310,6 +1405,8 @@ void setup()
     delay(1000);
   }
 #endif
+
+  Serial.println("K " + String(steeringKpp, 6) + ", " + String(steeringKdp, 6) + ";");
 
 
   // Init Timer and Set Haptic Loop
