@@ -10,17 +10,17 @@ typedef unsigned long u32;
 typedef int s32;
 
 // Pin Declares
-int pwmPins[2] = { 5,6 };
-int dirPins[2] = { 8,7 };
-int encoderPinAs[2] = { 2,4 };
-int encoderPinBs = { 3,9 };
+int pwmAPin = 5;  
+int dirAPin = 8;  
+int encoderPinA = 2;
+int encoderPinB = 3; 
 int pressurePin = 9;
 
 s32 ledPins[2] = {13,12};
 bool ledPinsOn[2] = {false,false};
 
 // Program Scope Variables
-Encoder encoders[2] = { Encoder(encoderPinAs[0], encoderPinBs[0]), Encoder(encoderPinAs[1],encoderPinBs[1]) };
+Encoder encoder(encoderPinA, encoderPinB);
 f64 countPerRev = 1024;
 int counter = 0; 
 
@@ -68,16 +68,16 @@ enum CONTROL_MODE {
   CM_NONE = 3,
 };
 
-f64 errorLasts[2] = {0,0};
-u8 dirLast[2] = {0,0};
+f64 errorLast = 0;
+u8 dirLast = 0;
 u32 lastTime = 0;
-f64 desPoss[2] = {0,0};
-f64 desVels[2] = {0,0};
-f64 desPres[2] = {0,0};
+f64 desPos = 0;
+f64 desVel = 0;
+f64 desPres = 0;
 u32 count = 0;
-f64 integralErrors[2] = {0,0};
-f64 lastPoss[2] = {0,0};
-f64 lastVels[2] = {0,0};
+f64 integralError = 0;
+f64 lastPos = 0;
+f64 lastVel = 0;
 
 // Position Constants
 f64 Kpp = 0.08;
@@ -110,7 +110,7 @@ f64 badDt = 0;
 
 f64 lowPassDesVel = 0;
 f64 alpha = 0.995;
-f64 alphaPos = 0.2;
+f64 alphaPos = 0.05;
 
 void loop() 
 {
@@ -407,7 +407,24 @@ void serialEvent()
         integralError = 0;
         lastVel = 0;
 
+        controlMode = CM_NONE;
+  
+        analogWrite(pwmAPin, 0);
+
         Serial.println("Pause");
+        break;
+      }
+      case 's':
+      case 'S':
+      {
+        lowPassDesVel = desVel = integralError = 0;
+        errorLast = 0;
+        desPos = lastPos;
+        integralError = 0;
+        lastVel = 0;
+  
+        if(controlMode == CM_NONE)
+          controlMode = CM_POS;
         break;
       }
       case 't':
@@ -422,12 +439,21 @@ void serialEvent()
         Serial.println("Turning " + mm);
         break;
       }
+      case 'v':
+      case 'V':
+      {
+        f64 vel = atof(&input[2]);
+        SetVel(vel);
+        break;
+      }
       case 'y':
       case 'Y':
       {
-        minTension = atof(&input[2]);
+        if(input[2] == 'i')
+          minTension = min(255,minTension+20);
+        else
+          minTension = max(0,minTension-20);
 
-        
         Serial.println("Setting min tension to " + String(minTension));
         break;
       }

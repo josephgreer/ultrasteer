@@ -188,6 +188,8 @@ public:
 
 ActuatorCalibration actuatorCalibs[N_TURN_ACT];
 Matrixf64<2,N_TURN_ACT> JJ;
+Matrixf64<2, N_TURN_ACT> JJBase;
+Matrixf64<2, N_TURN_ACT > JJBaseUnscaled;
 
 #define TRACK_WARMUP_COUNT_MAX 10
 
@@ -217,7 +219,7 @@ f64 totalRestTimeOnTheFly = 0.5;
 
 s32 outputCount = 0;
 
-#define CALIB_AMNT 0.15
+#define CALIB_AMNT 0.25
 
 f64 calibAmntsOnTheFly[N_TURN_ACT] = { 0.2, 0.11, 0.2 };
 
@@ -231,6 +233,8 @@ f64 trackMax = 0;
 f64 trackMaxTime = 0;
 f64 trackMaxTimeTotal = 3;
 f64 rotationAngle = 0; 
+f64 baseRotation = 1e6;
+f64 rotationAngle2 = 1e6;
 f64 dthetaSave = 0;
 MaxFilter maxDisplacementFilter;
 f64 averageDisplacement = 0;
@@ -339,10 +343,13 @@ void controlSteering()
         for (s32 ii = 0; ii < N_TURN_ACT; ii++)
           offsets[ii] = actuatorCalibs[ii].offset;
         JJ = Matrixf64<2, N_TURN_ACT>::FromCols(offsets);
+        JJBase = JJ;
+        JJBaseUnscaled = JJ;
         JJ.Print("JJ");
 
         je.Initialize(JJ);
         rotationAngle = 0;
+        baseRotation = 1e4;
       }
       calibStartTrackPos = trackPos;
       if (currCalibAct >= 0)
@@ -852,27 +859,11 @@ void loop()
     f64 maxMag = maxDisplacementFilter.GetMaxValue();
     for (s32 i = 0; i < N_TURN_ACT; i++)
       currPressures[i] = analogRead(pressureSensorPins[i]) / 1024.0;
-    //Serial.println("P " + String(pressureLowPassError[0], 5) + ", " + String(pressureLowPassError[1], 5) + ", " + String(pressureLowPassError[2], 5) + ", " + String(1 / (g_totTime / count), 6) + ", " + String(trackPos.x) + ", " + String(trackPos.y) + ", " + String(trackConf)
-    //  + ", " + String(angles(0),6) + ", " + String(angles(1), 6) + ", " + String(angles(2), 6)
-    //  + ", " + String(mags(0), 6) + ", " + String(mags(1),6) + ", " + String(rotationAngle,6) + ";");
+    Serial.println("P " + String(pressureLowPassError[0], 5) + ", " + String(pressureLowPassError[1], 5) + ", " + String(pressureLowPassError[2], 5) + ", " + String(1 / (g_totTime / count), 6) + ", " + String(trackPos.x) + ", " + String(trackPos.y) + ", " + String(trackConf)
+      + ", " + String(angles(0),6) + ", " + String(angles(1), 6) + ", " + String(angles(2), 6)
+      + ", " + String(mags(0), 6) + ", " + String(baseRotation*180.0/PI,6) + ", " + String(rotationAngle,6) + ";");
     g_totTime = 0;
     count = 0;
-
-
-#ifdef BNO
-    sensors_event_t event;
-    imu::Vector<3u> gravity = bno.getVector(Adafruit_BNO055::adafruit_vector_type_t::VECTOR_GRAVITY);
-    Vecf64<3> grav; grav(0) = gravity.x(); grav(1) = gravity.y(); grav(2) = gravity.z();
-    grav.Print("Gravity");
-    bno.getEvent(&event);
-    //Serial.print(F("Orientation: "));
-    //Serial.print((float)event.orientation.x);
-    //Serial.print(F(" "));
-    //Serial.print((float)event.orientation.y);
-    //Serial.print(F(" "));
-    //Serial.print((float)event.orientation.z);
-    //Serial.println(F(""));
-#endif
   }
 
   //SERIAL HANDLER
@@ -891,8 +882,8 @@ void loop()
     memset(input, 0, nBytes);
   }
 #else
-  if (Serial1.available()) {
-    nBytes = Serial1.readBytes(input, BUFFER_LEN);
+  if (Serial2.available()) {
+    nBytes = Serial2.readBytes(input, BUFFER_LEN);
     handleSlaSerial((u8 *)input, nBytes);
     memset(input, 0, nBytes);
   }
@@ -1067,6 +1058,18 @@ void handleSerial(const s8 *input, s32 nBytes)
     }
     if (input[2] == 'c' || input[2] == 'p' || input[2] == 'n' || input[2] == 'j' || input[2] == 'g' || input[2] == 'h')
       Serial.println("Setting steering control mode " + mode);
+    break;
+  }
+  case 't':
+  case 'T':
+  {
+    if (input[2] == 'c') {
+      for (s32 cc = 0; cc < N_TURN_ACT; cc++) {
+        JJBase.SetCol(cc, JJBaseUnscaled.Col(cc)*10.0);
+      }
+    } else {
+      JJBase = JJBaseUnscaled;
+    }
     break;
   }
   case 'i':
@@ -1252,6 +1255,7 @@ void handleSerial(const s8 *input, s32 nBytes)
 String output;
 u32 serialCount = 0;
 u32 lastTimeTracks = 0;
+s32 g_checkCount = 0;
 void handleSlaSerial(const u8 *input, s32 nBytes)
 {
 #if 0
@@ -1279,13 +1283,33 @@ void handleSlaSerial(const u8 *input, s32 nBytes)
   scenePos = Vecf64<2>((f64)sceneCol8/256.0, (f64)sceneRow8/256.0);
   trackConf = input[16];
   invalidPos = false;
-  f64 dtheta = sceneRot7 / 128.0;
-  rotationAngle = rotationAngle + dtheta;
-  dtheta = dtheta*PI / 180.0;
-  Matrixf64<2, 2> rot(cos(dtheta), -sin(dtheta), sin(dtheta), cos(dtheta));
+  rotationAngle = rotationAngle + sceneRot7 / 128.0;
+
+#if 0
+  f64 dtheta = sceneRot7/120.80*(PI / 180.0);
+#endif
+
+#ifdef BNO
+  if ((g_checkCount++ % 3) == 0) {
+    imu::Vector<3u> gravity = bno.getVector(Adafruit_BNO055::adafruit_vector_type_t::VECTOR_GRAVITY);
+    Vecf64<3> grav; grav(0) = gravity.x(); grav(1) = gravity.y(); grav(2) = gravity.z();
+    f64 theta = atan2(grav(1), grav(0));
+
+
+    if (baseRotation < 1e4) {
+      baseRotation = fmod((theta - rotationAngle2), 2 * PI);
+    }
+    else {
+      rotationAngle2 = theta;
+      baseRotation = 0;
+    }
+
+  Matrixf64<2, 2> rot(cos(baseRotation), -sin(baseRotation), sin(baseRotation), cos(baseRotation));
   for (s32 i = 0; i < N_TURN_ACT; i++)
-    JJ.SetCol(i, rot*JJ.Col(i));
+    JJ.SetCol(i, rot*JJBase.Col(i));
   //JJ = je.IncrementTheta(PI*dtheta / 180.0);
+  }
+#endif
 
   if ((serialCount++ % TRACE_COUNT_TRACKS) == 0 && printOutTracks) {
     u32 currTime = millis();
@@ -1338,8 +1362,8 @@ void setup()
   slaSerial.begin(57600);
   slaSerial.setTimeout(1);
 #else
-  Serial1.begin(57600);
-  Serial1.setTimeout(5);
+  Serial2.begin(57600);
+  Serial2.setTimeout(5);
 #endif
 
 #ifdef BNO

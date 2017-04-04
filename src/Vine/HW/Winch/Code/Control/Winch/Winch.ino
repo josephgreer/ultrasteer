@@ -110,14 +110,16 @@ void loop()
   f64 poss[2] = { 0 };
   f64 vels[2] = { 0 };
   f64 dt = (f64)(currTime - lastTime) / (1000.0);
+
+  if (currTime == lastTime) {
+    Serial.println("WTF");
+    delay(500);
+    return;
+  }
+  
   for (s32 i = 0; i < 2; i++) {
     poss[i] = encoders[i].read();
     f64 u;
-
-    if (currTime == lastTime) {
-      Serial.println("WTF");
-      return;
-    }
 
     f64 error, derror;
 
@@ -191,7 +193,7 @@ void loop()
       analogWrite(pwmPins[i], u);
     }
   }
-  if (count++ % 10 == 0)
+  if (count++ % 1000 == 0)
     Serial.println("E " + String(poss[0], 5) + ", " + String(vels[0]) + ", " + String(poss[1],5) + ", " + String(vels[1],5) + ";");
   lastTime = currTime;
 
@@ -336,10 +338,32 @@ void serialEvent()
       controlModes[motor] = CM_NONE;
       break;
     }
-    case 'p':   //Pause
-    case 'P':
+    case 'r':
+    case 'R': // reel in camera
     {
-      u8 motor = atoi(&input[2]);
+//      u8 motor = 0;
+//      lowPassDesVels[motor] = desVels[motor] = integralErrors[motor] = 0;
+//      errorLasts[motor] = 0;
+//      desPoss[motor] = lastPoss[motor];
+//      integralErrors[motor] = 0;
+//      lastVels[motor] = 0;
+//
+//      controlModes[motor] = CM_NONE;
+
+//      analogWrite(pwmPins[motor], 0);
+
+      SetVel(0,0);
+      SetMode(CM_VEL, 0);
+
+      SetMode(CM_VEL, 1);
+      SetVel(20, 1);
+      
+      break;
+    }
+    case 'l':
+    case 'L':    // Let out
+    {
+      u8 motor = 1;
       lowPassDesVels[motor] = desVels[motor] = integralErrors[motor] = 0;
       errorLasts[motor] = 0;
       desPoss[motor] = lastPoss[motor];
@@ -350,21 +374,68 @@ void serialEvent()
 
       analogWrite(pwmPins[motor], 0);
 
+      SetMode(CM_THROTTLE, 0);
+      SetVel(-20, 0);
+      
+      break;
+    }
+    case 'p':   //Pause
+    case 'P':
+    {
+      s32 motors[2] = {-1, -1};
+      u8 mm = atoi(&input[2]);
+      if(mm == 2) {
+        motors[0] = 0;
+        motors[1] = 1;
+      } else {
+        motors[0] = mm;
+      }
+
+      s32 motor = -1;
+      for(s32 i=0; i<2; i++) {
+        motor = motors[i];
+        if(motor < 0 || motor > 1)
+          continue;
+        lowPassDesVels[motor] = desVels[motor] = integralErrors[motor] = 0;
+        errorLasts[motor] = 0;
+        desPoss[motor] = lastPoss[motor];
+        integralErrors[motor] = 0;
+        lastVels[motor] = 0;
+  
+        controlModes[motor] = CM_NONE;
+  
+        analogWrite(pwmPins[motor], 0);
+      }
+
       Serial.println("Pause");
       break;
     }
-    case 's':   //Pause
+    case 's':   //Stop
     case 'S':
     {
-      u8 motor = atoi(&input[2]);
-      lowPassDesVels[motor] = desVels[motor] = integralErrors[motor] = 0;
-      errorLasts[motor] = 0;
-      desPoss[motor] = lastPoss[motor];
-      integralErrors[motor] = 0;
-      lastVels[motor] = 0;
+      s32 motors[2] = {-1, -1};
+      u8 mm = atoi(&input[2]);
+      if(mm == 2) {
+        motors[0] = 0;
+        motors[1] = 1;
+      } else {
+        motors[0] = mm;
+      }
 
-      if(controlModes[motor] == CM_NONE)
-        controlModes[motor] = CM_POS;
+      s32 motor = -1;
+      for(s32 i=0; i<2; i++) {
+        motor = motors[i];
+        if(motor < 0 || motor > 1)
+          continue;
+        lowPassDesVels[motor] = desVels[motor] = integralErrors[motor] = 0;
+        errorLasts[motor] = 0;
+        desPoss[motor] = lastPoss[motor];
+        integralErrors[motor] = 0;
+        lastVels[motor] = 0;
+  
+        if(controlModes[motor] == CM_NONE)
+          controlModes[motor] = CM_POS;
+      }
 
       Serial.println("Stop");
       break;
