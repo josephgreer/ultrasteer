@@ -13,7 +13,7 @@ using namespace cv;
 
 TEST(Webcam, Vine)
 {
-	VideoCapture cap(1);
+	VideoCapture cap("udp://@:5004");
 	if(!cap.isOpened()) {
 		int x = 0;
 	}
@@ -28,4 +28,12 @@ TEST(Webcam, Vine)
 		if(waitKey(10) >= 0) break;
 		END_TIMING(MAIN_LOOP,100);
 	}
+}
+
+TEST(Webcam, MJPEG)
+{
+	CvCapture* capture = 0;
+	capture = cvCaptureFromFile("udp://@:5004/?dummy=param.mjpg");
+
+	s32 x = 0;
 }
