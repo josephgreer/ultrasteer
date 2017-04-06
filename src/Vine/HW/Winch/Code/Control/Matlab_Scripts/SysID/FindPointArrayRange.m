@@ -1,5 +1,5 @@
 function range = FindPointArrayRange(xs,pad)
-if(isempty(pad))
+if(~exist('pad'))
     pad = 250;
 end
 xrange = [1e6 -1e6]; yrange = xrange; zrange = xrange;
