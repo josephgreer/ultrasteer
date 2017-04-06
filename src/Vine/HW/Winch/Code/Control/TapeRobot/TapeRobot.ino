@@ -15,9 +15,8 @@ int dirAPin = 8;
 int encoderPinA = 2;
 int encoderPinB = 3; 
 int pressurePin = 9;
-
-s32 ledPins[2] = {13,12};
-bool ledPinsOn[2] = {false,false};
+int solenoidPin1 = 12;
+int solenoidPin2 = 13;
 
 // Program Scope Variables
 Encoder encoder(encoderPinA, encoderPinB);
@@ -30,7 +29,7 @@ int counter = 0;
 void setup() 
 {
   // Set Up Serial
-  Serial.begin(57600);
+  Serial.begin(115200);
   Serial.setTimeout(15);
   
   // Set PWM frequency 
@@ -40,13 +39,16 @@ void setup()
   pinMode(pwmAPin, OUTPUT);  // PWM for A
   pinMode(dirAPin, OUTPUT);  // dir for A
 
+  pinMode(solenoidPin1, OUTPUT);
+  pinMode(solenoidPin2, OUTPUT);
+
+  digitalWrite(solenoidPin1, LOW);
+  digitalWrite(solenoidPin2, LOW);
+
   pinMode(encoderPinA, INPUT);
   pinMode(encoderPinB, INPUT);
 
   pinMode(pressurePin, OUTPUT);
-
-  pinMode(ledPins[0], OUTPUT);
-  pinMode(ledPins[1], OUTPUT);
   
   // Init Motor 
   analogWrite(pwmAPin, 0);     // set to not be spinning (0/255)
@@ -81,36 +83,19 @@ f64 lastVel = 0;
 
 // Position Constants
 f64 Kpp = 0.08;
-f64 Kdp = 0.008;
+f64 Kdp = 0;
 f64 Kip = 0.00005;
 
 // Velocity Constants
 f64 Kpv = 1;
-f64 Kdv = 0.1;
+f64 Kdv = 0;
 f64 Kiv = 0.01;
-
-f64 minTension = 0;
 
 CONTROL_MODE controlMode = CM_POS;
 
 u8 unwindDir = 1;
 
-//encoder tick of first actuator
-f64 firstAct = 11000;
-f64 actSpacing = 23000;
-f64 popFudgeFactor = 300;
-u8 currAct = 0;
-u8 bad = 0;
-
-f64 badVel = 0;
-f64 badPos = 0;
-f64 badLastPos = 0;
-f64 badLastVel = 0;
-f64 badDt = 0;
-
 f64 lowPassDesVel = 0;
-f64 alpha = 0.995;
-f64 alphaPos = 0.05;
 
 void loop() 
 {
@@ -119,33 +104,12 @@ void loop()
   f64 dt = (f64)(currTime-lastTime)/(1000.0);
   f64 u;
   f64 vel;
-
-  if(currTime == lastTime) {
-    Serial.println("WTF");
-    return;
-  }
-  lastTime = currTime;
   
   f64 error, derror;
 
-  handlePopState(pos);
+  lowPassDesVel = lowPassDesVel*0.9999+(1-0.9999)*desVel;
 
-  lowPassDesVel = lowPassDesVel*alpha+(1-alpha)*desVel;
-
-  vel = alphaPos*(pos-lastPos)/dt + (1-alphaPos)*lastVel;
-  if(isnan(vel) || isinf(vel) || bad) {
-    analogWrite(pressurePin, 0);
-    if(!bad) {
-      badVel = vel;
-      badPos = pos;
-      badLastPos = lastPos;
-      badDt = dt;
-      badLastVel = lastVel;
-    }
-    Serial.println("vel= " + String(badVel) + " pos= " +String(badPos) + " lastPos= " + String(badLastPos) + " dt= " + String(badDt,10));
-    bad = 1;
-    return;
-  }
+  vel = 0.2*(pos-lastPos)/dt + 0.8*lastVel;
   if(controlMode == CM_POS) {
     error = desPos-pos;
   } else {
@@ -157,6 +121,7 @@ void loop()
     
   errorLast = error;
   derror /= dt;
+  lastTime = currTime;
   lastPos = pos;
 
   s8 dir = 0;
@@ -164,7 +129,7 @@ void loop()
   switch(controlMode) {
     case CM_POS:
     {
-      u = Kpp*error + -Kdp*vel + Kip*integralError;
+      u = Kpp*error + Kdp*derror + Kip*integralError;
   
       if(u < 0) {
         dir = 1;
@@ -175,7 +140,7 @@ void loop()
     }
     case CM_VEL:
     {
-      u = Kpv*error - Kdv*vel + Kiv*integralError;
+      u = Kpv*error + Kdv*derror + Kiv*integralError;
   
       if(u < 0) {
         dir = 1;
@@ -188,8 +153,8 @@ void loop()
     {
       u = Kpv*error + Kdv*derror + Kiv*integralError;
   
-      if(u < minTension) {
-        u = minTension;
+      if(u < 0) {
+        u = 0;
         integralError = 0;
         derror = 0;
         dir = 1-unwindDir;
@@ -204,13 +169,8 @@ void loop()
       digitalWrite(dirAPin, dir);
       dirLast = dir;
     }
-//    if(count % 499 == 0)
-//      Serial.println("act " + String(currAct+1));
-//    if(count++ % 2000 == 0) 
-//      Serial.println("Des Pos " +  String(desPos) + " Pos " + String(pos) + " DesVel " + String(desVel) + " Vel " + String(vel) + " Pressure " + String(desPres) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
-    if(count++ % 10 == 0)
-      Serial.println("E " + String(pos,5) + ", " + String(vel) + ";");
-      
+    if(count++ % 2000 == 0) 
+      Serial.println("Des Pos " +  String(desPos) + " Pos " + String(pos) + " DesVel " + String(desVel) + " Vel " + String(vel) + " Pressure " + String(desPres) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
     analogWrite(pwmAPin, u);
   }
 
@@ -218,20 +178,16 @@ void loop()
 
 void SetVel(f64 vel)
 {
-  Serial.println("Set vel " + String(vel,6));
   if(abs(vel) < abs(desVel))
     lowPassDesVel = vel;
   desVel = vel; 
 }
 
-u32 zeroPoint = 0;
-
 f64 unwindSign = -1;
-f64 popVel = -500;
-f64 nonPopVel = -500;
+f64 popVel = -30;
+f64 nonPopVel = -150;
 f64 popPressure = 1;
-f64 nonPopPressure = 0.55;
-f64 firstPressure = 0.55;
+f64 nonPopPressure = 0.4;
 
 u8 defaultPop = true;
 
@@ -244,42 +200,6 @@ void SetMode(u8 mode)
   desPos = lastPos;
   integralError = 0;
   lastVel = 0;
-}
-
-bool isPop = false;
-void SetPop(bool pop)
-{
-  if(controlMode == CM_THROTTLE) {
-    desPres = pop ? popPressure : nonPopPressure;
-    if(currAct == 0)
-      desPres = firstPressure;
-    s32 amount = (s32)(255.0*(desPres));
-    analogWrite(pressurePin, amount);
-    desVel = pop ? popVel : nonPopVel;
-    if(abs(desVel) < abs(lowPassDesVel))
-      lowPassDesVel = desVel;
-
-    digitalWrite(ledPins[1], pop ? HIGH : LOW);
-
-    isPop = pop;  
-  }
-}
-
-u8 numPops = 0;
-bool pops[8] = {false, false, true, false, false, true, false, false};
-void handlePopState(f64 encoderTick)
-{
-  if(controlMode == CM_THROTTLE && unwindSign*(encoderTick-zeroPoint) > (firstAct+currAct*actSpacing+numPops*popFudgeFactor)) {
-    currAct = currAct+1;
-
-    Serial.println("act " + String(currAct+1));
-    if(isPop)
-      numPops++;
-    digitalWrite(ledPins[0], ledPinsOn[0] ? LOW : HIGH);
-    ledPinsOn[0] = !ledPinsOn[0];
-//    SetPop(pops[currAct]);
-//    SetPop(false);
-  }
 }
 
 #define BUFFER_LEN 20
@@ -334,12 +254,18 @@ void serialEvent()
         Serial.println("Incrementing " + String(increment));
         break;
       }
-      case 'b':
-      case 'B':
+      case 's':
+      case 'S':
       {
-        s32 num = atoi(input+2)-1;
-        digitalWrite(ledPins[num],ledPinsOn[num] ? LOW : HIGH);
-        ledPinsOn[num] = !ledPinsOn[num];
+        s32 solenoid = atoi(&input[2]);
+        s32 amount = atoi(&input[4]);
+        s32 pinn = solenoid == 1 ? solenoidPin1 : solenoidPin2;
+        
+        if(amount > 0)
+          digitalWrite(pinn, HIGH);
+        else
+          digitalWrite(pinn, LOW);
+          
         break;
       }
       case 'K':   //set Kp/Kd/Ki
@@ -407,62 +333,7 @@ void serialEvent()
         integralError = 0;
         lastVel = 0;
 
-        controlMode = CM_NONE;
-  
-        analogWrite(pwmAPin, 0);
-
         Serial.println("Pause");
-        break;
-      }
-      case 's':
-      case 'S':
-      {
-        lowPassDesVel = desVel = integralError = 0;
-        errorLast = 0;
-        desPos = lastPos;
-        integralError = 0;
-        lastVel = 0;
-  
-        if(controlMode == CM_NONE)
-          controlMode = CM_POS;
-        break;
-      }
-      case 't':
-      case 'T':
-      {
-        Serial.println("Setting mode to throttle");
-        SetMode(CM_THROTTLE);
-
-        bool turn = input[2] == 'y';
-        String mm = turn ? "on" : "off";
-        SetPop(!turn);
-        Serial.println("Turning " + mm);
-        break;
-      }
-      case 'v':
-      case 'V':
-      {
-        f64 vel = atof(&input[2]);
-        SetVel(vel);
-        break;
-      }
-      case 'y':
-      case 'Y':
-      {
-        if(input[2] == 'i')
-          minTension = min(255,minTension+20);
-        else
-          minTension = max(0,minTension-20);
-
-        Serial.println("Setting min tension to " + String(minTension));
-        break;
-      }
-      case 'z':
-      case 'Z':
-      {
-        zeroPoint = encoder.read();
-        Serial.println("Zero point = " + String(zeroPoint));
-        currAct = 0;
         break;
       }
       default:
