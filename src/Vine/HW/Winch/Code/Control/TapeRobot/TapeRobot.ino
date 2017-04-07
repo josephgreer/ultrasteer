@@ -2,12 +2,14 @@
 #include <TimerOne.h>
 #include <Encoder.h>
 #include <math.h>
+#include <SoftwareSerial.h>
 
 typedef double f64;
 typedef char s8;
 typedef unsigned char u8;
 typedef unsigned long u32;
 typedef int s32;
+typedef short s16;
 
 // Pin Declares
 int pwmAPin = 5;  
@@ -17,11 +19,15 @@ int encoderPinB = 3;
 int pressurePin = 9;
 int solenoidPin1 = 12;
 int solenoidPin2 = 13;
+int slaSerialRx = 10;
+int slaSerialTx = 11;
 
 // Program Scope Variables
 Encoder encoder(encoderPinA, encoderPinB);
 f64 countPerRev = 1024;
 int counter = 0; 
+
+SoftwareSerial slaSerial(slaSerialRx, slaSerialTx);
 
 // --------------------------
 // Initialize
@@ -29,7 +35,10 @@ int counter = 0;
 void setup() 
 {
   // Set Up Serial
-  Serial.begin(115200);
+  Serial.begin(57600);
+  Serial.setTimeout(15);
+
+  slaSerial.begin(57600);
   Serial.setTimeout(15);
   
   // Set PWM frequency 
@@ -106,6 +115,10 @@ void loop()
   f64 vel;
   
   f64 error, derror;
+
+  if(slaSerial.available() > 0) {
+    handleSlaSerial();
+  } 
 
   lowPassDesVel = lowPassDesVel*0.9999+(1-0.9999)*desVel;
 
@@ -202,9 +215,37 @@ void SetMode(u8 mode)
   lastVel = 0;
 }
 
-#define BUFFER_LEN 20
-s8 input[BUFFER_LEN] = {0};
+#define BUFFER_LEN 100
+u8 input[BUFFER_LEN] = {0};
 s32 nBytes = 0;
+u32 trackCount = 0;
+
+void handleSlaSerial()
+{
+  nBytes = slaSerial.readBytes(input, BUFFER_LEN);
+#if 0
+  char printStr[100] = { 0 };
+  s8 *strPtr = printStr;
+  for (s32 i = 0; i < nBytes; i++) {
+    strPtr += sprintf(strPtr, "%02X ", input[i]);
+  }
+  if(trackCount++ % 30 == 0)
+    Serial.println(String(printStr) + " Length " + String(nBytes));
+#endif
+
+  if (input[0] != 0x51 || input[1] != 0xAC || input[3] != 0x43)
+    return;
+  int trackRow = (s16)input[6] + ((s16)input[7] << 8);
+  int trackCol = (s16)input[4] + ((s16)input[5] << 8);
+
+  s32 sceneRow8 = (input[10]<<8) + (input[11] << 16) + (input[23]);
+  s32 sceneCol8 = (input[8]<<8) + (input[9] << 16) + (input[22]);
+
+  s16 sceneRot7 = (s16)input[24] | ((s16)(input[25] << 8));
+
+  if(trackCount++ % 30 == 0)
+    Serial.println("track Row " + String(trackRow) + " track Col " + String(trackCol));
+}
 
 void serialEvent() 
 {
@@ -234,7 +275,7 @@ void serialEvent()
       }
       case 'q':  // decrement set point. interpretation depends on mode
       {
-        f64 decrement = atof(input+2);
+        f64 decrement = atof((char *)input+2);
         if(controlMode == CM_POS)
           desPos -= decrement;
         else
@@ -245,7 +286,7 @@ void serialEvent()
       }
       case 'w':   // increment set point. interpretation depends on mode
       {
-        f64 increment = atof(input+2);
+        f64 increment = atof((char *)input+2);
         if(controlMode == CM_POS)
           desPos += increment ;
         else
@@ -257,8 +298,8 @@ void serialEvent()
       case 's':
       case 'S':
       {
-        s32 solenoid = atoi(&input[2]);
-        s32 amount = atoi(&input[4]);
+        s32 solenoid = atoi((char *)&input[2]);
+        s32 amount = atoi((char *)&input[4]);
         s32 pinn = solenoid == 1 ? solenoidPin1 : solenoidPin2;
         
         if(amount > 0)
@@ -281,7 +322,7 @@ void serialEvent()
           Kd = &Kdp;
           Ki = &Kip;
         }
-        f64 val = atof(input+3);
+        f64 val = atof((char *)input+3);
         if(input[1] == 'p') {
           *Kp = val;
           Serial.println("Set Kp to " + String(val));
@@ -298,11 +339,11 @@ void serialEvent()
       case 'L':
       {
         if(input[2] == 'i') {
-          desPres = min(max(atof(&input[4])+desPres,0),1);
+          desPres = min(max(atof((char *)&input[4])+desPres,0),1);
         } else if(input[2] == 'd') {
-          desPres = min(max(desPres-atof(&input[4]),0),1);
+          desPres = min(max(desPres-atof((char *)&input[4]),0),1);
         } else {
-          desPres = min(max(atof(&input[2]),0),1);
+          desPres = min(max(atof((char *)&input[2]),0),1);
         }
         s32 amount = (s32)(desPres*255.0);
 
@@ -313,8 +354,8 @@ void serialEvent()
       case 'a':
       case 'A':
       {
-        u8 dir = atoi(&input[2]);
-        f64 amnt = atof(&input[4]);
+        u8 dir = atoi((char *)&input[2]);
+        f64 amnt = atof((char *)&input[4]);
 
         s32 amount = (s32)(amnt*255.0);
 
