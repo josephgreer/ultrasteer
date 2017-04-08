@@ -1,0 +1,6 @@
+0
+first non-zero freq 0.05
+freq step 0.03
+maxFreq 2
+activeTime 20
+delayTime 3
