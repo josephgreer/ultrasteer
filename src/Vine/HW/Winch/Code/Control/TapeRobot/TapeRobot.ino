@@ -126,11 +126,12 @@ f64 rotation = 0;
 #define DEADBAND 50
 bool steeringEnabled = false;
 unsigned int g_count = 0;
+f64 totalTime = 0;
 void controlSteering(f64 dt)
 {
+  u8 us[2] = {HIGH,HIGH}; 
+  Vecf64<2> currTrackPos(-1,-1);
   if(steeringEnabled) {
-    u8 us[2] = {HIGH,HIGH}; 
-    Vecf64<2> currTrackPos(-1,-1);
     if(trackPos.x > 0 && trackPos.y > 0) {
       f64 theta = rotation*PI/180.0;
       Matrixf64<2, 2> rot(cos(theta), -sin(theta), sin(theta), cos(theta));
@@ -149,9 +150,14 @@ void controlSteering(f64 dt)
     digitalWrite(solenoidPinLeft, us[0]);
     digitalWrite(solenoidPinRight, us[1]);
     lastTrackPos = currTrackPos;
-    if(g_count++ % 10 == 0)
-      Serial.println(String(millis()) + " " + String(us[0]) + " " + String(us[1]) + " " + String(currTrackPos.x) + " " + String(currTrackPos.y) + " " + String(rotation,6));
   }
+  if(g_count++ % 1000)
+    Serial.println(String(currPressureSetPoint, 5) + " " + String(desVel, 6) + " " + String(lastVel,6)); 
+//  if(totalTime > 0.1) {
+//    Serial.println("P " + String(millis()) + ", " + String(us[0]) + ", " + String(us[1]) + ", " + String(currTrackPos.x) + ", " + String(currTrackPos.y) + ", " + String(rotation,6) + ", " + 
+//    String(lastPos,6) + ", " + String(lastVel,6) + ", " + String(currPressureSetPoint,6) + ", " + String(globalPressureSetPoint,6) + ";");
+//    totalTime = 0;
+//  }
 }
 
 void controlMotors(f64 dt)
@@ -207,12 +213,15 @@ void controlMotors(f64 dt)
       u = Kpv*error + Kdv*derror + Kiv*integralError;
   
       if(u < 0) {
-        currPressureSetPoint = currPressureSetPoint + u*motorToPressureConstant;
+        currPressureSetPoint = globalPressureSetPoint + abs(u)*motorToPressureConstant;
         currPressureSetPoint = min(currPressureSetPoint,255);
+        if(currPressureSetPoint >= 255) {
+          integralError -= error;
+        }
         analogWrite(pressurePin, currPressureSetPoint);
-        integralError = 0;
-        derror = 0;
+        u = 0;
         dir = 1-unwindDir;
+        derror = 0;
       } else {
         currPressureSetPoint = currPressureSetPoint*(1-pressureDecayRate)+(globalPressureSetPoint-currPressureSetPoint)*pressureDecayRate;
         u = min(u, 255);
@@ -226,8 +235,8 @@ void controlMotors(f64 dt)
       digitalWrite(dirAPin, dir);
       dirLast = dir;
     }
-    if(count++ % 2000 == 0) 
-      Serial.println("Des Pos " +  String(desPos) + " Pos " + String(pos) + " DesVel " + String(desVel) + " Vel " + String(vel) + " Pressure " + String(desPres) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
+//    if(count++ % 2000 == 0) 
+//      Serial.println("Des Pos " +  String(desPos) + " Pos " + String(pos) + " DesVel " + String(desVel) + " Vel " + String(vel) + " Pressure " + String(desPres) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
     analogWrite(pwmAPin, u);
   }
 }
@@ -309,6 +318,13 @@ void serialEvent()
         }
         String("Steering enabled " + String(steeringEnabled));
         rotation = 0;
+        break;
+      }
+      case 'v':
+      case 'V':
+      {
+        f64 vel = atof((char *)&input[2]);
+        SetVel(vel);
         break;
       }
       case 'm':   // switch mode 

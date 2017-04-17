@@ -107,7 +107,7 @@ namespace Nf
 	{
 		QString text;
 
-		m_tapeWidget->ui.actuatorAngle_1->display(text.sprintf("%.3d",values[0]));
+		m_tapeWidget->ui.actuatorAngle_1->display(text.sprintf("%.3f",values[0]));
 		m_tapeWidget->ui.actuatorAngle_2->display(text.sprintf("%.3f",values[1]));
 		m_tapeWidget->ui.track_x->display(text.sprintf("%.3f",values[2]));
 		m_tapeWidget->ui.track_y->display(values[3]);
@@ -383,8 +383,9 @@ namespace Nf
 					f32 cameraRotation = 0;
 					f32 motorPos = 0; f32 motorVel = 0;
 					f32 pressures[2] = {0};
-					if(sscanf(&cdata[jj], "P %f, %f, %f, %f, %f, %f, %f, %f, %f, %f%n", &us[0], &us[1], &trackPos[0], &trackPos[1],
-						&cameraRotation, &motorPos, &motorVel, &pressures[0], &pressures[1], &pos) == 9 && cdata[jj+pos] == ';') {
+					f32 time;
+					if(sscanf(&cdata[jj], "P %f, %f, %f, %f, %f, %f, %f, %f, %f, %f%n", &time, &us[0], &us[1], &trackPos[0], &trackPos[1],
+						&cameraRotation, &motorPos, &motorVel, &pressures[0], &pressures[1], &pos) == 10 && cdata[jj+pos] == ';') {
 							QVector < f64 > values(10); 
 							values[0] = us[0]; values[1] = us[1];
 							values[2] = trackPos[0]; values[3] = trackPos[1]; 
