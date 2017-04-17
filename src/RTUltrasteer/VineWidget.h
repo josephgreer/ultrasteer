@@ -48,12 +48,12 @@ namespace Nf
 
   protected:
     std::tr1::shared_ptr < TapeRobotWidget > m_tapeWidget;
-		std::tr1::shared_ptr < CircularBuffer > m_serialBuffers[3];
+		std::tr1::shared_ptr < CircularBuffer > m_serialBuffer;
     QGridLayout *m_layout;
 		
     bool eventFilter(QObject *obj, QEvent *event);
 
-		std::tr1::shared_ptr < Nf::Vec3iParameter > m_comPorts;
+		std::tr1::shared_ptr < Nf::IntParameter > m_comPort;
 		std::tr1::shared_ptr < Nf::BoolParameter > m_serialInit;
 
 		CLASS_CALLBACK(InitSerial, VineWidget);
@@ -61,10 +61,9 @@ namespace Nf
 		
 		std::tr1::shared_ptr < SerialReceiveThread > m_serialThread;
 
-		std::tr1::shared_ptr < CSerial > m_serials[3];
+		std::tr1::shared_ptr < CSerial > m_serial;
 
 		f64 m_mainPressure;
-		f64 m_actuatorPressures[3];
 
 
 	signals:
@@ -73,9 +72,7 @@ namespace Nf
 	public slots:
 		void HWButtonPushed();
 		void UpdateText(QString text);
-		void UpdatePressures(QVector < double > values); 
-		void UpdateExtensions(QVector < double > values, int port);
-		void UpdateConstants(QVector < double > values);
+		void UpdatePressures(QVector < double > values);
 
   public:
     VineWidget(QWidget *parent, const char *name = "Vine Robot Widget");

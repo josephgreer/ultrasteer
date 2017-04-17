@@ -22,14 +22,10 @@ namespace Nf
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
   {
 		m_tapeWidget = std::tr1::shared_ptr<TapeRobotWidget>(new TapeRobotWidget(parent));
-		for(s32 i=0; i<3; i++) {
-			m_serials[i] = std::tr1::shared_ptr<CSerial>(new CSerial());
-			m_serialBuffers[i] = std::tr1::shared_ptr<CircularBuffer>(new CircularBuffer());
-		}
+		m_serial = std::tr1::shared_ptr<CSerial>(new CSerial());
+		m_serialBuffer = std::tr1::shared_ptr<CircularBuffer>(new CircularBuffer());
 
 		m_mainPressure = 0;
-		for(s32 i=0; i<3; i++)
-			m_actuatorPressures[i] = 0;
 
     m_layout = new QGridLayout(parent);
     m_layout->addWidget((QWidget *)(m_tapeWidget.get()), 0, 0);
@@ -85,10 +81,8 @@ namespace Nf
 
 		connect(m_serialThread.get(), SIGNAL(textUpdate(QString)), this, SLOT(UpdateText(QString)));
 		connect(m_serialThread.get(), SIGNAL(pressureUpdate(QVector < double >)), this, SLOT(UpdatePressures(QVector < double >)));
-		connect(m_serialThread.get(), SIGNAL(extensionUpdate(QVector < double >,int)), this, SLOT(UpdateExtensions(QVector < double >,int)));
-		connect(m_serialThread.get(), SIGNAL(constantsUpdate(QVector < double >)), this, SLOT(UpdateConstants(QVector < double >)));
 
-		ADD_VEC3I_PARAMETER(m_comPorts, "Com Ports", CALLBACK_POINTER(InitSerial, VineWidget), this, Vec3i(6,3,8), Vec3i(1,1,1), Vec3i(20,20,20), Vec3i(1,1,1));
+		ADD_INT_PARAMETER(m_comPort, "Com Port", CALLBACK_POINTER(InitSerial, VineWidget), this, 6, 1, 20, 1);
 		ADD_BOOL_PARAMETER(m_serialInit, "Init Serial", CALLBACK_POINTER(InitSerial, VineWidget), this, false);
   }
 
@@ -112,77 +106,30 @@ namespace Nf
 	void VineWidget::UpdatePressures(QVector < f64 > values)
 	{
 		QString text;
-		m_tapeWidget->ui.regulatorAmount_1->display(text.sprintf("%.3f",values[0]));
-		m_tapeWidget->ui.regulatorAmount_2->display(text.sprintf("%.3f",values[1]));
-		m_tapeWidget->ui.regulatorAmount_3->display(text.sprintf("%.3f",values[2]));
-		m_tapeWidget->ui.steeringBoardRate->display(values[3]);
-		m_tapeWidget->ui.track_x->display(values[4]);
-		m_tapeWidget->ui.track_y->display(values[5]);
-		m_tapeWidget->ui.track_c->display(values[6]);
-		m_tapeWidget->ui.regVert_1->setSliderPosition(SLIDER_POS(values[0]));
-		m_tapeWidget->ui.regVert_2->setSliderPosition(SLIDER_POS(values[1]));
-		m_tapeWidget->ui.regVert_3->setSliderPosition(SLIDER_POS(values[2]));
 
-		m_tapeWidget->ui.actuatorAngle_1->display(text.sprintf("%.3f",values[7]));
-		m_tapeWidget->ui.actuatorAngle_2->display(text.sprintf("%.3f",values[8]));
-		m_tapeWidget->ui.actuatorAngle_3->display(text.sprintf("%.3f",values[9]));
-		
-		m_tapeWidget->ui.visionData_1->display(text.sprintf("%.3f",values[10]));
-		m_tapeWidget->ui.visionData_2->display(text.sprintf("%.3f",values[11]));
-		m_tapeWidget->ui.visionData_3->display(text.sprintf("%.3f",values[12]));
-	}
-
-	void VineWidget::UpdateConstants(QVector < double > values)
-	{
-		QString text;
-		m_tapeWidget->ui.kpAmount->display(text.sprintf("%f",values[0]));
-		m_tapeWidget->ui.kdAmount->display(text.sprintf("%f",values[1]));
-	}
-
-	void VineWidget::UpdateExtensions(QVector < double > values, int port)
-	{
-		if(port == 0) {
-			m_tapeWidget->ui.extensionAmount->display(values[0]);
-			m_tapeWidget->ui.extensionVel->display(values[1]);
-		} else {
-			m_tapeWidget->ui.extensionAmount_2->display(values[0]);
-			m_tapeWidget->ui.extensionVel_2->display(values[1]);
-		}
+		m_tapeWidget->ui.actuatorAngle_1->display(text.sprintf("%.3d",values[0]));
+		m_tapeWidget->ui.actuatorAngle_2->display(text.sprintf("%.3f",values[1]));
+		m_tapeWidget->ui.track_x->display(text.sprintf("%.3f",values[2]));
+		m_tapeWidget->ui.track_y->display(values[3]);
+		m_tapeWidget->ui.track_c->display(values[4]);
+		m_tapeWidget->ui.extensionAmount->display(values[5]);
+		m_tapeWidget->ui.extensionVel->display(values[6]);
+		m_tapeWidget->ui.extensionAmount_2->display(values[7]);
+		m_tapeWidget->ui.extensionVel_2->display(values[8]);
 	}
 
 
 	bool VineWidget::eventFilter(QObject *obj, QEvent *event)
 	{
-		if (event->type() == QEvent::KeyPress) {
-			QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
-			if(!m_serials[0]->IsOpened() || !m_serials[1]->IsOpened()) {
-				return true;
-			}
-			if(keyEvent->key() == Qt::Key::Key_Up) {
-				const char *str = "d u\n";
-				this->m_serials[1]->SendData(str, strlen(str));
-			} else if(keyEvent->key() == Qt::Key::Key_Down) {
-				const char *str = "d d\n";
-				this->m_serials[1]->SendData(str, strlen(str));
-			} else if(keyEvent->key() == Qt::Key::Key_Left) {
-				const char *str = "d l\n";
-				this->m_serials[1]->SendData(str, strlen(str));
-			} else if(keyEvent->key() == Qt::Key::Key_Right) {
-				const char *str = "d r\n";
-				this->m_serials[1]->SendData(str, strlen(str));
-			} 
-			return true;
-		} else {
-			// standard event processing
-			return QObject::eventFilter(obj, event);
-		}
+		// standard event processing
+		return QObject::eventFilter(obj, event);
 	}
 
 	void VineWidget::HWButtonPushed()
 	{
 		QPushButton *button = (QPushButton *)sender();
 
-		if(!m_serials[0]->IsOpened() || !m_serials[1]->IsOpened()) {
+		if(!m_serial->IsOpened()) {
 			NTrace("Serial is not opened\n");
 			return;
 		}
@@ -190,166 +137,37 @@ namespace Nf
 		std::string command;
 		if(button == m_tapeWidget->ui.posMode) {
 			const char *str = "m p\n";
-			this->m_serials[0]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.posMode_2) {
-			const char *str = "m p\n";
-			this->m_serials[2]->SendData(str, strlen(str));
+			this->m_serial->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.velMode){
 			const char *str = "m v\n";
-			this->m_serials[0]->SendData(str, strlen(str));
-		}  else if(button == m_tapeWidget->ui.velMode_2){
-			const char *str = "m v\n";
-			this->m_serials[2]->SendData(str, strlen(str));
+			this->m_serial->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.throttleMode) {
 			const char *str = "m t\n";
-			this->m_serials[0]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.throttleMode_2) {
-			const char *str = "m t\n";
-			this->m_serials[2]->SendData(str, strlen(str));
+			this->m_serial->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.increment) {
 			char str[20] = {0}; strcpy(str, "w ");
 			strcat(str, m_tapeWidget->ui.incValue->text().toStdString().c_str());
 			strcat(str, "\n");
-			this->m_serials[0]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.increment_2) {
-			char str[20] = {0}; strcpy(str, "w ");
-			strcat(str, m_tapeWidget->ui.incValue->text().toStdString().c_str());
-			strcat(str, "\n");
-			this->m_serials[2]->SendData(str, strlen(str));
+			this->m_serial->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.decrement) {
 			char str[20] = {0}; strcpy(str, "q ");
 			strcat(str, m_tapeWidget->ui.decValue->text().toStdString().c_str());
 			strcat(str, "\n");
-			this->m_serials[0]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.decrement_2) {
-			char str[20] = {0}; strcpy(str, "q ");
-			strcat(str, m_tapeWidget->ui.decValue->text().toStdString().c_str());
-			strcat(str, "\n");
-			this->m_serials[2]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.pause) {
-			const char *str = "p\n";
-			this->m_serials[0]->SendData(str, strlen(str));
-			std::string cmd = "c n\n";
-			this->m_serials[1]->SendData(cmd.c_str(), cmd.length());
-		} else if(button == m_tapeWidget->ui.pause_2) {
-			const char *str = "p\n";
-			this->m_serials[2]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.pause_3) {
-			const char *str = "p\n";
-			this->m_serials[0]->SendData(str, strlen(str));
-			this->m_serials[2]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.stop) {
-			const char *str = "s\n";
-			this->m_serials[0]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.stop_2) {
-			const char *str = "s\n";
-			this->m_serials[2]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.stop_3) {
-			const char *str = "s\n";
-			this->m_serials[0]->SendData(str, strlen(str));
-			this->m_serials[2]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.reelInCamera) {
-			const char *str = "s\n";
-			this->m_serials[0]->SendData(str, strlen(str));
-			std::string cmd = "m v\n";
-			this->m_serials[2]->SendData(cmd.c_str(), cmd.length());
-			cmd = "v 20\n";
-			this->m_serials[2]->SendData(cmd.c_str(), cmd.length());
-			cmd = "e 0.1\n";
-			this->m_serials[1]->SendData(cmd.c_str(), cmd.length());
-		} else if(button == m_tapeWidget->ui.grow) {
-			std::string cmd = "m t\n";
-			this->m_serials[0]->SendData(cmd.c_str(), cmd.length());
-			cmd = "v -20\n";
-			this->m_serials[0]->SendData(cmd.c_str(), cmd.length());
-			cmd = "p\n";
-			this->m_serials[2]->SendData(cmd.c_str(), cmd.length());
-			cmd = "e 0.3\n";
-			this->m_serials[1]->SendData(cmd.c_str(), cmd.length());
-		} else if(button == m_tapeWidget->ui.regInc_1) {
-			m_actuatorPressures[1-1] += atof(m_tapeWidget->ui.regIncAmount_1->text().toStdString().c_str());
-			command = "l 1 " + std::to_string((long double)m_actuatorPressures[1-1]) + "\n";
-			this->m_serials[1]->SendData(command.c_str(), command.length());
-		} else if(button == m_tapeWidget->ui.normalSteering) {
-			command = "t h\n";
-			this->m_serials[1]->SendData(command.c_str(), command.length());
-		} else if(button == m_tapeWidget->ui.closeSteering) {
-			command = "t c\n";
-			this->m_serials[1]->SendData(command.c_str(), command.length());
-		} else if(button == m_tapeWidget->ui.regInc_2) {
-			m_actuatorPressures[2-1] += atof(m_tapeWidget->ui.regIncAmount_2->text().toStdString().c_str());
-			command = "l 2 " + std::to_string((long double)m_actuatorPressures[2-1]) + "\n";
-			this->m_serials[1]->SendData(command.c_str(), command.length());
-		} else if(button == m_tapeWidget->ui.regInc_3) {
-			m_actuatorPressures[3-1] += atof(m_tapeWidget->ui.regIncAmount_3->text().toStdString().c_str());
-			command = "l 3 " + std::to_string((long double)m_actuatorPressures[3-1]) + "\n";
-			this->m_serials[1]->SendData(command.c_str(), command.length());
-		} else if(button == m_tapeWidget->ui.regDec_1) {
-			m_actuatorPressures[1-1] -= atof(m_tapeWidget->ui.regIncAmount_1->text().toStdString().c_str());
-			command = "l 1 " + std::to_string((long double)m_actuatorPressures[1-1]) + "\n";
-			this->m_serials[1]->SendData(command.c_str(), command.length());
-		} else if(button == m_tapeWidget->ui.regDec_2) {
-			m_actuatorPressures[2-1] -= atof(m_tapeWidget->ui.regIncAmount_2->text().toStdString().c_str());
-			command = "l 2 " + std::to_string((long double)m_actuatorPressures[2-1]) + "\n";
-			this->m_serials[1]->SendData(command.c_str(), command.length());
-		} else if(button == m_tapeWidget->ui.regDec_3) {
-			m_actuatorPressures[3-1] -= atof(m_tapeWidget->ui.regIncAmount_3->text().toStdString().c_str());
-			command = "l 3 " + std::to_string((long double)m_actuatorPressures[3-1]) + "\n";
-			this->m_serials[1]->SendData(command.c_str(), command.length());
-		} else if(button == m_tapeWidget->ui.beginSteering) {
-			const char *str = "c p\n";
-			this->m_serials[1]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.openLoopSteering) {
-			const char *str = "c o\n";
-			this->m_serials[1]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.pauseSteering) {
-			const char *str = "c n\n";
-			this->m_serials[1]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.straighten) {
-			const char *str = "c h\n";
-			this->m_serials[1]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.calibrateJacobian) {
-			const char *str = "c c\n";
-			this->m_serials[1]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.posIntermittent) {
-			const char *str = "c u\n";
-			this->m_serials[1]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.kpUp) {
-			const char *str = "i ik\n";
-			this->m_serials[1]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.kpDown) {
-			const char *str = "i dk\n";
-			this->m_serials[1]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.kdUp) {
-			const char *str = "i id\n";
-			this->m_serials[1]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.kdDown) {
-			const char *str = "i dd\n";
-			this->m_serials[1]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.requestKp) {
-			const char *str = "i r\n";
-			this->m_serials[1]->SendData(str, strlen(str));
+			this->m_serial->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.incrementPressure) {
 			m_mainPressure += atof(m_tapeWidget->ui.incPressureValue->text().toStdString().c_str());
 			m_mainPressure = MAX(MIN(m_mainPressure,1),0);
-			char str[20] = {0}; strcpy(str, "e ");
+			char str[20] = {0}; strcpy(str, "l ");
 			strcat(str, std::to_string((long double)m_mainPressure).c_str());
-			this->m_serials[1]->SendData(str, strlen(str));
+			this->m_serial->SendData(str, strlen(str));
 		} else if(button == m_tapeWidget->ui.decPressure) {
 			m_mainPressure -= atof(m_tapeWidget->ui.incPressureValue->text().toStdString().c_str());
 			m_mainPressure = MAX(MIN(m_mainPressure,1),0);
-			char str[20] = {0}; strcpy(str, "e ");
+			char str[20] = {0}; strcpy(str, "l ");
 			strcat(str, std::to_string((long double)m_mainPressure).c_str());
-			this->m_serials[1]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.decMinTension) {
-			char str[20] = {0}; strcpy(str, "y d");
-			this->m_serials[2]->SendData(str, strlen(str));
-		} else if(button == m_tapeWidget->ui.incMinTension) {
-			char str[20] = {0}; strcpy(str, "y i");
-			this->m_serials[2]->SendData(str, strlen(str));
+			this->m_serial->SendData(str, strlen(str));
 		} else {
 			NTrace("hmmm... ");
-			assert(0);
 		}
 	}
 
@@ -360,21 +178,16 @@ namespace Nf
 			m_serialThread->wait();
 		}
 
-		for(s32 i=0; i<3; i++) {
-			if(m_serials[i]->IsOpened())
-				m_serials[i]->Close();
-		}
+		if(m_serial->IsOpened())
+			m_serial->Close();
 
-		s32 comPorts[3] = {m_comPorts->GetValue().x, m_comPorts->GetValue().y, m_comPorts->GetValue().z};
 		if(m_serialInit->GetValue()) {
-			for(s32 i=0; i<3; i++) {
-				bool rv = m_serials[i]->Open(comPorts[i], 57600);
-				if(rv != true) {
-					m_serialInit->SetValue(false);
-					return;
-				}
-				m_serialThread->start();
+			bool rv = m_serial->Open(m_comPort->GetValue(), 57600);
+			if(rv != true) {
+				m_serialInit->SetValue(false);
+				return;
 			}
+			m_serialThread->start();
 		}
 	}
 
@@ -550,70 +363,45 @@ namespace Nf
 
 	void SerialReceiveThread::execute()
 	{
-		if(!m_vineWidget->m_serials[0]->IsOpened() || !m_vineWidget->m_serials[1]->IsOpened() || !m_vineWidget->m_serials[2]->IsOpened()) {
+		if(!m_vineWidget->m_serial->IsOpened()){
 			msleep(100);
 			return;
 		}
 
-		for(s32 i=0; i<3; i++) {
-			s32 rcvSz = this->m_vineWidget->m_serials[i]->ReadData(m_data, SERIAL_SZ);
+		s32 rcvSz = this->m_vineWidget->m_serial->ReadData(m_data, SERIAL_SZ);
 
-			if(rcvSz > 0) {
-				m_vineWidget->m_serialBuffers[i]->InsertData((u8 *)m_data, rcvSz);
-				s8* cdata;
-				s32 dataSz = m_vineWidget->m_serialBuffers[i]->GetAvailableData(&cdata);
-				bool isGood = false;
-				for(s32 jj=0; jj<dataSz; jj++) {
-					s32 pos;
-					if(cdata[jj] == 'P') {
-						f32 ps[3] = {0}; f32 tt; f32 trackx, tracky,trackConf;
-						f32 actValues[3] = {0}; f32 visionValues[3] = {0};
-						if(sscanf(&cdata[jj], "P %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f%n", &ps[0], &ps[1], &ps[2],&tt,&trackx,&tracky,&trackConf,
-							&actValues[0], &actValues[1], &actValues[2], &visionValues[0], &visionValues[1], &visionValues[2], &pos) == 13 && cdata[jj+pos] == ';') {
-							QVector < f64 > values(13); 
-							values[0] = ps[0]; values[1] = ps[1]; values[2] = ps[2];
-							values[3] = tt; values[4] = trackx; values[5] = tracky; values[6] = trackConf;
-							values[7] = actValues[0]; values[8] = actValues[1]; values[9] = actValues[2];
-							values[10] = visionValues[0]; values[11] = visionValues[1]; values[12] = visionValues[2];
+		if(rcvSz > 0) {
+			m_vineWidget->m_serialBuffer->InsertData((u8 *)m_data, rcvSz);
+			s8* cdata;
+			s32 dataSz = m_vineWidget->m_serialBuffer->GetAvailableData(&cdata);
+			bool isGood = false;
+			for(s32 jj=0; jj<dataSz; jj++) {
+				s32 pos;
+				if(cdata[jj] == 'P') {
+					f32 us[2] = {0};
+					f32 trackPos[2] = {0};
+					f32 cameraRotation = 0;
+					f32 motorPos = 0; f32 motorVel = 0;
+					f32 pressures[2] = {0};
+					if(sscanf(&cdata[jj], "P %f, %f, %f, %f, %f, %f, %f, %f, %f, %f%n", &us[0], &us[1], &trackPos[0], &trackPos[1],
+						&cameraRotation, &motorPos, &motorVel, &pressures[0], &pressures[1], &pos) == 9 && cdata[jj+pos] == ';') {
+							QVector < f64 > values(10); 
+							values[0] = us[0]; values[1] = us[1];
+							values[2] = trackPos[0]; values[3] = trackPos[1]; 
+							values[4] = cameraRotation;
+							values[5] = motorPos; values[6] = motorVel;
+							values[7] = pressures[0]; values[8] = pressures[1];
 							emit pressureUpdate(values);
 							isGood = true;
-						}
-						break;
-					} else if(cdata[jj] == 'E') {
-						f32 es[2] = {0};
-						if(sscanf(&cdata[jj], "E %f, %f%n", &es[0], &es[1], &pos) == 2 && cdata[jj+pos] == ';') {
-							QVector < double > values(2); 
-							for(s32 jj=0; jj<2; jj++)
-								values[jj] = es[jj];
-							emit extensionUpdate(values,i);
-						}
-						isGood = true;
-						break;
-					} else if(cdata[jj] == 'J' && cdata[jj+1] == 'J') {
-						f64 es[9] = {0};
-						if(sscanf(&cdata[jj], "JJ=[%f %f %f;\n%f %f %f;\n%f %f %f%n];",&es[0],&es[1],&es[2],
-							&es[3],&es[4],&es[5],&es[6],&es[7],&es[8],&pos) > 0) {
-							cdata[jj+pos] = 0;
-							emit textUpdate(QString(&cdata[jj]));
-						}
-						
-					} else if(cdata[jj] == 'K') {
-						f32 ks[2] = {0};
-						if(sscanf(&cdata[jj], "K %f, %f%n", &ks[0], &ks[1],&pos) == 2 && cdata[jj+pos] == ';') {
-							QVector < double > values(2); values[0] = ks[0]; values[1] = ks[1];
-							emit constantsUpdate(values);
-						}
-						isGood = true;
 					}
+					break;
 				}
-				if(isGood)
-					m_vineWidget->m_serialBuffers[i]->DeleteElements(dataSz);
-
-				memset(m_data, 0, rcvSz);
-			} else if(i==1) {
-				return;
 			}
+			if(isGood)
+				m_vineWidget->m_serialBuffer->DeleteElements(dataSz);
 		}
+
+		memset(m_data, 0, rcvSz);
 	}
 	//////////////////////////////////////////////////////
 	/// END SerialReceiveThread
