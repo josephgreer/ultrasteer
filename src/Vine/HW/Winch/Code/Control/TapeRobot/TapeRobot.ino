@@ -3,13 +3,7 @@
 #include <Encoder.h>
 #include <math.h>
 #include <SoftwareSerial.h>
-
-typedef double f64;
-typedef char s8;
-typedef unsigned char u8;
-typedef unsigned long u32;
-typedef int s32;
-typedef short s16;
+#include "C:/Joey/ultrasteer/src/Vine/HW/Winch/Code/Control/Common.h"
 
 // Pin Declares
 int pwmAPin = 5;  
@@ -17,10 +11,14 @@ int dirAPin = 8;
 int encoderPinA = 2;
 int encoderPinB = 3; 
 int pressurePin = 9;
-int solenoidPin1 = 12;
-int solenoidPin2 = 13;
-int slaSerialRx = 10;
-int slaSerialTx = 11;
+int solenoidPinLeft = 12;
+int solenoidPinRight = 13;
+int slaSerialRx = 11;
+int slaSerialTx = 10;
+double globalPressureSetPoint = 0;
+double currPressureSetPoint = 0;
+double pressureDecayRate = 0.01;
+double motorToPressureConstant = 1;
 
 // Program Scope Variables
 Encoder encoder(encoderPinA, encoderPinB);
@@ -39,7 +37,7 @@ void setup()
   Serial.setTimeout(15);
 
   slaSerial.begin(57600);
-  Serial.setTimeout(15);
+//  slaSerial.setTimeout(15);
   
   // Set PWM frequency 
   setPwmFrequency(pwmAPin,1); //PWM on pin 3 is (32500/1) = 32500 [Hz] 
@@ -48,11 +46,11 @@ void setup()
   pinMode(pwmAPin, OUTPUT);  // PWM for A
   pinMode(dirAPin, OUTPUT);  // dir for A
 
-  pinMode(solenoidPin1, OUTPUT);
-  pinMode(solenoidPin2, OUTPUT);
+  pinMode(solenoidPinLeft, OUTPUT);
+  pinMode(solenoidPinRight, OUTPUT);
 
-  digitalWrite(solenoidPin1, LOW);
-  digitalWrite(solenoidPin2, LOW);
+  digitalWrite(solenoidPinLeft, LOW);
+  digitalWrite(solenoidPinRight, LOW);
 
   pinMode(encoderPinA, INPUT);
   pinMode(encoderPinB, INPUT);
@@ -108,17 +106,60 @@ f64 lowPassDesVel = 0;
 
 void loop() 
 {
-  f64 pos = encoder.read();
   u32 currTime = millis();
   f64 dt = (f64)(currTime-lastTime)/(1000.0);
-  f64 u;
-  f64 vel;
-  
-  f64 error, derror;
+  lastTime = currTime;
 
   if(slaSerial.available() > 0) {
     handleSlaSerial();
-  } 
+  }
+
+  controlMotors(dt);
+  controlSteering(dt);
+
+}
+
+Vecf64<2> trackPos(-1,-1);
+Vecf64<2> lastTrackPos(-1,-1);
+
+f64 rotation = 0;
+#define DEADBAND 50
+bool steeringEnabled = false;
+unsigned int g_count = 0;
+void controlSteering(f64 dt)
+{
+  if(steeringEnabled) {
+    u8 us[2] = {HIGH,HIGH}; 
+    Vecf64<2> currTrackPos(-1,-1);
+    if(trackPos.x > 0 && trackPos.y > 0) {
+      f64 theta = rotation*PI/180.0;
+      Matrixf64<2, 2> rot(cos(theta), -sin(theta), sin(theta), cos(theta));
+      Vecf64<2> center(320,240);
+      currTrackPos = rot*(trackPos-center)+center;
+    } else if(lastTrackPos.x > 0 && lastTrackPos.y > 0) {
+      currTrackPos = lastTrackPos;
+    }
+
+    if(currTrackPos.x > 0 && currTrackPos.y > 0) {
+      if(currTrackPos.x > 320+DEADBAND)
+        us[0] = LOW;
+      if(currTrackPos.x < 320-DEADBAND)
+        us[1] = LOW;
+    }
+    digitalWrite(solenoidPinLeft, us[0]);
+    digitalWrite(solenoidPinRight, us[1]);
+    lastTrackPos = currTrackPos;
+    if(g_count++ % 10 == 0)
+      Serial.println(String(millis()) + " " + String(us[0]) + " " + String(us[1]) + " " + String(currTrackPos.x) + " " + String(currTrackPos.y) + " " + String(rotation,6));
+  }
+}
+
+void controlMotors(f64 dt)
+{
+  f64 u;
+  f64 vel;
+  f64 pos = encoder.read();
+  f64 error, derror;
 
   lowPassDesVel = lowPassDesVel*0.9999+(1-0.9999)*desVel;
 
@@ -134,7 +175,6 @@ void loop()
     
   errorLast = error;
   derror /= dt;
-  lastTime = currTime;
   lastPos = pos;
 
   s8 dir = 0;
@@ -167,12 +207,16 @@ void loop()
       u = Kpv*error + Kdv*derror + Kiv*integralError;
   
       if(u < 0) {
-        u = 0;
+        currPressureSetPoint = currPressureSetPoint + u*motorToPressureConstant;
+        currPressureSetPoint = min(currPressureSetPoint,255);
+        analogWrite(pressurePin, currPressureSetPoint);
         integralError = 0;
         derror = 0;
         dir = 1-unwindDir;
+      } else {
+        currPressureSetPoint = currPressureSetPoint*(1-pressureDecayRate)+(globalPressureSetPoint-currPressureSetPoint)*pressureDecayRate;
+        u = min(u, 255);
       }
-      u = min(u, 255);
       break;
     }
   }
@@ -186,7 +230,6 @@ void loop()
       Serial.println("Des Pos " +  String(desPos) + " Pos " + String(pos) + " DesVel " + String(desVel) + " Vel " + String(vel) + " Pressure " + String(desPres) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
     analogWrite(pwmAPin, u);
   }
-
 }
 
 void SetVel(f64 vel)
@@ -238,13 +281,16 @@ void handleSlaSerial()
   int trackRow = (s16)input[6] + ((s16)input[7] << 8);
   int trackCol = (s16)input[4] + ((s16)input[5] << 8);
 
+  trackPos = Vecf64<2>(trackCol, trackRow);
+
   s32 sceneRow8 = (input[10]<<8) + (input[11] << 16) + (input[23]);
   s32 sceneCol8 = (input[8]<<8) + (input[9] << 16) + (input[22]);
 
   s16 sceneRot7 = (s16)input[24] | ((s16)(input[25] << 8));
+  rotation += sceneRot7/128.0;
 
-  if(trackCount++ % 30 == 0)
-    Serial.println("track Row " + String(trackRow) + " track Col " + String(trackCol));
+//  if(trackCount++ % 30 == 0)
+//    Serial.println("track Row " + String(trackRow) + " track Col " + String(trackCol));
 }
 
 void serialEvent() 
@@ -253,6 +299,18 @@ void serialEvent()
     nBytes = Serial.readBytes(input, BUFFER_LEN);
 
     switch(input[0]) {
+      case 'e':
+      case 'E':
+      {
+        steeringEnabled = !steeringEnabled;
+        if(!steeringEnabled) {
+          digitalWrite(solenoidPinLeft, LOW);
+          digitalWrite(solenoidPinRight, LOW);
+        }
+        String("Steering enabled " + String(steeringEnabled));
+        rotation = 0;
+        break;
+      }
       case 'm':   // switch mode 
       {
         String mode;
@@ -300,12 +358,15 @@ void serialEvent()
       {
         s32 solenoid = atoi((char *)&input[2]);
         s32 amount = atoi((char *)&input[4]);
-        s32 pinn = solenoid == 1 ? solenoidPin1 : solenoidPin2;
-        
+        s32 pinn = solenoid == 1 ? solenoidPinLeft : solenoidPinRight;
+
+        Serial.println("Setting solenoid " + String(solenoid) + " amount " + String(amount));
         if(amount > 0)
           digitalWrite(pinn, HIGH);
-        else
+        else {
           digitalWrite(pinn, LOW);
+          Serial.println("Set low");
+        }
           
         break;
       }
@@ -346,6 +407,7 @@ void serialEvent()
           desPres = min(max(atof((char *)&input[2]),0),1);
         }
         s32 amount = (s32)(desPres*255.0);
+        globalPressureSetPoint = amount;
 
         Serial.println("Setting pressure to " + String(desPres,6) + " pwm " + String(amount));
         analogWrite(pressurePin, amount);
