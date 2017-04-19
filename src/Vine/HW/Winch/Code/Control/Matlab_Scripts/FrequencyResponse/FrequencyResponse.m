@@ -60,10 +60,10 @@ ylim([75 200]);
 figure;
 scatter(freqs,magnitudes);
 hold on;
-freqsExtended = linspace(0.05,10,100);
+freqsExtended = linspace(0.05,100,1000);
 plot(freqsExtended, F(params,freqsExtended));
-ylim([3 11]);
-xlim([0.0001 10]);
+ylim([0 11]);
+% xlim([0.0001 10]);
 set(gca,'xscale','log');
 set(gca,'yscale','log');
 
