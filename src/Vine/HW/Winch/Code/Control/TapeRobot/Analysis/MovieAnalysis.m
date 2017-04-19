@@ -2,14 +2,33 @@ clear; clc; close all;
 
 fid = fopen('GrowToLight_2.txt');
 
+
+tipPoints = load('points');
+tipPoints = tipPoints.points;
+tipPoints(2:end,2:3) = tipPoints(2:end,2:3)-tipPoints(1:end-1,2:3);
+tipPoints(1,:) = tipPoints(1,:)-tipPoints(1,1);
+tipPoints(2:end,2) = sqrt(sum(tipPoints(2:end,2:3).^2,2));
+tipPoints(1,2) = 0;
+tipPoints = tipPoints(:,1:2);
+tipPoints(:,2) = cumsum(tipPoints(:,2));
+tipPoints(:,1) = 2*tipPoints(:,1);
+
+
 data = cell2mat(textscan(fid, '%f %f %f %f %f %f'));
 
 idx = min(find(data(:,4) > 0))
-data = data(359:end,:);
+data = data(idx:end,:);
 
 data(:,1) = ((data(:,1)-data(1,1))*1e-3)/64;
-idx = min(find(data(:,1) > 23.13));
+
+idx = min(find(data(:,1) > 10));
+data = data(idx:end,:);
+data(:,1) = data(:,1)-data(1,1);
+
+idx = min(find(data(:,1) > 16));
 data = data(1:idx,:);
+
+data(:,1) = interp1(tipPoints(:,1),tipPoints(:,2),data(:,1));
 
 plot(data(:,1));
 figure;
@@ -36,9 +55,8 @@ dataSmoothed = filtfilt(d1,double(data(:,4)-320));
 plot(data(:,1),dataSmoothed,'r','LineWidth',2);
 ylim([-300 300]);
 xlim([min(data(:,1)) max(data(:,1))]);
-xlabel('Time (s)');
+xlabel('Body Length (px)');
 ylabel('Horizontal Light Location (px)');
-view(90,90);
 % export_fig -transparent '~/Dropbox' (Stanford CHARM Lab)'/Science Submission/ErrorPlot.pdf';
 box on;
 grid on;

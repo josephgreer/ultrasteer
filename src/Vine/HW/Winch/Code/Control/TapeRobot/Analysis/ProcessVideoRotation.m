@@ -1,9 +1,11 @@
 clear; clc; close all;
 
-v = VideoReader('~/Dropbox (Stanford CHARM Lab)/Science Submission/GrowToLight_2_POV_Trimmed.mp4');
+v = VideoReader('~/Dropbox (Stanford CHARM Lab)/Science Submission/GrowTolight_3_POV_Cropped.mp4');
 % v.CurrentTime = 34.112;
 
-load thetas;
+load thetas2;
+
+% thetas = [];
 
 % p1Features = [];
 % p1ValidPts = [];
@@ -49,7 +51,7 @@ thetasTotalSmoothed = filtfilt(d1,double(thetasTotal));
 % hold on;
 % plot(thetasTotalSmoothed);
 
-vout = VideoWriter('~/Dropbox (Stanford CHARM Lab)/Science Submission/GrowToLight_2_POV_Trimmed_Rotated.avi');
+vout = VideoWriter('~/Dropbox (Stanford CHARM Lab)/Science Submission/GrowToLight_3_POV_Rotated.avi');
 open(vout);
 
 v.CurrentTime = 0;
