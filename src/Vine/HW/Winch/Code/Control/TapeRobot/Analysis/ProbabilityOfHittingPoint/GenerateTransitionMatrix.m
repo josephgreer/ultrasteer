@@ -15,14 +15,17 @@ flatX = XX(:); flatY = YY(:); flatR = rr(:);
 dX = flatXXd-flatX; dY = flatYYd-flatY;
 desGridAngles = atan2(dY,dX);
 deltaGridAngles = desGridAngles-flatR;
+smallDeltaGridAngles = wrapTo2Pi(deltaGridAngles);
+magDeltaGridAngles = min(abs(smallDeltaGridAngles),abs(2*pi-smallDeltaGridAngles));
+
 commands = sign(deltaGridAngles);
-commands(find(abs(deltaGridAngles) < params.deadBandRad/2)) = 0;
+commands(find(magDeltaGridAngles < params.deadBandRad/2)) = 0;
 swapCommands = find(abs(deltaGridAngles)>pi);
 commands(swapCommands) = commands(swapCommands)*-1;
 
-leftTurnOrientations = flatR-params.radStep;
-straightOrientations = flatR;
-rightTurnOrientations = flatR+params.radStep;
+leftTurnOrientations = wrapToPi(flatR-params.radStep);
+straightOrientations = wrapToPi(flatR);
+rightTurnOrientations = wrapToPi(flatR+params.radStep);
 
 destinationLeftTurn = horzcat(params.actuatorSpacing*[cos(leftTurnOrientations) sin(leftTurnOrientations)]+[flatX,flatY], leftTurnOrientations);
 destinationStraight = horzcat(params.actuatorSpacing*[cos(straightOrientations) sin(straightOrientations)]+[flatX,flatY], straightOrientations);
@@ -37,12 +40,18 @@ destinationRightTurn = StateToLinear(params, destinationRightTurn);
 % P(sub2ind(size(P),linspace(1,nstates,nstates).',destinationRightTurn)) = params.Pturns(3,(commands+2)).';
 
 for i=1:nstates
-    P(i,destinationLeftTurn(i)) = P(i,destinationLeftTurn(i))+params.Pturns(1,commands(i)+2);
-    P(i,destinationStraight(i)) = P(i,destinationStraight(i))+params.Pturns(2,commands(i)+2);
-    P(i,destinationRightTurn(i)) = P(i,destinationRightTurn(i))+params.Pturns(3,commands(i)+2);
+    if(magDeltaGridAngles(i) >= pi/2)
+        P(i,i) = 1;
+    else
+        P(i,destinationLeftTurn(i)) = P(i,destinationLeftTurn(i))+params.Pturns(1,commands(i)+2);
+        P(i,destinationStraight(i)) = P(i,destinationStraight(i))+params.Pturns(2,commands(i)+2);
+        P(i,destinationRightTurn(i)) = P(i,destinationRightTurn(i))+params.Pturns(3,commands(i)+2);
+    end
 end
 
-destinationIdxs = find(flatX == destination(1) & flatY == destination(2));
+dists = sqrt(sum([dX.^2 dY.^2],2));
+
+destinationIdxs = find(dists <= params.successRad);
 for i=1:length(destinationIdxs)
     idx = destinationIdxs(i);
     P(idx,destinationLeftTurn(idx)) = 0;
