@@ -114,7 +114,7 @@ void loop()
     handleSlaSerial();
   }
 
-  controlMotors(dt);
+  //controlMotors(dt);
   controlSteering(dt);
 
 }
@@ -136,11 +136,11 @@ void controlSteering(f64 dt)
       Matrixf64<2, 2> rot(cos(theta), -sin(theta), sin(theta), cos(theta));
       Vecf64<2> center(320,240);
       currTrackPos = rot*(trackPos-center)+center;
-    } else if(lastTrackPos.x > 0 && lastTrackPos.y > 0) {
+    } else {
       currTrackPos = lastTrackPos;
     }
 
-    if(currTrackPos.x > 0 && currTrackPos.y > 0) {
+    if(currTrackPos.x != -1 || currTrackPos.y != -1) {
       if(currTrackPos.x > 320+DEADBAND)
         us[0] = LOW;
       if(currTrackPos.x < 320-DEADBAND)
@@ -308,7 +308,6 @@ void serialEvent()
           digitalWrite(solenoidPinRight, LOW);
         }
         String("Steering enabled " + String(steeringEnabled));
-        rotation = 0;
         break;
       }
       case 'm':   // switch mode 
@@ -329,6 +328,12 @@ void serialEvent()
         SetMode(mm);
         
         Serial.println("Control mode switched to " + mode);   
+        break;
+      }
+      case 'z':
+      case 'Z':
+      {
+        rotation = 0;
         break;
       }
       case 'q':  // decrement set point. interpretation depends on mode
