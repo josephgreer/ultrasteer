@@ -55,6 +55,7 @@ namespace Nf
 
 		std::tr1::shared_ptr < Nf::Vec3iParameter > m_comPorts;
 		std::tr1::shared_ptr < Nf::BoolParameter > m_serialInit;
+		std::tr1::shared_ptr < Nf::FileParameter > m_dataPath;
 
 		CLASS_CALLBACK(InitSerial, VineWidget);
 		void InitSerial();
@@ -65,6 +66,8 @@ namespace Nf
 
 		f64 m_mainPressure;
 		f64 m_actuatorPressures[3];
+
+		arma::mat m_saveData;
 
 
 	signals:

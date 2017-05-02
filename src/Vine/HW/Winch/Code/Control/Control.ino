@@ -198,6 +198,10 @@ f64 steeringKpp = 0.001;
 f64 steeringKdp = 0.0008;
 f64 steeringKip = 0;
 
+f64 baseSteeringKpp = steeringKpp;
+f64 baseSteeringKdp = steeringKdp;
+f64 baseSteeringKip = steeringKip;
+
 Vecf64<2> errorLastTrack(0, 0);
 Vecf64<2> lowPassError(0, 0);
 Vecf64<2> integralErrorTrack(0, 0);
@@ -219,7 +223,7 @@ f64 totalRestTimeOnTheFly = 0.5;
 
 s32 outputCount = 0;
 
-#define CALIB_AMNT 0.25
+#define CALIB_AMNT 0.2
 
 f64 calibAmntsOnTheFly[N_TURN_ACT] = { 0.2, 0.11, 0.2 };
 
@@ -861,7 +865,7 @@ void loop()
       currPressures[i] = analogRead(pressureSensorPins[i]) / 1024.0;
     Serial.println("P " + String(pressureLowPassError[0], 5) + ", " + String(pressureLowPassError[1], 5) + ", " + String(pressureLowPassError[2], 5) + ", " + String(1 / (g_totTime / count), 6) + ", " + String(trackPos.x) + ", " + String(trackPos.y) + ", " + String(trackConf)
       + ", " + String(angles(0),6) + ", " + String(angles(1), 6) + ", " + String(angles(2), 6)
-      + ", " + String(mags(0), 6) + ", " + String(baseRotation*180.0/PI,6) + ", " + String(rotationAngle,6) + ";");
+      + ", " + String(dt, 6) + ", " + String(baseRotation*180.0/PI,6) + ", " + String(rotationAngle,6) + ";");
     g_totTime = 0;
     count = 0;
   }
@@ -1065,11 +1069,18 @@ void handleSerial(const s8 *input, s32 nBytes)
   {
     if (input[2] == 'c') {
       for (s32 cc = 0; cc < N_TURN_ACT; cc++) {
-        JJBase.SetCol(cc, JJBaseUnscaled.Col(cc)*10.0);
+        JJBase.SetCol(cc, JJBaseUnscaled.Col(cc)*2);
       }
+      steeringKpp = 0.000125;
+      steeringKdp = 0.0005;
+      steeringKip = 0;
     } else {
       JJBase = JJBaseUnscaled;
+      steeringKpp = baseSteeringKpp;
+      steeringKdp = baseSteeringKdp;
+      steeringKip = baseSteeringKip;
     }
+    outputKp = true;
     break;
   }
   case 'i':
@@ -1077,10 +1088,10 @@ void handleSerial(const s8 *input, s32 nBytes)
     if (input[2] != 'r') {
       f64 mul = 0;
       if (input[2] == 'i') {
-        mul = 1.1;
+        mul = 2;
       }
       else {
-        mul = 1 / 1.1;
+        mul = 1 / 2.0;
       }
 
       if (input[3] == 'k')
@@ -1304,7 +1315,7 @@ void handleSlaSerial(const u8 *input, s32 nBytes)
       baseRotation = 0;
     }
 
-  Matrixf64<2, 2> rot(cos(baseRotation), -sin(baseRotation), sin(baseRotation), cos(baseRotation));
+  Matrixf64<2, 2> rot(cos(-baseRotation), -sin(-baseRotation), sin(-baseRotation), cos(-baseRotation));
   for (s32 i = 0; i < N_TURN_ACT; i++)
     JJ.SetCol(i, rot*JJBase.Col(i));
   //JJ = je.IncrementTheta(PI*dtheta / 180.0);

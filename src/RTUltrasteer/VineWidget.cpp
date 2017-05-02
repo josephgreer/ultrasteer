@@ -90,6 +90,7 @@ namespace Nf
 
 		ADD_VEC3I_PARAMETER(m_comPorts, "Com Ports", CALLBACK_POINTER(InitSerial, VineWidget), this, Vec3i(6,3,8), Vec3i(1,1,1), Vec3i(20,20,20), Vec3i(1,1,1));
 		ADD_BOOL_PARAMETER(m_serialInit, "Init Serial", CALLBACK_POINTER(InitSerial, VineWidget), this, false);
+		ADD_SAVE_FILE_PARAMETER(m_dataPath, "Data Path", NULL, this, PATH_CAT("4_28_17_1.mat"), "(*.mat)");
   }
 
   VineWidget::~VineWidget()
@@ -130,6 +131,11 @@ namespace Nf
 		m_tapeWidget->ui.visionData_1->display(text.sprintf("%.3f",values[10]));
 		m_tapeWidget->ui.visionData_2->display(text.sprintf("%.3f",values[11]));
 		m_tapeWidget->ui.visionData_3->display(text.sprintf("%.3f",values[12]));
+
+		arma::mat row(1, 13);
+		for(s32 jj=0; jj<13; jj++)
+			row(0, jj) = values[jj];
+		m_saveData = arma::join_vert(m_saveData, row);
 	}
 
 	void VineWidget::UpdateConstants(QVector < double > values)
@@ -373,7 +379,12 @@ namespace Nf
 					m_serialInit->SetValue(false);
 					return;
 				}
+				m_saveData.clear();
 				m_serialThread->start();
+			}
+		} else {
+			if(m_saveData.n_rows > 0) {
+				m_saveData.save(m_dataPath->GetValue(), arma::raw_ascii);
 			}
 		}
 	}
@@ -575,6 +586,7 @@ namespace Nf
 							values[3] = tt; values[4] = trackx; values[5] = tracky; values[6] = trackConf;
 							values[7] = actValues[0]; values[8] = actValues[1]; values[9] = actValues[2];
 							values[10] = visionValues[0]; values[11] = visionValues[1]; values[12] = visionValues[2];
+
 							emit pressureUpdate(values);
 							isGood = true;
 						}
