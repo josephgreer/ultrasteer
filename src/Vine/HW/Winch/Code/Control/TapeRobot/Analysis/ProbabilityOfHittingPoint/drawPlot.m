@@ -1,5 +1,5 @@
 clear; clc; close all;
-load workspace_first_try.mat
+load 1_asymmetric.mat
 
 nstates = params.nGridPoints^2*params.nRadPoints;
 [XX, YY, rr] = GenerateGrid(params);
@@ -20,6 +20,7 @@ xlabel('x (m)');
 ylabel('y (m)');
 zlabel('P(success)');
 axis equal;
+zlim([0 1.25]);
 daspect([1 1 0.1]);
 box on;
-% export_fig -transparent 1.pdf
+export_fig -transparent 1_asymmetric.pdf

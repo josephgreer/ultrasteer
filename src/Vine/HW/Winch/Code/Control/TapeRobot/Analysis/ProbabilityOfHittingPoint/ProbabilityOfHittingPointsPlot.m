@@ -17,7 +17,7 @@ Psucc = zeros(params.nGridPoints^2,1);
 xs = gridX(1:params.nGridPoints^2).';
 ys = gridY(1:params.nGridPoints^2).';
 
-goodIdxs = [1:params.nGridPoints^2].';%find(4.5 < ys);
+goodIdxs = find(2.5 < ys);
 
 ii = 1;
 for i=goodIdxs.'

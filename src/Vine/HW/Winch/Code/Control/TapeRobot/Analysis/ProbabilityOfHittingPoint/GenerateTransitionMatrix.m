@@ -43,9 +43,9 @@ for i=1:nstates
     if(magDeltaGridAngles(i) >= pi/2)
         P(i,i) = 1;
     else
-        P(i,destinationLeftTurn(i)) = P(i,destinationLeftTurn(i))+params.Pturns(1,commands(i)+2);
-        P(i,destinationStraight(i)) = P(i,destinationStraight(i))+params.Pturns(2,commands(i)+2);
-        P(i,destinationRightTurn(i)) = P(i,destinationRightTurn(i))+params.Pturns(3,commands(i)+2);
+        P(i,destinationLeftTurn(i)) = P(i,destinationLeftTurn(i))+params.Pturns(commands(i)+2,1);
+        P(i,destinationStraight(i)) = P(i,destinationStraight(i))+params.Pturns(commands(i)+2,2);
+        P(i,destinationRightTurn(i)) = P(i,destinationRightTurn(i))+params.Pturns(commands(i)+2,3);
     end
 end
 
