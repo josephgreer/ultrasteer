@@ -40,7 +40,7 @@ namespace Nf
 		m_flip = vtkSmartPointer<vtkImageFlip>::New();
     m_flipCast = vtkSmartPointer<vtkImageCast>::New();
 
-		ADD_BOOL_PARAMETER(m_flipImage, "Flip Image", NULL, this, true);
+		ADD_BOOL_PARAMETER(m_flipImage, "Flip Image", NULL, this, false);
 
     m_interactor = vtkSmartPointer<vtkRenderWindowInteractor>::New();    
   }

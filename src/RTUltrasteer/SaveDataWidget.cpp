@@ -124,8 +124,9 @@ namespace Nf
     std::string name = fname.substr(fname.find_last_of("/")+1,std::string::npos);
     name = name.substr(0, name.find_last_of("."));
 
-#if 0
-    //TODO: Save The Data
+#if 1
+
+      //TODO: Save The Data
     std::tr1::shared_ptr < RPFileWriterCollection > rpw(new RPFileWriterCollection(std::string(dir+std::string("/")+name).c_str(), &header));
     if(m_dataToSave.size() > 0 && m_dataToSave.front().b8 != NULL)
       rpw->AddWriter(RPF_BPOST8);
@@ -148,6 +149,7 @@ namespace Nf
 
     rpw->Cleanup(&header);
 #else
+#if 1
     arma::mat force;
     for(s32 i=0; i<m_dataToSave.size(); i++) {
       arma::mat row = arma::zeros(1,10);
@@ -165,6 +167,26 @@ namespace Nf
     }
 
     force.save(std::string(dir+std::string("/force.mat")).c_str(), arma::raw_ascii);
+#else
+    arma::mat pos;
+    for(s32 i=0; i<m_dataToSave.size(); i++) {
+      arma::mat row = arma::zeros(1,13);
+      row(0,0) = m_dataToSave[i].u.tick;
+      row(0,1) = m_dataToSave[i].gps2.pos.x;
+      row(0,2) = m_dataToSave[i].gps2.pos.y;
+      row(0,3) = m_dataToSave[i].gps2.pos.z;
+      Matrix33d orientation = Matrix44d::FromCvMat(m_dataToSave[i].gps2.pose).GetOrientation();
+      for(s32 r=0;r<3; r++) {
+        for(s32 c=0; c<3; c++) {
+          row(0, 4+r*3+c) = orientation.m_data[r][c];
+        }
+      }
+
+      pos = arma::join_vert(pos, row);
+    }
+
+    pos.save(std::string(dir+std::string("/pos.mat")).c_str(), arma::raw_ascii);
+#endif
 #endif
     FreeData();
     ui.progressBar->setValue(0);

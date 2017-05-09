@@ -18,15 +18,15 @@
 #include <cmath>
 
 //#define   RHO                     85.0    // radius of curvature for 12-mm needle in gelatin (mm)
-#define   RHO                     75.0    // radius of curvature for 12-mm needle in liver (mm)
-#define   INS_AUTO_SPEED          1.0     // insertions peed during task-space teleoperation  (mm/s)
+#define   RHO                    90.0    // radius of curvature for 12-mm needle in liver (mm)
+#define   INS_AUTO_SPEED          1.0     // insertions speed during task-space teleoperation  (mm/s)
 #define   INS_SPEED               20.0    // insertion speed during joint-space teleoperation (mm/s) 
 #define   ROT_SPEED               200.0   // rotation speed during joint-space teleoperation (RPM)
-#define   NEEDLE_DEAD_LENGTH      115.0   // offset of needle tip at zero insertion due to extra needle length 
+#define   NEEDLE_DEAD_LENGTH      75.0   // offset of needle tip at zero insertion due to extra needle length 
 #define   MAX_OPEN_LOOP_INSERTION 10.0    // maximum open-loop insertion distance before a new scan is needed (mm)
 #define   PI                      3.14159265359
 #define   NEEDLE_GPS_OFFSET       14.0    // x-axis distance from GPS transducer to needle "tip" point (mm)
-#define   INTRODUCER_LENGTH       30.0    // insertion length where the tip is inside the introducer (mm)
+#define   INTRODUCER_LENGTH       0.0    // insertion length where the tip is inside the introducer (mm)
 
 namespace Nf {
 
@@ -107,6 +107,8 @@ namespace Nf {
     arma::mat m_u_record;
     arma::mat m_K_record;
     arma::mat m_P_record;
+    f64 m_maxArticulationAngle;
+
 #ifdef RECORDING_MEASUREMENT_NOISE
     int m_scan;
     int m_step;

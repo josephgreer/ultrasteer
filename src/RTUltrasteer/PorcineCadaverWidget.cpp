@@ -130,7 +130,7 @@ namespace Nf
     m_data.push_back(rp);
     m_dataMutex.unlock();
 
-    msleep(1);
+    msleep(10);
   }
 
   void ForceSensorThread::cleanup()

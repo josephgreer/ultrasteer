@@ -54,6 +54,8 @@ private:
 	double m_DC;
   bool m_rollInit, m_insInit, m_artInit; 
 
+public:
+  InsertionDevice *GetInsertionDevice() { return &m_InsertionDevice; }
 public slots:
 		void OnDwellTimeout(void);
 		void OnPollTimeout(void);

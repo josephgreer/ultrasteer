@@ -21,6 +21,7 @@ namespace Nf {
     , m_insertionMMatLastManualScan(0.0)
     , m_th(0.0)
     , m_l(0.0)
+    , m_maxArticulationAngle(0.0)
   {
 
 #ifdef RECORDING_MEASUREMENT_NOISE
@@ -65,6 +66,7 @@ namespace Nf {
     }
 
     if(m_inTaskSpaceControl){ // if we've just started teleoperation
+      m_maxArticulationAngle = m_robot->getArticulationAngle();
       m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
     }else{
       m_robot->SetInsertionVelocity(0.0);
@@ -345,8 +347,10 @@ namespace Nf {
 
       if( m_l > INTRODUCER_LENGTH ){
         u = Vec3d(d_th,RHO,d_l);
+        
       }else{
         u = Vec3d(d_th,1000,d_l);
+        
       }
       m_lastInsMM = m_l;
       m_lastRollDeg = m_th;
@@ -394,14 +398,42 @@ namespace Nf {
 
       // Get relative error in the current tip frame
       Vec3d e = R.Inverse()*(m_t-p);
+
+      Vec2d ePlane(e.x, e.y);
+      bool targetInLine = ePlane.magnitude() < 15;
+
       f32 d_th = atan2(-e.x,e.y);
 
       // Check if needle tip is past target
       if( e.z < 0 )
         int i = 1;// Do end of steering tasks
 
+      bool releaseArticulation = false;//(ABS(d_th) > 10*PI/180.0) && !targetInLine;
+      targetInLine = false;
+
+      // try release articulation before turning (preliminary)
+      if(releaseArticulation) {
+        m_robot->SetInsertionVelocity(0);
+        m_robot->SetArticulationAngle(0);
+        
+      //  Sleep(100);
+      }
+
       // Correct needle rotation
       m_robot->RotateIncremental(d_th*180.0/PI);
+
+      if(releaseArticulation) {
+        Sleep(3000);
+        m_robot->SetArticulationAngle(m_maxArticulationAngle);
+        Sleep(1000);
+        m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
+        Sleep(100);
+      } else if(targetInLine) {
+        m_robot->SetArticulationAngle(0);
+        NTrace("Thinks target is inline\n");
+      } else {
+        m_robot->SetArticulationAngle(m_maxArticulationAngle);
+      }
 
     }else{
       NTrace("No target defined; skipping correction\n");
