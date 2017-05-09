@@ -58,14 +58,17 @@ params = lsqcurvefit(F,[1 1 1 1],freqs.',magnitudes,[],[],options);
 
 ylim([75 200]);
 figure;
-scatter(freqs,magnitudes);
+scatter(freqs,magnitudes, 'LineWidth', 2);
 hold on;
 freqsExtended = linspace(0.05,100,1000);
-plot(freqsExtended, F(params,freqsExtended));
-ylim([0 11]);
-% xlim([0.0001 10]);
+plot(freqs, F(params,freqs), 'LineWidth', 2);
+ylim([3 15]);
+xlim([min(freqs) max(freqs)]);
+xlabel('Frequency (Hz)');
+ylabel('Angular Deflection');
 set(gca,'xscale','log');
 set(gca,'yscale','log');
+box on;
 
 figure;
 scatter(freqs,magnitudes2);
