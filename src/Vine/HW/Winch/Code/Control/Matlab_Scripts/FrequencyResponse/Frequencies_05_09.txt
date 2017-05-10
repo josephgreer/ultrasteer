@@ -1,0 +1,36 @@
+Begin
+Staying on 0.000000Hz
+Staying on 0.000000Hz
+Moving onto 0.110000Hz
+Moving onto 0.170000Hz
+Moving onto 0.230000Hz
+Moving onto 0.290000Hz
+Moving onto 0.410000Hz
+Moving onto 0.470000Hz
+Moving onto 0.530000Hz
+Moving onto 0.590000Hz
+Moving onto 0.650000Hz
+Moving onto 0.710000Hz
+Moving onto 0.770000Hz
+Moving onto 0.830000Hz
+Moving onto 0.890000Hz
+Moving onto 0.950000Hz
+Moving onto 1.010000Hz
+Moving onto 1.070000Hz
+Moving onto 1.130000Hz
+Moving onto 1.190000Hz
+Moving onto 1.250000Hz
+Moving onto 1.310000Hz
+Moving onto 1.370000Hz
+Moving onto 1.430000Hz
+Moving onto 1.490000Hz
+Moving onto 1.549999Hz
+Moving onto 1.609999Hz
+Moving onto 1.669999Hz
+Moving onto 1.729999Hz
+Moving onto 1.789999Hz
+Moving onto 1.849999Hz
+Moving onto 1.909999Hz
+Moving onto 1.969999Hz
+Moving onto 2.029999Hz
+

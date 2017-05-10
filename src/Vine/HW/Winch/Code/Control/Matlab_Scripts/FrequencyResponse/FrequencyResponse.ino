@@ -75,18 +75,18 @@ void controlPressures()
   for (s32 i = 0; i < N_TURN_ACT-1; i++) {
     controlPressure(i, dt);
   }
-  Serial.println(String(currPressures[0],6) + " " + String(currPressures[1],6));
 }
 
 double freqMin = 0.05;
 double freqMax = 2;
-double freqStep = 0.03;
-double currFreq = 0.5;
+double freqStep = 0.06;
+double currFreq = 0;
 double t0 = 0;
 double delayTime = 3;
 double activeTime = 20;
-double amplitude = 0.5;
+double amplitude = 0.4;
 int firstCount = 0;
+int ledPin = 2;
 
 bool begin = false;
 
@@ -102,7 +102,11 @@ void setup() {
     pinMode(regulatorPins[i], OUTPUT);
   }
 
+  pinMode(ledPin, OUTPUT);
+
 }
+
+bool ledOn = false;
 
 void loop() {
   if(Serial.available()) {
@@ -112,8 +116,10 @@ void loop() {
   }
   if(!begin)
     return;
-  if(t0 == 0)
+  if(t0 == 0) {
     t0 = micros()*1e-6;
+    digitalWrite(ledPin, HIGH);
+  }
 
   if(currFreq > freqMax)
     return;
@@ -123,6 +129,9 @@ void loop() {
     t0 = 0;
     pressureSetPoints[0] = 0;
     pressureSetPoints[1] = 0;
+    ACTUATE_REGULATOR(0, 0);
+    ACTUATE_REGULATOR(1, 0);
+    digitalWrite(ledPin, LOW);
     delay((int)(delayTime*1e3));
     Serial.println("Staying on " + String(currFreq,6) + "Hz");
     firstCount++;
@@ -132,6 +141,9 @@ void loop() {
     t0 = 0;
     pressureSetPoints[0] = 0;
     pressureSetPoints[1] = 0;
+    ACTUATE_REGULATOR(0, 0);
+    ACTUATE_REGULATOR(1, 0);
+    digitalWrite(ledPin, LOW);
     delay((int)(delayTime*1e3));
     currFreq = currFreq+freqStep;
     Serial.println("Moving onto " + String(currFreq,6) + "Hz");
@@ -141,8 +153,10 @@ void loop() {
   double amnt = amplitude*(cos(2*PI*currFreq*(t-t0)));
   if(amnt < 0) {
     pressureSetPoints[0] = abs(amnt);
+    pressureSetPoints[1] = 0;
   } else {
     pressureSetPoints[1] = abs(amnt);
+    pressureSetPoints[0] = 0;
   }
 
   controlPressures();
