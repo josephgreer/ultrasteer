@@ -863,7 +863,7 @@ void loop()
     f64 maxMag = maxDisplacementFilter.GetMaxValue();
     for (s32 i = 0; i < N_TURN_ACT; i++)
       currPressures[i] = analogRead(pressureSensorPins[i]) / 1024.0;
-    Serial.println("P " + String(pressureLowPassError[0], 5) + ", " + String(pressureLowPassError[1], 5) + ", " + String(pressureLowPassError[2], 5) + ", " + String(1 / (g_totTime / count), 6) + ", " + String(trackPos.x) + ", " + String(trackPos.y) + ", " + String(trackConf)
+    Serial.println("P " + String(pressureLowPassError[0], 5) + ", " + String(pressureLowPassError[1], 5) + ", " + String(pressureLowPassError[2], 5) + ", " + String(g_totTime, 6) + ", " + String(trackPos.x) + ", " + String(trackPos.y) + ", " + String(trackConf)
       + ", " + String(angles(0),6) + ", " + String(angles(1), 6) + ", " + String(angles(2), 6)
       + ", " + String(dt, 6) + ", " + String(baseRotation*180.0/PI,6) + ", " + String(rotationAngle,6) + ";");
     g_totTime = 0;
