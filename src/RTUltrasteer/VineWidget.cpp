@@ -70,7 +70,7 @@ namespace Nf
 		connect(m_cameraThread.get(), SIGNAL(LogUpdate(QString)), this, SLOT(UpdateLog(QString)));
 
     ADD_CHILD_COLLECTION(m_imageViewer.get());
-    ADD_OPEN_FILE_PARAMETER(m_videoFile, "Video File",CALLBACK_POINTER(SetupVideoInput, VineWidget), this, BASE_PATH_CAT("VineVideos/Vine1.mov"), "(*.mov)");
+    ADD_OPEN_FILE_PARAMETER(m_videoFile, "Video File",CALLBACK_POINTER(SetupVideoInput, VineWidget), this, BASE_PATH_CAT("VineVideos/Vine1.mov"), "(*.mp4)");
 		ADD_BOOL_PARAMETER(m_useWebcam, "Use Webcam", CALLBACK_POINTER(SetupVideoInput, VineWidget), this, false);
 		ADD_BOOL_PARAMETER(m_run, "Run", CALLBACK_POINTER(SetupVideoInput, VineWidget), this, false);
 		ADD_VEC3D_PARAMETER(m_lowerBounds, "Lower Bounds", NULL, this, Vec3d(255,255,255), Vec3d(0,0,0), Vec3d(179,255,255), Vec3d(1,1,1));
@@ -257,6 +257,10 @@ namespace Nf
 		Vec3d padding = m_calibratePadding->GetValue();
 		Vec3d lb(val(0)-padding.x,val(1)-padding.y,val(2)-padding.z);
 		Vec3d ub(val(0)+padding.x,255,val(2)+padding.z);
+		if(lb.x < 0)
+			lb.x = 180+lb.x;
+		if(ub.x > 180)
+			ub.x = ub.x-180;
 		if(m_calibrateObject->GetValue() == 0) {
 			m_lowerBounds->SetValue(lb);
 			m_upperBounds->SetValue(ub);
@@ -415,7 +419,14 @@ namespace Nf
 	std::pair < std::vector < Squarei >, cv::Mat > CameraThread::CalculateBoundingRects(const cv::Mat hsv, const Vec3d &lb, const Vec3d &ub)
 	{
 		cv::Mat mask;
-		cv::inRange(hsv, cv::Scalar(lb.x, lb.y, lb.z), cv::Scalar(ub.x, ub.y, ub.z), mask);
+		if(lb.x > ub.x) {
+			cv::Mat mask1,mask2;
+			cv::inRange(hsv, cv::Scalar(lb.x, lb.y, lb.z), cv::Scalar(180.0, ub.y, ub.z), mask1);
+			cv::inRange(hsv, cv::Scalar(0, lb.y, lb.z), cv::Scalar(ub.x, ub.y, ub.z), mask2);
+			cv::bitwise_or(mask1,mask2,mask);
+		} else {
+			cv::inRange(hsv, cv::Scalar(lb.x, lb.y, lb.z), cv::Scalar(ub.x, ub.y, ub.z), mask);
+		}
 
 		cv::Mat filteredMask;
 		
@@ -466,7 +477,7 @@ namespace Nf
 		for(s32 i=0; i<rects.size(); i++) {
 			delta = Vec2d(rects[i].DeltaX(headPos.x),	rects[i].DeltaY(headPos.y));
 			deltaMag = delta.magnitudeSquared();
-			if(delta.dot(m_vineWidget->m_growingDirection) > 0 && deltaMag < closestDist) {
+			if(deltaMag < closestDist) {
 				smallestDelta = delta;
 				closestDist = deltaMag;
 			}
