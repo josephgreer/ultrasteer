@@ -127,6 +127,7 @@ namespace Nf
 
 		virtual void setup() { return; }
 		virtual void execute() = 0;
+		virtual void cleanup() { return; }
 
 	public:
 		BasicThread(VineWidget *vine);
@@ -188,6 +189,7 @@ signals:
 
 		void setup();
 		void execute();
+		void cleanup();
 	};
 }
 

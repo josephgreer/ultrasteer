@@ -327,6 +327,7 @@ namespace Nf
 		while(m_running) {
 			execute();
 		}
+		cleanup();
 	}
 
 	void BasicThread::stopThread()
@@ -407,10 +408,17 @@ namespace Nf
 	{
 		connect(this, SIGNAL(SetMainImage(bool)), vine, SLOT(SetImage(bool)));
 	}
-
+	
+	arma::mat g_points;
 	void CameraThread::setup()
 	{
 		m_firstTime = true;
+		g_points.clear();
+	}
+
+	void CameraThread::cleanup()
+	{
+		g_points.save("C:/Users/Joey/Documents/points.txt", arma::raw_ascii);
 	}
 
 	std::vector < Squarei > findExpandAndClusterContours(IplImage *colorMask, f32 expand, bool minArea = false, bool shrinkBack = false, f64 distThresh = 3.0);
@@ -474,15 +482,17 @@ namespace Nf
 		Vec2d smallestDelta;
 		f64 deltaMag;
 		Vec2d delta;
+		Vec2d bestRectCenter;
 		for(s32 i=0; i<rects.size(); i++) {
 			delta = Vec2d(rects[i].DeltaX(headPos.x),	rects[i].DeltaY(headPos.y));
 			deltaMag = delta.magnitudeSquared();
 			if(deltaMag < closestDist) {
 				smallestDelta = delta;
 				closestDist = deltaMag;
+				bestRectCenter = (Vec2f)rects[i];
 			}
 		}
-		return smallestDelta;
+		return bestRectCenter;
 	}
 
 	void CameraThread::ActuatorInc(int index)
@@ -503,11 +513,13 @@ namespace Nf
 
 	void CameraThread::DrawDetails(DRAW_DETAILS details, cv::Mat &im, const Vec2d &headCen, const Vec2d &deltaObstacle, const std::vector < Squarei > &obstacleRects, const Squarei &robotRect, const std::vector < Squarei > &robotRects)
 	{
+#if 0
 		if(details & DD_OBSTACLES) {
 			for(s32 i=0; i<obstacleRects.size(); i++) {
 				cv::rectangle(im, SquareiToCvRect(obstacleRects[i]), cvScalar(0,255,0), 5);
 			}
 		}
+#endif
 
 		if(details & DD_ROBOT) {
 			for(s32 i=0; i<robotRects.size(); i++) {
@@ -516,12 +528,14 @@ namespace Nf
 		}
 
 		//cv::rectangle(im, SquareiToCvRect(robotRect), cvScalar(0,0,0), 3);
-		cv::Point p1(headCen.x, headCen.y); cv::Point p2(deltaObstacle.x, deltaObstacle.y);
-		p2 = p1+p2;
-		cv::clipLine(cv::Rect(0,0,im.cols, im.rows), p1, p2);
+		cv::Point p1(headCen.x, headCen.y); /*cv::Point p2(deltaObstacle.x, deltaObstacle.y);*/
+		//p2 = p1+p2;
+		//cv::clipLine(cv::Rect(0,0,im.cols, im.rows), p1, p2);
 		cv::circle(im, p1, 10, cv::Scalar(255,0,0), -1);
-		cv::arrowedLine(im, p1, p2, cv::Scalar(0,0,255), 3, CV_AA, 0, 0.1);
+		//cv::arrowedLine(im, p1, p2, cv::Scalar(0,0,255), 3, CV_AA, 0, 0.1);
+		cv::circle(im, cv::Point(deltaObstacle.x, deltaObstacle.y), 10, cvScalar(0,0,255),-1);
 
+#if 0
 		cv::Point currPoint(10,20);
 		cv::Rect textRect(10, 20, 0, 0);
 
@@ -593,11 +607,12 @@ namespace Nf
 		cv::putText(im, txt3, currPoint, fontFace, fontScale, cvScalar(255,255,255), thickness);
 		currPoint.y += sz.height;
 #endif
+#endif
 	}
 
-	arma::mat g_points;
 	u32 g_begTick = 0;
 	u32 g_count = 0;
+	bool g_saved = false;
 	void CameraThread::execute()
 	{
 		if(++g_count == 100) {
@@ -608,25 +623,24 @@ namespace Nf
 			//g_count = 0;
 		}
 		
-		cv::Mat raw,frame;
+		cv::Mat raw,frame,roi;
 		if(m_vineWidget->m_cap->isOpened()) {
 			(*m_vineWidget->m_cap) >> raw;
 
-			if(g_count == 105) {
-				g_points.save("C:/Users/Joey/Documents/points.txt", arma::raw_ascii);
-			}
-
 			if(raw.empty()) {
 				msleep(100);
+				if(!g_saved) {
+					g_points.save("C:/Users/Joey/Documents/points.txt", arma::raw_ascii);
+					g_saved = true;
+				}
 				return;
 			}
 
-			if(raw.size().width > 640) {
-				f64 scale = 640.0/(f64)raw.size().width;
-				cv::resize(raw, frame, cv::Size(640,raw.size().height*scale));
-			} else {
-				frame = raw;
-			}
+			frame = raw;
+			cv::Rect lightRect(325,42,8,8);
+			roi = frame(lightRect);
+			cv::Scalar meanVal = cv::mean(roi);
+			f64 meanBrightness = ((f64)meanVal(0)+meanVal(1)+meanVal(2)+meanVal(3))/3.0;
 
 			RPData rp;
 			IplImage im = frame;
@@ -644,11 +658,11 @@ namespace Nf
 			Squarei robotRect = robotParams.first; Vec2d headCen = robotParams.second; 
 
 			Vec2d deltaObstacle = FindClosestObstacleDelta(headCen, obstacleRes.first);
-			arma::vec row = arma::zeros<arma::vec>(4);
-			row(0) = headCen.x; row(1) = headCen.y; row(2) = deltaObstacle.x; row(3) = deltaObstacle.y;
-			if(g_count >= 63)
-				g_points = arma::join_vert(g_points, row.t());
+			arma::vec row = arma::zeros<arma::vec>(5);
+			row(0) = headCen.x; row(1) = headCen.y; row(2) = deltaObstacle.x; row(3) = deltaObstacle.y; row(4) = meanBrightness;
+			g_points = arma::join_vert(g_points, row.t());
 
+#if 0
 			switch(m_vineWidget->m_controlState) {
 			case TRS_FREE_GROWING:
 				{
@@ -681,8 +695,10 @@ namespace Nf
 					break;
 				}
 			}
+#endif
 
 			DrawDetails(DD_OBSTACLES, frame, headCen, deltaObstacle, obstacleRes.first, robotParams.first, robotRes.first);
+			cv::rectangle(frame, lightRect, cvScalar(0,255,0), 1);
 			//DrawDetails(DD_ROBOT, robotRes.second, headCen, obstacleRes.first, robotParams.first, robotRes.first);
 			//DrawDetails(DD_OBSTACLES, obstacleRes.second, headCen, obstacleRes.first, robotParams.first, robotRes.first);
 
