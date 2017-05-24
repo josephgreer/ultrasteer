@@ -133,5 +133,9 @@ for jj=1:length(paths)
     subplot(2,1,2);
     scatter(breakpoints(jj,1), breakpoints(jj,3), 'k', 'LineWidth', 2);
 end
+
+h = figure(1);
+set(h, 'Position', [100 100 350 500]);
+pause(1);
 tightfig;
 % set(gca,'yscale','log');

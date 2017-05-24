@@ -14,6 +14,11 @@ u32 lastTimePressureVisited = 0;
 f64 aveTimePerPressureLoop = 0;
 f64 currPressures[N_TURN_ACT] = {0,0,0};
 
+
+s32 mainChamberPressurePin = A8;
+
+int ledPin = 2;
+
 ActuatorMapper *mapper[N_TURN_ACT];
 
 s32 regulatorPins[N_TURN_ACT] = { 9, 10, 11 };
@@ -72,25 +77,24 @@ void controlPressures()
   if (dt == 0)
     return;
 
-  for (s32 i = 0; i < N_TURN_ACT-1; i++) {
+  for (s32 i = 0; i < N_TURN_ACT-2; i++) {
     controlPressure(i, dt);
   }
 
-  Serial.println(String(currPressures[0], 6) + " "  + String(currPressures[1], 6));
+  f64 mainChamberPress = analogRead(mainChamberPressurePin) / 1024.0;
+
+  Serial.println(String(millis()) + " " + String(currPressures[0], 6) + " " + String(mainChamberPress,6));
 }
 
-double freqMin = 0.05;
-double freqMax = 2;
-double freqStep = 0.06;
-double currFreq = 0.05;
-double t0 = 0;
-double delayTime = 3;
-double activeTime = 360;
-double amplitude = 0.4;
-int firstCount = 0;
-int ledPin = 2;
 
-bool begin = true;
+f64 actuatorPressure = 0;
+f64 mainChamberPressure = 0.4;
+f64 actuatorStepPressure = 0.025;
+f64 maxActuatorPressure = 0.15;
+u32 activeTime = 7500;
+u32 delayTime = 3000;
+
+bool begin = false;
 
 void setup() {
   Serial.begin(57600);
@@ -104,11 +108,16 @@ void setup() {
     pinMode(regulatorPins[i], OUTPUT);
   }
 
+  pinMode(mainChamberPressurePin, INPUT);
   pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
 
 }
 
 bool ledOn = false;
+
+u32 t0 = 0;
+u32 t;
 
 void loop() {
   if(Serial.available()) {
@@ -118,57 +127,31 @@ void loop() {
   }
   if(!begin)
     return;
-  if(t0 == 0) {
-    t0 = micros()*1e-6;
-    digitalWrite(ledPin, HIGH);
-  }
 
-  if(currFreq > freqMax)
-    return;
-
-  double t = micros()*1e-6;
-  if(t-t0 > activeTime && currFreq == 0 && firstCount < 2) {
-    t0 = 0;
-    pressureSetPoints[0] = 0;
-    pressureSetPoints[1] = 0;
-    ACTUATE_REGULATOR(0, 0);
-    ACTUATE_REGULATOR(1, 0);
+  if(actuatorPressure > maxActuatorPressure) {
     digitalWrite(ledPin, LOW);
-    delay((int)(delayTime*1e3));
-    Serial.println("Staying on " + String(currFreq,6) + "Hz");
-    firstCount++;
-    if(firstCount == 2)
-      currFreq = freqMin;
-  } else if(t-t0 > activeTime) {
-    t0 = 0;
-    pressureSetPoints[0] = 0;
-    pressureSetPoints[1] = 0;
-    ACTUATE_REGULATOR(0, 0);
-    ACTUATE_REGULATOR(1, 0);
-    digitalWrite(ledPin, LOW);
-    delay((int)(delayTime*1e3));
-    currFreq = currFreq+freqStep;
-    Serial.println("Moving onto " + String(currFreq,6) + "Hz");
     return;
   }
 
-#if 1
-  double amnt = amplitude*(cos(2*PI*currFreq*(t-t0)));
-  if(amnt > 0) {
-    pressureSetPoints[0] = abs(amnt);
-    pressureSetPoints[1] = 0;
-  } else {
-    pressureSetPoints[1] = abs(amnt);
-    pressureSetPoints[0] = 0;
-  }
+  pressureSetPoints[0] = actuatorPressure;
 
+  if(t0 == 0)
+    t0 = millis();
+
+  t = millis();
+
+  digitalWrite(ledPin, HIGH);
+
+  analogWrite(3, (s32)(mainChamberPressure*255.0+0.5));
+
+  if(t-t0 > activeTime) {
+    t0 = 0;
+    digitalWrite(ledPin, LOW);
+    delay(delayTime);
+    actuatorPressure = actuatorPressure+actuatorStepPressure;
+    Serial.println("Moving onto prssure " + String(actuatorPressure,6));
+    return;
+  }
+    
   controlPressures();
-#else
-  double amnt = 0.5*amplitude*(cos(2*PI*currFreq*(t-t0))+1);
-  if(amnt > 0) {
-    analogWrite(3, (s32)(amnt*255.0+0.5));
-  }
-  f64 pressure = analogRead(A8) / 1024.0;;
-  Serial.println(String(amnt, 6) + " " + String(pressure, 6));
-#endif
 }
