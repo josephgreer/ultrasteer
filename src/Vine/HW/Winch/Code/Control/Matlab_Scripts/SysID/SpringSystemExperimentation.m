@@ -19,11 +19,16 @@ systemFull = @(x)(FullSpringSystemEquations(x, ks, leq, d, psis,1));
 xs = real(xs);
 ls = xs(1:3);
 
-targetPos = [0;0;200];
+cameraParams.targetPosition = [0;0;200];
+cameraParams.targetSize = 500;
+cameraParams.focalLength = 182; % expressed in pixels
 
 handles = [];
-figure;
+h = figure;
+set(h,'Position',[0 0 900 400]);
+subplot(1,2,1);
 handles = drawVine(xs,d,handles);
+handles = drawImage(xs,d,cameraParams,handles);
 daspect([1 1 1]);
 view([15 45]);
 xlim([-80 80]);
@@ -33,10 +38,10 @@ xlabel('x');
 ylabel('y');
 zlabel('z');
 grid on;
-htitle = title(sprintf('k = [%f %f %f], l = [%f %f %f], fval=[%f %f %f]', ks(1), ks(2), ks(3),...
-    ls(1), ls(2), ls(3), fval(1), fval(2),fval(3)));
+htitle = title(sprintf('k = [%f %f %f] fval=[%f %f %f]', ks(1), ks(2), ks(3),...
+    fval(1), fval(2),fval(3)));
 
-scatter3(targetPos(1),targetPos(2),targetPos(3));
+scatter3(cameraParams.targetPosition(1),cameraParams.targetPosition(2),cameraParams.targetPosition(3),200,'filled');
 hold on;
 
 while(true)
@@ -69,6 +74,7 @@ while(true)
     assert(norm(xs(1:3)-ls)<1e-4);
     
     handles = drawVine(xs,d,handles);
-    set(htitle, 'String', sprintf('k = [%f %f %f], l = [%f %f %f], fval=[%f %f %f]', ks(1), ks(2), ks(3),...
-    ls(1), ls(2), ls(3), fval(1), fval(2),fval(3)));
+    handles = drawImage(xs,d,cameraParams,handles);
+    set(htitle, 'String', sprintf('k = [%f %f %f], fval=[%f %f %f]', ks(1), ks(2), ks(3),...
+    fval(1), fval(2),fval(3)));
 end

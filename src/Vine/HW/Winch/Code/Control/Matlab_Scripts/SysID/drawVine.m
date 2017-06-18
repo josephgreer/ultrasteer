@@ -6,7 +6,7 @@ npoints = 100;
 
 thetas = linspace(0,2*pi,npoints).';
 
-
+subplot(1,2,1);
 hold on;
 if(~isfield(handles,'baseCircle'))
     handles.baseCircle = plot3(zeros(npoints,1),zeros(npoints,1),zeros(npoints,1));
