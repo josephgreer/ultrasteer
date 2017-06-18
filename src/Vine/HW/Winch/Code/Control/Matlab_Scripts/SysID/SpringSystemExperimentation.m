@@ -14,10 +14,12 @@ system = @(l)(SpringSystemEquations(l, ks, leq, d));
 ls = real(ls);
 % xs = ls;
 
-systemFull = @(x)(FullSpringSystemEquations(x, ks, leq, d, psis));
+systemFull = @(x)(FullSpringSystemEquations(x, ks, leq, d, psis,1));
 [xs, fval] = fsolve(systemFull, leq(1:n_actuators));
 xs = real(xs);
 ls = xs(1:3);
+
+targetPos = [0;0;200];
 
 handles = [];
 figure;
@@ -26,13 +28,16 @@ daspect([1 1 1]);
 view([15 45]);
 xlim([-80 80]);
 ylim([-80 80]);
-zlim([0 100]);
+zlim([0 250]);
 xlabel('x');
 ylabel('y');
 zlabel('z');
 grid on;
 htitle = title(sprintf('k = [%f %f %f], l = [%f %f %f], fval=[%f %f %f]', ks(1), ks(2), ks(3),...
     ls(1), ls(2), ls(3), fval(1), fval(2),fval(3)));
+
+scatter3(targetPos(1),targetPos(2),targetPos(3));
+hold on;
 
 while(true)
     char = getkey(1);
@@ -56,7 +61,7 @@ while(true)
     ls = real(ls);
 %     xs = ls;
     
-    systemFull = @(x)(FullSpringSystemEquations(x, ks, leq, d, psis));
+    systemFull = @(x)(FullSpringSystemEquations(x, ks, leq, d, psis,1));
     [xs, fval] = fsolve(systemFull, leq(1:n_actuators));
     xs = real(xs);
     ls = xs(1:3);

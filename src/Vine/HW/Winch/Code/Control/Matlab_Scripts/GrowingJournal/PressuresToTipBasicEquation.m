@@ -9,11 +9,12 @@ ls = real(ls);
 phi = lengthsToPhi(ls);
 l = mean(ls);
 kappa = lengthsToKappa(ls,radius);
+kappa = real(kappa);
 theta = kappa*l;
 
 
 RR = Rz(phi);
 RR = R0*QuatToRotationMatrix(AxisAngleToQuat(RR(:,2)));
 
-tip = kinematicParametersToTipPoint(l,phi,theta,R0,pos0);
+tip = real(kinematicParametersToTipPoint(l,phi,theta,R0,pos0));
  end

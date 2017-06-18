@@ -1,5 +1,5 @@
 function tip = kinematicParametersToTipPoint(l,phi,theta,R0,x0)
-if(abs(theta) < 1e-7)
+if(abs(theta) < 1e-5)
     tip = l*R0(:,3)+x0;
     return;
 end
