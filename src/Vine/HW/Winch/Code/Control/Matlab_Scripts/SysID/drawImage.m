@@ -1,5 +1,5 @@
 function [handles,pos,size] = DrawImage(xs,d,cameraParams, handles)
-[pos,size,handles] = StiffnessesToImagePoint(xs,d,cameraParams,handles);
+[pos,size,handles] = LengthsToImagePoint(xs,d,cameraParams,handles);
 if(~isfield(handles,'imTarget'))
     handles.imTarget = scatter(pos(1),pos(2),size*10,'r','filled');
 else

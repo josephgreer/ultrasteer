@@ -54,6 +54,7 @@ hold on;
 J = eye(2,3);
 kk = diag([0.05 0.05 0.05 0]);
 kk = kk(1:3,:);
+
 for i=1:4
     ks(1:3) = kk(:,i);
     systemFull = @(x)(FullSpringSystemEquations(x, ks, leq, d, psis,1));
@@ -65,8 +66,80 @@ for i=1:4
     if(i < 4)
         J(:,i) = pos(1:2)/norm(kk(:,i));
     end
-    pause(0.5);
+%     pause(0.5);
 end
+
+
+% this is the point we're taking approximate jacobian around
+k0 = [0.05; 0.05; 0.00];
+ks(1:3) = k0;
+systemFull = @(x)(FullSpringSystemEquations(x, ks, leq, d, psis,1));
+[xs, fval] = fsolve(systemFull, leq(1:n_actuators));
+xs = real(xs);
+ls = xs(1:3);
+[theta,l,phi] = lengthsToLThetaPhiNonUniform(ls,d,psis);
+arcSpace0 = [phi; theta; l; ls(1); ls(2); ls(3)];
+tip0 = kinematicParametersToTipPoint(l,phi,theta,eye(3),zeros(3,1));
+R0 = KinematicParametersToTipFrame(phi,theta,l);
+im0 = KinematicParametersToImagePoint(phi,theta,l,controlParams);
+
+% approximate jacobian
+JJarc = zeros(6,4);
+JJcart = zeros(6,4);
+JJvis = zeros(2,4);
+
+alphas = [1.0001; 1; 1; 1];
+kk = diag([0 0.0001 0.0001 0.0001]);
+kk = kk(2:end,:);
+kk = repmat(k0,1,4)+kk;
+for i=1:4
+    alpha = alphas(i);
+    ks(1:3) = kk(:,i);
+    kcurr = ks/alpha;
+    leqs = leq*alpha;
+    
+    
+    systemFull = @(x)(FullSpringSystemEquations(x, ks, leqs, d, psis,1));
+    [xs, fval] = fsolve(systemFull, leq(1:n_actuators));
+    xs = real(xs);
+    ls = xs(1:3);
+    [theta,l,phi] = lengthsToLThetaPhiNonUniform(ls,d,psis);
+    tip = kinematicParametersToTipPoint(l,phi,theta,eye(3),zeros(3,1));
+    R = KinematicParametersToTipFrame(phi,theta,l);
+    dR = R*R0.';
+    dOmega = SO3HatInverse(SO3Log(dR));
+    im = KinematicParametersToImagePoint(phi,theta,l,controlParams);
+    
+    arcSpace = [phi; theta; l; ls(1); ls(2); ls(3)];
+    JJarc(:,i) = (arcSpace-arcSpace0);
+    JJcart(:,i) = [tip-tip0;dOmega];
+    JJvis(:,i) = im-im0;
+    if i==1
+        JJarc(:,i) = JJarc(:,i)/abs(alpha-1);
+        JJcart(:,i) = JJcart(:,i)/abs(alpha-1);
+        JJvis(:,i) = JJvis(:,i)/abs(alpha-1);
+    end
+    if(i > 1)
+        JJarc(:,i) = JJarc(:,i)/norm(kk(:,i)-k0);
+        JJcart(:,i) = JJcart(:,i)/norm(kk(:,i)-k0);
+        JJvis(:,i) = JJvis(:,i)/norm(kk(:,i)-k0);
+    end
+    
+end
+
+ks(1:3) = k0;
+systemFull = @(x)(FullSpringSystemEquations(x, ks, leqs, d, psis,1));
+[xs, fval] = fsolve(systemFull, leq(1:n_actuators));
+xs = real(xs);
+ls = xs(1:3);
+JJArcAnalytical = JacobianArcSpace(ls,ks,1,leqs,d,psis);
+JJCartAnalytical = JacobianCartesian(ls,ks,1,leqs,d,psis);
+JJVisAnalytical = JacobianVisual(controlParams,ls,ks,alpha,leqs,d,psis);
+
+for i=1:4
+    display(sprintf('i = %f', atan2(JJvis(2,i),JJvis(1,i))));
+end
+
 
 controlParams.targetPosition = [100;100;110]; 
 xlim([min(-80,controlParams.targetPosition(1)) max(80,controlParams.targetPosition(1))]);

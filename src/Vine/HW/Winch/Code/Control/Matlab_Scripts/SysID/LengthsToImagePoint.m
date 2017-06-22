@@ -1,4 +1,4 @@
-function [pos,size,handles] = StiffnessesToImagePoint(xs,d,cameraParams, handles)
+function [pos,size,handles] = LengthsToImagePoint(xs,d,cameraParams, handles)
 n_actuators = 3;
 assert(length(xs) == n_actuators || length(xs) == n_actuators+2);
 
