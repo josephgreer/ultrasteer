@@ -51,6 +51,9 @@ for i=1:length(inputs)
     J2 = horzcat(J2,diff(f,inputs(i)));
 end
 
+
+% l = alpha*l;
+% theta = alpha*theta;
 r = l/theta;
 cen_of_curve = r*[cos(phi); sin(phi); 0];
 delta = -cen_of_curve; delta = delta/norm(delta);

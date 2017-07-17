@@ -10,8 +10,8 @@ ll = leq;
 psis = actuatorThetas();
 
 handles = [];
-figure;
-set(gca,'fontsize',22)
+h = figure;
+set(h, 'Position', [0 0 960 960]);
 hold on;
 daspect([1 1 1]);
 xlabel('x');
@@ -170,6 +170,10 @@ view(45,15);
 xlabel('x (cm)');
 ylabel('y (cm)');
 zlabel('z (cm)');
+set(gca, 'FontSize', 72, 'FontName', 'Times New Roman');
+set(gca, 'XTickLabel','');
+set(gca, 'YTickLabel','');
+set(gca, 'ZTickLabel','');
 box on;
 
 % na = size(alphas,2);

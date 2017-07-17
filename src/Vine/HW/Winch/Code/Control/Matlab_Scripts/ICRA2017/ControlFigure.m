@@ -85,25 +85,35 @@ end
 fclose all;
 
 h = figure;
-subplot(1,2,1);
+subplot(2,1,1);
 hold all;
 % plot([1:size(errors,1)]/30,sqrt(sum(errors.^2,2)),'LineWidth',2);
-plot([1:size(errors,1)]/30,errors(:,1),'LineWidth',2);
-plot([1:size(errors,1)]/30,errors(:,2),'LineWidth',2);
+plot([1:size(errors,1)]/30,errors(:,1),'LineWidth',4);
+plot([1:size(errors,1)]/30,errors(:,2),'LineWidth',4);
+box on; grid on;
 ylabel('Error (Px)');
 xlabel('Time (s)');
-set(gca, 'FontSize', 10, 'FontName', 'Times New Roman');
+legend('x Error','y Error');
+xlim([0 size(qs,1)/30]);
+ylim([-200 50]);
+set(gca, 'FontSize', 12, 'FontName', 'Times New Roman');
 
-subplot(1,2,2);
+subplot(2,1,2);
 hold all;
-plot([1:size(qs,1)]/30, 15*qs(:,1),'LineWidth',2);
-plot([1:size(qs,1)]/30, 15*qs(:,2),'LineWidth',2);
-plot([1:size(qs,1)]/30, 15*qs(:,3),'LineWidth',2);
+plot([1:size(qs,1)]/30, 6.89*15*qs(:,1),'LineWidth',4);
+plot([1:size(qs,1)]/30, 6.89*15*qs(:,2),'LineWidth',4);
+plot([1:size(qs,1)]/30, 6.89*15*qs(:,3),'LineWidth',4);
+xlim([0 size(qs,1)/30]);
 xlabel('Time (s)');
-ylabel('Pressure (PSI)');
+ylabel('Pressure (kPa)');
+legend('p_1','p_2','p_3','Orientation','horizontal');
+ylim([0 15]);
 
-set(gca, 'FontSize', 10, 'FontName', 'Times New Roman');
-set(h, 'Position', [0 0 450 150]);
+set(gca, 'FontSize', 12, 'FontName', 'Times New Roman');
+set(h, 'Position', [0 0 320 300]);
+box on;
+grid on;
+pause(1);
 tightfig;
 % title('errors');
 % figure;
@@ -155,4 +165,4 @@ if(false)
     end
 end
 
-export_fig -transparent ControlDataFigure.pdf
+% export_fig -transparent ControlDataFigure.pdf

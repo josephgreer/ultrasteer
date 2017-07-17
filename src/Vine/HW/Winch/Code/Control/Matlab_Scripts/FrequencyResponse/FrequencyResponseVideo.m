@@ -100,19 +100,20 @@ for jj=1:length(paths)
     
     breakpoint = min(find(magnitudes < 1/sqrt(2)*magnitudes(1)));
     breakpoints(jj,1) = freqs(breakpoint);
-    breakpoints(jj,2) = magnitudes(breakpoint);
+    breakpoints(jj,2) = magnitudes(breakpoint)/magnitudes(1);
     breakpoints(jj,3) = phases(breakpoint);
     
     figure(1);
     subplot(2,1,1);
-    plot(freqs,magnitudes,'LineWidth',2);
+    plot(freqs,magnitudes/magnitudes(1),'LineWidth',4);
     box on;
     hold on;
     set(gca,'xscale','log');
     set(gca,'yscale','log');
     xlim([0 2]);
+    ylim([0.0316 1.3]);
     subplot(2,1,2);
-    plot(freqs,phases,'LineWidth',2);
+    plot(freqs,phases,'LineWidth',4);
     box on;
     hold on;
     set(gca,'xscale','log');
@@ -121,21 +122,27 @@ for jj=1:length(paths)
 end
 
 subplot(2,1,1);
-legend(cellstr(num2str(lengths', 'L=%-d"')));
-ylabel('\kappa 1/inches');
+grid on;
+legend(cellstr(num2str(round(lengths'*2.54), 'L=%d cm')));
+ylabel('\kappa/\kappa_{DC}');
 subplot(2,1,2);
-legend(cellstr(num2str(lengths', 'L=%-d"')));
+% legend(cellstr(num2str(round(lengths'*2.54), 'L=%d cm')));
 ylabel('degree');
 xlabel('Frequency (Hz)');
 for jj=1:length(paths)
     subplot(2,1,1);
-    scatter(breakpoints(jj,1), breakpoints(jj,2), 'k', 'LineWidth', 2);
+    scatter(breakpoints(jj,1), breakpoints(jj,2), 150, 'k', 'LineWidth', 2);
     subplot(2,1,2);
-    scatter(breakpoints(jj,1), breakpoints(jj,3), 'k', 'LineWidth', 2);
+    grid on;
+    scatter(breakpoints(jj,1), breakpoints(jj,3), 150, 'k', 'LineWidth', 2);
 end
 
+subplot(2,1,1);
+set(gca,'FontSize',12,'FontName','Times New Roman');
+subplot(2,1,2);
+set(gca,'FontSize',12,'FontName','Times New Roman');
 h = figure(1);
-set(h, 'Position', [100 100 350 500]);
+set(h, 'Position', [100 100 320 320]);
 pause(1);
 tightfig;
 % set(gca,'yscale','log');

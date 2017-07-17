@@ -11,17 +11,15 @@ psis = actuatorThetas();
 
 handles = [];
 h = figure;
-set(h,'Position',[0 0 900 300]);
-for pp =1:2
-    subplot(1,2,pp);
-    set(gca,'fontsize',22)
-    hold on;
-    daspect([1 1 1]);
-    xlabel('x');
-    ylabel('y');
-    zlabel('z');
-    grid on;
-end
+set(h,'Position',[0 0 960 960]);
+% set(h,'Position',[0 0 725 600]);
+set(gca,'fontsize',72,'FontName','Times New Roman');
+hold on;
+daspect([1 1 1]);
+xlabel('x');
+ylabel('y');
+zlabel('z');
+grid on;
 
 kmults = [2.5; 2.5; 2.5]/3;
 kmain = 2.5/3;
@@ -32,7 +30,7 @@ activeActuators = [1 2; 1 3; 2 3];
 alphas = 1;%linspace(0.15,1,12);%, 0.5];%linspace(0.5,1,2);
 
 faceColors = ['b','b','b','b','b','b','b','b','b','b','b','b', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b'];
-faceAlphas = 0.25;%linspace(0.75, 0.1, length(alphas));
+faceAlphas = 0.5;%linspace(0.75, 0.1, length(alphas));
 
 controlParams.targetPosition = [0;0;1e6+200];
 controlParams.targetGoal = [0;0];
@@ -67,17 +65,17 @@ for aa = 1:length(alphas)
     ps1 = ps1(:);
     ps2 = ps2(:);
     
-%     systemFull = @(x)(FullSpringSystemEquations(x, [0.05;0;0;kmain;ktor], leq, d, psis,1));
-%     [xs, fval] = fsolve(systemFull, leq(1:n_actuators));
-%     xs = real(xs);
-%     ls = xs(1:3);
-%     [theta,l,phi] = lengthsToLThetaPhiNonUniform(ls,d,psis);
-%     J0 = JacobianVisual(controlParams,ls,[zeros(3,1);kmain;ktor],1,leq,d,psis);
-%     angles0 = zeros(3,1); magnitudes0 = zeros(3,1);
-%     for col = 2:4
-%         angles0(col-1) = atan2(J0(2,col),J0(1,col));
-%         magnitudes0(col-1) = norm(J0(:,col));
-%     end
+    %     systemFull = @(x)(FullSpringSystemEquations(x, [0.05;0;0;kmain;ktor], leq, d, psis,1));
+    %     [xs, fval] = fsolve(systemFull, leq(1:n_actuators));
+    %     xs = real(xs);
+    %     ls = xs(1:3);
+    %     [theta,l,phi] = lengthsToLThetaPhiNonUniform(ls,d,psis);
+    %     J0 = JacobianVisual(controlParams,ls,[zeros(3,1);kmain;ktor],1,leq,d,psis);
+    %     angles0 = zeros(3,1); magnitudes0 = zeros(3,1);
+    %     for col = 2:4
+    %         angles0(col-1) = atan2(J0(2,col),J0(1,col));
+    %         magnitudes0(col-1) = norm(J0(:,col));
+    %     end
     
     % this is the point we're taking approximate jacobian around
     ks = zeros(3,1);
@@ -91,8 +89,10 @@ for aa = 1:length(alphas)
     tip = kinematicParametersToTipPoint(l,phi,theta,eye(3),zeros(3,1));
     controlParams.targetPosition = tip+RR*[0;0;1e6];
     im0 = KinematicParametersToImagePoint(phi,theta,l,controlParams);
+    tip0 = tip;
     
     J0 = zeros(2,4);
+    JJ0 = zeros(3,4);
     
     alphs = [1.0001; 1; 1; 1];
     kk = diag([0 0.0001 0.0001 0.0001]);
@@ -112,14 +112,18 @@ for aa = 1:length(alphas)
         ls = xs(1:3);
         [theta,l,phi] = lengthsToLThetaPhiNonUniform(ls,d,psis);
         im = KinematicParametersToImagePoint(phi,theta,l,controlParams);
+        tip = kinematicParametersToTipPoint(l,phi,theta,eye(3),zeros(3,1));
         
         J0(:,i) = im-im0;
+        JJ0(:,i) = tip-tip0;
         if i==1
             J0(:,i) = J0(:,i)/abs(alpha-1);
+            JJ0(:,i) = JJ0(:,i)/abs(alpha-1);
         end
         if(i > 1)
             J0(:,i) = J0(:,i)/norm((kk(:,i)-k0).*kmults);
-        end 
+            JJ0(:,i) = JJ0(:,i)/norm((kk(:,i)-k0).*kmults);
+        end
     end
     
     angles0 = zeros(3,1); magnitudes0 = zeros(3,1);
@@ -127,7 +131,7 @@ for aa = 1:length(alphas)
         angles0(col-1) = wrapTo2Pi(atan2(J0(2,col),J0(1,col)));
         magnitudes0(col-1) = norm(J0(:,col));
     end
-        
+    
     
     for a = 1:size(activeActuators,1)
         poss = zeros(length(ps1),3);
@@ -144,7 +148,7 @@ for aa = 1:length(alphas)
             poss(jj,:) = [pos(1), pos(2), pos(3)];
             pps(jj,:) = ps;
             
-            ks = kmults.*ps;    
+            ks = kmults.*ps;
             systemFull = @(x)(FullSpringSystemEquations(x, [ks;kmain;ktor], leq, d, psis,1));
             [xs, fval] = fsolve(systemFull, leq(1:n_actuators));
             xs = real(xs);
@@ -156,6 +160,7 @@ for aa = 1:length(alphas)
             controlParams.targetPosition = tip+RR*[0;0;1e6];
             
             Jcurr = JacobianVisual(controlParams,ls,[ks;kmain;ktor],1,leq,d,psis);
+            JcurrPhys = JacobianCartesian(ls,[ks;kmain;ktor],1,leq,d,psis);
             
             if(norm(ps) < 1e-4)
                 % this is the point we're taking approximate jacobian around
@@ -170,6 +175,7 @@ for aa = 1:length(alphas)
                 im0 = KinematicParametersToImagePoint(phi,theta,l,controlParams);
                 
                 Jvis = zeros(2,4);
+                Jphys = zeros(3,4);
                 
                 alphs = [1.0001; 1; 1; 1];
                 kk = diag([0 0.0001 0.0001 0.0001]);
@@ -189,28 +195,38 @@ for aa = 1:length(alphas)
                     ls = xs(1:3);
                     [theta,l,phi] = lengthsToLThetaPhiNonUniform(ls,d,psis);
                     im = KinematicParametersToImagePoint(phi,theta,l,controlParams);
+                    tip = kinematicParametersToTipPoint(l,phi,theta,eye(3),zeros(3,1));
                     
                     Jvis(:,bb) = im-im0;
+                    Jphys(:,bb) = tip-tip0;
                     if bb==1
                         Jvis(:,bb) = Jvis(:,bb)/abs(alpha-1);
+                        Jphys(:,bb) = Jphys(:,bb)/abs(alpha-1);
                     end
                     if(bb > 1)
                         Jvis(:,bb) = Jvis(:,bb)/norm((kk(:,bb)-k0).*kmults);
+                        Jphys(:,bb) = Jphys(:,bb)/norm((kk(:,bb)-k0).*kmults);
                     end
                 end
                 Jcurr = Jvis;
+                JcurrPhys = Jphys;
             end
+            JcurrPhys = JcurrPhys(1:3,:);
             
-            cAngErrors = zeros(3,1); cMagErrors = zeros(3,1);
+            cAngErrors = zeros(3,1); cMags = zeros(3,1);
             for col = 2:4
                 cAng = wrapTo2Pi(atan2(Jcurr(2,col),Jcurr(1,col)));
                 cMag = norm(Jcurr(:,col));
-                cMagErrors(col-1) = abs(cMag-magnitudes0(col-1));
+                cMags(col-1) = abs(cMag-magnitudes0(col-1));
                 cAngErrors(col-1) = min(abs(cAng-angles0(col-1)),abs(2*pi-cAng-angles0(col-1)));
+                
+%                 cAng =wrapTo2Pi(atan2(norm(cross(JcurrPhys(:,col),JJ0(:,col))), dot(JcurrPhys(:,col),JJ0(:,col))));
+%                 cAngErrors(col-1) = min(cAng,2*pi-cAng);
+%                 cMags(col-1) = norm(JcurrPhys(:,col))-norm(JJ0(:,col));
             end
             
             angErrors(jj) = rad2deg(mean(cAngErrors));
-            magErrors(jj) = mean(cMagErrors);
+            magErrors(jj) = mean(cMags)/mean(magnitudes0);%./magnitudes0);
             
             jj = jj+1;
         end
@@ -230,57 +246,54 @@ for aa = 1:length(alphas)
             ii = px(i);
             jj = py(i);
             
-            for pp = 1:2
-                subplot(1,2,pp);
-                if aa == length(alphas)
-                    if ii + 1 <= npoints
-                        pointIndex = find(px==ii+1 & py == jj);
-                        stackedPoints = [poss(i,:); poss(pointIndex,:)];
-                        plot3(stackedPoints(:,1), stackedPoints(:,2), stackedPoints(:,3),'k');
-                    end
-                    if ii - 1 >= 0
-                        pointIndex = find(px==ii-1 & py == jj);
-                        stackedPoints = [poss(i,:); poss(pointIndex,:)];
-                        plot3(stackedPoints(:,1), stackedPoints(:,2), stackedPoints(:,3),'k');
-                    end
-                    if jj + 1 <= npoints
-                        pointIndex = find(px==ii & py == jj+1);
-                        stackedPoints = [poss(i,:); poss(pointIndex,:)];
-                        plot3(stackedPoints(:,1), stackedPoints(:,2), stackedPoints(:,3),'k');
-                    end
-                    if jj - 1 >= 0
-                        pointIndex = find(px==ii & py == jj-1);
-                        stackedPoints = [poss(i,:); poss(pointIndex,:)];
-                        plot3(stackedPoints(:,1), stackedPoints(:,2), stackedPoints(:,3),'k');
-                    end
+            if false%aa == length(alphas)
+                if ii + 1 <= npoints
+                    pointIndex = find(px==ii+1 & py == jj);
+                    stackedPoints = [poss(i,:); poss(pointIndex,:)];
+                    plot3(stackedPoints(:,1), stackedPoints(:,2), stackedPoints(:,3),'k');
                 end
-                if ii+1 <= npoints && jj+1 <= npoints
-                    pointIndex1 = find(px == ii+1 & py == jj+1);
-                    pointIndex2 = find(px == ii+1 & py == jj);
-                    pointIndex3 = find(px == ii & py == jj+1);
-                    triGrid = vertcat(triGrid, [i pointIndex1 pointIndex2], [i pointIndex2 pointIndex3]);
+                if ii - 1 >= 0
+                    pointIndex = find(px==ii-1 & py == jj);
+                    stackedPoints = [poss(i,:); poss(pointIndex,:)];
+                    plot3(stackedPoints(:,1), stackedPoints(:,2), stackedPoints(:,3),'k');
                 end
-                
-                if ii-1 >= 1 && jj+1 <= npoints
-                    pointIndex1 = find(px == ii-1 & py == jj+1);
-                    pointIndex2 = find(px == ii-1 & py == jj);
-                    pointIndex3 = find(px == ii & py == jj+1);
-                    triGrid = vertcat(triGrid, [i pointIndex1 pointIndex2], [i pointIndex2 pointIndex3]);
+                if jj + 1 <= npoints
+                    pointIndex = find(px==ii & py == jj+1);
+                    stackedPoints = [poss(i,:); poss(pointIndex,:)];
+                    plot3(stackedPoints(:,1), stackedPoints(:,2), stackedPoints(:,3),'k');
                 end
-                
-                if ii-1 >= 1 && jj-1 >= 1
-                    pointIndex1 = find(px == ii-1 & py == jj-1);
-                    pointIndex2 = find(px == ii-1 & py == jj);
-                    pointIndex3 = find(px == ii & py == jj-1);
-                    triGrid = vertcat(triGrid, [i pointIndex1 pointIndex2], [i pointIndex2 pointIndex3]);
+                if jj - 1 >= 0
+                    pointIndex = find(px==ii & py == jj-1);
+                    stackedPoints = [poss(i,:); poss(pointIndex,:)];
+                    plot3(stackedPoints(:,1), stackedPoints(:,2), stackedPoints(:,3),'k');
                 end
-                
-                if ii+1 <= npoints && jj-1 >= 1
-                    pointIndex1 = find(px == ii+1 & py == jj-1);
-                    pointIndex2 = find(px == ii+1 & py == jj);
-                    pointIndex3 = find(px == ii & py == jj-1);
-                    triGrid = vertcat(triGrid, [i pointIndex1 pointIndex2], [i pointIndex2 pointIndex3]);
-                end
+            end
+            if ii+1 <= npoints && jj+1 <= npoints
+                pointIndex1 = find(px == ii+1 & py == jj+1);
+                pointIndex2 = find(px == ii+1 & py == jj);
+                pointIndex3 = find(px == ii & py == jj+1);
+                triGrid = vertcat(triGrid, [i pointIndex1 pointIndex2], [i pointIndex2 pointIndex3]);
+            end
+            
+            if ii-1 >= 1 && jj+1 <= npoints
+                pointIndex1 = find(px == ii-1 & py == jj+1);
+                pointIndex2 = find(px == ii-1 & py == jj);
+                pointIndex3 = find(px == ii & py == jj+1);
+                triGrid = vertcat(triGrid, [i pointIndex1 pointIndex2], [i pointIndex2 pointIndex3]);
+            end
+            
+            if ii-1 >= 1 && jj-1 >= 1
+                pointIndex1 = find(px == ii-1 & py == jj-1);
+                pointIndex2 = find(px == ii-1 & py == jj);
+                pointIndex3 = find(px == ii & py == jj-1);
+                triGrid = vertcat(triGrid, [i pointIndex1 pointIndex2], [i pointIndex2 pointIndex3]);
+            end
+            
+            if ii+1 <= npoints && jj-1 >= 1
+                pointIndex1 = find(px == ii+1 & py == jj-1);
+                pointIndex2 = find(px == ii+1 & py == jj);
+                pointIndex3 = find(px == ii & py == jj-1);
+                triGrid = vertcat(triGrid, [i pointIndex1 pointIndex2], [i pointIndex2 pointIndex3]);
             end
         end
         
@@ -291,20 +304,16 @@ for aa = 1:length(alphas)
         boundaryPoints = horzcat(boundaryPoints,poss(pointIndex1,:).',poss(pointIndex2,:).',poss(pointIndex3,:).',poss(pointIndex4,:).');
         
         
-        subplot(1,2,1);
         trisurf(triGrid,poss(:,1), poss(:,2), poss(:,3), magErrors, 'EdgeColor', 'none', 'FaceAlpha',faceAlphas(aa));
         colorbar;
-        subplot(1,2,2);
-        trisurf(triGrid,poss(:,1), poss(:,2), poss(:,3), angErrors, 'EdgeColor', 'none', 'FaceAlpha',faceAlphas(aa));
-        colorbar;
-%         scatter3(poss(:,1), poss(:,2), poss(:,3), 'b');
-    
+        %         scatter3(poss(:,1), poss(:,2), poss(:,3), 'b');
+        
         posses{aa} = vertcat(posses{aa},poss);
         mins = min(mins, min(poss,[],1));
         maxs = max(maxs, max(poss,[],1));
     end
     
-%     posses{aa}(find(posses{aa}(:,2) < 0),:) = [];
+    %     posses{aa}(find(posses{aa}(:,2) < 0),:) = [];
 end
 
 % for aa = 1:length(alphas)-1
@@ -315,17 +324,19 @@ end
 %     end
 % end
 
-for pp=1:2
-    subplot(1,2,pp)
-    xlim([mins(1) maxs(1)]);
-    ylim([mins(2) maxs(2)]);
-    zlim([mins(3) maxs(3)]);
-    view(45,15);
-    xlabel('x (cm)');
-    ylabel('y (cm)');
-    zlabel('z (cm)');
-    box on;
-end
+set(gca,'XTickLabel','');
+set(gca,'YTickLabel','');
+set(gca,'ZTickLabel','');
+xlim([mins(1) maxs(1)]);
+ylim([mins(2) maxs(2)]);
+zlim([mins(3) maxs(3)]);
+view(45,15);
+xlabel('x (cm)');
+ylabel('y (cm)');
+zlabel('z (cm)');
+box on;
+pause(1);
+% tightfig;
 
 % na = size(alphas,2);
 % nactive = size(activeActuators,1);

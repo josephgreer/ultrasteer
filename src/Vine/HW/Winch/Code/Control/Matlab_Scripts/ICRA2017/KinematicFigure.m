@@ -106,6 +106,8 @@ display(sprintf('error = %f %f',error,error/numIndices));
 
 
 h = figure(1);
+set(h,'Position',[0 0 320*2 250*2]);
+set(gca,'FontSize',12*2,'FontName','Times New Roman');
 %subplot(1,3,[1 2]);
 
 xs = RotatePoints(xs,R0,1/10);
@@ -113,19 +115,19 @@ x0.pos = zeros(3,1);
 x0.q = RotationMatrixToQuat(eye(3));
 rangePoints = horzcat(xs,{x0});
 
-workspacePoints = GenerateRandomPointsInWorkspace(500,kleq(1:3),kleq(4),kleq(5)/10, leqs, gammas, torGamma, radius, psis, R0, zeros(3,1));
-workspacePoints = RotatePoints(workspacePoints,R0,1/10);
-workspacePoints = cell2mat(workspacePoints);
-workspacePoints = [workspacePoints.pos].';
-
+% workspacePoints = GenerateRandomPointsInWorkspace(500,kleq(1:3),kleq(4),kleq(5)/10, leqs, gammas, torGamma, radius, psis, R0, zeros(3,1));
+% workspacePoints = RotatePoints(workspacePoints,R0,1/10);
+% workspacePoints = cell2mat(workspacePoints);
+% workspacePoints = [workspacePoints.pos].';
+% 
 range = FindPointArrayRange(rangePoints,5);
 hold on;
-
-% K = delaunay(workspacePoints(:,1), workspacePoints(:,2), workspacePoints(:,3));
-%tetramesh(K,workspacePoints,'FaceColor',[0.7,0.7,0.7],'FaceAlpha',0.1,'EdgeColor','none');%,workspacePoints(:,1), workspacePoints(:,2), workspacePoints(:,3));
-K = convhull(workspacePoints(:,1), workspacePoints(:,2), workspacePoints(:,3));
-trimesh(K,workspacePoints(:,1),workspacePoints(:,2),workspacePoints(:,3),'FaceColor',[0.7,0.7,0.7],'FaceAlpha',0.1,'EdgeColor',[0 0 0]);
-%tetramesh(K,workspacePoints,'FaceColor',[0.7,0.7,0.7],'FaceAlpha',0.1,'EdgeColor','none');%,workspacePoints(:,1), workspacePoints(:,2), workspacePoints(:,3));
+% 
+% % K = delaunay(workspacePoints(:,1), workspacePoints(:,2), workspacePoints(:,3));
+% %tetramesh(K,workspacePoints,'FaceColor',[0.7,0.7,0.7],'FaceAlpha',0.1,'EdgeColor','none');%,workspacePoints(:,1), workspacePoints(:,2), workspacePoints(:,3));
+% K = convhull(workspacePoints(:,1), workspacePoints(:,2), workspacePoints(:,3));
+% trimesh(K,workspacePoints(:,1),workspacePoints(:,2),workspacePoints(:,3),'FaceColor',[0.7,0.7,0.7],'FaceAlpha',0.1,'EdgeColor','none');
+% tetramesh(K,workspacePoints,'FaceColor',[0.7,0.7,0.7],'FaceAlpha',0.1,'EdgeColor','none');%,workspacePoints(:,1), workspacePoints(:,2), workspacePoints(:,3));
 
 workspacePoints = GenerateRandomPointsInWorkspace(100,kleq(1:3),kleq(4),kleq(5), leqs, gammas, torGamma, radius, psis, R0, zeros(3,1));
 workspacePoints = RotatePoints(workspacePoints,R0,1/10);
@@ -135,7 +137,7 @@ workspacePoints = [workspacePoints.pos].';
 % K = delaunay(workspacePoints(:,1), workspacePoints(:,2), workspacePoints(:,3));
 % tetramesh(K,workspacePoints,'FaceColor',[0.7,0.7,0.7],'FaceAlpha',1,'EdgeColor','none');%,workspacePoints(:,1), workspacePoints(:,2), workspacePoints(:,3));
 K = convhull(workspacePoints(:,1), workspacePoints(:,2), workspacePoints(:,3));
-trimesh(K,workspacePoints(:,1),workspacePoints(:,2),workspacePoints(:,3),'FaceColor',[0.7,0.7,0.7],'FaceAlpha',1,'EdgeColor',[0 0 0]);
+trimesh(K,workspacePoints(:,1),workspacePoints(:,2),workspacePoints(:,3),'FaceColor',[0.7,0.7,0.7],'FaceAlpha',1,'EdgeColor','none');
 
 drawFrames(1, {x0}, 7.5, [], []);
 
@@ -145,7 +147,7 @@ truePosCoords = cell2mat(xs);
 truePosCoords = [truePosCoords.pos].';
 truePosCoords = truePosCoords*1.05;
 truePosCoords(1,:) = [];
-scatter3(truePosCoords(:,1),truePosCoords(:,2),truePosCoords(:,3),'MarkerEdgeColor',[0 0 0],'MarkerFaceColor',[0 .75 .75]);
+scatter3(truePosCoords(:,1),truePosCoords(:,2),truePosCoords(:,3),100,errors/10,'filled','MarkerEdgeColor',[0 0 0]);%'MarkerFaceColor',[0 .75 .75]);
 view(3);
 xlim(range(1,:));
 ylim(range(2,:));
@@ -154,7 +156,6 @@ xlabel('x (cm)');
 ylabel('y (cm)');
 zlabel('z (cm)');
 view([-19 37]);
-set(gca, 'FontSize', 10, 'FontName', 'Times New Roman');
 daspect([1 1 1]);
 grid on;
 box on;
@@ -176,10 +177,13 @@ box on;
 % view([-50 14]);
 % daspect([1 1 1]);
 
-set(h,'Position',[0 0 450 450]);
+caxis([0 max(errors/10)]);
+hh = colorbar;
+ylabel(hh,'Error (cm)');
+set(hh,'YTick',[0 16]);
 pause(0.1);
-tightfig;
-%print(gcf, '-dbmp256', 'KinematicDataFigureScatterOnly.bmp','-r300');
+% tightfig;
+% print(gcf, '-dbmp256', 'KinematicDataFigureScatterOnly.png','-r300');
 %%
 % subplot(1,3,3);
 % hold on;

@@ -92,7 +92,7 @@ for i=1:length(files)
     if i<5
         ax = gca;
         ax.ColorOrderIndex = availableIndices(i);
-        plot(lengthsExpected,expectedDistances,'LineWidth',2);
+        plot(lengthsExpected,expectedDistances,'LineWidth',4);
         ax.ColorOrderIndex = ax.ColorOrderIndex-1;
         scatter(lengths,dataDistances,150,'LineWidth',2);
         xlim([0 0.4]);
@@ -108,26 +108,35 @@ for i=1:length(files)
     x = 0;
 end
 
-figure(10);
-legendText = num2cell(strcat(num2str(kron(pressures,[1;1])), ' PSI'),2);
+h = figure(10);
+set(h,'Position',[0 0 320 200]);
+legendText = num2cell(num2str(kron(6.895*pressures,[1;1]),'%.2f kPa'),2);
 legend(legendText);
 xlabel('Robot Length (m)');
 ylabel('Tip Deflection (m)');
+set(gca,'FontSize',12,'FontName','Times New Roman');
 box on;
+grid on;
+pause(1);
+tightfig;
 
 
-figure;
+h = figure;
+set(h,'Position',[0 0 320 200]);
 ps = linspace(0,max(pressures)+0.1,100);
-plot(ps,baseFun(ks,ps),'k','LineWidth',4);
+plot(ps*6.895,baseFun(ks,ps),'k','LineWidth',4);
 hold on;
 
-scatter(pressures, curvatures,300,'LineWidth',4);
-ylim([0 4]);
+scatter(pressures*6.895, curvatures,300,'LineWidth',4);
+% ylim([0 4]);
 xlim([0 0.15]);
 
 box on;
 grid on;
-xlim([0 max(ps)])
-xlabel('sPAM Pressure (PSI)');
+xlim([0 max(ps)*6.895])
+xlabel('sPAM Pressure (kPa)');
 ylabel('Robot Curvature (1/m)');
 legend('Model','Measured');
+set(gca,'FontSize',12,'FontName','Times New Roman');
+pause(1);
+tightfig;
