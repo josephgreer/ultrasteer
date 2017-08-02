@@ -40,6 +40,10 @@ namespace Nf
     void onRecordingData();
     CLASS_CALLBACK(onRecordingData, Teleoperation2DWidget);
 
+    std::tr1::shared_ptr < Nf::BoolParameter > m_rotateInline;
+    void onRotateInline();
+    CLASS_CALLBACK(onRotateInline, Teleoperation2DWidget);
+
     std::tr1::shared_ptr <ImageViewer2DTeleoperationWidget> m_imageViewer;
     std::tr1::shared_ptr <TeleoperationVisualizationWidget> m_teleoperationVisualizer;
     QGridLayout *m_layout;

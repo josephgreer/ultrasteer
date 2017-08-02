@@ -40,7 +40,7 @@
         </size>
        </property>
        <property name="text">
-        <string>10 deg. Negative Rotation</string>
+        <string>180 deg. Negative Rotation</string>
        </property>
       </widget>
      </item>
@@ -291,7 +291,7 @@
         </size>
        </property>
        <property name="text">
-        <string>10 deg. Positive Rotation</string>
+        <string>180 deg. Positive Rotation</string>
        </property>
       </widget>
      </item>
@@ -381,7 +381,7 @@
           <number>0</number>
          </property>
          <property name="maximum">
-          <number>90</number>
+          <number>60</number>
          </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>

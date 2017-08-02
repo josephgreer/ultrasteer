@@ -16,17 +16,27 @@
 #include "NeedleSteeringRobot.h"
 #include <QtGui/QFileDialog>
 #include <cmath>
+#include <boost/chrono/chrono.hpp>
+#include <boost/thread/thread.hpp>
 
-//#define   RHO                     85.0    // radius of curvature for 12-mm needle in gelatin (mm)
-#define   RHO                    90.0    // radius of curvature for 12-mm needle in liver (mm)
-#define   INS_AUTO_SPEED          1.0     // insertions speed during task-space teleoperation  (mm/s)
+#include <iostream>
+#include <fstream>
+#include <windows.h>
+
+
+#define   RHO                  33.0    // radius of curvature for 12-mm needle in liver (mm)
+#define   RHO_MAX                 75.0    // radius of curvature for 12-mm needle in liver (mm)
+#define   INS_AUTO_SPEED          0.5     // insertions speed during task-space teleoperation  (mm/s)
 #define   INS_SPEED               20.0    // insertion speed during joint-space teleoperation (mm/s) 
 #define   ROT_SPEED               200.0   // rotation speed during joint-space teleoperation (RPM)
-#define   NEEDLE_DEAD_LENGTH      75.0   // offset of needle tip at zero insertion due to extra needle length 
-#define   MAX_OPEN_LOOP_INSERTION 10.0    // maximum open-loop insertion distance before a new scan is needed (mm)
+#define   NEEDLE_DEAD_LENGTH      146.0   // offset of needle tip at zero insertion due to extra needle length 
+#define   MAX_OPEN_LOOP_INSERTION 15.0    // maximum open-loop insertion distance before a new scan is needed (mm)
 #define   PI                      3.14159265359
-#define   NEEDLE_GPS_OFFSET       14.0    // x-axis distance from GPS transducer to needle "tip" point (mm)
-#define   INTRODUCER_LENGTH       0.0    // insertion length where the tip is inside the introducer (mm)
+#define   NEEDLE_GPS_OFFSET       0.0    // x-axis distance from GPS transducer to needle "tip" point (mm)
+#define   INTRODUCER_LENGTH       5.0    // insertion length where the tip is inside the introducer (mm)
+
+DWORD WINAPI ControlThread( LPVOID lpParam );
+
 
 namespace Nf {
 
@@ -62,21 +72,21 @@ namespace Nf {
     void updateTransducerPose();
     void setJointSpaceControlVelocities(f32 v_rot, f32 v_ins);
     void initializeEstimator();
+    void RotateInline();
 
-    void getOverlayValues(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Matrix44d &z, Vec3d &Sxyz, Vec3d &t_img, Vec3d &t, double &mmToNextScan, bool &targetDepthReached);
+    void getOverlayValues(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Matrix44d &z, Vec3d &Sxyz, Vec3d &t_img, Vec3d &t, double &mmToNextScan, bool &targetDepthReached,double& alpha_e);
     
     void getVisualizerValues(Vec3d &t, Matrix44d &x, Matrix44d &z, Matrix44d &Tref2robot,
                                               Matrix44d &Ttrans2robot, s32 &transducerType, Cubed &frameBoundaries, Matrix44d &Tem2robot, Matrix44d &Tneedletip2robot);
 
   private:
-    void GetPoseEstimate(Matrix44d &x);
+    
     bool CheckCompletion();
     double insertionSinceLastManualScan();
     void recordDataPoint(Matrix44d x_est, Matrix44d x_act, Matrix44d z, Vec3d t, Vec3d u, Matrix66d K, Matrix66d P); 
 
   private:
-    Vec3d m_t;
-    Matrix44d m_x;
+    
     Matrix44d m_z;
     Matrix44d m_usCalibrationMatrix;
     Matrix44d m_Tref2robot;
@@ -90,13 +100,13 @@ namespace Nf {
     bool m_inJointSpaceControl;
     bool m_recordingData;
     double m_insertionMMatLastManualScan;
+    double ArticulationAngle;
     InPlaneSegmentation m_segmentation; 
     UnscentedKalmanFilter m_UKF;
-    NeedleSteeringRobot* m_robot;
+    
     double m_lastInsMM;
     double m_lastRollDeg;
-    double m_l;
-    double m_th;
+    
     RPData m_data;    
     STrigger* m_insTrigger;
     STrigger* m_rotTrigger;
@@ -107,8 +117,20 @@ namespace Nf {
     arma::mat m_u_record;
     arma::mat m_K_record;
     arma::mat m_P_record;
-    f64 m_maxArticulationAngle;
-
+    
+	
+	DWORD   dwThreadIdArray;
+	HANDLE  hThreadArray;
+  std::ofstream myfile;
+  public:
+    bool QuickandDirty;
+    Vec3d m_t;
+    Matrix44d m_x;
+   NeedleSteeringRobot* m_robot;
+   f64 m_maxArticulationAngle;
+   void GetPoseEstimate(Matrix44d &x);
+   double m_l;
+   double m_th;
 #ifdef RECORDING_MEASUREMENT_NOISE
     int m_scan;
     int m_step;

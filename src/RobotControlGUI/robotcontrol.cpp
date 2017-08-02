@@ -72,14 +72,15 @@ void RobotControl::InitializeRoll(void)
 void RobotControl::onDisplayQuery(void)
 {
 	if(m_insInit) {
-		float pos = m_robot.getInsMM();
+		//float pos = m_robot.getInsMM();
+    float pos=0;
 		//display negative pos because it's more intuitive
 		ui.insertion_pos->display(pos);
 	}
 	if(m_rollInit) {
 		ui.roll_pos->setEnabled(true);
-		float angle = m_robot.getRollAngle();
-		ui.roll_pos->display(fmodf(angle,360));
+		//float angle = m_robot.getRollAngle();
+		ui.roll_pos->display(fmodf(0,360));
 	}
 	if(m_artInit) {
 		ui.articulation_pos->setEnabled(true);

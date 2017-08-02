@@ -10,9 +10,13 @@
 #include "SaveDataWidget.h"
 #include "cForceSensor.h"
 #include "VineWidget.h"
+#include "RPWidget.h"
 
 namespace Nf
 {
+//#define ULTRASOUND_DRIVEN
+
+#ifndef ULTRASOUND_DRIVEN
 	class ForceSensorThread : public BasicThread
 	{
 		Q_OBJECT
@@ -35,8 +39,9 @@ namespace Nf
 		void execute();
     void cleanup();
 	};
+#endif
 
-  class PorcineCadaverWidget : public ResizableQWidget, public ParameterCollection
+  class PorcineCadaverWidget : public ResizableQWidget, public RPFrameHandler, public ParameterCollection
   {
     Q_OBJECT 
 
@@ -46,14 +51,21 @@ namespace Nf
     NeedleSteeringRobot *m_robot;
     std::tr1::shared_ptr < RobotHardwareWidget > m_hwWidget;
     std::tr1::shared_ptr < SaveDataWidget > m_saveDataWidget;
+#ifndef ULTRASOUND_DRIVEN
 		std::tr1::shared_ptr < ForceSensorThread > m_forceThread;
     QTimer m_heartbeat;
+#else
+    std::tr1::shared_ptr < cForceSensor > m_forceSensor;
+    RPPushReceiver *m_receiver;
+#endif
 
   public:
     PorcineCadaverWidget(QWidget *parent);
     ~PorcineCadaverWidget();
     virtual void UpdateSize(QSize sz);
     virtual void UpdateGeometry();
+
+    virtual void HandleFrame(RPData &rp);
 
     //initForceSensor
     std::tr1::shared_ptr < Nf::BoolParameter > m_initForceSensor;
@@ -64,11 +76,13 @@ namespace Nf
 
     void setRobot(NeedleSteeringRobot* robot);
 
+#ifndef ULTRASOUND_DRIVEN
   public slots:
     void heartbeat();
 
 signals:
     void stopForceSensorThread();
+#endif
   };
 }
 

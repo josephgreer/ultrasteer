@@ -12,7 +12,7 @@
 #define MIN_ENCODER_LIMIT		-30000		//Minimum encoder limit that the motor will not be able to travel past
 #define MAX_ENCODER_LIMIT		30000		//Maximum encoder limit that the motor will not be able to travel past
 #define CURRENT_LIMIT			3000		//Faulhaber motor peak current limit of 3000mA 	
-#define MAX_VELOCITY			1000		//Insertion device velocity when it is not moving in no increments mode
+#define MAX_VELOCITY			400		//Insertion device velocity when it is not moving in no increments mode
 /**********************************************************************************/
 
 bool InsertionDevice::m_created = false;
@@ -46,6 +46,7 @@ void InsertionDevice::Init(QString comPort)
 {
 	MotionController::InitializeDevice(comPort);
 	MotionController::SetCorridorValue(CORRIDOR);
+  MotionController::ChangeMaxMotorVelocity(MAX_VELOCITY);
 }
 
 /// \brief		Re-enable roll device motor 

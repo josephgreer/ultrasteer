@@ -148,8 +148,7 @@ namespace Nf
     }
 
     rpw->Cleanup(&header);
-#else
-#if 1
+
     arma::mat force;
     for(s32 i=0; i<m_dataToSave.size(); i++) {
       arma::mat row = arma::zeros(1,10);
@@ -163,6 +162,37 @@ namespace Nf
       row(0,7) = m_dataToSave[i].u.v;
       row(0,8) = m_dataToSave[i].u.dtheta;
       row(0,9) = m_dataToSave[i].u.dutyCycle;
+      //row(0,10)= m_dataToSave[i].gps.pos.x;
+      //row(0,11) = m_dataToSave[i].gps.pos.y;
+      //row(0,12) = m_dataToSave[i].gps.pos.z;
+      //row(0,13)= m_dataToSave[i].gps2.pos.x;
+      //row(0,14) = m_dataToSave[i].gps2.pos.y;
+      //row(0,15) = m_dataToSave[i].gps2.pos.z;
+      force = arma::join_vert(force, row);
+    }
+
+    force.save(std::string(dir+std::string("/force.mat")).c_str(), arma::raw_ascii);
+#else
+#if 0
+    arma::mat force;
+    for(s32 i=0; i<m_dataToSave.size(); i++) {
+      arma::mat row = arma::zeros(1,10);
+      row(0,0) = m_dataToSave[i].force.force.x; 
+      row(0,1) = m_dataToSave[i].force.force.y;
+      row(0,2) = m_dataToSave[i].force.force.z;
+      row(0,3) = m_dataToSave[i].force.torque.x; 
+      row(0,4) = m_dataToSave[i].force.torque.y;
+      row(0,5) = m_dataToSave[i].force.torque.z;
+      row(0,6) = m_dataToSave[i].u.tick;
+      row(0,7) = m_dataToSave[i].u.v;
+      row(0,8) = m_dataToSave[i].u.dtheta;
+      row(0,9) = m_dataToSave[i].u.dutyCycle;
+      //row(0,10)= m_dataToSave[i].gps.pos.x;
+      //row(0,11) = m_dataToSave[i].gps.pos.y;
+      //row(0,12) = m_dataToSave[i].gps.pos.z;
+      //row(0,13)= m_dataToSave[i].gps2.pos.x;
+      //row(0,14) = m_dataToSave[i].gps2.pos.y;
+      //row(0,15) = m_dataToSave[i].gps2.pos.z;
       force = arma::join_vert(force, row);
     }
 

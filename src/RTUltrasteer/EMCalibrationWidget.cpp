@@ -40,17 +40,27 @@ namespace Nf
     m_textActor->GetTextProperty()->SetColor( 1.0,1.0,1.0 );
 
     // initialize robot calibration matrices
-    m_fiducialMeasurementsInFref = arma::zeros<arma::mat>(3,4);
-    m_fiducialsInFrobot = arma::zeros<arma::mat>(3,4);
-    arma::vec3 p1, p2, p3, p4;
+    m_fiducialMeasurementsInFref = arma::zeros<arma::mat>(3,6);
+    m_fiducialsInFrobot = arma::zeros<arma::mat>(3,6);
+    arma::vec3 p1, p2, p3, p4, p5, p6;
     p1 << 13.335 << -15.24 << -0.635;
-    p2 << 24.51119 << -82.10035 << -0.635;
-    p3 << -24.51081 << -82.10035 << -0.635;
+    //p2 << 24.51119 << -82.10035 << -0.635;
+    //p3 << -24.51081 << -82.10035 << -0.635;
+    p2 << 24.51119 << -82.78965 << -0.635;
+    p3 << -24.51081 << -82.78965 << -0.635;
     p4 << 9.52519 << -116.13635 << -5.34249;
+   
+    //p5 << 3 << 0 << 60.825;    //on the introducer
+
+    p5 << 4.25018 << -37.93064 << 51.715;   
+    p6 << -0.000186 << -24.81295 << 55.215; 
+
     m_fiducialsInFrobot.col(0) = p1;
     m_fiducialsInFrobot.col(1) = p2;
     m_fiducialsInFrobot.col(2) = p3;
     m_fiducialsInFrobot.col(3) = p4;
+    m_fiducialsInFrobot.col(4) = p5;
+    m_fiducialsInFrobot.col(5) = p6;
 
     // initialize viewport
     initViewport();
@@ -62,7 +72,7 @@ namespace Nf
     ADD_BOOL_PARAMETER(m_inStylusCalibration, "Calibrate Stylus", CALLBACK_POINTER(onCalibrateStylus, EMCalibrationWidget), this, false);
     ADD_BOOL_PARAMETER(m_inRobotCalibration, "Calibrate Robot", CALLBACK_POINTER(onCalibrateRobot, EMCalibrationWidget), this, false);
     ADD_BOOL_PARAMETER(m_inStylusPointSelection, "Record Stylus Point", CALLBACK_POINTER(onStylusPointSelection, EMCalibrationWidget), this, false);
-    ADD_INT_PARAMETER(m_robotFiducialNumber, "Robot Fiducial", CALLBACK_POINTER(onUpdateFiducial, EMCalibrationWidget), this, 1, 1, 4, 1);
+    ADD_INT_PARAMETER(m_robotFiducialNumber, "Robot Fiducial", CALLBACK_POINTER(onUpdateFiducial, EMCalibrationWidget), this, 1, 1, 6, 1);
   }
 
   EMCalibrationWidget::~EMCalibrationWidget()

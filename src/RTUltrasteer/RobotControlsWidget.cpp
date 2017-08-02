@@ -109,13 +109,13 @@ namespace Nf
   void RobotControlsWidget::onDisplayQuery(void)
   {
     if(m_insInit) {
-      float pos = m_robot->getInsMM();
-      ui.insertion_pos->display(pos);
+      //float pos = m_robot->getInsMM();
+      ui.insertion_pos->display(0);
     }
     if(m_rollInit) {
       ui.roll_pos->setEnabled(true);
-      float angle = m_robot->getRollAngle();
-      ui.roll_pos->display(fmodf(angle,360));
+      float angle = m_robot->getValueRoll();
+      ui.roll_pos->display(fmodf(0.0,360));
     }
     if(m_artInit) {
       ui.articulation_pos->setEnabled(true);
@@ -126,7 +126,7 @@ namespace Nf
 
   void RobotControlsWidget::DCInsert()
   {
-    m_robot->DutyCycleSteer(this->m_dcInsertVal, m_robot->getRollAngle(), this->m_dcInsertDist);
+    m_robot->DutyCycleSteer(this->m_dcInsertVal, m_robot->getValueRoll(), this->m_dcInsertDist);
   }
 
   void RobotControlsWidget::CancelDCInsert()
@@ -151,17 +151,17 @@ namespace Nf
 
   void RobotControlsWidget::InsertPosInc(void)
   {
-    m_robot->InsertIncremental(10.0);
+    m_robot->InsertIncremental(10);
   }
 
   void RobotControlsWidget::InsertNegInc(void)
   {
-    m_robot->InsertIncremental(-10.0);
+    m_robot->InsertIncremental(-10);
   }
 
   void RobotControlsWidget::InsertPosVel(void)
   {
-    m_robot->SetInsertionVelocity(2);
+    m_robot->SetInsertionVelocity(0.5);
   }
 
   void RobotControlsWidget::InsertPosVel(double vel)
@@ -171,7 +171,7 @@ namespace Nf
 
   void RobotControlsWidget::InsertNegVel(void)
   {
-    m_robot->SetInsertionVelocity(-2);
+    m_robot->SetInsertionVelocity(-0.5);
   }
 
   void RobotControlsWidget::StopInsertion(void)
@@ -186,22 +186,28 @@ namespace Nf
 
   void RobotControlsWidget::RotPosInc(void)
   {
-    m_robot->RotateIncremental(10.0);
+    //m_robot->RotateIncremental(180);
+    m_robot->RotateIncremental(1);
+    //m_robot->SetRotationVelocity(100);
   }
 
   void RobotControlsWidget::RotNegInc(void)
   {
-    m_robot->RotateIncremental(-10.0);
+    //m_robot->RotateIncremental(-180);
+    m_robot->RotateIncremental(-1);
+   // m_robot->SetRotationVelocity(-100);
   }
 
   void RobotControlsWidget::FullPosRot(void)
   {
-    m_robot->RotateIncremental(360.0);
+    //m_robot->RotateIncremental(360.0);
+    m_robot->SetRotationVelocity(300);
   }
 
   void RobotControlsWidget::FullNegRot(void)
   {
-    m_robot->RotateIncremental(-360.0);
+   // m_robot->RotateIncremental(-360.0);
+    m_robot->SetRotationVelocity(-300);
   }
 
   void RobotControlsWidget::HomeRoll(void)

@@ -8,7 +8,12 @@ namespace Nf
     , ResizableQWidget(parent, QSize(VIS_WIDTH,VIS_HEIGHT))
     , m_saveDataWidget(new SaveDataWidget(parent))
     , m_hwWidget(new RobotHardwareWidget(this))
+#ifndef ULTRASOUND_DRIVEN
     , m_forceThread(new ForceSensorThread(m_saveDataWidget))
+#else
+    , m_forceSensor(new cForceSensor())
+    , m_receiver(new RPPushReceiver((RPFrameHandler *)this))
+#endif
   {
     m_layout = new QGridLayout(parent);
     this->setLayout(m_layout);
@@ -18,13 +23,42 @@ namespace Nf
 
     ADD_CHILD_COLLECTION(m_hwWidget.get());
     ADD_BOOL_PARAMETER(m_initForceSensor, "Init Force Sensor", CALLBACK_POINTER(onInitForceSensor, PorcineCadaverWidget), this, false);
+#ifndef ULTRASOUND_DRIVEN
     
 		connect(this, SIGNAL(stopForceSensorThread()), m_forceThread.get(), SLOT(stopThread()));
     connect(&m_heartbeat, SIGNAL(timeout()), this, SLOT(heartbeat()));
+#else
+    ADD_CHILD_COLLECTION((ParameterCollection *)m_receiver);
+#endif
   }
 
   PorcineCadaverWidget::~PorcineCadaverWidget()
   {
+  }
+
+  void PorcineCadaverWidget::HandleFrame(RPData &rp)
+
+  {
+#ifdef ULTRASOUND_DRIVEN
+    s32 rv = m_forceSensor->AcquireFTData();
+    if(rv != 0)
+      throw std::runtime_error("Error acquiring force data");
+    f64 force[3] = {0};
+    m_forceSensor->GetForceReading(force);
+    rp.force.force = Vec3d(force[0], force[1], force[2]);
+    f64 torque[3] = {0};
+    m_forceSensor->GetTorqueReading(torque);
+    rp.force.torque = Vec3d(torque[0], torque[1], torque[2]);
+
+    rp.u.v = m_hwWidget->GetRCWidget()->ui.insertion_pos->value();
+    rp.u.dtheta = m_hwWidget->GetRCWidget()->ui.roll_pos->value();
+    rp.u.dutyCycle = m_hwWidget->GetRCWidget()->ui.articulation_pos->value();
+    rp.u.tick = timeGetTime();
+
+    m_saveDataWidget->SaveDataFrame(rp);
+
+    rp.Release();
+#endif
   }
 
   void PorcineCadaverWidget::UpdateSize(QSize sz)
@@ -50,11 +84,14 @@ namespace Nf
   void PorcineCadaverWidget::setRobot(NeedleSteeringRobot* robot)
   {
     m_hwWidget->setRobot(robot);
+#ifndef ULTRASOUND_DRIVEN
     m_forceThread->SetWidget(m_hwWidget);
+#endif
   }
 
   void PorcineCadaverWidget::onInitForceSensor()
   {
+#ifndef ULTRASOUND_DRIVEN
     if(m_forceThread->isRunning()) {
       emit stopForceSensorThread();
       m_forceThread->wait();
@@ -67,8 +104,19 @@ namespace Nf
       m_heartbeat.start(100);
       m_saveDataWidget->SetEnabled(true);
     }
+#else
+    m_saveDataWidget->SetEnabled(true);
+    m_forceSensor->Set_Calibration_File_Loc("C:/Joey/ultrasteer/src/Nano17/FT14057.cal"); 
+    s32 rv = m_forceSensor->Initialize_Force_Sensor("Dev3/ai0:5");
+    if(rv != 0) {
+      NTrace("error initializign force sensor\n");
+      throw std::runtime_error("Error intializing force sensor");
+    }
+    m_forceSensor->Zero_Force_Sensor();
+#endif
   }
 
+#ifndef ULTRASOUND_DRIVEN
   void PorcineCadaverWidget::heartbeat()
   {
     std::vector < RPData > data = m_forceThread->GetUpdatedData();
@@ -77,6 +125,10 @@ namespace Nf
       m_saveDataWidget->SaveDataFrame(data[i]);
     }
   }
+#endif
+
+
+#ifndef ULTRASOUND_DRIVEN
 
   ////////////////////////////////////////////////////////////////////
   /// Begin ForceSensorThread
@@ -155,4 +207,5 @@ namespace Nf
   ////////////////////////////////////////////////////////////////////
   /// End ForceSensorThread
   ////////////////////////////////////////////////////////////////////
+#endif
 }

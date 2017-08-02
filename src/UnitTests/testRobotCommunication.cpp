@@ -54,8 +54,8 @@ TEST(Basic, Robot)
   // Continuously query current position
   while(true){
     BEGIN_TIMING(QueryJoints, 50)
-      NTrace("th =  %f\n", robot.getRollAngle());
-    NTrace("l =  %f\n", robot.getInsMM());
+      //NTrace("th =  %f\n", robot.getRollAngle());
+    //NTrace("l =  %f\n", robot.getInsMM());
     END_TIMING(QueryJoints, 50)
       i++;
 
@@ -114,7 +114,7 @@ TEST(Basic, Insertion)
     //NTrace("Raw encoder ticks %d\n", robot.GetInsertionDevice()->GetPosition());
 
 
-    NTrace("Insertion amount: %f\n", robot.getInsMM());
+    //NTrace("Insertion amount: %f\n", robot.getInsMM());
   }
 
 }

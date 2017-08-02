@@ -529,9 +529,10 @@ namespace Nf
     Vec3d t_img, t;
     Vec3d Sxyz;
     double mmToNextScan;
+    double alpha;
     bool insertionDepthReached;
     m_control->getOverlayValues(x, p_img, pz_img, py_img,
-      z, Sxyz, t_img, t, mmToNextScan, insertionDepthReached);
+      z, Sxyz, t_img, t, mmToNextScan, insertionDepthReached,alpha);
 
     // update target
     if( !t.isZero() ){
@@ -558,7 +559,7 @@ namespace Nf
       if( mmToNextScan == 0.0 ){
         int n = sprintf(str, "Needle scan needed.");
       }else{
-        int n = sprintf(str, "%.2f mm to next needle scan.",mmToNextScan);
+        int n = sprintf(str, "%.2f mm to next needle scan and alpha = %.2f",mmToNextScan,alpha);
       }   
       SetInstructionText(str);
       f32 danger = 1.0 - mmToNextScan/MAX_OPEN_LOOP_INSERTION;

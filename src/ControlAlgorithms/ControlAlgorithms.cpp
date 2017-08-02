@@ -32,12 +32,28 @@ namespace Nf {
     m_rotTrigger = new STrigger();
     m_insTrigger->setThresholds(0.01);
     m_rotTrigger->setThresholds(0.01);
+	  QuickandDirty=false;
+    myfile.open("timeUS.txt");
+    ArticulationAngle=0;
+	
+	 // Create the thread to begin execution on its own.
+
+        hThreadArray = CreateThread( 
+            NULL,                   // default security attributes
+            0,                      // use default stack size  
+            ControlThread,         // thread function name
+            this,                  // argument to thread function 
+            0,                      // use default creation flags 
+            &dwThreadIdArray);   // returns the thread identifier 
   }
 
   ControlAlgorithms::~ControlAlgorithms()
   {
     delete m_insTrigger;
     delete m_rotTrigger;
+	  CloseHandle(hThreadArray);
+    myfile.close();
+
   }
 
   // return true if the robot is in following; false otherwise
@@ -67,7 +83,7 @@ namespace Nf {
 
     if(m_inTaskSpaceControl){ // if we've just started teleoperation
       m_maxArticulationAngle = m_robot->getArticulationAngle();
-      m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
+      //m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
     }else{
       m_robot->SetInsertionVelocity(0.0);
       m_robot->SetRotationVelocity(0.0);
@@ -148,7 +164,7 @@ namespace Nf {
       processManualScan();
       m_insertionMMatLastManualScan = m_robot->getInsMM(); 
       if( m_inTaskSpaceControl ){        
-        m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
+        //m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
       }
     }
   }  
@@ -170,7 +186,19 @@ namespace Nf {
   {
     Vec3d p = ImagePtToRobotPt(p_im);
     Matrix33d R = m_x.GetOrientation();
-    m_z = Matrix44d::FromOrientationAndTranslation(R,p);
+    
+    // Track of the Wrist
+    Vec3d ux = R.Col(0);
+    Vec3d uz = R.Col(2);
+    Vec3d v,W;
+    double a=45*(PI/180);
+    if( m_robot->getArticulationAngle() < 5)
+         a=0;
+    Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
+    // check transpose?
+    v=Rx*uz;
+    W=p-v*15.3;
+    m_z = Matrix44d::FromOrientationAndTranslation(R,W);
     Vec3d u;
     GetIncrementalInputVector(u);
     m_UKF.fullUpdateUKF(u, m_z);
@@ -189,7 +217,7 @@ namespace Nf {
     if( m_scan == 5 ){
       m_scan = 0;
       m_step++;
-      m_insertionMMatLastManualScan = m_robot->getInsMM(); 
+      //m_insertionMMatLastManualScan = m_robot->getInsMM(); 
       if( m_inTaskSpaceControl ){        
         m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
       }   
@@ -197,7 +225,7 @@ namespace Nf {
 #else
     m_insertionMMatLastManualScan = m_l; 
     if( m_inTaskSpaceControl ){        
-      m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
+      //m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
     }   
 #endif
   }
@@ -234,6 +262,12 @@ namespace Nf {
 
   void ControlAlgorithms::controlHeartBeat(RPData data)
   {
+
+    SYSTEMTIME time;
+	  GetSystemTime(&time);
+	  LONG time_ms = (time.wSecond * 1000) + time.wMilliseconds;
+	  myfile<<time_ms<<endl;
+
     if(m_data.gps.valid)
     {
       m_data.Release();
@@ -241,31 +275,47 @@ namespace Nf {
     m_data = data.Clone();
     updateTransducerPose();
 
-    if( m_robot && m_robot->isRollInitialized() && m_robot->isInsertionInitialized() ){
-      m_th = m_robot->getRollAngle();
-      m_l = m_robot->getInsMM();
+    if (!QuickandDirty)
+    {	
+      GetPoseEstimate(m_x);
+      if( m_robot && m_robot->isRollInitialized() && m_robot->isInsertionInitialized() ){
+        m_th = m_robot->getRollAngle();
+        m_l = m_robot->getInsMM();
+      }
+      
     }
+    
+
+    
 
     if( inManualScanning() ) // if manually scanning
     { 
       m_segmentation.addManualScanFrame(data);
     }
 
-    GetPoseEstimate(m_x); // update the estimate 
+     // update the estimate
 
     if( m_inTaskSpaceControl ) 
     {
-      ControlCorrection();
-
-      if( CheckCompletion() ){  // if we've reached the target
-        m_robot->SetInsertionVelocity(0.0);
-        m_robot->SetRotationVelocity(0.0);
-      }
-
-      if( insertionSinceLastManualScan() >= MAX_OPEN_LOOP_INSERTION ){ // if we need a new scan
-        m_robot->SetInsertionVelocity(0.0);
-        m_robot->SetRotationVelocity(0.0);
-      }
+    	bool condition=false; 
+      //ControlCorrection()
+     if( CheckCompletion() )
+     {  // if we've reached the target
+    	 				m_robot->SetInsertionVelocity(0.0);
+    	 				m_robot->SetRotationVelocity(0.0);
+    	 				QuickandDirty=false;
+              condition=true;
+     }
+     if( insertionSinceLastManualScan() >= MAX_OPEN_LOOP_INSERTION )
+     { // if we need a new scan
+    
+    	    QuickandDirty=false;
+    	    m_robot->SetInsertionVelocity(0.0);
+          m_robot->SetRotationVelocity(0.0);
+        condition=true;
+     }
+      if ((!QuickandDirty)&&(!condition))
+    		 QuickandDirty=true;
     }
   }
 
@@ -325,8 +375,26 @@ namespace Nf {
 
   bool ControlAlgorithms::CheckCompletion(void)
   {
-    Vec3d p = m_x.GetPosition();
-    if( p.z > m_t.z )
+    Vec3d W = m_x.GetPosition();
+    Matrix33d R = m_x.GetOrientation();
+
+    // Track of the Wrist
+    Vec3d ux = R.Col(0);
+    Vec3d uz = R.Col(2);
+    
+    Vec3d v,p;
+    double a=0;
+    if( ArticulationAngle > 5)
+      a=45*(PI/180);    
+
+    Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
+    // check transpose?
+    v=Rx*uz;
+    
+    p=W+v*15.3;
+
+    Vec3d tipOffset = R.Transpose()*(m_t-p);
+    if( tipOffset.z < 0 )
     {
       return true;
     }else{
@@ -341,22 +409,27 @@ namespace Nf {
 
   void ControlAlgorithms::GetIncrementalInputVector(Vec3d &u)
   {
-    if( m_robot && m_robot->isRollInitialized() && m_robot->isInsertionInitialized() ){
+    if( m_robot && m_robot->isRollInitialized() && m_robot->isInsertionInitialized() && m_robot->isArticulationInitialized())
+    {
       double d_l = m_l - m_lastInsMM;
       double d_th = (m_th - m_lastRollDeg)*PI/180.0;   
 
-      if( m_l > INTRODUCER_LENGTH ){
-        u = Vec3d(d_th,RHO,d_l);
-        
-      }else{
-        u = Vec3d(d_th,1000,d_l);
-        
+      ArticulationAngle=m_robot->getArticulationAngle();
+      if( m_l > INTRODUCER_LENGTH )
+      {
+        if(  ArticulationAngle < 5)
+          u = Vec3d(d_th,RHO_MAX,d_l);        
+        else
+          u = Vec3d(d_th,RHO,d_l);
       }
+      else
+          u = Vec3d(d_th,1000,d_l);
+      
       m_lastInsMM = m_l;
       m_lastRollDeg = m_th;
-    }else{
-      u = Vec3d(0.0,RHO,0.0);
     }
+    else
+      u = Vec3d(0.0,RHO,0.0);
   }
 
   bool ControlAlgorithms::isTargetDefined()
@@ -374,6 +447,24 @@ namespace Nf {
     Vec3d u;
     GetIncrementalInputVector(u);
     m_z = m_segmentation.processManualScan();
+
+    // Track of the Wrist
+    Matrix33d R = m_z.GetOrientation();
+    Vec3d p = m_z.GetPosition();
+
+    Vec3d ux = R.Col(0);
+    Vec3d uz = R.Col(2);
+ 
+    Vec3d v,W;
+    double a=45*(PI/180);
+    if( m_robot->getArticulationAngle() < 5)
+         a=0;
+    Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
+    // check transpose?
+    v=Rx*uz;
+    W=p-v*15.3;
+    m_z = Matrix44d::FromOrientationAndTranslation(R,W);
+
     m_UKF.fullUpdateUKF(u, m_z);
     m_UKF.getCurrentStateEstimate(m_x);
   }
@@ -387,8 +478,19 @@ namespace Nf {
     m_lastRollDeg = m_th;
   }
 
+  void ControlAlgorithms::RotateInline()
+  {
+    Vec3d p = m_x.GetPosition();
+    Matrix33d R = m_x.GetOrientation();
 
-  void ControlAlgorithms::ControlCorrection()
+    // Get relative error in the current tip frame
+    Vec3d e = R.Inverse()*(m_t-p);
+
+    f32 d_th = atan2(-e.x,e.y);
+    m_robot->RotateIncremental(d_th*180.0/PI);
+  }
+
+ void ControlAlgorithms::ControlCorrection()
   {
     if(m_t.magnitude() > 1e-3) // if the target is defined
     {
@@ -400,38 +502,44 @@ namespace Nf {
       Vec3d e = R.Inverse()*(m_t-p);
 
       Vec2d ePlane(e.x, e.y);
-      bool targetInLine = ePlane.magnitude() < 15;
+      bool targetInLine = ePlane.magnitude() < 2.5;
 
       f32 d_th = atan2(-e.x,e.y);
 
       // Check if needle tip is past target
       if( e.z < 0 )
-        int i = 1;// Do end of steering tasks
+        int i = 1;// Do end of steering tasks ??????
+   
+      //bool releaseArticulation = false;//(ABS(d_th) > 10*PI/180.0) && !targetInLine;
+     // targetInLine = false;
 
-      bool releaseArticulation = false;//(ABS(d_th) > 10*PI/180.0) && !targetInLine;
-      targetInLine = false;
+      bool releaseArticulation = (ABS(d_th) > 10*PI/180.0) && !targetInLine;
+      
 
-      // try release articulation before turning (preliminary)
+      // try release articulation before turning 
       if(releaseArticulation) {
         m_robot->SetInsertionVelocity(0);
         m_robot->SetArticulationAngle(0);
         
-      //  Sleep(100);
+       Sleep(3000);
       }
 
-      // Correct needle rotation
+      // Correct needle rotation NEW
       m_robot->RotateIncremental(d_th*180.0/PI);
 
       if(releaseArticulation) {
         Sleep(3000);
         m_robot->SetArticulationAngle(m_maxArticulationAngle);
-        Sleep(1000);
+        Sleep(3000);
         m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
-        Sleep(100);
-      } else if(targetInLine) {
+     } else if(targetInLine && ABS(m_robot->getArticulationAngle()) > 5) {
+        m_robot->SetInsertionVelocity(0);
         m_robot->SetArticulationAngle(0);
         NTrace("Thinks target is inline\n");
-      } else {
+        Sleep(3000);
+        m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
+        //NTrace("Articulation %f\n", m_robot->getArticulationAngle());
+      } else if(!targetInLine) {
         m_robot->SetArticulationAngle(m_maxArticulationAngle);
       }
 
@@ -440,23 +548,39 @@ namespace Nf {
     }
   }
 
+
   void ControlAlgorithms::getOverlayValues(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img,
                                            Matrix44d &z,
                                            Vec3d &Sxyz,
                                            Vec3d &t_img, Vec3d &t,
-                                           double &mmToNextScan, bool &targetDepthReached)
+                                           double &mmToNextScan, bool &targetDepthReached, double& alpha_e)
   {
     // target  
     t_img = RobotPtToImagePt(m_t);
     t = m_t;
-    // estimate and variance
-    x = m_x;
+      
     Sxyz = m_UKF.getCurrentXYZVariance();
     // measurement
     z = m_z;
     // tip frame in image coordinates
-    Vec3d p = m_x.GetPosition();
+    Vec3d W = m_x.GetPosition();
     Matrix33d R = m_x.GetOrientation();
+
+    // Track of the Wrist
+    Vec3d ux = R.Col(0);
+    Vec3d uz = R.Col(2);
+    
+    Vec3d v,p;
+    double a=0;
+    if( ArticulationAngle > 5)
+        a=45*(PI/180);
+
+    Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
+    // check transpose?
+    v=Rx*uz;
+    
+    p=W+v*15.3;
+    x =  Matrix44d::FromOrientationAndTranslation(R,p);
     p_img = RobotPtToImagePt(p);
     Vec3d pz_world = p + R*Vec3d(0.0,0.0,10.0);
     Vec3d py_world = p + R*Vec3d(0.0,5.0,0.0);
@@ -464,6 +588,11 @@ namespace Nf {
     py_img = RobotPtToImagePt(py_world);
     mmToNextScan = MAX(MAX_OPEN_LOOP_INSERTION-insertionSinceLastManualScan(),0.0);
     targetDepthReached = CheckCompletion();
+
+    Nf::Vec3d e = (m_t - p);
+    Nf::Vec3d e_v = e/e.magnitude();
+    Nf::Vec3d ze=R.Col(2);
+    alpha_e=(acos(ze.dot(e_v)))*(180/PI);
 
 #ifdef GPS3_SAVING
     Sxyz = m_Tneedletip2robot.GetPosition(); 
@@ -605,3 +734,115 @@ namespace Nf {
     m_threshold= t;
   }
 };
+
+// cosi la trovi
+DWORD WINAPI ControlThread (LPVOID lpParam)
+{
+
+  if(!SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS))
+   {
+      return -1;
+   }
+
+  if(!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL))
+   {
+      return -1;
+   } 
+
+
+	Nf::ControlAlgorithms* C=(Nf::ControlAlgorithms*) lpParam;
+	boost::chrono::duration<double, boost::milli> dt(40);
+	// timer
+  int count=0;
+  int STATE=2;
+  
+  auto start = boost::chrono::high_resolution_clock::now();
+  double prevalpha_e=1000;
+  int countder;
+  bool Sliding=false;
+
+  // salvo il tempo
+  std::ofstream myfile;
+  myfile.open("timeTHREAD.txt");
+	
+  while(1)
+	{
+   
+		start = boost::chrono::high_resolution_clock::now();
+   
+    SYSTEMTIME time;
+		GetSystemTime(&time);
+		LONG time_ms = (time.wSecond * 1000) + time.wMilliseconds;
+		myfile << time_ms << endl;
+    
+			  
+		if (C->QuickandDirty)
+		{
+      count++;
+      C->m_th = C->m_robot->getRollAngle();
+      C->m_l = C->m_robot->getInsMM();
+      C->GetPoseEstimate(C->m_x);
+
+			if (C->m_t.magnitude() > 1e-3) // if the target is defined
+			{
+			  // Get current tip frame estimate
+			  Nf::Vec3d W = C->m_x.GetPosition();
+			  Nf::Matrix33d R = C->m_x.GetOrientation();
+        Nf::Vec3d uz = R.Col(2);  
+        Nf::Vec3d p=W+uz*15.3;
+
+			  // Get relative error in the current tip frame
+			  Nf::Vec3d e = R.Inverse()*(C->m_t - p);
+        
+        Nf::Vec3d e_0 = (C->m_t - p);
+        Nf::Vec3d e_v = e_0/e_0.magnitude();
+        Nf::Vec3d ze=R.Col(2);
+        double alpha_e=(acos(ze.dot(e_v)))*(180/PI);
+        alpha_e = abs(alpha_e);
+			  // verificare convenzioni
+			  f32 d_th = atan2(-e.x, e.y);
+        // Questo secondo l'ing. Diodato è troppo alto!
+        
+        switch(STATE)
+        {
+        case 0:
+               C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
+               C->m_robot->SetRotationVelocity(0);
+               
+               if ((alpha_e-prevalpha_e)>0)
+               {
+                  countder++;
+               }
+               else
+                  countder=0;
+               
+               if (countder > 500)
+			          {
+				           C->m_robot->SetInsertionVelocity(0);
+				           C->m_robot->SetArticulationAngle(0);
+                   Sleep(2000);
+                   C->m_robot->InsertIncremental(-10);
+                   STATE=1; 
+			          }
+                prevalpha_e = alpha_e;
+          break;
+         case 1:
+               C->m_robot->SetRotationVelocity(0);
+               Sleep(4000);
+               STATE=2;
+           break;
+         case 2:
+              C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED);         
+              if (d_th<0)
+                C->m_robot->SetRotationVelocity(-350);
+              else
+                C->m_robot->SetRotationVelocity(350);
+           break;
+        }
+      }
+    }
+		boost::this_thread::sleep_until(start + dt);
+	}
+    myfile.close();
+}
+

@@ -71,6 +71,7 @@ namespace Nf
     ADD_ENUM_PARAMETER(m_transducerType, "Transducer", CALLBACK_POINTER(onSetTransducerType, Teleoperation2DWidget), this, QtEnums::Transducer::CONVEX, "Transducer");
     ADD_BOOL_PARAMETER(m_initializeEstimator, "Initialize Estimator", CALLBACK_POINTER(onInitializeEstimator, Teleoperation2DWidget), this, false);
     ADD_BOOL_PARAMETER(m_recordingData, "Record Data", CALLBACK_POINTER(onRecordingData, Teleoperation2DWidget), this, false);
+    ADD_ACTION_PARAMETER(m_rotateInline, "Rotate Inline", CALLBACK_POINTER(onRotateInline, Teleoperation2DWidget), this, false);
     ADD_CHILD_COLLECTION(m_imageViewer.get());
     ADD_CHILD_COLLECTION(m_teleoperationVisualizer.get());
   }
@@ -82,6 +83,11 @@ namespace Nf
   void Teleoperation2DWidget::UpdateGeometry()
   {
     this->updateGeometry();
+  }
+
+  void Teleoperation2DWidget::onRotateInline()
+  {
+    this->m_control->RotateInline();
   }
 
   void Teleoperation2DWidget::UpdateSize(QSize sz)

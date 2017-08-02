@@ -8,6 +8,8 @@
 #define InsRPM 10.0
 #define ONE_OUTPUT_ROTATION		511 422
 
+#define SPUR_GEAR_RATIO_ROLL (1539.0/65.0*4.0/0.5)	//Gear ratio for the maxon motor gearhead + pinion gears
+
 NeedleSteeringRobot::NeedleSteeringRobot() :
       m_rollInit(false)
     , m_insInit(false)
@@ -112,7 +114,8 @@ void NeedleSteeringRobot::SetInsertionVelocity(float MMPS)
 
 void NeedleSteeringRobot::SetRotationVelocity(float RPM)
 {
-	m_RollDevice.SetVelocity(RPM);
+	//m_RollDevice.SetVelocity(RPM*SPUR_GEAR_RATIO_ROLL);
+  m_RollDevice.SetVelocity(RPM);
 }
 
 void NeedleSteeringRobot::DisableAll(void)
@@ -150,7 +153,13 @@ void NeedleSteeringRobot::setVibration(bool OnOff)
 double NeedleSteeringRobot::getRollAngle(void)
 {
 	// Returns the current angle of the needle
-	return m_RollDevice.GetAngle();
+  RollAngle=m_RollDevice.GetAngle();
+	return RollAngle;
+}
+
+double NeedleSteeringRobot::getValueRoll()
+{
+  return RollAngle;
 }
 
 double NeedleSteeringRobot::getArticulationAngle(void)
