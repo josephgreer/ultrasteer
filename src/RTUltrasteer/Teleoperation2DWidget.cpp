@@ -72,6 +72,10 @@ namespace Nf
     ADD_BOOL_PARAMETER(m_initializeEstimator, "Initialize Estimator", CALLBACK_POINTER(onInitializeEstimator, Teleoperation2DWidget), this, false);
     ADD_BOOL_PARAMETER(m_recordingData, "Record Data", CALLBACK_POINTER(onRecordingData, Teleoperation2DWidget), this, false);
     ADD_ACTION_PARAMETER(m_rotateInline, "Rotate Inline", CALLBACK_POINTER(onRotateInline, Teleoperation2DWidget), this, false);
+    ADD_BOOL_PARAMETER(m_addPlaneCalibrationPoints, "Add Plane Calibration Points", CALLBACK_POINTER(onAddPlaneCalibrationPoints, Teleoperation2DWidget), this, false);
+    ADD_ACTION_PARAMETER(m_clearPlaneCalibrationPoints, "Clear Plane Calibration Points", CALLBACK_POINTER(onClearPlaneCalibration, Teleoperation2DWidget), this, false);
+    ADD_ACTION_PARAMETER(m_doPlaneCalibration, "Do Plane Calibration", CALLBACK_POINTER(onDoPlaneCalibration, Teleoperation2DWidget), this, false);
+    ADD_ACTION_PARAMETER(m_startControlThread, "Start Control Thread", CALLBACK_POINTER(onStartControlThread, Teleoperation2DWidget), this, false);
     ADD_CHILD_COLLECTION(m_imageViewer.get());
     ADD_CHILD_COLLECTION(m_teleoperationVisualizer.get());
   }
@@ -88,6 +92,11 @@ namespace Nf
   void Teleoperation2DWidget::onRotateInline()
   {
     this->m_control->RotateInline();
+  }
+
+  void Teleoperation2DWidget::onStartControlThread()
+  {
+    m_control->StartControlThread();
   }
 
   void Teleoperation2DWidget::UpdateSize(QSize sz)
@@ -273,6 +282,22 @@ namespace Nf
         m_initializeEstimator->SetValue(false);
       }
     }
+  }
+
+  void Teleoperation2DWidget::onDoPlaneCalibration()
+  {
+    m_control->DoPlaneCalibration();
+  }
+
+  void Teleoperation2DWidget::onClearPlaneCalibration()
+  {
+    m_control->ClearPlaneCalibrationPoints();
+  }
+
+  void Teleoperation2DWidget::onAddPlaneCalibrationPoints()
+  {
+    m_control->SetCalibratingPlaneOffset(m_addPlaneCalibrationPoints->GetValue());
+    m_teleoperationVisualizer->SetPlaneCalibrationPointVisVisible(m_addPlaneCalibrationPoints->GetValue());
   }
 
   void Teleoperation2DWidget::onRecordingData()

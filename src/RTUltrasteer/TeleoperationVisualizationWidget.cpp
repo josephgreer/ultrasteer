@@ -44,6 +44,14 @@ namespace Nf
     m_renderer = vtkSmartPointer<vtkRenderer>::New();
     m_interactor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
 
+    m_planeCalibrationVis = std::tr1::shared_ptr < PlaneVisualizer >(new PlaneVisualizer(Vec3d(0,0,0), Vec3d(0,0,1)));
+    m_planeCalibrationVis->GetActor()->SetVisibility(false);
+    m_planeEstimatorVis = std::tr1::shared_ptr < PlaneVisualizer >(new PlaneVisualizer(Vec3d(0,0,0), Vec3d(0,0,1)));
+    m_planeEstimatorVis->GetActor()->SetVisibility(false);
+
+    m_planeCalibrationPointsVis = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(5, Vec3d(1, 0, 0)));
+    m_planeCalibrationVis->GetActor()->SetVisibility(false);
+
     // initialize viewport
     initViewport();
 
@@ -51,6 +59,7 @@ namespace Nf
     ADD_ACTION_PARAMETER(m_setViewXY, "Set View XY", CALLBACK_POINTER(onSetViewXY, TeleoperationVisualizationWidget), this, true);
     ADD_ACTION_PARAMETER(m_setViewYZ, "Set View YZ", CALLBACK_POINTER(onSetViewYZ, TeleoperationVisualizationWidget), this, true);
     ADD_ACTION_PARAMETER(m_setViewXZ, "Set View XZ", CALLBACK_POINTER(onSetViewXZ, TeleoperationVisualizationWidget), this, true);
+    ADD_BOOL_PARAMETER(m_visualizePlaneCalibration, "Visualize Calibration Plane", NULL, this, false);
   }
 
   TeleoperationVisualizationWidget::~TeleoperationVisualizationWidget()
@@ -149,7 +158,10 @@ namespace Nf
       m_renderer->AddActor(m_robotSTLActor);
       m_renderer->AddActor(m_transducerSTLActor);
       m_renderer->AddActor(m_measurementSTLActor);
-      m_renderer->AddActor(m_estimateSTLActor);
+      m_renderer->AddActor(m_estimateSTLActor); 
+      m_renderer->AddActor(m_planeCalibrationVis->GetActor());
+      m_renderer->AddActor(m_planeEstimatorVis->GetActor());
+      m_renderer->AddActor(m_planeCalibrationPointsVis->GetActor());
       m_renderer->SetBackground(.3, .3, .3); // Background color blue
 
       onSetViewYZ();
@@ -176,6 +188,15 @@ namespace Nf
 
     // get values and update display
     m_control->getVisualizerValues(t, x, z, Tref2robot, Ttrans2robot, transducerType, framePoints, Tem2robot, Tneedletip2robot);
+
+    m_planeCalibrationPointsVis->SetPoints(m_control->GetPlanarCalibrationPoints());
+    m_planeCalibrationVis->GetActor()->SetVisibility(m_visualizePlaneCalibration->GetValue());
+    m_planeEstimatorVis->GetActor()->SetVisibility(m_visualizePlaneCalibration->GetValue());
+    Vec3d corner1, corner2, axis1, axis2, axis3, axis4;
+    m_control->GetPlaneCalibration(corner1, axis1, axis2, corner2, axis3, axis4);
+    m_planeCalibrationVis->SetPlane(corner1, axis1, axis2);
+    m_planeEstimatorVis->SetPlane(corner2, axis3, axis4);
+    m_planeCalibrationVis->SetColor(Vec3d(1,0,0));
    
     if( !t.isZero() ){
       m_targetSource->SetCenter(t.x,t.y,t.z);

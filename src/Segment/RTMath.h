@@ -170,5 +170,6 @@ namespace Nf
     Vec3d ProjectPointOntoPlane(Vec3d point);
     arma::mat GetABCD() { return m_abcd; }
     bool IsZero();
+    Vec3d GetNormalVector();
   };
 }

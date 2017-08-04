@@ -50,6 +50,8 @@ namespace Nf
     void onSetViewXZ();
     CLASS_CALLBACK(onSetViewXZ, TeleoperationVisualizationWidget);
     
+    std::tr1::shared_ptr < Nf::BoolParameter > m_visualizePlaneCalibration;
+    
     bool m_viewportInit;
 
     //Pointer to control object
@@ -79,6 +81,9 @@ namespace Nf
     vtkSmartPointer < vtkAxesActor > m_measurementAxes;    
     vtkSmartPointer < vtkRenderer > m_renderer;
     vtkSmartPointer < vtkRenderWindowInteractor > m_interactor;
+    std::tr1::shared_ptr < PointCloudVisualizer > m_planeCalibrationPointsVis;
+    std::tr1::shared_ptr < PlaneVisualizer > m_planeCalibrationVis;
+    std::tr1::shared_ptr < PlaneVisualizer > m_planeEstimatorVis;
 
   public:
     TeleoperationVisualizationWidget(QWidget *parent, ControlAlgorithms* control);
@@ -87,6 +92,7 @@ namespace Nf
     virtual void UpdateGeometry();
     std::vector < QVTKWidget * > GetChildWidgets();
     void onUpdateVisualization();
+    void SetPlaneCalibrationPointVisVisible(bool vis) { m_planeCalibrationPointsVis->GetActor()->SetVisibility(vis); }
 
   private:
     void initViewport();

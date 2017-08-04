@@ -44,6 +44,22 @@ namespace Nf
     void onRotateInline();
     CLASS_CALLBACK(onRotateInline, Teleoperation2DWidget);
 
+    std::tr1::shared_ptr < Nf::BoolParameter > m_doPlaneCalibration;
+    void onDoPlaneCalibration();
+    CLASS_CALLBACK(onDoPlaneCalibration, Teleoperation2DWidget);
+
+    std::tr1::shared_ptr < Nf::BoolParameter > m_clearPlaneCalibrationPoints;
+    void onClearPlaneCalibration();
+    CLASS_CALLBACK(onClearPlaneCalibration, Teleoperation2DWidget);
+    
+    std::tr1::shared_ptr < Nf::BoolParameter > m_addPlaneCalibrationPoints;
+    void onAddPlaneCalibrationPoints();
+    CLASS_CALLBACK(onAddPlaneCalibrationPoints, Teleoperation2DWidget);
+
+    std::tr1::shared_ptr < Nf::BoolParameter> m_startControlThread;
+    void onStartControlThread();
+    CLASS_CALLBACK(onStartControlThread, Teleoperation2DWidget);
+
     std::tr1::shared_ptr <ImageViewer2DTeleoperationWidget> m_imageViewer;
     std::tr1::shared_ptr <TeleoperationVisualizationWidget> m_teleoperationVisualizer;
     QGridLayout *m_layout;

@@ -375,6 +375,13 @@ namespace Nf
     return Vec3d::FromArmaVec(result);
   }
 
+  Vec3d Plane::GetNormalVector()
+  {
+    arma::mat n = m_abcd.submat(span(0,2), span(0,0));
+    n = n/norm(n);
+    return Vec3d(n(0,0), n(1,0), n(2,0));
+  }
+
   void Plane::GetCenterAndAxisVectors(Vec3d &center, Vec3d &axis1, Vec3d &axis2, Vec3d corner1, Vec3d corner2, Vec3d corner3)
   {
     center = Vec3d(0,0, -m_abcd(3,0)/m_abcd(2,0));

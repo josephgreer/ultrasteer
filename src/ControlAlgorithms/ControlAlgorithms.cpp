@@ -22,6 +22,7 @@ namespace Nf {
     , m_th(0.0)
     , m_l(0.0)
     , m_maxArticulationAngle(0.0)
+    , m_calibratingPlaneOffest(false)
   {
 
 #ifdef RECORDING_MEASUREMENT_NOISE
@@ -35,16 +36,8 @@ namespace Nf {
 	  QuickandDirty=false;
     myfile.open("timeUS.txt");
     ArticulationAngle=0;
-	
-	 // Create the thread to begin execution on its own.
 
-        hThreadArray = CreateThread( 
-            NULL,                   // default security attributes
-            0,                      // use default stack size  
-            ControlThread,         // thread function name
-            this,                  // argument to thread function 
-            0,                      // use default creation flags 
-            &dwThreadIdArray);   // returns the thread identifier 
+    m_planeCalibrator = std::tr1::shared_ptr < PlaneCalibrator > (new PlaneCalibrator());
   }
 
   ControlAlgorithms::~ControlAlgorithms()
@@ -54,6 +47,19 @@ namespace Nf {
 	  CloseHandle(hThreadArray);
     myfile.close();
 
+  }
+
+  void ControlAlgorithms::StartControlThread()
+  {
+    // Create the thread to begin execution on its own.
+
+    hThreadArray = CreateThread( 
+      NULL,                   // default security attributes
+      0,                      // use default stack size  
+      ControlThread,         // thread function name
+      this,                  // argument to thread function 
+      0,                      // use default creation flags 
+      &dwThreadIdArray);   // returns the thread identifier 
   }
 
   // return true if the robot is in following; false otherwise
@@ -185,49 +191,113 @@ namespace Nf {
   void ControlAlgorithms::ManualNeedleTipSelection(Vec2d p_im)
   {
     Vec3d p = ImagePtToRobotPt(p_im);
-    Matrix33d R = m_x.GetOrientation();
-    
-    // Track of the Wrist
-    Vec3d ux = R.Col(0);
-    Vec3d uz = R.Col(2);
-    Vec3d v,W;
-    double a=45*(PI/180);
-    if( m_robot->getArticulationAngle() < 5)
-         a=0;
-    Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
-    // check transpose?
-    v=Rx*uz;
-    W=p-v*15.3;
-    m_z = Matrix44d::FromOrientationAndTranslation(R,W);
-    Vec3d u;
-    GetIncrementalInputVector(u);
-    m_UKF.fullUpdateUKF(u, m_z);
-    Matrix66d P, K;
-    m_UKF.getCurrentStateEstimate(m_x);
-    P  = m_UKF.getCurrentCovariance();
-    K = m_UKF.getCurrentGain();
-    recordDataPoint(m_x, m_Tneedletip2robot, m_z, m_t, u, K, P);
+    if(!m_calibratingPlaneOffest) {
+      Matrix33d R = m_x.GetOrientation();
+
+      // Track of the Wrist
+      Vec3d ux = R.Col(0);
+      Vec3d uz = R.Col(2);
+      Vec3d v,W;
+      double a=-45*(PI/180);
+      if( m_robot->getArticulationAngle() < 5)
+        a=0;
+      Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
+      // check transpose?
+      v=Rx*uz;
+      W=p-v*15.3;
+      m_z = Matrix44d::FromOrientationAndTranslation(R,W);
+      Vec3d u;
+      GetIncrementalInputVector(u);
+      m_UKF.fullUpdateUKF(u, m_z);
+      Matrix66d P, K;
+      m_UKF.getCurrentStateEstimate(m_x);
+      P  = m_UKF.getCurrentCovariance();
+      K = m_UKF.getCurrentGain();
+      recordDataPoint(m_x, m_Tneedletip2robot, m_z, m_t, u, K, P);
 
 #ifdef RECORDING_MEASUREMENT_NOISE
-    arma::mat z = m_z.ToArmaMatrix4x4();
-    char strbuff[100];
-    sprintf(strbuff, "C:/Troy/Data/step_%d_measurement_%d.m",m_step,m_scan);
-    z.save(strbuff, arma::arma_ascii);
-    m_scan++;
-    if( m_scan == 5 ){
-      m_scan = 0;
-      m_step++;
-      //m_insertionMMatLastManualScan = m_robot->getInsMM(); 
-      if( m_inTaskSpaceControl ){        
-        m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
-      }   
-    }
+      arma::mat z = m_z.ToArmaMatrix4x4();
+      char strbuff[100];
+      sprintf(strbuff, "C:/Troy/Data/step_%d_measurement_%d.m",m_step,m_scan);
+      z.save(strbuff, arma::arma_ascii);
+      m_scan++;
+      if( m_scan == 5 ){
+        m_scan = 0;
+        m_step++;
+        //m_insertionMMatLastManualScan = m_robot->getInsMM(); 
+        if( m_inTaskSpaceControl ){        
+          m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
+        }   
+      }
 #else
-    m_insertionMMatLastManualScan = m_l; 
-    if( m_inTaskSpaceControl ){        
-      //m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
-    }   
+      m_insertionMMatLastManualScan = m_l; 
+      if( m_inTaskSpaceControl ){        
+        //m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
+      }   
 #endif
+    } else {
+      m_planeCalibrator->AddPoint(p);
+    }
+  }
+
+  void ControlAlgorithms::DoPlaneCalibration()
+  {
+    m_planeCalibrator->DoCalibration();
+
+    Plane pp = m_planeCalibrator->GetSolution();
+    Vec3d normal = pp.GetNormalVector();
+
+    Matrix33d R = m_UKF.getCurrentEstimate().GetOrientation();
+    Vec3d estimatedNormal = R.Col(0);
+    f64 angle = abs(acos(estimatedNormal.dot(normal)/(estimatedNormal.magnitude()*normal.magnitude())));
+
+    angle = fmod(angle+2*PI, PI);
+    angle = MIN(angle, PI-angle);  // angle \in [0, pi/2)
+
+    if(normal.cross(estimatedNormal).dot(R.Col(2)) > 0)
+      angle = -angle;
+
+    m_robot->RotateIncremental(angle*180.0/PI);
+    Sleep(2000);
+    // Now we need to not have the estimator "know" that this happened
+    m_th = m_robot->getRollAngle();
+    m_lastRollDeg = m_th;
+  }
+
+  std::vector < Vec3d > ControlAlgorithms::GetPlanarCalibrationPoints()
+  {
+    std::vector < Vec3d > res;
+    arma::mat points = m_planeCalibrator->GetPoints();
+    for(s32 i=0; i<points.n_rows; i++) {
+      res.push_back(Vec3d(points(i, 0), points(i,1), points(i,2)));
+    }
+    return res;
+  }
+
+
+  void ControlAlgorithms::GetPlaneCalibration(Vec3d &corner1, Vec3d &axis1, Vec3d &axis2, Vec3d &corner2, Vec3d &axis3, Vec3d &axis4)
+  {
+    arma::mat points = m_planeCalibrator->GetPoints();
+    if(points.n_rows > 3) {
+      m_planeCalibrator->DoCalibration();
+      Plane pp = m_planeCalibrator->GetSolution();
+
+      arma::mat centerPoint = arma::mean(points, 0);
+      Vec3d center = Vec3d(centerPoint(0,0), centerPoint(0,1), centerPoint(0,2));
+
+      Matrix33d R = m_UKF.getCurrentEstimate().GetOrientation();
+      axis1 = pp.ProjectPointOntoPlane(center+R.Col(1)*100.0)-center;
+      axis2 = pp.ProjectPointOntoPlane(center+R.Col(2)*100.0)-center;
+      corner1 = center-axis1-axis2;
+
+      axis3 = R.Col(1)*100.0;
+      axis4 = R.Col(2)*100.0;
+      corner2 = center-axis3-axis4;
+      axis1 = axis1*2;
+      axis2 = axis2*2;
+      axis3 = axis3*2;
+      axis4 = axis4*2;
+    }
   }
 
   Vec3d ControlAlgorithms::ImagePtToRobotPt(Vec2d p_im)
@@ -385,7 +455,7 @@ namespace Nf {
     Vec3d v,p;
     double a=0;
     if( ArticulationAngle > 5)
-      a=45*(PI/180);    
+      a=-45*(PI/180);    
 
     Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
     // check transpose?
@@ -456,7 +526,7 @@ namespace Nf {
     Vec3d uz = R.Col(2);
  
     Vec3d v,W;
-    double a=45*(PI/180);
+    double a=-45*(PI/180);
     if( m_robot->getArticulationAngle() < 5)
          a=0;
     Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
@@ -573,7 +643,7 @@ namespace Nf {
     Vec3d v,p;
     double a=0;
     if( ArticulationAngle > 5)
-        a=45*(PI/180);
+        a=-45*(PI/180);
 
     Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
     // check transpose?
@@ -751,12 +821,10 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
 
 
 	Nf::ControlAlgorithms* C=(Nf::ControlAlgorithms*) lpParam;
-	boost::chrono::duration<double, boost::milli> dt(40);
 	// timer
   int count=0;
   int STATE=2;
   
-  auto start = boost::chrono::high_resolution_clock::now();
   double prevalpha_e=1000;
   int countder;
   bool Sliding=false;
@@ -764,11 +832,13 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
   // salvo il tempo
   std::ofstream myfile;
   myfile.open("timeTHREAD.txt");
+
+  s32 dt = 40;
 	
   while(1)
 	{
-   
-		start = boost::chrono::high_resolution_clock::now();
+
+    u32 t0 = timeGetTime();
    
     SYSTEMTIME time;
 		GetSystemTime(&time);
@@ -841,8 +911,9 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
         }
       }
     }
-		boost::this_thread::sleep_until(start + dt);
-	}
-    myfile.close();
+    u32 tNow = timeGetTime();
+    Sleep(MAX(dt-(tNow-t0), 0));
+  }
+  myfile.close();
 }
 

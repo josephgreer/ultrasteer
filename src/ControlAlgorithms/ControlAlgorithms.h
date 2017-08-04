@@ -16,8 +16,7 @@
 #include "NeedleSteeringRobot.h"
 #include <QtGui/QFileDialog>
 #include <cmath>
-#include <boost/chrono/chrono.hpp>
-#include <boost/thread/thread.hpp>
+#include "Calibration.h"
 
 #include <iostream>
 #include <fstream>
@@ -29,7 +28,7 @@
 #define   INS_AUTO_SPEED          0.5     // insertions speed during task-space teleoperation  (mm/s)
 #define   INS_SPEED               20.0    // insertion speed during joint-space teleoperation (mm/s) 
 #define   ROT_SPEED               200.0   // rotation speed during joint-space teleoperation (RPM)
-#define   NEEDLE_DEAD_LENGTH      146.0   // offset of needle tip at zero insertion due to extra needle length 
+#define   NEEDLE_DEAD_LENGTH      146.0-15.3   // offset of needle tip at zero insertion due to extra needle length 
 #define   MAX_OPEN_LOOP_INSERTION 15.0    // maximum open-loop insertion distance before a new scan is needed (mm)
 #define   PI                      3.14159265359
 #define   NEEDLE_GPS_OFFSET       0.0    // x-axis distance from GPS transducer to needle "tip" point (mm)
@@ -85,6 +84,10 @@ namespace Nf {
     double insertionSinceLastManualScan();
     void recordDataPoint(Matrix44d x_est, Matrix44d x_act, Matrix44d z, Vec3d t, Vec3d u, Matrix66d K, Matrix66d P); 
 
+    
+    std::tr1::shared_ptr < PlaneCalibrator > m_planeCalibrator;
+    bool m_calibratingPlaneOffest;
+
   private:
     
     Matrix44d m_z;
@@ -135,6 +138,14 @@ namespace Nf {
     int m_scan;
     int m_step;
 #endif
+    
+    void SetCalibratingPlaneOffset(bool calibrating) { m_calibratingPlaneOffest = calibrating; }
+    std::vector < Vec3d > GetPlanarCalibrationPoints();
+    void ClearPlaneCalibrationPoints() { m_planeCalibrator->ClearPoints(); m_planeCalibrator->ResetSolution(); }
+    void DoPlaneCalibration();
+    void GetPlaneCalibration(Vec3d &corner1, Vec3d &axis1, Vec3d &axis2, Vec3d &corner2, Vec3d &axis3, Vec3d &axis4);
+
+    void StartControlThread();
   };
 
   class StylusCalibration
