@@ -67,6 +67,8 @@ namespace Nf
 
     QObject::connect(m_mouse, SIGNAL(Move3d(std::vector<float>&)), this, SLOT(OnMove(std::vector<float>&)));
 
+    //onStartControlThread();
+
     // add framework params
     ADD_ENUM_PARAMETER(m_transducerType, "Transducer", CALLBACK_POINTER(onSetTransducerType, Teleoperation2DWidget), this, QtEnums::Transducer::CONVEX, "Transducer");
     ADD_BOOL_PARAMETER(m_initializeEstimator, "Initialize Estimator", CALLBACK_POINTER(onInitializeEstimator, Teleoperation2DWidget), this, false);
@@ -78,6 +80,8 @@ namespace Nf
     ADD_ACTION_PARAMETER(m_startControlThread, "Start Control Thread", CALLBACK_POINTER(onStartControlThread, Teleoperation2DWidget), this, false);
     ADD_CHILD_COLLECTION(m_imageViewer.get());
     ADD_CHILD_COLLECTION(m_teleoperationVisualizer.get());
+
+
   }
 
   Teleoperation2DWidget::~Teleoperation2DWidget()

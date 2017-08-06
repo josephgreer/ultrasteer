@@ -4,6 +4,19 @@
 
 namespace Nf {
 
+#define TIP_LENGTH 15.3
+#define TIP_ANGLE 0
+
+  static Vec3d tipToWrist(const Matrix33d &R, const Vec3d &tip)
+  {
+    return tip-(R.Col(2)*cos((f64)TIP_ANGLE)+R.Col(1)*sin((f64)TIP_ANGLE))*TIP_LENGTH;
+  }
+
+  static Vec3d wristToTip(const Matrix33d &R, const Vec3d &wrist)
+  {
+    return wrist+(R.Col(2)*cos((f64)TIP_ANGLE)+R.Col(1)*sin((f64)TIP_ANGLE))*TIP_LENGTH;
+  }
+
   ControlAlgorithms::ControlAlgorithms():    
       m_inTaskSpaceControl(false)
     , m_inJointSpaceControl(false)
@@ -201,10 +214,12 @@ namespace Nf {
       double a=-45*(PI/180);
       if( m_robot->getArticulationAngle() < 5)
         a=0;
-      Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
+      //Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
+
       // check transpose?
-      v=Rx*uz;
-      W=p-v*15.3;
+      /*v=Rx*uz;*/
+      //W=p-v*15.3;  //TIP CHANGE 123
+      W = tipToWrist(R, p);
       m_z = Matrix44d::FromOrientationAndTranslation(R,W);
       Vec3d u;
       GetIncrementalInputVector(u);
@@ -369,13 +384,13 @@ namespace Nf {
     {
     	bool condition=false; 
       //ControlCorrection()
-     if( CheckCompletion() )
-     {  // if we've reached the target
-    	 				m_robot->SetInsertionVelocity(0.0);
-    	 				m_robot->SetRotationVelocity(0.0);
-    	 				QuickandDirty=false;
-              condition=true;
-     }
+     //if( CheckCompletion() )
+     //{  // if we've reached the target
+    //	 				m_robot->SetInsertionVelocity(0.0);
+    //	 				m_robot->SetRotationVelocity(0.0);
+    //	 				QuickandDirty=false;
+    //          condition=true;
+     //}
      if( insertionSinceLastManualScan() >= MAX_OPEN_LOOP_INSERTION )
      { // if we need a new scan
     
@@ -457,14 +472,15 @@ namespace Nf {
     if( ArticulationAngle > 5)
       a=-45*(PI/180);    
 
-    Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
+    //Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
     // check transpose?
-    v=Rx*uz;
+    //v=Rx*uz;
     
-    p=W+v*15.3;
+    //p=W+uz*15.3; TIP CHANGE 123
+    p = wristToTip(R, W);
 
-    Vec3d tipOffset = R.Transpose()*(m_t-p);
-    if( tipOffset.z < 0 )
+    //Vec3d tipOffset = R.Transpose()*(m_t-p);
+    if( R.Col(2).dot(m_t-p) < 0 )
     {
       return true;
     }else{
@@ -531,8 +547,9 @@ namespace Nf {
          a=0;
     Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
     // check transpose?
-    v=Rx*uz;
-    W=p-v*15.3;
+    //v=Rx*uz;
+    //W=p-v*15.3; //TIP CHANGE 123
+    W = tipToWrist(R,p);
     m_z = Matrix44d::FromOrientationAndTranslation(R,W);
 
     m_UKF.fullUpdateUKF(u, m_z);
@@ -647,12 +664,13 @@ namespace Nf {
 
     Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
     // check transpose?
-    v=Rx*uz;
+    //v=Rx*uz;
     
-    p=W+v*15.3;
+    //p=W+v*15.3; TIP CHANGE 123
+    p = wristToTip(R,W);
     x =  Matrix44d::FromOrientationAndTranslation(R,p);
     p_img = RobotPtToImagePt(p);
-    Vec3d pz_world = p + R*Vec3d(0.0,0.0,10.0);
+    Vec3d pz_world = p + R*Vec3d(0.0,0.0,0.1);
     Vec3d py_world = p + R*Vec3d(0.0,5.0,0.0);
     pz_img = RobotPtToImagePt(pz_world);
     py_img = RobotPtToImagePt(py_world);
@@ -673,8 +691,10 @@ namespace Nf {
     Matrix44d &Ttrans2robot, s32 &transducerType, Cubed &frameBoundaries, Matrix44d &Tem2robot, Matrix44d &Tneedletip2robot)
   {
     t = m_t;
-    x = m_x;
     z = m_z;
+    Matrix33d R = m_x.GetOrientation();
+    Vec3d wrist = m_x.GetPosition();
+    x = Matrix44d::FromOrientationAndTranslation(R, wristToTip(R, wrist));
     Tref2robot = m_Tref2robot;
     Ttrans2robot = m_Ttrans2robot;
     frameBoundaries = m_frameBoundaries;
@@ -859,8 +879,8 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
 			  Nf::Vec3d W = C->m_x.GetPosition();
 			  Nf::Matrix33d R = C->m_x.GetOrientation();
         Nf::Vec3d uz = R.Col(2);  
-        Nf::Vec3d p=W+uz*15.3;
-
+        //Nf::Vec3d p=W+uz*15.3; TIP CHANGE 123
+        Nf::Vec3d p = wristToTip(R,W);
 			  // Get relative error in the current tip frame
 			  Nf::Vec3d e = R.Inverse()*(C->m_t - p);
         
@@ -872,47 +892,60 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
 			  // verificare convenzioni
 			  f32 d_th = atan2(-e.x, e.y);
         // Questo secondo l'ing. Diodato è troppo alto!
-        
-        switch(STATE)
+
+        if ( R.Col(2).dot(C->m_t-p) < 0)
         {
-        case 0:
-               C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
-               C->m_robot->SetRotationVelocity(0);
+          C->m_robot->SetInsertionVelocity(0.0);
+          C->m_robot->SetRotationVelocity(0.0);
+          C->QuickandDirty=false;
+        }
+        else
+        {
+          switch(STATE)
+          {
+          case 0:
+                 C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
+                 C->m_robot->SetRotationVelocity(0);
                
-               if ((alpha_e-prevalpha_e)>0)
-               {
-                  countder++;
-               }
-               else
-                  countder=0;
+                 if ((alpha_e-prevalpha_e)>0)
+                 {
+                    countder++;
+                 }
+                 else
+                    countder=0;
                
-               if (countder > 500)
-			          {
-				           C->m_robot->SetInsertionVelocity(0);
-				           C->m_robot->SetArticulationAngle(0);
-                   Sleep(2000);
-                   C->m_robot->InsertIncremental(-10);
-                   STATE=1; 
-			          }
-                prevalpha_e = alpha_e;
-          break;
-         case 1:
-               C->m_robot->SetRotationVelocity(0);
-               Sleep(4000);
-               STATE=2;
-           break;
-         case 2:
-              C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED);         
-              if (d_th<0)
-                C->m_robot->SetRotationVelocity(-350);
-              else
-                C->m_robot->SetRotationVelocity(350);
-           break;
+                 if (countder > 500)
+			            {
+				             C->m_robot->SetInsertionVelocity(0);
+				             C->m_robot->SetArticulationAngle(0);
+                     Sleep(2000);
+                     C->m_robot->InsertIncremental(-10);
+                     STATE=1; 
+			            }
+                  prevalpha_e = alpha_e;
+            break;
+           case 1:
+                 C->m_robot->SetRotationVelocity(0);
+                 Sleep(4000);
+                 STATE=2;
+             break;
+           case 2:
+                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED);         
+                if (d_th<0)
+                  C->m_robot->SetRotationVelocity(-350);
+                else
+                  C->m_robot->SetRotationVelocity(350);
+             break;
+          }
         }
       }
     }
+
+    
+
     u32 tNow = timeGetTime();
-    Sleep(MAX(dt-(tNow-t0), 0));
+    u32 sleepTime = (u32)MAX((__int64)dt-(__int64)(tNow-t0), 0);
+    Sleep(sleepTime);
   }
   myfile.close();
 }
