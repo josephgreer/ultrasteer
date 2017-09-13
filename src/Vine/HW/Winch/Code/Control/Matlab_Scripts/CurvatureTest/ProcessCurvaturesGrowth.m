@@ -111,6 +111,10 @@ end
 h = figure(10);
 set(h,'Position',[0 0 320 200]);
 legendText = num2cell(num2str(kron(6.895*pressures,[1;1]),'%.2f kPa'),2);
+for i=1:length(legendText)/2
+    legendText{2*(i-1)+1} = strcat(legendText{2*(i-1)+1}, ' Model');
+    legendText{2*(i-1)+2} = strcat(legendText{2*(i-1)+2}, ' Meas.');
+end
 legend(legendText);
 xlabel('Robot Length (m)');
 ylabel('Tip Deflection (m)');
