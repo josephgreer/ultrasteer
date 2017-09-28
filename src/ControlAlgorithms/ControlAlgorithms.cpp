@@ -239,7 +239,7 @@ namespace Nf {
       if( m_scan == 5 ){
         m_scan = 0;
         m_step++;
-        //m_insertionMMatLastManualScan = m_robot->getInsMM(); 
+        m_insertionMMatLastManualScan = m_robot->getInsMM2(); 
         if( m_inTaskSpaceControl ){        
           m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
         }   

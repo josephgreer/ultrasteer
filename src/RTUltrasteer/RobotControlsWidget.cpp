@@ -17,6 +17,10 @@ namespace Nf
     // Disable gui elements until the robot has been initialized
     ui.rotatePosInc->setDisabled(true);
     ui.rotateNegInc->setDisabled(true);
+
+    ui.rotatePosIncSmall->setDisabled(true); //gg
+    ui.rotateNegIncSmall->setDisabled(true); //gg
+
     ui.stopRoll->setDisabled(true);
     ui.homeRoll->setDisabled(true);
     ui.insertPosInc->setDisabled(true);
@@ -34,6 +38,9 @@ namespace Nf
     connect(ui.rotatePosInc, SIGNAL(clicked(bool)), this, SLOT(RotPosInc()));
     connect(ui.rotateNegInc, SIGNAL(clicked(bool)), this, SLOT(RotNegInc()));
 
+    connect(ui.rotatePosIncSmall, SIGNAL(clicked(bool)), this, SLOT(RotPosIncSmall())); //gg
+    connect(ui.rotateNegIncSmall, SIGNAL(clicked(bool)), this, SLOT(RotNegIncSmall())); //gg
+
     connect(ui.stopInsertion, SIGNAL(clicked(bool)), this, SLOT(StopInsertion()));
     connect(ui.homeInsertion, SIGNAL(clicked(bool)), this, SLOT(HomeInsertion()));
     connect(ui.insertPosInc, SIGNAL(clicked(bool)), this, SLOT(InsertPosInc()));
@@ -45,6 +52,8 @@ namespace Nf
     connect(ui.cancelDCIns, SIGNAL(clicked(bool)), this, SLOT(CancelDCInsert()));
 
     connect(ui.dcInsert, SIGNAL(clicked(bool)), this, SLOT(DCInsert()));
+
+
 
     connect(ui.articulationScrollBar, SIGNAL(valueChanged(int)), this, SLOT(SetArticulationAngle(int)));
     connect(&m_DisplayQueryTimer, SIGNAL(timeout()), this, SLOT(onDisplayQuery()));
@@ -60,6 +69,10 @@ namespace Nf
     m_rollInit = enabled;
     ui.rotatePosInc->setEnabled(true);
     ui.rotateNegInc->setEnabled(true);
+
+    ui.rotatePosIncSmall->setEnabled(true);   //gg
+    ui.rotateNegIncSmall->setEnabled(true);   //gg
+
     ui.stopRoll->setEnabled(true);
     ui.homeRoll->setEnabled(true);
     ui.threeSixNeg->setEnabled(true);
@@ -109,29 +122,32 @@ namespace Nf
   void RobotControlsWidget::onDisplayQuery(void)
   {
     if(m_insInit) {
-      //float pos = m_robot->getInsMM();
-      ui.insertion_pos->display(0);
+      float pos = m_robot->getInsMM2();
+      ui.insertion_pos->display(pos);
     }
     if(m_rollInit) {
       ui.roll_pos->setEnabled(true);
-      float angle = m_robot->getValueRoll();
-      ui.roll_pos->display(fmodf(0.0,360));
+      float angle = m_robot->getRollAngle2();
+      ui.roll_pos->display(fmodf(angle,360));
     }
     if(m_artInit) {
       ui.articulation_pos->setEnabled(true);
-      float angle = m_robot->getArticulationAngle();
+      float angle = m_robot->getArticulationAngle2();
       ui.articulation_pos->display(fmodf(angle,360));
     }
   }
 
   void RobotControlsWidget::DCInsert()
   {
-    m_robot->DutyCycleSteer(this->m_dcInsertVal, m_robot->getValueRoll(), this->m_dcInsertDist);
+    //m_robot->DutyCycleSteer(this->m_dcInsertVal, m_robot->getRollAngle2(), this->m_dcInsertDist);
+    m_robot->RotateIncremental(2);
   }
 
   void RobotControlsWidget::CancelDCInsert()
   {
-    m_robot->cancelDutyCycling();
+    //m_robot->cancelDutyCycling();
+    m_robot->RotateIncremental(-2);
+
   }
 
   double RobotControlsWidget::GetInsertion()
@@ -151,17 +167,18 @@ namespace Nf
 
   void RobotControlsWidget::InsertPosInc(void)
   {
-    m_robot->InsertIncremental(10);
+    m_robot->InsertIncremental(17);
   }
 
   void RobotControlsWidget::InsertNegInc(void)
   {
-    m_robot->InsertIncremental(-10);
+    m_robot->InsertIncremental(-17);
   }
 
   void RobotControlsWidget::InsertPosVel(void)
   {
-    m_robot->SetInsertionVelocity(0.5);
+   // m_robot->SetInsertionVelocity(0.5);
+     m_robot->SetInsertionVelocity(1);
   }
 
   void RobotControlsWidget::InsertPosVel(double vel)
@@ -171,7 +188,8 @@ namespace Nf
 
   void RobotControlsWidget::InsertNegVel(void)
   {
-    m_robot->SetInsertionVelocity(-0.5);
+   // m_robot->SetInsertionVelocity(-0.5);
+    m_robot->SetInsertionVelocity(-1);
   }
 
   void RobotControlsWidget::StopInsertion(void)
@@ -186,28 +204,45 @@ namespace Nf
 
   void RobotControlsWidget::RotPosInc(void)
   {
-    //m_robot->RotateIncremental(180);
-    m_robot->RotateIncremental(1);
+    m_robot->RotateIncremental(90);
+    //m_robot->RotateIncremental(2);
     //m_robot->SetRotationVelocity(100);
   }
 
   void RobotControlsWidget::RotNegInc(void)
   {
-    //m_robot->RotateIncremental(-180);
-    m_robot->RotateIncremental(-1);
+    m_robot->RotateIncremental(-90);
+    //m_robot->RotateIncremental(-2);
    // m_robot->SetRotationVelocity(-100);
   }
 
   void RobotControlsWidget::FullPosRot(void)
   {
     //m_robot->RotateIncremental(360.0);
-    m_robot->SetRotationVelocity(300);
+    //m_robot->SetRotationVelocity(300);
+   m_robot->InsertIncremental(-14);
+   Sleep(3000);
+   m_robot->HomeRoll();
+   //Sleep(5500);
+
+   /*
+   m_robot->RotateIncremental(20);
+   Sleep(1500);
+   m_robot->RotateIncremental(-20);
+   Sleep(1500);
+   m_robot->RotateIncremental(-20);
+   Sleep(1500);
+   m_robot->RotateIncremental(20);
+   */
+    
+   
   }
 
   void RobotControlsWidget::FullNegRot(void)
   {
-   // m_robot->RotateIncremental(-360.0);
-    m_robot->SetRotationVelocity(-300);
+    //m_robot->RotateIncremental(-360.0);
+     m_robot->SetRotationVelocity(300);
+   
   }
 
   void RobotControlsWidget::HomeRoll(void)
@@ -230,5 +265,35 @@ namespace Nf
     m_robot = robot;
   }
 
+  //giada widget additions
+  
+    void RobotControlsWidget::RotPosIncSmall(void)
+  {
+    //m_robot->RotateIncremental(360.0);
+    m_robot->SetRotationVelocity(250);
+    m_robot->InsertIncremental(26);
+    //Sleep(15000);
+    //m_robot->InsertIncremental(-10);
+   // m_robot->HomeRoll();
+    //m_robot->RotateIncremental(3);
+  }
+
+  void RobotControlsWidget::RotNegIncSmall(void)
+  {
+    m_robot->InsertIncremental(-30);
+      Sleep(4000);
+    m_robot->RotateIncremental(-30);
+     Sleep(3000);
+    m_robot->RotateIncremental(30);
+    Sleep(3000);
+    m_robot->RotateIncremental(30);
+    Sleep(3000);
+    m_robot->RotateIncremental(-30);
+    Sleep(4000);
+    m_robot->RotateIncremental(-90);
+    //m_robot->SetRotationVelocity(300);
+   // m_robot->SetInsertionVelocity(1);
+  }
+  
 }
 

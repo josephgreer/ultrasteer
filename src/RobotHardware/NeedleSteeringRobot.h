@@ -36,14 +36,16 @@ public:
 	void HomeArticulation(void);
 	void setVibration(bool);
 	double getRollAngle(void);
+  double getRollAngle2(void);
 	double getInsMM(void);
+  double getInsMM2(void);
 	double getArticulationAngle(void);
+  double getArticulationAngle2(void);
   bool isRollInitialized(void);
   bool isInsertionInitialized(void);
   bool isArticulationInitialized(void);
 	void cancelDutyCycling(void);
 	void DutyCycleSteer(float DC, float angle, float insDist);
-  double getValueRoll();
 
 private:
 	RollDevice m_RollDevice;
@@ -54,6 +56,8 @@ private:
 	double m_DC_InsTarg, m_DC_RollTarg;
 	double m_DC;
   double RollAngle;
+  double ArticulationAngle;
+  double insMM;
   bool m_rollInit, m_insInit, m_artInit; 
 
 public:

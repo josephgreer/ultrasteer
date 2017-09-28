@@ -643,7 +643,7 @@ namespace Nf
 
     if( r > -1 ) // If we have a circle to draw
     {
-      cvCircle(m_mask,cvPoint(t.x,t.y),r,cvScalar(1.0),5,CV_AA);
+      cvCircle(m_mask,cvPoint(t.x,t.y),r,cvScalar(1.0),3,CV_AA);
 
       // Update the VTK rendering
       m_maskImporter->Update();
@@ -655,7 +655,7 @@ namespace Nf
   void ImageViewer2DTeleoperationWidget::DrawTipIcon(Vec3d p, Vec3d pz, Vec3d py)
   {
 
-    if( fabs(p.z) < 1.0 ){ // if the tip estimate is within 10 mm of the image plane
+    if( fabs(p.z) < 1.0 ){ // if the tip estimate is within 10 mm of the image plane (now is 1 mm!)
       cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(pz.x, pz.y),cvScalar(1.0),2,CV_AA);
       cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(py.x, py.y),cvScalar(1.0),2,CV_AA);
     }

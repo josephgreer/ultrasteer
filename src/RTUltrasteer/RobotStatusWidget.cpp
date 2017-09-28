@@ -22,9 +22,9 @@ namespace Nf
     {
       ui.rotDial->setEnabled(true);
       ui.rotLCD->setEnabled(true);
-      double th = m_robot->getValueRoll();
-      ui.rotLCD->display(0);
-      ui.rotDial->setSliderPosition(int(0)-90); // adjust zero so dial mimics actual orientation
+      double th = m_robot->getRollAngle2();
+      ui.rotLCD->display(th);
+      ui.rotDial->setSliderPosition(int(th)-90); // adjust zero so dial mimics actual orientation
     }else{
       ui.rotDial->setEnabled(false);
       ui.rotLCD->setEnabled(false);
@@ -34,9 +34,9 @@ namespace Nf
     {
       ui.insSlider->setEnabled(true);
       ui.insLCD->setEnabled(true);
-      //double l = m_robot->getInsMM();
-      ui.insLCD->display(0);
-      ui.insSlider->setSliderPosition(int(0));
+      double l = m_robot->getInsMM2();
+      ui.insLCD->display(l);
+      ui.insSlider->setSliderPosition(int(l));
     }else{
       ui.insSlider->setEnabled(false);
       ui.insLCD->setEnabled(false);

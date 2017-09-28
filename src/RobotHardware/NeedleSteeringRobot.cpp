@@ -157,21 +157,32 @@ double NeedleSteeringRobot::getRollAngle(void)
 	return RollAngle;
 }
 
-double NeedleSteeringRobot::getValueRoll()
+double NeedleSteeringRobot::getRollAngle2()
 {
   return RollAngle;
 }
 
 double NeedleSteeringRobot::getArticulationAngle(void)
 {
-	// Returns the current angle of the needle
-	return m_ArticulationDevice.GetAngle();
+	ArticulationAngle = m_ArticulationDevice.GetAngle();// Returns the current angle of the needle
+	return ArticulationAngle;
+}
+
+double NeedleSteeringRobot::getArticulationAngle2(void)
+{
+	return ArticulationAngle;
 }
 
 double NeedleSteeringRobot::getInsMM(void)
 {
 	// Returns the current angle of the needle
-	return m_InsertionDevice.GetMM();
+  insMM = m_InsertionDevice.GetMM();
+	return insMM; 
+}
+
+double NeedleSteeringRobot::getInsMM2(void)
+{
+	return insMM; 
 }
 
 // brief: 

@@ -37,6 +37,10 @@ namespace Nf
     public slots:
       void RotPosInc(void);
       void RotNegInc(void);
+       
+      void RotPosIncSmall(void);   //gg
+      void RotNegIncSmall(void);   //gg
+     
       void StopRoll(void);
       void HomeRoll(void);
 
