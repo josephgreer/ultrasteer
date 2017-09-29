@@ -8,16 +8,45 @@
 /// class:		UnscentedKalmanFilter
 /// brief:		Filters ultrasound segmentation data based on a stochastic model of needle steering
 ///
-///	author:		Troy Adebar
+///	author:		Alessandro Diodato
 ///	date:		  May 14, 2015
 
 namespace Nf
 {
   class Estimator
   {
+   
+    bool Init;
+    vector<Matrix44d> TIP_t;
+    vector<Vec3d> OBS;
+    vector<double> INS;
+    vector<double> YAW;
+    double e_roll,e_pitch,e_yaw;
+    double rho;
+
+    Matrix33d ROT_base;
+    Matrix33d ROT_t;
+
+    Vec3d off;
+    Vec3d tip_mm_t;
+
+    double prev_l;
+    double prev_th; 
+  private:
+    Matrix33d rotx(double roll);
+    Matrix33d roty(double pitch);
+    Matrix33d rotz(double yaw);
+
   public: //Methods
     Estimator(void);
     ~Estimator(void);
+    void setEstimator(float ins,float appoff,float yaw);
+    void resetEstimator(void);
+    bool isInitialized();
+    Matrix44d getCurrentEstimate();
+    void addPOINT(Vec3d p);
+    void updateInput(double m_l, double m_th);
+    void Estimator::saveDataOpt();
     /*void fullUpdateUKF(Vec3d u, Matrix44d z);
     void processUpdateUKF(Vec3d u);
     void getCurrentStateEstimate(Matrix44d &x_out);

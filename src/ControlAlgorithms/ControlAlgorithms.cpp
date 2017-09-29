@@ -4,7 +4,7 @@
 
 namespace Nf {
 
-#define TIP_LENGTH 15.3
+#define TIP_LENGTH 15.3*0
 #define TIP_ANGLE 0
 
   static Vec3d tipToWrist(const Matrix33d &R, const Vec3d &tip)
@@ -49,6 +49,7 @@ namespace Nf {
 	  QuickandDirty=false;
     myfile.open("timeUS.txt");
     ArticulationAngle=0;
+    NPoint=0;
 
     m_planeCalibrator = std::tr1::shared_ptr < PlaneCalibrator > (new PlaneCalibrator());
   }
@@ -96,7 +97,7 @@ namespace Nf {
   // toggle the task-space control state
   bool ControlAlgorithms::startStopTaskSpaceControl()
   {
-    if(m_UKF.isInitialized()){ //don't change the state if UKF is not initialized
+    if(m_EST.isInitialized()){ //don't change the state if EST is not initialized
       m_inTaskSpaceControl = !m_inTaskSpaceControl;
     }
 
@@ -116,7 +117,7 @@ namespace Nf {
   {
     using namespace arma;
 
-    if(m_UKF.isInitialized()){ //don't change the state if UKF is not initialized
+    if(m_EST.isInitialized()){ //don't change the state if UKF is not initialized
       if( m_recordingData ){ // if we have been recording, save the data
         m_recordingData = false;
         char strbuff[100];
@@ -144,14 +145,14 @@ namespace Nf {
   // initialize the Unscented Kalman Filter based on joint values
   void ControlAlgorithms::initializeEstimator()
   {
-    m_UKF.initialize(m_robot->getInsMM()+NEEDLE_DEAD_LENGTH, m_robot->getRollAngle());
-    m_x = m_UKF.getCurrentEstimate();
+    m_EST.setEstimator(m_l,NEEDLE_DEAD_LENGTH, m_robot->getRollAngle());
+    m_x = m_EST.getCurrentEstimate();
   }
 
   // toggle the joint-space control state
   bool ControlAlgorithms::startStopJointSpaceControl()
   {
-    if(m_UKF.isInitialized()){ //don't change the state if UKF is not initialized
+    if(m_EST.isInitialized()){ //don't change the state if UKF is not initialized
       m_inJointSpaceControl = !m_inJointSpaceControl;
     }
 
@@ -205,8 +206,11 @@ namespace Nf {
   {
     Vec3d p = ImagePtToRobotPt(p_im);
     if(!m_calibratingPlaneOffest) {
-      Matrix33d R = m_x.GetOrientation();
 
+      // show distance point, if the user confirm, add point
+      m_EST.addPOINT(p);
+      
+      /*Matrix33d R = m_x.GetOrientation();
       // Track of the Wrist
       Vec3d ux = R.Col(0);
       Vec3d uz = R.Col(2);
@@ -217,9 +221,9 @@ namespace Nf {
       //Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
 
       // check transpose?
-      /*v=Rx*uz;*/
+      v=Rx*uz;
       //W=p-v*15.3;  //TIP CHANGE 123
-      W = tipToWrist(R, p);
+      W = tipToWrist(R, p);/*
       m_z = Matrix44d::FromOrientationAndTranslation(R,W);
       Vec3d u;
       GetIncrementalInputVector(u);
@@ -228,7 +232,8 @@ namespace Nf {
       m_UKF.getCurrentStateEstimate(m_x);
       P  = m_UKF.getCurrentCovariance();
       K = m_UKF.getCurrentGain();
-      recordDataPoint(m_x, m_Tneedletip2robot, m_z, m_t, u, K, P);
+      */
+      //recordDataPoint(m_x, m_Tneedletip2robot, m_z, m_t, u, K, P);
 
 #ifdef RECORDING_MEASUREMENT_NOISE
       arma::mat z = m_z.ToArmaMatrix4x4();
@@ -245,7 +250,18 @@ namespace Nf {
         }   
       }
 #else
-      m_insertionMMatLastManualScan = m_l; 
+      NPoint++;
+      if (NPoint < 3)
+      {
+          
+      }
+      else
+      {
+          m_insertionMMatLastManualScan = m_l;
+          //m_EST.saveDataOpt();
+          NPoint=0;
+      }
+      
       if( m_inTaskSpaceControl ){        
         //m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
       }   
@@ -262,7 +278,7 @@ namespace Nf {
     Plane pp = m_planeCalibrator->GetSolution();
     Vec3d normal = pp.GetNormalVector();
 
-    Matrix33d R = m_UKF.getCurrentEstimate().GetOrientation();
+    Matrix33d R = m_EST.getCurrentEstimate().GetOrientation();
     Vec3d estimatedNormal = R.Col(0);
     f64 angle = abs(acos(estimatedNormal.dot(normal)/(estimatedNormal.magnitude()*normal.magnitude())));
 
@@ -300,7 +316,7 @@ namespace Nf {
       arma::mat centerPoint = arma::mean(points, 0);
       Vec3d center = Vec3d(centerPoint(0,0), centerPoint(0,1), centerPoint(0,2));
 
-      Matrix33d R = m_UKF.getCurrentEstimate().GetOrientation();
+      Matrix33d R = m_EST.getCurrentEstimate().GetOrientation();
       axis1 = pp.ProjectPointOntoPlane(center+R.Col(1)*100.0)-center;
       axis2 = pp.ProjectPointOntoPlane(center+R.Col(2)*100.0)-center;
       corner1 = center-axis1-axis2;
@@ -362,10 +378,11 @@ namespace Nf {
 
     if (!QuickandDirty)
     {	
-      GetPoseEstimate(m_x);
+      //GetPoseEstimate(m_x);
       if( m_robot && m_robot->isRollInitialized() && m_robot->isInsertionInitialized() ){
         m_th = m_robot->getRollAngle();
         m_l = m_robot->getInsMM();
+            
       }
       
     }
@@ -404,7 +421,7 @@ namespace Nf {
     }
   }
 
-  void ControlAlgorithms::GetPoseEstimate(Matrix44d &x)
+  /*void ControlAlgorithms::GetPoseEstimate(Matrix44d &x)
   {
     Vec3d u;
     GetIncrementalInputVector(u);
@@ -415,7 +432,7 @@ namespace Nf {
       Matrix66d P = m_UKF.getCurrentCovariance();
       recordDataPoint(x, m_Tneedletip2robot, Matrix44d::Zero(), m_t, u, Matrix66d::Zero(), P);
     }
-  }
+  }*/
 
   void ControlAlgorithms::updateTransducerPose()
   {
@@ -552,8 +569,8 @@ namespace Nf {
     W = tipToWrist(R,p);
     m_z = Matrix44d::FromOrientationAndTranslation(R,W);
 
-    m_UKF.fullUpdateUKF(u, m_z);
-    m_UKF.getCurrentStateEstimate(m_x);
+    //m_UKF.fullUpdateUKF(u, m_z);
+    //m_UKF.getCurrentStateEstimate(m_x);
   }
 
   void ControlAlgorithms::setRobot(NeedleSteeringRobot* robot)
@@ -646,7 +663,7 @@ namespace Nf {
     t_img = RobotPtToImagePt(m_t);
     t = m_t;
       
-    Sxyz = m_UKF.getCurrentXYZVariance();
+    //Sxyz = m_UKF.getCurrentXYZVariance();
     // measurement
     z = m_z;
     // tip frame in image coordinates
@@ -871,7 +888,8 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
       count++;
       C->m_th = C->m_robot->getRollAngle();
       C->m_l = C->m_robot->getInsMM();
-      C->GetPoseEstimate(C->m_x);
+      C->m_EST.updateInput(C->m_l, C->m_th);
+      C->m_x =  C->m_EST.getCurrentEstimate() ;
 
 			if (C->m_t.magnitude() > 1e-3) // if the target is defined
 			{
@@ -891,7 +909,6 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
         alpha_e = abs(alpha_e);
 			  // verificare convenzioni
 			  f32 d_th = atan2(-e.x, e.y);
-        // Questo secondo l'ing. Diodato è troppo alto!
 
         if ( R.Col(2).dot(C->m_t-p) < 0)
         {
@@ -930,7 +947,7 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
                  STATE=2;
              break;
            case 2:
-                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED);         
+                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0.5);         
                 if (d_th<0)
                   C->m_robot->SetRotationVelocity(-350);
                 else

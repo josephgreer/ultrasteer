@@ -12,7 +12,7 @@
 #include "RTCore.h"
 #include "RPFileReader.h"
 #include "SegmentationAlgorithms.h"
-#include "UnscentedKalmanFilter.h"
+#include "Estimator.h"
 #include "NeedleSteeringRobot.h"
 #include <QtGui/QFileDialog>
 #include <cmath>
@@ -28,8 +28,8 @@
 #define   INS_AUTO_SPEED          0.5     // insertions speed during task-space teleoperation  (mm/s)
 #define   INS_SPEED               20.0    // insertion speed during joint-space teleoperation (mm/s) 
 #define   ROT_SPEED               200.0   // rotation speed during joint-space teleoperation (RPM)
-#define   NEEDLE_DEAD_LENGTH      146.0-15.3   // offset of needle tip at zero insertion due to extra needle length 
-#define   MAX_OPEN_LOOP_INSERTION 15.0    // maximum open-loop insertion distance before a new scan is needed (mm)
+#define   NEEDLE_DEAD_LENGTH      140.0+3.0   // offset of needle tip at zero insertion due to extra needle length 
+#define   MAX_OPEN_LOOP_INSERTION 10.0    // maximum open-loop insertion distance before a new scan is needed (mm)
 #define   PI                      3.14159265359
 #define   NEEDLE_GPS_OFFSET       0.0    // x-axis distance from GPS transducer to needle "tip" point (mm)
 #define   INTRODUCER_LENGTH       5.0    // insertion length where the tip is inside the introducer (mm)
@@ -105,7 +105,8 @@ namespace Nf {
     double m_insertionMMatLastManualScan;
     double ArticulationAngle;
     InPlaneSegmentation m_segmentation; 
-    UnscentedKalmanFilter m_UKF;
+    //UnscentedKalmanFilter m_UKF;
+   
     
     double m_lastInsMM;
     double m_lastRollDeg;
@@ -125,15 +126,18 @@ namespace Nf {
 	DWORD   dwThreadIdArray;
 	HANDLE  hThreadArray;
   std::ofstream myfile;
+  int NPoint;
   public:
     bool QuickandDirty;
     Vec3d m_t;
     Matrix44d m_x;
    NeedleSteeringRobot* m_robot;
    f64 m_maxArticulationAngle;
-   void GetPoseEstimate(Matrix44d &x);
+   //void GetPoseEstimate(Matrix44d &x);
    double m_l;
    double m_th;
+   
+   Estimator m_EST;
 #ifdef RECORDING_MEASUREMENT_NOISE
     int m_scan;
     int m_step;
