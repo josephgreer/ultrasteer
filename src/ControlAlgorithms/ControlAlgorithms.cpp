@@ -258,7 +258,7 @@ namespace Nf {
       else
       {
           m_insertionMMatLastManualScan = m_l;
-          //m_EST.saveDataOpt();
+          m_EST.saveDataOpt();
           NPoint=0;
       }
       
@@ -860,7 +860,8 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
 	Nf::ControlAlgorithms* C=(Nf::ControlAlgorithms*) lpParam;
 	// timer
   int count=0;
-  int STATE=2;
+  int STATE=3;
+  double prev_ins=0;
   
   double prevalpha_e=1000;
   int countder;
@@ -870,7 +871,7 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
   std::ofstream myfile;
   myfile.open("timeTHREAD.txt");
 
-  s32 dt = 40;
+  s32 dt = 25;
 	
   while(1)
 	{
@@ -881,6 +882,8 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
 		GetSystemTime(&time);
 		LONG time_ms = (time.wSecond * 1000) + time.wMilliseconds;
 		myfile << time_ms << endl;
+
+    
     
 			  
 		if (C->QuickandDirty)
@@ -953,6 +956,45 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
                 else
                   C->m_robot->SetRotationVelocity(350);
              break;
+            case 3:
+                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0);
+                if (d_th<0)
+                  d_th=d_th+2*PI;
+
+                C->m_robot->RotateIncremental(d_th*(180/PI));
+                STATE=4;
+                break;
+            case 4:
+                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0);
+                if (abs(d_th)<0.1)
+                  STATE = 5;
+             break;
+            case 5:
+                C->m_robot->InsertIncremental(-3.0);
+                prev_ins = C->m_l;
+                STATE = 6;
+                break;
+            case 6:
+                if (abs(prev_ins - 3.0 - C->m_l)< 0.01)
+                  STATE = 7;
+            break;
+            case 7:
+                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0.75);
+                // Vibration
+                if (alpha_e<1.0)
+                {
+                    STATE = 8;
+                }
+            break;
+            case 8:
+                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0.75);
+                C->m_robot->SetRotationVelocity(350);
+                if (alpha_e>2)
+                {
+                    STATE = 3;
+                }
+            break;
+
           }
         }
       }

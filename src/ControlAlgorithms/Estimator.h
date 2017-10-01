@@ -3,6 +3,12 @@
 
 #include "RTCore.h"
 #include <vector>
+#include<stdio.h>
+ 
+//#pragma comment(lib,"ws2_32.lib") //Winsock Library
+ 
+#define BUFLEN 1  //Max length of buffer
+#define PORT 9854   //The port on which to listen for incoming data
 
 
 /// class:		UnscentedKalmanFilter
@@ -32,6 +38,14 @@ namespace Nf
 
     double prev_l;
     double prev_th; 
+
+    SOCKET s;
+    struct sockaddr_in server, si_other;
+    int slen , recv_len;
+    char buf[BUFLEN];
+    WSADATA wsa;
+
+
   private:
     Matrix33d rotx(double roll);
     Matrix33d roty(double pitch);
@@ -47,6 +61,7 @@ namespace Nf
     void addPOINT(Vec3d p);
     void updateInput(double m_l, double m_th);
     void Estimator::saveDataOpt();
+    void WaitAndCorrect();
     /*void fullUpdateUKF(Vec3d u, Matrix44d z);
     void processUpdateUKF(Vec3d u);
     void getCurrentStateEstimate(Matrix44d &x_out);
