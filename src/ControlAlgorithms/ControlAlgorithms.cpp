@@ -259,6 +259,7 @@ namespace Nf {
       {
           m_insertionMMatLastManualScan = m_l;
           m_EST.saveDataOpt();
+          m_EST.WaitAndCorrect();
           NPoint=0;
       }
       
@@ -979,7 +980,7 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
                   STATE = 7;
             break;
             case 7:
-                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0.75);
+                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
                 // Vibration
                 if (alpha_e<1.0)
                 {
@@ -987,7 +988,7 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
                 }
             break;
             case 8:
-                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0.75);
+                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
                 C->m_robot->SetRotationVelocity(350);
                 if (alpha_e>2)
                 {

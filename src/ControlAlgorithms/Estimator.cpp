@@ -32,12 +32,12 @@ namespace Nf
      
     //Prepare the sockaddr_in structure
     server.sin_family = AF_INET;
-    server.sin_addr.s_addr = INADDR_ANY;
+    server.sin_addr.s_addr = inet_addr("127.0.0.1");
     server.sin_port = htons( PORT );
 
     si_other.sin_family = AF_INET;
-    si_other.sin_addr.s_addr = INADDR_ANY;
-    si_other.sin_port = htons( PORT+1);
+    si_other.sin_addr.s_addr = inet_addr("127.0.0.1");
+    si_other.sin_port = htons(PORT+1);
 
 
     //Bind
@@ -238,7 +238,7 @@ namespace Nf
     mat res = zeros(4,1);
     char path[150];
     strcpy (path , "./X.dat"); 
-    res.save(path, raw_ascii);
+    res.load(path, raw_ascii);
     
     ROT_base = ROT_base * rotx(res(0,0)) *  roty(res(1,0)) *  rotz(res(2,0));
     tip_mm_t = ROT_base*off;
