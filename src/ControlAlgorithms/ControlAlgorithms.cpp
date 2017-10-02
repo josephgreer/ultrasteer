@@ -861,7 +861,7 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
 	Nf::ControlAlgorithms* C=(Nf::ControlAlgorithms*) lpParam;
 	// timer
   int count=0;
-  int STATE=3;
+  int STATE=2;
   double prev_ins=0;
   
   double prevalpha_e=1000;
@@ -986,6 +986,8 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
                 {
                     STATE = 8;
                 }
+                if (abs(d_th)>2)
+                   STATE = 3;
             break;
             case 8:
                 C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
