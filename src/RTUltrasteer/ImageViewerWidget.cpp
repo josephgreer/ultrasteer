@@ -531,7 +531,7 @@ namespace Nf
     double mmToNextScan;
     double alpha;
     bool insertionDepthReached;
-    m_control->getOverlayValues(x, p_img, pz_img, py_img,
+    m_control->getOverlayValues2(x, p_img, pz_img, py_img,
       z, Sxyz, t_img, t, mmToNextScan, insertionDepthReached,alpha);
 
     // update target
@@ -655,14 +655,26 @@ namespace Nf
   void ImageViewer2DTeleoperationWidget::DrawTipIcon(Vec3d p, Vec3d pz, Vec3d py)
   {
 
-    if( fabs(p.z) < 1.0 ){ // if the tip estimate is within 10 mm of the image plane (now is 1 mm!)
+    /*if( fabs(p.z) < 1.0 ){ // if the tip estimate is within 10 mm of the image plane (now is 1 mm!)
       cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(pz.x, pz.y),cvScalar(1.0),2,CV_AA);
       cvLine(m_mask,cvPoint(p.x,p.y),cvPoint(py.x, py.y),cvScalar(1.0),2,CV_AA);
     }
     // Update the VTK rendering
     m_maskImporter->Update();
     m_maskImporter->Modified();
-    //this->repaint();
+    //this->repaint();*/
+
+    int r = 10;
+
+    if(fabs(p.z) < 1.0) // If we have a circle to draw
+    {
+      cvCircle(m_mask,cvPoint(p.x,p.y),r,cvScalar(1.0),2,CV_AA);
+
+      // Update the VTK rendering
+      //this->repaint();
+    }
+     m_maskImporter->Update();
+     m_maskImporter->Modified();
   }
 
   void ImageViewer2DTeleoperationWidget::getImageDim(int &w, int &h)

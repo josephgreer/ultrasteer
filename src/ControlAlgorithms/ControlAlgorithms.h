@@ -28,7 +28,7 @@
 #define   INS_AUTO_SPEED          0.5     // insertions speed during task-space teleoperation  (mm/s)
 #define   INS_SPEED               20.0    // insertion speed during joint-space teleoperation (mm/s) 
 #define   ROT_SPEED               200.0   // rotation speed during joint-space teleoperation (RPM)
-#define   NEEDLE_DEAD_LENGTH      140.0-1.5   // offset of needle tip at zero insertion due to extra needle length 
+#define   NEEDLE_DEAD_LENGTH      143.0   // offset of needle tip at zero insertion due to extra needle length 
 #define   MAX_OPEN_LOOP_INSERTION 10.0    // maximum open-loop insertion distance before a new scan is needed (mm)
 #define   PI                      3.14159265359
 #define   NEEDLE_GPS_OFFSET       0.0    // x-axis distance from GPS transducer to needle "tip" point (mm)
@@ -74,6 +74,7 @@ namespace Nf {
     void RotateInline();
 
     void getOverlayValues(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Matrix44d &z, Vec3d &Sxyz, Vec3d &t_img, Vec3d &t, double &mmToNextScan, bool &targetDepthReached,double& alpha_e);
+    void getOverlayValues2(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Matrix44d &z, Vec3d &Sxyz, Vec3d &t_img, Vec3d &t, double &mmToNextScan, bool &targetDepthReached,double& alpha_e);
     
     void getVisualizerValues(Vec3d &t, Matrix44d &x, Matrix44d &z, Matrix44d &Tref2robot,
                                               Matrix44d &Ttrans2robot, s32 &transducerType, Cubed &frameBoundaries, Matrix44d &Tem2robot, Matrix44d &Tneedletip2robot);

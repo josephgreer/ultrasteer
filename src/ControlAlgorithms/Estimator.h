@@ -23,7 +23,6 @@ namespace Nf
   {
    
     bool Init;
-    vector<Matrix44d> TIP_t;
     vector<Vec3d> OBS;
     vector<double> INS;
     vector<double> YAW;
@@ -52,6 +51,8 @@ namespace Nf
     Matrix33d rotz(double yaw);
 
   public: //Methods
+
+    vector<Matrix44d> TIP_t;
     Estimator(void);
     ~Estimator(void);
     void setEstimator(float ins,float appoff,float yaw);

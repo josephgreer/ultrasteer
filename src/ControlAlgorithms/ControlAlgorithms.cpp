@@ -705,6 +705,88 @@ namespace Nf {
 #endif
   }
 
+  void ControlAlgorithms::getOverlayValues2(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img,
+                                           Matrix44d &z,
+                                           Vec3d &Sxyz,
+                                           Vec3d &t_img, Vec3d &t,
+                                           double &mmToNextScan, bool &targetDepthReached, double& alpha_e)
+  {
+    // target  
+    t_img = RobotPtToImagePt(m_t);
+    t = m_t;
+      
+    //Sxyz = m_UKF.getCurrentXYZVariance();
+    // measurement
+    z = m_z;
+    // tip frame in image coordinates
+    Vec3d W = m_x.GetPosition();
+    Matrix33d R = m_x.GetOrientation();
+
+    // Track of the Wrist
+    Vec3d ux = R.Col(0);
+    Vec3d uz = R.Col(2);
+    
+    Vec3d v,p;
+    double a=0;
+    if( ArticulationAngle > 5)
+        a=-45*(PI/180);
+
+    Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
+    // check transpose?
+    //v=Rx*uz;
+    
+    //p=W+v*15.3; TIP CHANGE 123
+    //p = wristToTip(R,W);
+    double minZ=1000;
+    Vec3d pz_world;
+    Vec3d py_world,appp_img;
+    Matrix44d appx;
+    int Step = ceil((float)m_EST.TIP_t.size()/250);
+    if (QuickandDirty)
+    {
+       x = m_x;
+       R = m_x.GetOrientation();
+       p = x.GetPosition();
+       p_img = RobotPtToImagePt(p);
+       pz_world = p + R*Vec3d(0.0,0.0,0.1);
+       py_world = p + R*Vec3d(0.0,5.0,0.0);
+       pz_img = RobotPtToImagePt(pz_world);
+       py_img = RobotPtToImagePt(py_world);
+    }
+    else
+      for (int i=0;i<m_EST.TIP_t.size();i = i +Step)
+      {
+        appx =  m_EST.TIP_t[i];
+        p = m_EST.TIP_t[i].GetPosition();
+        R = m_EST.TIP_t[i].GetOrientation();
+        appp_img = RobotPtToImagePt(p);
+        if (fabs(appp_img.z) < minZ)
+        {
+           x =  appx;
+
+           p_img = appp_img;
+           pz_world = p + R*Vec3d(0.0,0.0,0.1);
+           py_world = p + R*Vec3d(0.0,5.0,0.0);
+           pz_img = RobotPtToImagePt(pz_world);
+           py_img = RobotPtToImagePt(py_world);
+           minZ = fabs(p_img.z);
+        }
+      
+      }
+    
+    mmToNextScan = MAX(MAX_OPEN_LOOP_INSERTION-insertionSinceLastManualScan(),0.0);
+    targetDepthReached = CheckCompletion();
+
+    Nf::Vec3d e = (m_t - p);
+    Nf::Vec3d e_v = e/e.magnitude();
+    Nf::Vec3d ze=R.Col(2);
+    alpha_e=(acos(ze.dot(e_v)))*(180/PI);
+
+#ifdef GPS3_SAVING
+    Sxyz = m_Tneedletip2robot.GetPosition(); 
+#endif
+  }
+
   void ControlAlgorithms::getVisualizerValues(Vec3d &t, Matrix44d &x, Matrix44d &z, Matrix44d &Tref2robot,
     Matrix44d &Ttrans2robot, s32 &transducerType, Cubed &frameBoundaries, Matrix44d &Tem2robot, Matrix44d &Tneedletip2robot)
   {
