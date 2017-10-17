@@ -1,5 +1,6 @@
 Build
 Build/*
+*.avi
 *.asv
 *.png
 *.pdf
