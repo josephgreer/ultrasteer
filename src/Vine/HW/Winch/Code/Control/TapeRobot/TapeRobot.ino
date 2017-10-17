@@ -206,10 +206,10 @@ void loop()
     }
 //    if(count % 499 == 0)
 //      Serial.println("act " + String(currAct+1));
-//    if(count++ % 2000 == 0) 
-//      Serial.println("Des Pos " +  String(desPos) + " Pos " + String(pos) + " DesVel " + String(desVel) + " Vel " + String(vel) + " Pressure " + String(desPres) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
-    if(count++ % 10 == 0)
-      Serial.println("E " + String(pos,5) + ", " + String(vel) + ";");
+    if(count++ % 2000 == 0) 
+      Serial.println("Des Pos " +  String(desPos) + " Pos " + String(pos) + " DesVel " + String(desVel) + " Vel " + String(vel) + " Pressure " + String(desPres) + " Error " + String(error) + " u " + String(u) + " dt " + String(dt*1000.0) + " derror " + String(derror) + " integralError " + String(integralError));
+//    if(count++ % 10 == 0)
+//      Serial.println("E " + String(pos,5) + ", " + String(vel) + ";");
       
     analogWrite(pwmAPin, u);
   }

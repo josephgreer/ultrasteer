@@ -11,7 +11,7 @@ segments = [transitionPoints(1:end-1) transitionPoints(2:end)];
 badSegs = find(segments(:,1) == segments(:,2)-1);
 segments(badSegs,:) = []; 
 
-figure;
+h = figure;
 hold on;
 
 colormap jet;
@@ -80,22 +80,35 @@ for i=1:size(segments,1)
     lastTheta = rad2deg(atan2(lastDelta(2),lastDelta(1)));
     
     endThetas = vertcat(endThetas, lastTheta);
+    
+    cPoints = cPoints-repmat([214 230], size(cPoints,1), 1);
         
     
     index = (initTheta-minTheta)/(maxTheta-minTheta);
     [~, minIdx] = min(abs(index*color_steps-linspace(1,color_steps,color_steps)));
     
-    plot(cPoints(:,2),cPoints(:,1),'Color',map(minIdx,:),'LineWidth',5);
+    plot(cPoints(:,2)*0.1275,cPoints(:,1)*0.1275,'Color',map(minIdx,:),'LineWidth',5);
     
 end
 
 % ylim([325 650]);
 % xlim([0 340]);
 % xlim([400 600]);
+
+set(h,'Position',[0 0 320 320]);
+set(gca,'FontSize',12,'FontName','Times New Roman');
+title({'Tip Trajectories of Robot', 'Interacting with Circular Obstacle', 'with Varied Start Angle'});
+
+xlabel('x (cm)');
+ylabel('y (cm)');
+
 box on;
 grid on;
+xlim([-17 17]);
+ylim([-15 22]);
 daspect([1 1 1]);
-colorbar;
+c = colorbar;
+c.Label.String = 'Starting Orientation, \theta (^o)';
 caxis([minTheta maxTheta]);
 
 figure;

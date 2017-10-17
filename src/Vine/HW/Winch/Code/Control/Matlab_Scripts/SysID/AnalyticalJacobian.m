@@ -71,8 +71,12 @@ K = hat(axis/theta);
 RR = eye(3)+sin(theta)*K+(1-cos(theta))*K*K;
 RR = RR(:);
 J4 = [];
+yep = eye(3)+sin(theta)*K+(1-cos(theta))*K*K;
 for i=1:length(outputs)
-    J4 = horzcat(J4,diff(RR,outputs(i)));
+    rdiff = diff(yep, outputs(i));
+    curr = simplify(rdiff*yep.');
+    J4 = horzcat(J4,SO3HatInverse(curr));
+%     J4 = horzcat(J4,diff(RR,outputs(i)));
 end
 
 

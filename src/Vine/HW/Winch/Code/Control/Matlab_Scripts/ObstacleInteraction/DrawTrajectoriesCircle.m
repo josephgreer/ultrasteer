@@ -95,12 +95,16 @@ c = colorbar;
 caxis([minY maxY]);
 ylim([-50*0.1275 230*0.1275]);
 xlim([-200*0.1275 200*0.1275]);
-daspect([1 1 1]);
-set(h,'Position',[0 0 320 200]);
-set(gca,'FontSize',12,'FontName','Times New Roman');
-title({'Tip Trajectories of Robot', 'Interacting with Circular Obstacle', 'with Varied Start Positions'});
 
-c.Label.String = 'Horizontal Starting Pos. (x/D)';
+c.Label.String = 'Pos. (x/D)';
+
+xlabel('x (cm)');
+ylabel('y (cm)');
+
+daspect([1 1 1]);
+set(h,'Position',[0 0 160 200]);
+set(gca,'FontSize',12,'FontName','Times New Roman');
+title('Varied Position');
 
 
 figure;
