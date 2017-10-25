@@ -50,6 +50,7 @@ namespace Nf {
     myfile.open("timeUS.txt");
     ArticulationAngle=0;
     NPoint=0;
+    CountCommand=0;
 
     m_planeCalibrator = std::tr1::shared_ptr < PlaneCalibrator > (new PlaneCalibrator());
   }
@@ -105,8 +106,8 @@ namespace Nf {
       m_maxArticulationAngle = m_robot->getArticulationAngle();
       //m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
     }else{
-      m_robot->SetInsertionVelocity(0.0);
-      m_robot->SetRotationVelocity(0.0);
+      //m_robot->SetInsertionVelocity(0.0);
+      //m_robot->SetRotationVelocity(0.0);
     }
 
     return m_inTaskSpaceControl;
@@ -145,7 +146,7 @@ namespace Nf {
   // initialize the Unscented Kalman Filter based on joint values
   void ControlAlgorithms::initializeEstimator()
   {
-    m_EST.setEstimator(m_l,NEEDLE_DEAD_LENGTH, m_robot->getRollAngle());
+    m_EST.setEstimator(m_l,NEEDLE_DEAD_LENGTH+2.0, m_robot->getRollAngle());
     m_x = m_EST.getCurrentEstimate();
   }
 
@@ -208,7 +209,7 @@ namespace Nf {
     if(!m_calibratingPlaneOffest) {
 
       // show distance point, if the user confirm, add point
-      m_EST.addPOINT(p);
+      m_EST.addPOINT(p,Versor_n);
       
       /*Matrix33d R = m_x.GetOrientation();
       // Track of the Wrist
@@ -259,6 +260,7 @@ namespace Nf {
       {
           m_insertionMMatLastManualScan = m_l;
           m_EST.saveDataOpt();
+          saveTarget();
           m_EST.WaitAndCorrect();
           NPoint=0;
       }
@@ -290,7 +292,7 @@ namespace Nf {
       angle = -angle;
 
     m_robot->RotateIncremental(angle*180.0/PI);
-    Sleep(2000);
+    //Sleep(2000);
     // Now we need to not have the estimator "know" that this happened
     m_th = m_robot->getRollAngle();
     m_lastRollDeg = m_th;
@@ -341,11 +343,17 @@ namespace Nf {
       Matrix44d Tref2em = Matrix44d::FromCvMat(m_data.gps2.pose);
       Tref2em.SetPosition(m_data.gps2.pos);
       Vec2d scale(m_data.mpp.x/1000.0, m_data.mpp.y/1000.0);
+      Matrix44d app = m_Tref2robot*Tref2em.Inverse()*Ttrans2em;
+      Matrix33d appR = app.GetOrientation();
+      Versor_n = appR.Col(2);
       return rpImageCoordToRobotCoord3(p_im, Ttrans2em, Tref2em, m_Tref2robot, m_usCalibrationMatrix, m_data.origin, scale);
     }else{
       return Vec3d(0.0, 0.0, 0.0);
     }
   }
+
+   
+
 
   Vec3d ControlAlgorithms::RobotPtToImagePt(Vec3d p_robot)
   {
@@ -383,14 +391,47 @@ namespace Nf {
       if( m_robot && m_robot->isRollInitialized() && m_robot->isInsertionInitialized() ){
         m_th = m_robot->getRollAngle();
         m_l = m_robot->getInsMM();
+        if (m_EST.isInitialized())
+        {
+            m_EST.updateInput(m_l, m_th);
+            m_x =  m_EST.getCurrentEstimate();
+        }
             
       }
       
     }
+
+    if( m_inTaskSpaceControl ) 
+    {
+      CountCommand=0;
+    	bool condition=false; 
+      if( insertionSinceLastManualScan() >= MAX_OPEN_LOOP_INSERTION )
+      { // if we need a new scan
     
+    	    QuickandDirty=false;
+    	    m_robot->SetInsertionVelocity(0.0);
+          m_robot->SetRotationVelocity(0.0);
+          condition=true;
+      }
+      if ((!QuickandDirty)&&(!condition))
+    		 QuickandDirty=true;
+    }
+    else
+    {  
+      QuickandDirty=false;
+      m_insertionMMatLastManualScan = m_l;
+      if ((CountCommand<10)&&(m_EST.isInitialized()))
+        {
+            m_robot->SetInsertionVelocity(0.0);
+            m_robot->SetRotationVelocity(0.0);
+            CountCommand++;
+        }
+    }
 
     
 
+    
+   
     if( inManualScanning() ) // if manually scanning
     { 
       m_segmentation.addManualScanFrame(data);
@@ -398,28 +439,7 @@ namespace Nf {
 
      // update the estimate
 
-    if( m_inTaskSpaceControl ) 
-    {
-    	bool condition=false; 
-      //ControlCorrection()
-     //if( CheckCompletion() )
-     //{  // if we've reached the target
-    //	 				m_robot->SetInsertionVelocity(0.0);
-    //	 				m_robot->SetRotationVelocity(0.0);
-    //	 				QuickandDirty=false;
-    //          condition=true;
-     //}
-     if( insertionSinceLastManualScan() >= MAX_OPEN_LOOP_INSERTION )
-     { // if we need a new scan
     
-    	    QuickandDirty=false;
-    	    m_robot->SetInsertionVelocity(0.0);
-          m_robot->SetRotationVelocity(0.0);
-        condition=true;
-     }
-      if ((!QuickandDirty)&&(!condition))
-    		 QuickandDirty=true;
-    }
   }
 
   /*void ControlAlgorithms::GetPoseEstimate(Matrix44d &x)
@@ -626,16 +646,16 @@ namespace Nf {
         m_robot->SetInsertionVelocity(0);
         m_robot->SetArticulationAngle(0);
         
-       Sleep(3000);
+       //Sleep(3000);
       }
 
       // Correct needle rotation NEW
       m_robot->RotateIncremental(d_th*180.0/PI);
 
       if(releaseArticulation) {
-        Sleep(3000);
+        //Sleep(3000);
         m_robot->SetArticulationAngle(m_maxArticulationAngle);
-        Sleep(3000);
+        //Sleep(3000);
         m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
      } else if(targetInLine && ABS(m_robot->getArticulationAngle()) > 5) {
         m_robot->SetInsertionVelocity(0);
@@ -811,6 +831,21 @@ namespace Nf {
     }else{
       return 0.0;
     }
+  }
+  
+  void ControlAlgorithms::saveTarget()
+  {
+    arma::mat offset = arma::zeros(3,1);
+    offset(0,0) = m_t.x;
+    offset(1,0) = m_t.y;
+    offset(2,0) = m_t.z;
+    
+    char basePath[150];
+    char path[150];
+    strcpy (basePath , "./"); 
+
+    sprintf(path, "%sTARGET.dat", basePath);
+    offset.save(path, arma::raw_ascii);
   }
 
   /// ----------------------------------------------------
@@ -1021,7 +1056,7 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
 			            {
 				             C->m_robot->SetInsertionVelocity(0);
 				             C->m_robot->SetArticulationAngle(0);
-                     Sleep(2000);
+                     //Sleep(2000);
                      C->m_robot->InsertIncremental(-10);
                      STATE=1; 
 			            }
@@ -1029,7 +1064,7 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
             break;
            case 1:
                  C->m_robot->SetRotationVelocity(0);
-                 Sleep(4000);
+                 //Sleep(4000);
                  STATE=2;
              break;
            case 2:

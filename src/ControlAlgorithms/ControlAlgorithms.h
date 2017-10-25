@@ -105,12 +105,15 @@ namespace Nf {
     bool m_recordingData;
     double m_insertionMMatLastManualScan;
     double ArticulationAngle;
-    InPlaneSegmentation m_segmentation; 
+    InPlaneSegmentation m_segmentation;
+    void saveTarget();
     //UnscentedKalmanFilter m_UKF;
    
     
     double m_lastInsMM;
     double m_lastRollDeg;
+    Vec3d Versor_n;
+    int CountCommand;
     
     RPData m_data;    
     STrigger* m_insTrigger;

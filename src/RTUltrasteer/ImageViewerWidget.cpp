@@ -665,10 +665,10 @@ namespace Nf
     //this->repaint();*/
 
     int r = 10;
-
+    int thick = 1;
     if(fabs(p.z) < 1.0) // If we have a circle to draw
     {
-      cvCircle(m_mask,cvPoint(p.x,p.y),r,cvScalar(1.0),2,CV_AA);
+      cvCircle(m_mask,cvPoint(p.x,p.y),r,cvScalar(1.0),thick,CV_AA);
 
       // Update the VTK rendering
       //this->repaint();

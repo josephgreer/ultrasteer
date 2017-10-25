@@ -66,12 +66,10 @@ namespace Nf
     prev_l = ins;
     prev_th = yaw;
 
-    tip_mm_t = ROT_base*off;
-    ROT_t = ROT_base;
     rho = 85; //mm 
 
     TIP_t.clear();
-    TIP_t.push_back(Matrix44d::FromOrientationAndTranslation(ROT_t, tip_mm_t));
+    TIP_t.push_back(Matrix44d::FromOrientationAndTranslation(ROT_base, ROT_base*off));
     e_roll = e_pitch = e_yaw = 0;
   }
   void Estimator::resetEstimator(void)
@@ -86,9 +84,10 @@ namespace Nf
   {
     return TIP_t.back();
   }
-  void Estimator::addPOINT(Vec3d p)
+  void Estimator::addPOINT(Vec3d p,Vec3d v)
   {
     OBS.push_back(p);
+    VER.push_back(v);
   }
 
   
@@ -129,29 +128,57 @@ namespace Nf
   void Estimator::updateInput(double m_l, double m_th)
   {
     double diff_l,diff_th;
-    Vec3d app_d;
-
+    Vec3d app_d,tip_mm_t;
+    Matrix33d ROT_t;
     diff_l = m_l - prev_l;
     diff_th = m_th - prev_th;
     
-    // Gradi?
+    
     if ((abs(diff_l)>0.0001)||(abs(diff_th)>0.0001))
     {
+       if (diff_l>0)
+       {
+         INS.push_back(diff_l);
+         YAW.push_back(diff_th);
+         L.push_back(m_l);
+
+         tip_mm_t = TIP_t.back().GetPosition();
+         ROT_t = TIP_t.back().GetOrientation();
+
+         app_d = Vec3d(0,rho*(1-cos(diff_l/rho)),rho*sin(diff_l/rho));
        
-       INS.push_back(diff_l);
-       YAW.push_back(diff_th);
+         tip_mm_t = tip_mm_t + ROT_t * rotz(diff_th*(PI/180)) * app_d;
+         ROT_t = ROT_t * rotz(diff_th*(PI/180)) * rotx(-(diff_l/rho));
 
-       app_d = Vec3d(0,rho*(1-cos(diff_l/rho)),rho*sin(diff_l/rho));
+         TIP_t.push_back(Matrix44d::FromOrientationAndTranslation(ROT_t, tip_mm_t));
 
-       tip_mm_t = tip_mm_t + ROT_t * rotz(diff_th*(PI/180)) * app_d;
-       ROT_t = ROT_t * rotz(diff_th*(PI/180)) * rotx(-(diff_l/rho));
+       }
+       else
+       {
+         while(1)
+         {
+           if (L.empty())
+             break;
+           
+           if ((m_l<L.back()))
+           {  
+              L.pop_back();
+              INS.pop_back();
+              YAW.pop_back();
+              TIP_t.pop_back();
+           }
+           else
+             break;
+           // Add point da cancellare
+         }
+         
+      }
 
-       TIP_t.push_back(Matrix44d::FromOrientationAndTranslation(ROT_t, tip_mm_t));
+    prev_l = m_l;
+    prev_th = m_th;
 
-       prev_l = m_l;
-       prev_th = m_th;
     }
-
+    
   }
 
   void Estimator::saveDataOpt()
@@ -159,6 +186,7 @@ namespace Nf
     mat dyaw = zeros(1,YAW.size()); 
     mat dins = zeros(1,INS.size());
     mat point = zeros(3,OBS.size());
+    mat ver = zeros(3,VER.size());
     mat R0 = zeros(3,3);
     mat offset = zeros(3,1);
     mat mrho = zeros(1,1);
@@ -178,6 +206,14 @@ namespace Nf
        point(0,i) = app.x;
        point(1,i) = app.y;
        point(2,i) = app.z;
+    }
+
+    for (int i=0;i<VER.size();i++)
+    {
+       app = VER[i];
+       ver(0,i) = app.x;
+       ver(1,i) = app.y;
+       ver(2,i) = app.z;
     }
     
     offset(0,0) = off.x;
@@ -204,6 +240,8 @@ namespace Nf
     dins.save(path, raw_ascii);
     sprintf(path, "%sPOINT.dat", basePath);
     point.save(path, raw_ascii);
+    sprintf(path, "%VER.dat", basePath);
+    ver.save(path, raw_ascii);
     sprintf(path, "%sR0.dat", basePath);
     R0.save(path, raw_ascii);
     sprintf(path, "%sOFF.dat", basePath);
@@ -239,6 +277,9 @@ namespace Nf
     char path[150];
     strcpy (path , "./X.dat"); 
     res.load(path, raw_ascii);
+
+    Vec3d tip_mm_t;
+    Matrix33d ROT_t;
     
     ROT_base = ROT_base * rotx(res(0,0)) *  roty(res(1,0)) *  rotz(res(2,0));
     tip_mm_t = ROT_base*off;

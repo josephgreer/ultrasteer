@@ -24,17 +24,17 @@ namespace Nf
    
     bool Init;
     vector<Vec3d> OBS;
+    vector<Vec3d> VER;
+
+    vector<double> L;
     vector<double> INS;
     vector<double> YAW;
     double e_roll,e_pitch,e_yaw;
     double rho;
 
     Matrix33d ROT_base;
-    Matrix33d ROT_t;
-
     Vec3d off;
-    Vec3d tip_mm_t;
-
+    
     double prev_l;
     double prev_th; 
 
@@ -59,7 +59,7 @@ namespace Nf
     void resetEstimator(void);
     bool isInitialized();
     Matrix44d getCurrentEstimate();
-    void addPOINT(Vec3d p);
+    void addPOINT(Vec3d p,Vec3d v);
     void updateInput(double m_l, double m_th);
     void Estimator::saveDataOpt();
     void WaitAndCorrect();
