@@ -28,7 +28,7 @@ l2 = ls(1);
 a = pi/2+thetas(1);
 
 
-b = asin(l2/l1*sin(a));
+b = pi-asin(l2/l1*sin(a));
 
 c = pi-a-b;
 

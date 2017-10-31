@@ -22,3 +22,25 @@ for len=linspace(1e-4,max(cumsum(ls)),60)
 
     pause(0.1);
 end
+
+
+runThetas = cumsum(thetas);
+rls = cumsum(ls);
+deltas = [cos(runThetas) sin(runThetas)].*repmat(ls(1:end),1,2);
+ps = vertcat([0; 0].', deltas);
+ps = cumsum(ps, 1);
+
+figure(2);
+handles.robot = [];
+handles = DrawRobotXs(ps, 1e-5, handles);
+xlim([-500 500]);
+ylim([-500 500]);
+grid on;
+box on;
+daspect([1 1 1]);
+
+for len=linspace(1e-4,max(cumsum(ls)),60)
+    handles = DrawRobotXs(ps, len, handles);
+
+    pause(0.1);
+end

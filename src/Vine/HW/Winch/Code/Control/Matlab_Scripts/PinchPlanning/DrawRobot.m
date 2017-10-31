@@ -1,4 +1,5 @@
-% thetas = [theta_1; ...; theta_(n)] \in R^{n}
+% order is most proximal to distal
+% thetas = [theta_(1); ...; theta_(n)] \in R^{n}
 % ls = [l_1;...;l_n] \in R^{n}
 function handles = DrawRobot(thetas, ls, p0, len, handles)
 runThetas = cumsum(thetas);
