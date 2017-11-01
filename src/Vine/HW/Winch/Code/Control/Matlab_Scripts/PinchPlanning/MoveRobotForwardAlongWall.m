@@ -3,7 +3,7 @@
 % x(3:4) = Most Distal Turn Point (opposite direction of x(1:2))
 % x(5:6) = Tip Point
 % y = auxillary information
-% y(1:2) = wall contact point
+% y(1:2) = obstacle contact point
 % y(3:5) = Contact point descriptions
 % ----0----0----0-----Tip Point
 %     A    B    C
@@ -12,7 +12,7 @@
 % y(5) corresponds to C
 % wall = [p1_x p2_x; p1_y p2_y] \in R^{2 x 2}
 % otherwise the opposite
-function x = MoveRobotForwardAlongWall(x, y, wall, dl)
+function [x, y, newState] = MoveRobotForwardAlongWall(x, y, wall, dl)
 % wall tangent
 wallTangent = wall(:,2)-wall(:,1); wallTangent = wallTangent/norm(wallTangent);
 
@@ -29,13 +29,23 @@ intersection = FindIntersectionOfTwoLines(x(5:6),x(3:4),...
     wall(:,1),wall(:,2));
 
 
-dl = dl-norm(intersection-distalPoints(:,1));
+newState = false; 
+
+addedLengthToIntersection = norm(intersection-x(5:6));
+dl = dl-addedLengthToIntersection;
 if(dl < 0)
-    assert(0);
+    dl = dl+addedLengthToIntersection;
+    x(5:6) = x(5:6)+dl*tipTangent;
+    return;
 end
 x(5:6) = intersection;
 
 dtcross = cross([tipTangent;0], [wallTangent;0]);
+
+if((sign(dtcross(3)) == 1 && y(5) == 3) || (sign(dtcross(3)) == -1 && y(5) == 2))
+    y(5) = y(4);
+    y(4) = y(3);
+end
 
 if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -1 && (y(5) == 1 || y(5) == 3)))
     % wall is turning us in the direction of the most distal turn point
@@ -47,37 +57,35 @@ if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -
     % if a left turn glancing contact becomes active
     if(y(5) == 2)
         % if most proximal point is a left turn, shift turns down
-        if(y(4) == 1)
+        if(y(3) == 0)
             x(1:2) = x(3:4);
         end
         x(3:4) = y(1:2);
         y(5) = 0;
         y(4) = 1;
+        newState = true;
     elseif(y(5) == 3) % right turn glancing contact becomes active
         % if most proximal point is a right turn, shift turns down
-        if(y(4) == 0)
+        if(y(3) == 1)
             x(1:2) = x(3:4);
         end
         x(3:4) = y(1:2);
         y(5) = 1;
         y(4) = 0;
+        newState = true;
     end
     distalLength = norm(x(5:6)-x(3:4));
     
     cospia = dot(tipTangent,wallTangent);
     sina = sqrt(1-cospia^2);
-    sinb = (distalLength+dl)*sina/distalLength;
-    c = pi-asin(sina)-asin(sinb);
+    sinb = (distalLength)*sina/(dl+distalLength);
+    c = pi-(pi-asin(sina))-asin(sinb);
     
     if(sign(dtcross(3)) == -1)
         c = -c;
     end
     
-    cosc = cos(c);
-    sinc = sin(c);
-    
-    A = [cosc -sinc; sinc cosc];
-    tipTangent = A*tipTangent;
+    tipTangent = PlaneRotation(c)*tipTangent;
     x(5:6) = x(3:4)+(distalLength+dl)*tipTangent;
     
 elseif(sign(dtcross(3)) == 1 && (y(4) == 0 || y(4) == 2))

@@ -24,11 +24,7 @@ for len=linspace(1e-4,max(cumsum(ls)),60)
 end
 
 
-runThetas = cumsum(thetas);
-rls = cumsum(ls);
-deltas = [cos(runThetas) sin(runThetas)].*repmat(ls(1:end),1,2);
-ps = vertcat([0; 0].', deltas);
-ps = cumsum(ps, 1);
+ps = thetasLsToXs(thetas, ls, [0; 0]);
 
 figure(2);
 handles.robot = [];

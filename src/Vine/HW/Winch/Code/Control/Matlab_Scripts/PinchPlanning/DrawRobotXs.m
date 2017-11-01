@@ -6,7 +6,7 @@ deltas = xs(2:end,:)-xs(1:end-1,:);
 ls = sqrt(sum(deltas.^2,2));
 rls = cumsum(ls);
 
-maxIdx = find(rls < len);
+maxIdx = find(rls < len-1e-3);
 if(isempty(maxIdx))
     xx = [xs(1,:); xs(1,:) + len*deltas(1,:)/ls(1)];
 else
