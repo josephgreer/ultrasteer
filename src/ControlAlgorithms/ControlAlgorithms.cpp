@@ -4,17 +4,16 @@
 
 namespace Nf {
 
-#define TIP_LENGTH 15.3*0
 #define TIP_ANGLE 0
 
   static Vec3d tipToWrist(const Matrix33d &R, const Vec3d &tip)
   {
-    return tip-(R.Col(2)*cos((f64)TIP_ANGLE)+R.Col(1)*sin((f64)TIP_ANGLE))*TIP_LENGTH;
+    return tip-(R.Col(2)*cos((f64)TIP_ANGLE)+R.Col(1)*sin((f64)TIP_ANGLE))*0;
   }
 
   static Vec3d wristToTip(const Matrix33d &R, const Vec3d &wrist)
   {
-    return wrist+(R.Col(2)*cos((f64)TIP_ANGLE)+R.Col(1)*sin((f64)TIP_ANGLE))*TIP_LENGTH;
+    return wrist+(R.Col(2)*cos((f64)TIP_ANGLE)+R.Col(1)*sin((f64)TIP_ANGLE))*0;
   }
 
   ControlAlgorithms::ControlAlgorithms():    
@@ -205,11 +204,10 @@ namespace Nf {
 
   void ControlAlgorithms::ManualNeedleTipSelection(Vec2d p_im)
   {
-    Vec3d p = ImagePtToRobotPt(p_im);
+   
     if(!m_calibratingPlaneOffest) {
 
-      // show distance point, if the user confirm, add point
-      m_EST.addPOINT(p,Versor_n);
+      
       
       /*Matrix33d R = m_x.GetOrientation();
       // Track of the Wrist
@@ -236,6 +234,7 @@ namespace Nf {
       */
       //recordDataPoint(m_x, m_Tneedletip2robot, m_z, m_t, u, K, P);
 
+      /*
 #ifdef RECORDING_MEASUREMENT_NOISE
       arma::mat z = m_z.ToArmaMatrix4x4();
       char strbuff[100];
@@ -251,29 +250,44 @@ namespace Nf {
         }   
       }
 #else
-      NPoint++;
-      if (NPoint < 3)
+      */
+
+       
+
+      if ((NPoint < 3)&& (insertionSinceLastManualScan() >= MAX_OPEN_LOOP_INSERTION))
       {
-          
+           // show distance point, if the user confirm, add point
+           Vec3d p = ImagePtToRobotPt(p_im);
+           m_EST.addPOINT(p,Versor_n);
+           NPoint++;
       }
-      else
+
+      if (NPoint ==3)
       {
-          m_insertionMMatLastManualScan = m_l;
           m_EST.saveDataOpt();
           saveTarget();
-          m_EST.WaitAndCorrect();
-          NPoint=0;
+          NPoint=1000;          
       }
+
+      if (NPoint == 1000)
+       {
+          if (m_EST.WaitAndCorrect())
+          {
+              m_insertionMMatLastManualScan = m_l;
+              NPoint = 0;
+          }
+       }
+
+     
       
-      if( m_inTaskSpaceControl ){        
-        //m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
-      }   
-#endif
+    }
+  }
+/*#endif
     } else {
       m_planeCalibrator->AddPoint(p);
     }
   }
-
+  */
   void ControlAlgorithms::DoPlaneCalibration()
   {
     m_planeCalibrator->DoCalibration();
@@ -393,7 +407,7 @@ namespace Nf {
         m_l = m_robot->getInsMM();
         if (m_EST.isInitialized())
         {
-            m_EST.updateInput(m_l, m_th);
+            m_EST.updateInput(m_l, m_th,0);
             m_x =  m_EST.getCurrentEstimate();
         }
             
@@ -412,6 +426,8 @@ namespace Nf {
     	    m_robot->SetInsertionVelocity(0.0);
           m_robot->SetRotationVelocity(0.0);
           condition=true;
+          m_EST.addTIP();
+
       }
       if ((!QuickandDirty)&&(!condition))
     		 QuickandDirty=true;
@@ -419,7 +435,10 @@ namespace Nf {
     else
     {  
       QuickandDirty=false;
-      m_insertionMMatLastManualScan = m_l;
+      if (m_l>20)
+        m_insertionMMatLastManualScan = m_l;
+      else
+        m_insertionMMatLastManualScan = 0;
       if ((CountCommand<10)&&(m_EST.isInitialized()))
         {
             m_robot->SetInsertionVelocity(0.0);
@@ -1009,9 +1028,10 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
       count++;
       C->m_th = C->m_robot->getRollAngle();
       C->m_l = C->m_robot->getInsMM();
-      C->m_EST.updateInput(C->m_l, C->m_th);
+      C->m_EST.updateInput(C->m_l, C->m_th,0);
+      C->m_EST.resetaddTIP();
       C->m_x =  C->m_EST.getCurrentEstimate() ;
-
+      
 			if (C->m_t.magnitude() > 1e-3) // if the target is defined
 			{
 			  // Get current tip frame estimate
@@ -1030,6 +1050,7 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
         alpha_e = abs(alpha_e);
 			  // verificare convenzioni
 			  f32 d_th = atan2(-e.x, e.y);
+
 
         if ( R.Col(2).dot(C->m_t-p) < 0)
         {
@@ -1070,9 +1091,9 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
            case 2:
                 C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0.5);         
                 if (d_th<0)
-                  C->m_robot->SetRotationVelocity(-350);
+                  C->m_robot->SetRotationVelocity(-350*0.75);
                 else
-                  C->m_robot->SetRotationVelocity(350);
+                  C->m_robot->SetRotationVelocity(350*0.75);
              break;
             case 3:
                 C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0);

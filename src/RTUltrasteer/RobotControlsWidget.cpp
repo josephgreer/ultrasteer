@@ -280,16 +280,16 @@ namespace Nf
 
   void RobotControlsWidget::RotNegIncSmall(void)
   {
-    m_robot->InsertIncremental(-30);
-      Sleep(4000);
-    m_robot->RotateIncremental(-30);
-     Sleep(3000);
-    m_robot->RotateIncremental(30);
-    Sleep(3000);
-    m_robot->RotateIncremental(30);
-    Sleep(3000);
-    m_robot->RotateIncremental(-30);
-    Sleep(4000);
+    m_robot->InsertIncremental(-15.3);
+     // Sleep(4000);
+   // m_robot->RotateIncremental(-30);
+    // Sleep(3000);
+    //m_robot->RotateIncremental(30);
+    //Sleep(3000);
+   // m_robot->RotateIncremental(30);
+    //Sleep(3000);
+    //m_robot->RotateIncremental(-30);
+    //Sleep(4000);
     m_robot->RotateIncremental(-90);
     //m_robot->SetRotationVelocity(300);
    // m_robot->SetInsertionVelocity(1);

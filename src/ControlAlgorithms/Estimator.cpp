@@ -47,6 +47,9 @@ namespace Nf
         exit(EXIT_FAILURE);
     }
     puts("Bind done");
+    
+    u_long iMode = 0;
+    ioctlsocket(s, FIONBIO, &iMode);
  
   }
 
@@ -66,11 +69,14 @@ namespace Nf
     prev_l = ins;
     prev_th = yaw;
 
-    rho = 85; //mm 
+    rho_n = 85; //mm 
+    rho_a = 40; //mm
+
+    firstAdd = true;
 
     TIP_t.clear();
     TIP_t.push_back(Matrix44d::FromOrientationAndTranslation(ROT_base, ROT_base*off));
-    e_roll = e_pitch = e_yaw = 0;
+    
   }
   void Estimator::resetEstimator(void)
   {
@@ -82,7 +88,17 @@ namespace Nf
   }
   Matrix44d Estimator::getCurrentEstimate()
   {
-    return TIP_t.back();
+     Vec3d app_tip = TIP_t.back().GetPosition();     
+     Vec3d v_z= TIP_t.back().GetOrientation().Col(2);
+     Matrix33d appROT = TIP_t.back().GetOrientation();
+     if (!ART.empty())
+       if (ART.back())
+       {
+         appROT = TIP_t.back().GetOrientation()*roty(50*(PI/180));
+         v_z= appROT.Col(2);
+       }
+    app_tip = app_tip  + (v_z)*TIP_LENGTH;
+    return Matrix44d::FromOrientationAndTranslation(appROT, app_tip);
   }
   void Estimator::addPOINT(Vec3d p,Vec3d v)
   {
@@ -125,7 +141,7 @@ namespace Nf
   }
 
 
-  void Estimator::updateInput(double m_l, double m_th)
+  void Estimator::updateInput(double m_l, double m_th,unsigned int a)
   {
     double diff_l,diff_th;
     Vec3d app_d,tip_mm_t;
@@ -133,7 +149,7 @@ namespace Nf
     diff_l = m_l - prev_l;
     diff_th = m_th - prev_th;
     
-    
+    double rho;
     if ((abs(diff_l)>0.0001)||(abs(diff_th)>0.0001))
     {
        if (diff_l>0)
@@ -141,10 +157,18 @@ namespace Nf
          INS.push_back(diff_l);
          YAW.push_back(diff_th);
          L.push_back(m_l);
+         THETA.push_back(m_th);
+         ART.push_back(a);
 
          tip_mm_t = TIP_t.back().GetPosition();
          ROT_t = TIP_t.back().GetOrientation();
 
+         
+         if (a)
+            rho = rho_a;
+         else
+            rho = rho_n;
+        
          app_d = Vec3d(0,rho*(1-cos(diff_l/rho)),rho*sin(diff_l/rho));
        
          tip_mm_t = tip_mm_t + ROT_t * rotz(diff_th*(PI/180)) * app_d;
@@ -166,9 +190,26 @@ namespace Nf
               INS.pop_back();
               YAW.pop_back();
               TIP_t.pop_back();
+              THETA.pop_back();
+              ART.pop_back();
+                
+              for (int i=0;i<IND.size();i++)
+              {
+                  if (L.size()<IND[i])
+                  {
+                    OBS.erase(OBS.begin()+i);
+                    VER.erase(VER.begin()+i);
+                    IND.erase(IND.begin()+i);
+                  }
+
+              }
            }
            else
+           {  // rotation along z di 
+             Matrix33d aMAT = TIP_t.back().GetOrientation()*rotz(-(THETA.back()-m_th)*(PI/180));
+             TIP_t.back() = Matrix44d::FromOrientationAndTranslation(aMAT, TIP_t.back().GetPosition());
              break;
+           }
            // Add point da cancellare
          }
          
@@ -189,14 +230,19 @@ namespace Nf
     mat ver = zeros(3,VER.size());
     mat R0 = zeros(3,3);
     mat offset = zeros(3,1);
-    mat mrho = zeros(1,1);
-    mrho(0,0)=rho;
-    
+    mat dart = zeros(1,ART.size());
 
+    mat mrho_n = zeros(1,1);
+    mat mrho_a = zeros(1,1);
+
+    mrho_n(0,0)=rho_n;
+    mrho_a(0,0)=rho_a;
+    
     for (int i=0;i<YAW.size();i++)
     {
        dyaw(0,i) = YAW[i];
        dins(0,i) = INS[i];
+       dart(0,i) = ART[i];
     }
 
     Vec3d app;
@@ -246,8 +292,12 @@ namespace Nf
     R0.save(path, raw_ascii);
     sprintf(path, "%sOFF.dat", basePath);
     offset.save(path, raw_ascii);
-    sprintf(path, "%sRHO.dat", basePath);
-    mrho.save(path, raw_ascii);
+    sprintf(path, "%sRHO_N.dat", basePath);
+    mrho_n.save(path, raw_ascii);
+    sprintf(path, "%sRHO_A.dat", basePath);
+    mrho_a.save(path, raw_ascii);
+    sprintf(path, "%sART.dat", basePath);
+    dart.save(path, raw_ascii);
 
     
     //now reply the client with the same data
@@ -257,26 +307,83 @@ namespace Nf
         printf("sendto() failed with error code : %d" , WSAGetLastError());
         //exit(EXIT_FAILURE);
     }
+
   }
 
-  void Estimator::WaitAndCorrect()
+  bool Estimator::WaitAndCorrect()
   {
     
     fflush(stdout);
     //clear the buffer by filling null, it might have previously received data
     memset(buf,'\0', BUFLEN);
-         
-    //try to receive some data, this is a blocking call
-    if ((recv_len = recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *) &si_other, &slen)) == SOCKET_ERROR)
-    {
-        printf("recvfrom() failed with error code : %d" , WSAGetLastError());
-        exit(EXIT_FAILURE);
-    }
     
-    mat res = zeros(4,1);
+    fd_set fds ;
+    int n ;
+    struct timeval tv ;
+
+    // Set up the file descriptor set.
+    FD_ZERO(&fds) ;
+    FD_SET(s, &fds) ;
+
+    // Set up the struct timeval for the timeout.
+    tv.tv_sec = 0;
+    tv.tv_usec = 5000 ;
+
+    // Wait until timeout or data received.
+    n = select ( s, &fds, NULL, NULL, &tv ) ;
+    if ( n == 0)
+    {
+      return false ;
+    }
+    else if( n == -1 )
+    {
+      return false;   
+    }
+    //try to receive some data, this is a non-blocking call
+    recv_len = recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *) &si_other, &slen);
+    if (recv_len<=0)
+      return false;
+   
+    
+    mat res = zeros(5,1);
+    //mat PointInd = zeros(OBS.size(),1);
+    mat PointInd,POINT_NEW,VER_NEW;
+    char basePath[150];
     char path[150];
-    strcpy (path , "./X.dat"); 
+
+    strcpy (basePath , "./"); 
+    sprintf(path, "%sX.dat", basePath);
     res.load(path, raw_ascii);
+
+    strcpy (basePath , "./"); 
+    sprintf(path, "%sXa.dat", basePath);
+    PointInd.load(path, raw_ascii);
+
+    strcpy (basePath , "./"); 
+    sprintf(path, "%sPOINTNEW.dat", basePath);
+    POINT_NEW.load(path, raw_ascii);
+
+    strcpy (basePath , "./"); 
+    sprintf(path, "%sVERNEW.dat", basePath);
+    VER_NEW.load(path, raw_ascii);
+
+    IND.clear();
+    OBS.clear();
+    VER.clear();
+    Vec3d app_v;
+    for (int i=0;i<PointInd.size();i++)
+    {
+       IND.push_back(PointInd(i,0));
+       app_v.x = POINT_NEW(0,i);
+       app_v.y = POINT_NEW(1,i);
+       app_v.z = POINT_NEW(2,i);
+       OBS.push_back(app_v);
+
+       app_v.x = VER_NEW(0,i);
+       app_v.y = VER_NEW(1,i);
+       app_v.z = VER_NEW(2,i);
+       VER.push_back(app_v);
+    }
 
     Vec3d tip_mm_t;
     Matrix33d ROT_t;
@@ -284,21 +391,66 @@ namespace Nf
     ROT_base = ROT_base * rotx(res(0,0)) *  roty(res(1,0)) *  rotz(res(2,0));
     tip_mm_t = ROT_base*off;
     ROT_t = ROT_base;
-    rho = rho + res(3,0); //mm
+    rho_n = rho_n + res(3,0); //mm
+    rho_a = rho_a + res(4,0);
+
     TIP_t.clear();
     TIP_t.push_back(Matrix44d::FromOrientationAndTranslation(ROT_t, tip_mm_t));
     
     double diff_l,diff_th;
-    Vec3d app_d;    
+    Vec3d app_d; 
+    double rho;
     for (int i=0;i<INS.size();i++)
     {
       diff_l = INS[i];
       diff_th = YAW[i];
+
+      if (ART[i])
+        rho = rho_a;
+      else
+        rho = rho_n;
+
       app_d = Vec3d(0,rho*(1-cos(diff_l/rho)),rho*sin(diff_l/rho));
       tip_mm_t = tip_mm_t + ROT_t * rotz(diff_th*(PI/180)) * app_d;
       ROT_t = ROT_t * rotz(diff_th*(PI/180)) * rotx(-(diff_l/rho));
       TIP_t.push_back(Matrix44d::FromOrientationAndTranslation(ROT_t, tip_mm_t));
     }
+    return true;
+  }
+
+  void Estimator::addTIP()
+  {
+    if(!firstAdd)
+      return;
+    firstAdd = false;
+
+    double disp = 0.01;
+    Matrix44d Wrist = TIP_t.back();
+   
+    Vec3d P= Wrist.GetPosition();
+    Vec3d app_tip;
+    double appL = disp;
+    Matrix33d appROT;
+
+    Vec3d v_z= Wrist.GetOrientation().Col(2);
+    if (!ART.empty())
+      if (ART.back())
+      {
+        appROT = TIP_t.back().GetOrientation()*roty(50*(PI/180));
+        v_z= appROT.Col(2);
+      }
+
+    while(appL < TIP_LENGTH)
+    {
+      app_tip = P + v_z*appL;
+      TIP_t.push_back(Matrix44d::FromOrientationAndTranslation(appROT, app_tip));
+      appL = appL + disp; 
+    }
 
   }
+  void Estimator::resetaddTIP()
+  {
+    firstAdd = true;
+  }
 }
+

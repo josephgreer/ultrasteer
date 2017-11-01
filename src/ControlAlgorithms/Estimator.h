@@ -4,6 +4,8 @@
 #include "RTCore.h"
 #include <vector>
 #include<stdio.h>
+
+#define TIP_LENGTH 15.3
  
 //#pragma comment(lib,"ws2_32.lib") //Winsock Library
  
@@ -27,16 +29,22 @@ namespace Nf
     vector<Vec3d> VER;
 
     vector<double> L;
+    vector<unsigned int> ART;
     vector<double> INS;
     vector<double> YAW;
-    double e_roll,e_pitch,e_yaw;
-    double rho;
+    vector<int> IND;
+    vector<double> THETA;
+
+    
+    double rho_n,rho_a;
 
     Matrix33d ROT_base;
     Vec3d off;
     
     double prev_l;
     double prev_th; 
+    
+    bool firstAdd; 
 
     SOCKET s;
     struct sockaddr_in server, si_other;
@@ -49,6 +57,7 @@ namespace Nf
     Matrix33d rotx(double roll);
     Matrix33d roty(double pitch);
     Matrix33d rotz(double yaw);
+    
 
   public: //Methods
 
@@ -60,9 +69,11 @@ namespace Nf
     bool isInitialized();
     Matrix44d getCurrentEstimate();
     void addPOINT(Vec3d p,Vec3d v);
-    void updateInput(double m_l, double m_th);
+    void updateInput(double m_l, double m_th,unsigned int a);
     void Estimator::saveDataOpt();
-    void WaitAndCorrect();
+    bool WaitAndCorrect();
+    void addTIP();
+    void resetaddTIP();
     /*void fullUpdateUKF(Vec3d u, Matrix44d z);
     void processUpdateUKF(Vec3d u);
     void getCurrentStateEstimate(Matrix44d &x_out);
