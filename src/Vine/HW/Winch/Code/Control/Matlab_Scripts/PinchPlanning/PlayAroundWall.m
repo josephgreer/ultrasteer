@@ -1,9 +1,9 @@
 clear; clc; close all;
 
 ls = ones(3,1)*100;
-thetas = deg2rad([181.6; 60; -60]);
+thetas = deg2rad([200; -30; 45]);
 opposite = false;
-wallTurnMag = 33.3;
+wallTurnMag = 20;
 obstacle = true;
 obstacleLeft = true;
 
@@ -52,7 +52,7 @@ else
 end
 
 if(obstacle)
-        obstaclePoint = xs(end,:).'+35*tipSeg;
+        obstaclePoint = xs(end,:).'-35*tipSeg;
         
         y(3) = y(4);
         y(4) = y(5);
@@ -71,12 +71,12 @@ for i=1:50
     state = xs(end-2:end,:).'; state = state(:);
     [newX, newY, newState] = MoveRobotForwardAlongWall(state, y, wall, 5);
     
-%     display(norm(newX(end-1:end).'-xs(end-1,:)));
+    display(norm(newX(end-1:end)-newX(end-3:end-2)));
     if(newState)
-        xs(end,:) = newX(3:4);
+        xs(end-1:end,:) = reshape(newX(1:4),2,2).';
         xs = [xs; [newX(end-1) newX(end)]];
     else
-        xs(end,:) = newX(end-1:end);
+        xs(end-2:end,:) = reshape(newX,2,3).';
     end
     
     y = newY;
