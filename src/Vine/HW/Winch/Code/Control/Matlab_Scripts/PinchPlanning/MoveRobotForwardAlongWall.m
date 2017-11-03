@@ -12,7 +12,7 @@
 % y(5) corresponds to C
 % wall = [p1_x p2_x; p1_y p2_y] \in R^{2 x 2}
 % otherwise the opposite
-function [x, y, newState] = MoveRobotForwardAlongWall(x, y, wall, dl)
+function [x, y, xs, newState] = MoveRobotForwardAlongWall(x, y, wall, dl, xs)
 % wall tangent
 wallTangent = wall(:,2)-wall(:,1); wallTangent = wallTangent/norm(wallTangent);
 
@@ -39,6 +39,8 @@ dl = dl-addedLengthToIntersection;
 if(dl < 0)
     dl = dl+addedLengthToIntersection;
     x(5:6) = x(5:6)+dl*tipTangent;
+    
+    xs(end,:) = [x(5) x(6)];
     return;
 end
 x(5:6) = intersection;
@@ -83,7 +85,7 @@ if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -
     sina = sqrt(1-cospia^2);
     sinb = (distalLength)*sina/(dl+distalLength);
     c = pi-(pi-asin(sina))-asin(sinb);
-    
+   
     if(sign(dtcross(3)) == -1)
         c = -c;
     end
@@ -165,6 +167,13 @@ else
     end
     
     % use law of cosines
+end
+
+if(newState)
+    xs(end,:) = [y(1) y(2)];
+    xs = vertcat(xs, [x(5) x(6)]);
+else
+    xs(end-1:end,:) = reshape(x(3:6),2,2).';
 end
 
 end

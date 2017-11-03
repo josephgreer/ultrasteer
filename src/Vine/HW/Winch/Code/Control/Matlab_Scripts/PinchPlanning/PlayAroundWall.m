@@ -2,10 +2,10 @@ clear; clc; close all;
 
 ls = ones(3,1)*100;
 thetas = deg2rad([200; -30; 45]);
-opposite = false;
+opposite = true;
 wallTurnMag = 20;
 obstacle = true;
-obstacleLeft = true;
+obstacleLeft = false;
 
 if(opposite)
     wallTangentRotate = deg2rad(-sign(thetas(end))*wallTurnMag);
@@ -69,15 +69,9 @@ end
 handles.robot = [];
 for i=1:50
     state = xs(end-2:end,:).'; state = state(:);
-    [newX, newY, newState] = MoveRobotForwardAlongWall(state, y, wall, 5);
+    [newX, newY, xs, newState] = MoveRobotForwardAlongWall(state, y, wall, 5, xs);
     
-    display(norm(newX(end-1:end)-newX(end-3:end-2)));
-    if(newState)
-        xs(end-1:end,:) = reshape(newX(1:4),2,2).';
-        xs = [xs; [newX(end-1) newX(end)]];
-    else
-        xs(end-2:end,:) = reshape(newX,2,3).';
-    end
+    deltas = xs(2:end,:)-xs(1:end-1,:); newls = sqrt(sum(deltas.^2,2)); display(sum(newls));
     
     y = newY;
     
