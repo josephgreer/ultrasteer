@@ -1,11 +1,12 @@
 clear; clc; close all;
 
 ls = ones(3,1)*100;
-thetas = deg2rad([200; -30; 45]);
+thetas = deg2rad([30; -45; 30]);
 opposite = true;
-wallTurnMag = 20;
+wallTurnMag = 45;
 obstacle = true;
-obstacleLeft = false;
+obstacleLeft = true;
+wallLength = 100;
 
 if(opposite)
     wallTangentRotate = deg2rad(-sign(thetas(end))*wallTurnMag);
@@ -34,7 +35,7 @@ tipSeg = (xs(end,:)-xs(end-1,:)).'; tipSeg = tipSeg/norm(tipSeg);
 wallIntersectionPoint = xs(end-1,:).'+200*tipSeg;
 wallTangent = PlaneRotation(wallTangentRotate)*tipSeg;
 
-wall = repmat(wallIntersectionPoint,1,2)+[300*wallTangent -300*wallTangent];
+wall = repmat(wallIntersectionPoint,1,2)+[0.5*wallLength*wallTangent -0.5*wallLength*wallTangent];
 
 plot(wall(1,:), wall(2,:), 'k', 'LineWidth', 2);
 
