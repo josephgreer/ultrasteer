@@ -3,10 +3,10 @@ clear; clc; close all;
 ls = ones(3,1)*100;
 thetas = deg2rad([30; -45; 30]);
 opposite = true;
-wallTurnMag = 45;
+wallTurnMag = 89.9;
 obstacle = true;
-obstacleLeft = true;
-wallLength = 100;
+obstacleLeft = false;
+wallLength = 200;
 
 if(opposite)
     wallTangentRotate = deg2rad(-sign(thetas(end))*wallTurnMag);
@@ -67,15 +67,33 @@ if(obstacle)
         scatter(obstaclePoint(1), obstaclePoint(2), 'k', 'LineWidth', 2);
 end
 
+dl = 50;
+
 handles.robot = [];
+handles.xs = [];
 for i=1:50
     state = xs(end-2:end,:).'; state = state(:);
-    [newX, newY, xs, newState] = MoveRobotForwardAlongWall(state, y, wall, 5, xs);
+    [xy] = FindIntersectionOfTwoLines(state(3:4),state(5:6),wall(:,1),wall(:,2));
+    mn = min(wall,[],2); mx = max(wall,[],2);
+    if(sum(mn <= xy-1e-3) == 2 && sum(xy+1e-3 <= mx) == 2)
+        [newX, newY, xs, newState] = MoveRobotForwardAlongWall(state, y, wall, dl, xs);
+    else
+        tipTangent = state(5:6)-state(3:4); tipTangent = tipTangent/norm(tipTangent);
+        state(5:6) = state(5:6)+tipTangent*dl;
+        newX = state;
+        xs(end,:) = [state(5) state(6)];
+        newY = y;
+    end
     
     deltas = xs(2:end,:)-xs(1:end-1,:); newls = sqrt(sum(deltas.^2,2)); display(sum(newls));
     
     y = newY;
     
-    handles = DrawRobotXs(xs,sum(ls)+i*5,handles);
+    handles = DrawRobotXs(xs,sum(ls)+i*dl,handles);
+    if(isempty(handles.xs))
+        handles.xs = scatter(xs(:,1),xs(:,2),'LineWidth',5);
+    else
+        set(handles.xs,'XData',xs(:,1),'YData',xs(:,2))
+    end
     pause(0.1);
 end

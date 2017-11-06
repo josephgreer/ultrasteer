@@ -31,7 +31,6 @@ end
 intersection = FindIntersectionOfTwoLines(x(5:6),x(3:4),...
     wall(:,1),wall(:,2));
 
-
 newState = false; 
 
 addedLengthToIntersection = norm(intersection-x(5:6));
@@ -51,6 +50,9 @@ if((sign(dtcross(3)) == 1 && y(5) == 3) || (sign(dtcross(3)) == -1 && y(5) == 2)
     y(5) = y(4);
     y(4) = y(3);
 end
+
+oldx = x;
+oldy = y;
 
 if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -1 && (y(5) == 1 || y(5) == 3)))
     % wall is turning us in the direction of the most distal turn point
@@ -163,6 +165,20 @@ else
     end
     
     % use law of cosines
+end
+
+% check if we're past the end of the wall
+mn = min(wall,[],2); mx = max(wall,[],2);
+if(sum(x(5:6) < mn) == 2 || sum(x(5:6) > mx) == 2)
+    delta1 = x(5:6)-wall(:,1); delta2 = x(5:6)-wall(:,2);
+    delta1 = dot(delta1,delta1); delta2 = dot(delta2,delta2);
+    if(delta1 < delta2)
+        point = wall(:,1);
+    else
+        point = wall(:,2);
+    end
+    [x, y, xs, newState] = MoveRobotForwardAlongWallToEndOfWall(oldx,oldy,wall,point,dl,xs);
+    return;
 end
 
 if(newState)

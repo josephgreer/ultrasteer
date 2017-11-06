@@ -12,7 +12,7 @@
 % y(5) corresponds to C
 % wall = [p1_x p2_x; p1_y p2_y] \in R^{2 x 2}
 % otherwise the opposite
-function [x, y, xs, newState] = MoveRobotForwardAlongWallToEndOfWall(x, y, wall, point, xs)
+function [x, y, xs, newState] = MoveRobotForwardAlongWallToEndOfWall(x, y, wall, point, dl, xs)
 % wall tangent
 wallTangent = wall(:,2)-wall(:,1); wallTangent = wallTangent/norm(wallTangent);
 
@@ -28,6 +28,8 @@ if(dot(tipTangent, wallTangent) < 0)
 end
 
 dtcross = cross([tipTangent;0], [wallTangent;0]);
+
+newState = false;
 
 % turning away from an obstacle
 if((sign(dtcross(3)) == 1 && y(5) == 3) || (sign(dtcross(3)) == -1 && y(5) == 2))
@@ -61,7 +63,7 @@ if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -
         newState = true;
     end
     % move it just past the end of the wall
-    x(5:6) = point+(point-x(4:3))*1e-3;
+    x(5:6) = point;
 else
     % wall is turning us in the direction opposite of the most distal pivot
     % point
@@ -94,7 +96,7 @@ else
         baseDelta = PlaneRotation(a)*baseDelta;
         
         x(3:4) = x(1:2)+baseDelta*proxLength;
-        x(5:6) = point+(point-x(3:4))*1e-3;
+        x(5:6) = point;
     else
         
         % we're being turned left.
@@ -117,17 +119,26 @@ else
         sinb = sqrt(1-cosb^2);
         
         sinc = l1/l3*sinb;
-        b = asin(sinb); c = asin(sinc);
+        b = acos(cosb); c = asin(sinc);
         
         a = pi-b-c;
         
         baseDelta = PlaneRotation(-a)*baseDelta;
         
         x(3:4) = x(1:2)+baseDelta*proxLength;
-        x(5:6) = point+(point-x(3:4))*1e-3;
+        x(5:6) = point;
     end
     
     % use law of cosines
+end
+
+tipDelta = x(5:6)-x(3:4);
+tipLen = norm(tipDelta);
+dl = dl-(tipLen-distalLength);
+if(dl > 0)
+    x(5:6) = x(5:6)+dl*tipDelta/tipLen;
+else
+    assert(0);
 end
 
 if(newState)
