@@ -16,11 +16,15 @@ end
 
 figure;
 grid on;
+hold on;
 
 p0 = [0; 0];
 
 handles.robot = [];
 handles = DrawRobot(thetas,ls,p0, sum(ls), handles);
+
+load map;
+DrawMap(map);
 
 xlim([-500 500]);
 ylim([-500 500]);
@@ -67,7 +71,7 @@ if(obstacle)
         scatter(obstaclePoint(1), obstaclePoint(2), 'k', 'LineWidth', 2);
 end
 
-dl = 50;
+dl = 5;
 
 handles.robot = [];
 handles.xs = [];
