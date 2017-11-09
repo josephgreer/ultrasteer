@@ -96,81 +96,52 @@ else
     % wall is turning us in the direction opposite of the most distal pivot
     % point
     
-    if(sign(dtcross(3)) == 1)
-        % we're being turned left.
-        
-        % we're turning in the direction of the second most distal obstacle, so reset
-        % the contact point
-        if(y(4) == 2)
-            x(1:2) = y(1:2);
-            y(4) = 0;
-            proxLength = norm(x(3:4)-x(1:2));
-        end
-        
-        l1 = proxLength;
-        l2 = norm(x(5:6)-x(3:4))+dl;
-        cosb = dot(proxTangent, -tipTangent);
-        sinb = sqrt(1-cosb^2);
-        
-        l3 = sqrt(l1^2+l2^2-2*l1*l2*cosb);
-        sina = l2/l3*sinb;
-        a = asin(sina);
-        
-        l5dir = x(5:6)-x(1:2); l5 = norm(l5dir); l5dir = l5dir/l5;
-        
-        cospif = dot(l5dir,wallTangent); sinf = sqrt(1-cospif^2);
-        sine = l5/l3*sinf;
-        
-        f = pi-acos(cospif); e = asin(sine);
-        g = pi-f-e;
-        
-        proxTangent = PlaneRotation(g+a)*l5dir;
-        x(3:4) = x(1:2)+l1*proxTangent;
-        
-        tipTangent = PlaneRotation(-asin(sinb))*proxTangent;
-        x(5:6) = x(3:4)+l2*tipTangent;
-    else
-        
-        % we're being turned left.
-        
-        % we're turning in the direction of the second most distal obstacle, so reset
-        % the contact point
-        if(y(4) == 3)
-            x(1:2) = y(1:2);
-            y(4) = 1;
-            proxLength = norm(x(3:4)-x(1:2));
-        end
-        
-        l1 = proxLength;
-        l2 = norm(x(5:6)-x(3:4))+dl;
-        cosb = dot(proxTangent, -tipTangent);
-        sinb = sqrt(1-cosb^2);
-        
-        l3 = sqrt(l1^2+l2^2-2*l1*l2*cosb);
-        sina = l2/l3*sinb;
-        a = asin(sina);
-        
-        l5dir = x(5:6)-x(1:2); l5 = norm(l5dir); l5dir = l5dir/l5;
-        
-        cospif = dot(l5dir,wallTangent); sinf = sqrt(1-cospif^2);
-        sine = l5/l3*sinf;
-        
-        f = pi-acos(cospif); e = asin(sine);
-        g = pi-f-e;
-        
-        proxTangent = PlaneRotation(-(g+a))*l5dir;
-        x(3:4) = x(1:2)+l1*proxTangent;
-        
-        tipTangent = PlaneRotation(asin(sinb))*proxTangent;
-        x(5:6) = x(3:4)+l2*tipTangent;
+    % we're turning in the direction of the second most distal obstacle, so reset
+    % the contact point
+    if(y(4) == 2)
+        x(1:2) = y(1:2);
+        y(4) = 0;
+        proxLength = norm(x(3:4)-x(1:2));
+    elseif(y(4) == 3)
+        x(1:2) = y(1:2);
+        y(4) = 1;
+        proxLength = norm(x(3:4)-x(1:2));
     end
+    
+    l1 = proxLength;
+    l2 = norm(x(5:6)-x(3:4))+dl;
+    cosb = dot(proxTangent, -tipTangent);
+    sinb = sqrt(1-cosb^2);
+    
+    l3 = sqrt(l1^2+l2^2-2*l1*l2*cosb);
+    sina = l2/l3*sinb;
+    a = asin(sina);
+    
+    l5dir = x(5:6)-x(1:2); l5 = norm(l5dir); l5dir = l5dir/l5;
+    
+    cospif = dot(l5dir,wallTangent); sinf = sqrt(1-cospif^2);
+    sine = l5/l3*sinf;
+    
+    f = pi-acos(cospif); e = asin(sine);
+    g = pi-f-e;
+    
+    if(sign(dtcross(3)) == 1)
+        proxTangent = PlaneRotation(g+a)*l5dir;
+        tipTangent = PlaneRotation(-asin(sinb))*proxTangent;
+    else
+        proxTangent = PlaneRotation(-(g+a))*l5dir;
+        tipTangent = PlaneRotation(asin(sinb))*proxTangent;
+    end
+    x(3:4) = x(1:2)+l1*proxTangent;
+    
+    x(5:6) = x(3:4)+l2*tipTangent;
     
     % use law of cosines
 end
 
 % check if we're past the end of the wall
 mn = min(wall,[],2); mx = max(wall,[],2);
-if(sum(x(5:6) < mn) == 2 || sum(x(5:6) > mx) == 2)
+if(~(sum(mn-1e-3 <= x(5:6)) == 2 && sum(x(5:6) <= mx+1e-3) == 2))
     delta1 = x(5:6)-wall(:,1); delta2 = x(5:6)-wall(:,2);
     delta1 = dot(delta1,delta1); delta2 = dot(delta2,delta2);
     if(delta1 < delta2)

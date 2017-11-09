@@ -68,8 +68,6 @@ if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -
 else
     % wall is turning us in the direction opposite of the most distal pivot
     % point
-    
-    if(sign(dtcross(3)) == 1)
         % we're being turned left.
         
         % we're turning in the direction of the second most distal obstacle, so reset
@@ -80,31 +78,7 @@ else
             y(4) = 1;
             y(5) = 3;
             proxLength = norm(x(3:4)-x(1:2));
-        end
-        
-        l1 = proxLength;
-        baseDelta = point-x(1:2); l3 = norm(baseDelta);
-        baseDelta = baseDelta/l3;
-        
-        cosb = dot(proxTangent, -tipTangent);
-        sinb = sqrt(1-cosb^2);
-        
-        sinc = l1/l3*sinb;
-        b = asin(sinb); c = asin(sinc);
-        
-        a = pi-b-c;
-        
-        baseDelta = PlaneRotation(a)*baseDelta;
-        
-        x(3:4) = x(1:2)+baseDelta*proxLength;
-        x(5:6) = point;
-    else
-        
-        % we're being turned left.
-        
-        % we're turning in the direction of the second most distal obstacle, so reset
-        % the contact point
-        if(y(4) == 3)
+        elseif(y(4) == 3)
             x(1:2) = y(1:2);
             y(3) = 1;
             y(4) = 1;
@@ -124,11 +98,14 @@ else
         
         a = pi-b-c;
         
-        baseDelta = PlaneRotation(-a)*baseDelta;
+        if(sign(dtcross(3)) == 1)
+            baseDelta = PlaneRotation(a)*baseDelta;
+        else
+            baseDelta = PlaneRotation(-a)*baseDelta;
+        end
         
         x(3:4) = x(1:2)+baseDelta*proxLength;
         x(5:6) = point;
-    end
     
     % use law of cosines
 end

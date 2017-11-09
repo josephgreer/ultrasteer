@@ -25,7 +25,7 @@ ps = vertcat(p0.', deltas);
 ps = cumsum(ps, 1);
 
 if(isempty(handles.robot))
-    handles.robot = plot(ps(:,1), ps(:,2),'LineWidth',5);
+    handles.robot = plot(ps(:,1), ps(:,2),'LineWidth',1);
 else
     set(handles.robot, 'XData', ps(:,1), 'YData', ps(:,2));
 end

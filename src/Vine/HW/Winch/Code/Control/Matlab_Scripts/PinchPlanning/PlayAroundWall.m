@@ -1,11 +1,11 @@
 clear; clc; close all;
 
 ls = ones(3,1)*100;
-thetas = deg2rad([270; -45; 30]);
-opposite = false;
-wallTurnMag = 30;
+thetas = deg2rad([120; 45; -30]);
+opposite = true;
+wallTurnMag = 60;
 obstacle = true;
-obstacleLeft = true;
+obstacleLeft = false;
 wallLength = 200;
 
 if(opposite)
@@ -77,9 +77,22 @@ handles.robot = [];
 handles.xs = [];
 for i=1:50
     state = xs(end-2:end,:).'; state = state(:);
-    [xy] = FindIntersectionOfTwoLines(state(3:4),state(5:6),wall(:,1),wall(:,2));
-    mn = min(wall,[],2); mx = max(wall,[],2);
-    if(sum(mn <= xy-1e-3) == 2 && sum(xy+1e-3 <= mx) == 2)
+    tipTangent = (xs(end,:)-xs(end-1,:)).'; tipTangent = tipTangent/norm(tipTangent);
+    
+    testPoint = state(5:6)+dl*tipTangent;
+    
+    out = lineSegmentIntersect([state(3) state(4) testPoint(1) testPoint(2)], [wall(1,1) wall(2,1) wall(1,2) wall(2,2)]);
+    intersected = false;
+    if(out.intAdjacencyMatrix > 0)
+        intersected = true;
+        intersectionPoint = [out.intMatrixX; out.intMatrixY];
+        deltas = repmat(intersectionPoint,1,2)-wall;
+        if(min(sum(deltas.^2,1)) < 1e-4)
+            intersected = false;
+        end
+    end
+    
+    if(intersected)
         [newX, newY, xs, newState] = MoveRobotForwardAlongWall(state, y, wallIndex, dl, map, xs);
     else
         tipTangent = state(5:6)-state(3:4); tipTangent = tipTangent/norm(tipTangent);
