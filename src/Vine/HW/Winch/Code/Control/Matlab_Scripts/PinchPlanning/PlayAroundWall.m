@@ -1,11 +1,13 @@
 clear; clc; close all;
 
 ls = ones(3,1)*100;
-thetas = deg2rad([120; 45; -30]);
+thetas = deg2rad([240; -45; 30]);
 opposite = true;
-wallTurnMag = 60;
-obstacle = true;
+wallTurnMag = 45;
+obstacle = false;
 obstacleLeft = false;
+proximalObstacle = true;
+proximalObstacleLeft = true;
 wallLength = 200;
 
 if(opposite)
@@ -41,6 +43,24 @@ wall = repmat(wallIntersectionPoint,1,2)+[0.5*wallLength*wallTangent -0.5*wallLe
 load map;
 map = vertcat(map,[wall(:,1).' wall(:,2).']);
 wallIndex = size(map,1);
+
+if(proximalObstacle)
+    proximalWall = xs(end-1,:).'+150*tipSeg;
+    proximalWall = [proximalWall xs(end-1,:).'+220*tipSeg];
+    
+    if(~proximalObstacleLeft)
+        offset = [-wallLength*wallTangent -0.15*wallLength*wallTangent]
+    else
+        offset = [wallLength*wallTangent 0.15*wallLength*wallTangent];
+    end
+    proxWall = kron(proximalWall,[1 1])+repmat(offset,1,size(proximalWall,2));
+    for i=1:size(proxWall,2)/2
+        map = vertcat(map,[proxWall(:,2*(i-1)+1).' proxWall(:,2*(i-1)+2).']);
+    end
+end
+map = vertcat(map,[-200 -50 200 -50]);
+map = vertcat(map,[-200 -75 200 -75]);
+
 DrawMap(map);
 
 y = zeros(5,1);
@@ -71,7 +91,7 @@ if(obstacle)
         scatter(obstaclePoint(1), obstaclePoint(2), 'k', 'LineWidth', 2);
 end
 
-dl = 5;
+dl = 90;
 
 handles.robot = [];
 handles.xs = [];

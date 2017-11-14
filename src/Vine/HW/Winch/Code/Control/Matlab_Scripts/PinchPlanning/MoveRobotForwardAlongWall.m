@@ -55,6 +55,8 @@ end
 oldx = x;
 oldy = y;
 
+opposite = false;
+
 if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -1 && (y(5) == 1 || y(5) == 3)))
     % wall is turning us in the direction of the most distal turn point
     % now we're solving a SSA triangle
@@ -93,6 +95,7 @@ if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -
     x(5:6) = x(3:4)+(distalLength+dl)*tipTangent;
     
 else
+    opposite = true;
     % wall is turning us in the direction opposite of the most distal pivot
     % point
     
@@ -139,18 +142,15 @@ else
     % use law of cosines
 end
 
-% check if we're past the end of the wall
-mn = min(wall,[],2); mx = max(wall,[],2);
-if(~(sum(mn-1e-3 <= x(5:6)) == 2 && sum(x(5:6) <= mx+1e-3) == 2))
-    delta1 = x(5:6)-wall(:,1); delta2 = x(5:6)-wall(:,2);
-    delta1 = dot(delta1,delta1); delta2 = dot(delta2,delta2);
-    if(delta1 < delta2)
-        point = wall(:,1);
-    else
-        point = wall(:,2);
-    end
+[eow, point] = CheckEndOfWall(wall,x);
+if(eow)
     [x, y, xs, newState] = MoveRobotForwardAlongWallToEndOfWall(oldx,oldy,wallIndex,point,dl,walls,xs);
     return;
+end
+
+if(opposite)
+    [intersects, intersectX, intersectY] = CheckForCollisionSlidingAlongWallWithKink(oldx,x,sign(dtcross(3)),asin(sinb),wallIndex,walls);
+else
 end
 
 if(newState)
