@@ -149,8 +149,15 @@ if(eow)
 end
 
 if(opposite)
-    [intersects, intersectX, intersectY] = CheckForCollisionSlidingAlongWallWithKink(oldx,x,sign(dtcross(3)),asin(sinb),wallIndex,walls);
+    [intersects, intersectX, intersectY,obstacleDl,intersectXs] = CheckForCollisionSlidingAlongWallWithKink(oldx,x,y,sign(dtcross(3)),asin(sinb),wallIndex,walls,xs);
+    if(intersects)
+        dl = dl-obstacleDl;
+        xs = intersectXs;
+        [x,y,xs,newState] = MoveRobotForwardAlongWall(intersectX,intersectY,wallIndex,dl,walls,xs);
+        return;
+    end
 else
+    
 end
 
 if(newState)

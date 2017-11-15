@@ -1,4 +1,4 @@
-function [intersects,x,y] = CheckForCollisionSlidingAlongWallWithKink(xstart,xend,y,dir,b,wallIndex,walls)
+function [intersects,x,y,dl,xs] = CheckForCollisionSlidingAlongWallWithKink(xstart,xend,y,dir,b,wallIndex,walls,xs)
 % in this case we're sliding along a wall with in the opposite direction of
 % the most distal turn
 
@@ -7,7 +7,11 @@ function [intersects,x,y] = CheckForCollisionSlidingAlongWallWithKink(xstart,xen
 % 2) the distal segment can collide with an obstacle end-point
 % 3) the "elbow" of the robot can collide with a wall section
 
-intesrsects = false;
+x = xstart;
+
+intersects = false;
+y = y;
+dl = 0;
 
 l3Sq = xend(5:6)-xend(1:2);
 l3Sq = dot(l3Sq,l3Sq);
@@ -22,6 +26,7 @@ a1 = wrapTo2Pi(atan2(xend(4)-xend(2),xend(3)-xend(1)));
 a0 = wrapTo2Pi(atan2(xstart(4)-xstart(2),xstart(3)-xstart(1)));
 
 wallEndPoints = vertcat(walls(:,1:2), walls(:,3:4));
+origWallEndPoints = wallEndPoints;
 
 wallEndPoints = wallEndPoints-repmat([p0(1),p0(2)],size(wallEndPoints,1),1);
 wallEndPoints = [linspace(1,size(wallEndPoints,1),size(wallEndPoints,1)).' wallEndPoints];
@@ -37,7 +42,7 @@ innerThetas = [possibleInnerIntersections(:,1)...
 % innerThetas are the angles at which case 1 intersections will ocurr
 innerThetas = innerThetas(find(min([a0 a1]) <= innerThetas(:,2) & innerThetas(:,2) <= max([a0 a1])),:);
 
-finalThetas = [innerThetas wallEndPoints(innerThetas(:,1),2:3) ones(length(innerThetas),1)];
+finalThetas = [innerThetas origWallEndPoints(innerThetas(:,1),:) ones(length(innerThetas),1)];
 
 % check for case 2
 possibleOuterInteractions = wallEndPoints(find(l1Sq < distSq & distSq <= l3Sq),:);
@@ -81,9 +86,13 @@ out = lineSegmentIntersect(outerLineSegs, walls(wallIndex,:));
 
 % outerStuff holds the information about the distal segment intersections
 outerStuff(find(out.intAdjacencyMatrix > 0),:) = [];
-finalThetas = vertcat(finalThetas,[outerStuff(:,2) wallEndPoints(outerStuff(:,1),2:3)...
-    2*ones(size(outerStuff,1),1)]);
 
+outers = [outerStuff(:,2) origWallEndPoints(outerStuff(:,1),:) 2*ones(size(outerStuff,1),1)];
+if(size(finalThetas,1) > 0)
+    finalThetas = vertcat(finalThetas,outers);
+else
+    finalThetas = outers;
+end
 
 % check case 3
 lines = [walls(:,1:2) walls(:,3:4)-walls(:,1:2)];
@@ -103,10 +112,15 @@ validIdxs = validIdxs(validPoints);
 values = CheckPointsBetweenLineSegments(validElbowPoints,walls(validIdxs,:));
 
 % this holds the information about the elbow point intersections
-
 validIdxs = find(values > 0);
-finalThetas = vertcat(finalThetas,[elbowThetas(validIdxs) validElbowPoints(validIdxs, :)...
-    2*ones(length(validIdxs),1)]);
+elbows = [elbowThetas(validIdxs) validElbowPoints(validIdxs, :) 2*ones(length(validIdxs),1)];
+if(size(finalThetas,1) > 0)
+    finalThetas = vertcat(finalThetas,elbows);
+else
+    finalThetas = elbows;
+end
+
+%now find the first obstacle and handle appropriately
 finalThetas(:,1) = wrapTo2Pi(finalThetas(:,1));
 a0 = wrapTo2Pi(a0);
 
@@ -115,8 +129,10 @@ angleDiffs = min(angleDiffs,2*pi-angleDiffs);
 
 [minTheta,minThetaIdx] = min(angleDiff(finalThetas(:,1),repmat(a0,size(finalThetas,1),1)));
 
+oldLen = RobotLength(xs);
 if(~isempty(minTheta))
     intersects = true;
+    minTheta = finalThetas(minThetaIdx,1);
     % now reconstruct the state
     l1Vec = l1*[cos(minTheta); sin(minTheta)]+p0;
     
@@ -128,8 +144,9 @@ if(~isempty(minTheta))
         l3Vec = l1Vec+1e6*[cos(angle); sin(angle)];
     end
     out = lineSegmentIntersect([l1Vec.' l3Vec.'], walls(wallIndex,:));
+    x(3:4) = l1Vec;
     x(5) = out.intMatrixX;
-    x(6) = out.intMatriY;
+    x(6) = out.intMatrixY;
     
     if(finalThetas(minThetaIdx,end) == 2)
         % distal intersection
@@ -142,10 +159,22 @@ if(~isempty(minTheta))
             y(5) = 1;
             y(4) = 0;
         end
+        xs(end,:) = [x(3) x(4)];
+        xs = vertcat(xs,[x(5) x(6)]);
+        newLen = RobotLength(xs);
+        dl = newLen - oldLen;
     else
         % proximal intersection
         x(1:2) = finalThetas(minThetaIdx,2:3);
+        if(dir == 1)
+            y(4) = 0;
+            y(5) = 1;
+        else
+            y(4) = 1;
+            y(5) = 0;
+        end
     end
+    
 end
 
 end

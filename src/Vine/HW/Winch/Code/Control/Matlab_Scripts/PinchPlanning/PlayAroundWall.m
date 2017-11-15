@@ -91,7 +91,7 @@ if(obstacle)
         scatter(obstaclePoint(1), obstaclePoint(2), 'k', 'LineWidth', 2);
 end
 
-dl = 90;
+dl = 10;
 
 handles.robot = [];
 handles.xs = [];
