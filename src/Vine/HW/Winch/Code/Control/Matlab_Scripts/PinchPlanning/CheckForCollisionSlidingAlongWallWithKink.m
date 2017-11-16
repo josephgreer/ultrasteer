@@ -98,26 +98,28 @@ end
 lines = [walls(:,1:2) walls(:,3:4)-walls(:,1:2)];
 circles = repmat([p0(1) p0(2) l1], size(lines,1),1);
 [validElbowPoints,validIdxs] = intersectLineCircle(lines,circles);
-validIdxs = [validIdxs;validIdxs];
-
-shiftedElbowPoints = validElbowPoints-repmat(p0.',size(validElbowPoints,1),1);
-
-elbowThetas = wrapTo2Pi(atan2(shiftedElbowPoints(:,2),shiftedElbowPoints(:,1)));
-
-validPoints = linspace(1,size(elbowThetas,1),size(elbowThetas,1)).';
-validPoints = find(min([a0 a1]) <= elbowThetas & elbowThetas <= max([a0 a1]));
-validElbowPoints = validElbowPoints(validPoints,:);
-validIdxs = validIdxs(validPoints);
-
-values = CheckPointsBetweenLineSegments(validElbowPoints,walls(validIdxs,:));
-
-% this holds the information about the elbow point intersections
-validIdxs = find(values > 0);
-elbows = [elbowThetas(validIdxs) validElbowPoints(validIdxs, :) 2*ones(length(validIdxs),1)];
-if(size(finalThetas,1) > 0)
-    finalThetas = vertcat(finalThetas,elbows);
-else
-    finalThetas = elbows;
+if(any(validIdxs))
+    validIdxs = [validIdxs;validIdxs];
+    
+    shiftedElbowPoints = validElbowPoints-repmat(p0.',size(validElbowPoints,1),1);
+    
+    elbowThetas = wrapTo2Pi(atan2(shiftedElbowPoints(:,2),shiftedElbowPoints(:,1)));
+    
+    validPoints = linspace(1,size(elbowThetas,1),size(elbowThetas,1)).';
+    validPoints = find(min([a0 a1]) <= elbowThetas & elbowThetas <= max([a0 a1]));
+    validElbowPoints = validElbowPoints(validPoints,:);
+    validIdxs = validIdxs(validPoints);
+    
+    values = CheckPointsBetweenLineSegments(validElbowPoints,walls(validIdxs,:));
+    
+    % this holds the information about the elbow point intersections
+    validIdxs = find(values > 0);
+    elbows = [elbowThetas(validIdxs) validElbowPoints(validIdxs, :) 2*ones(length(validIdxs),1)];
+    if(size(finalThetas,1) > 0)
+        finalThetas = vertcat(finalThetas,elbows);
+    else
+        finalThetas = elbows;
+    end
 end
 
 %now find the first obstacle and handle appropriately

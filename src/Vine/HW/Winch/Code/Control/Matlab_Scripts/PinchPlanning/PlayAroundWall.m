@@ -1,7 +1,7 @@
 clear; clc; close all;
 
 ls = ones(3,1)*100;
-thetas = deg2rad([240; -45; 30]);
+thetas = deg2rad([180; 45; -30]);
 opposite = true;
 wallTurnMag = 45;
 obstacle = false;
@@ -58,8 +58,8 @@ if(proximalObstacle)
         map = vertcat(map,[proxWall(:,2*(i-1)+1).' proxWall(:,2*(i-1)+2).']);
     end
 end
-map = vertcat(map,[-200 -50 200 -50]);
-map = vertcat(map,[-200 -75 200 -75]);
+% map = vertcat(map,[-200 -50 200 -50]);
+% map = vertcat(map,[-200 -90 200 -90]);
 
 DrawMap(map);
 
@@ -91,7 +91,7 @@ if(obstacle)
         scatter(obstaclePoint(1), obstaclePoint(2), 'k', 'LineWidth', 2);
 end
 
-dl = 10;
+dl = 200;
 
 handles.robot = [];
 handles.xs = [];
