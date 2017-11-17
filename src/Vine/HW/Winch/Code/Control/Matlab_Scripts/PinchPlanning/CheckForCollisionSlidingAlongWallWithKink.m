@@ -163,8 +163,6 @@ if(~isempty(minTheta))
         end
         xs(end,:) = [x(3) x(4)];
         xs = vertcat(xs,[x(5) x(6)]);
-        newLen = RobotLength(xs);
-        dl = newLen - oldLen;
     else
         % proximal intersection
         x(1:2) = finalThetas(minThetaIdx,2:3);
@@ -175,8 +173,12 @@ if(~isempty(minTheta))
             y(4) = 1;
             y(5) = 0;
         end
+        xs(end-1,:) = [x(1) x(2)];
+        xs(end, :) = [x(3) x(4)];
+        xs = vertcat(xs, [x(5) x(6)]);
     end
-    
+    newLen = RobotLength(xs);
+    dl = newLen - oldLen;    
 end
 
 end
