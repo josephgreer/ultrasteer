@@ -26,6 +26,9 @@ a1 = wrapTo2Pi(atan2(xend(4)-xend(2),xend(3)-xend(1)));
 a0 = wrapTo2Pi(atan2(xstart(4)-xstart(2),xstart(3)-xstart(1)));
 
 wallEndPoints = vertcat(walls(:,1:2), walls(:,3:4));
+wallEndPoints(wallEndPoints(:,1) == walls(wallIndex,1) & wallEndPoints(:,2) == walls(wallIndex,2),:) = [];
+wallEndPoints(wallEndPoints(:,1) == walls(wallIndex,3) & wallEndPoints(:,2) == walls(wallIndex,4),:) = [];
+
 origWallEndPoints = wallEndPoints;
 
 wallEndPoints = wallEndPoints-repmat([p0(1),p0(2)],size(wallEndPoints,1),1);
@@ -42,7 +45,7 @@ innerThetas = [possibleInnerIntersections(:,1)...
 % innerThetas are the angles at which case 1 intersections will ocurr
 innerThetas = innerThetas(find(min([a0 a1]) <= innerThetas(:,2) & innerThetas(:,2) <= max([a0 a1])),:);
 
-finalThetas = [innerThetas origWallEndPoints(innerThetas(:,1),:) ones(length(innerThetas),1)];
+finalThetas = [innerThetas origWallEndPoints(innerThetas(:,1),:) ones(size(innerThetas,1),1)];
 
 % check for case 2
 possibleOuterInteractions = wallEndPoints(find(l1Sq < distSq & distSq <= l3Sq),:);
@@ -129,10 +132,10 @@ a0 = wrapTo2Pi(a0);
 angleDiffs = abs(finalThetas(:,1)-a0);
 angleDiffs = min(angleDiffs,2*pi-angleDiffs);
 
-[minTheta,minThetaIdx] = min(angleDiff(finalThetas(:,1),repmat(a0,size(finalThetas,1),1)));
+[~,minThetaIdx] = min(angleDiffs);
 
 oldLen = RobotLength(xs);
-if(~isempty(minTheta))
+if(~isempty(minThetaIdx))
     intersects = true;
     minTheta = finalThetas(minThetaIdx,1);
     % now reconstruct the state

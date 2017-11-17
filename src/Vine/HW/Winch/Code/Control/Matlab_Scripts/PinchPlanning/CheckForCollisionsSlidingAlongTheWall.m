@@ -1,4 +1,4 @@
-function [intersects,x,y,dl,xs] = CheckForCollisionsSlidingAlongTheWall(xstart,xend,y,dir,b,wallIndex,walls,xs)
+function [intersects,x,y,dl,xs] = CheckForCollisionsSlidingAlongTheWall(xstart,xend,y,wallIndex,walls,xs)
 % in this case we're sliding along a wall with in the direction of the
 % most distal turn
 
@@ -8,7 +8,6 @@ function [intersects,x,y,dl,xs] = CheckForCollisionsSlidingAlongTheWall(xstart,x
 x = xstart;
 
 intersects = false;
-y = y;
 dl = 0;
 
 l1Sq = xend(5:6)-xend(3:4);
@@ -17,10 +16,13 @@ l1 = sqrt(l1Sq);
 
 p0 = xend(3:4);
 
-a1 = wrapTo2Pi(atan2(xend(4)-xend(2),xend(3)-xend(1)));
-a0 = wrapTo2Pi(atan2(xstart(4)-xstart(2),xstart(3)-xstart(1)));
+a1 = wrapTo2Pi(atan2(xend(6)-xend(4),xend(5)-xend(3)));
+a0 = wrapTo2Pi(atan2(xstart(6)-xstart(4),xstart(5)-xstart(3)));
 
 wallEndPoints = vertcat(walls(:,1:2), walls(:,3:4));
+wallEndPoints(wallEndPoints(:,1) == walls(wallIndex,1) & wallEndPoints(:,2) == walls(wallIndex,2),:) = [];
+wallEndPoints(wallEndPoints(:,1) == walls(wallIndex,3) & wallEndPoints(:,2) == walls(wallIndex,4),:) = [];
+
 origWallEndPoints = wallEndPoints;
 
 wallEndPoints = wallEndPoints-repmat([p0(1),p0(2)],size(wallEndPoints,1),1);
@@ -37,7 +39,13 @@ innerThetas = [possibleInnerIntersections(:,1)...
 % innerThetas are the angles at which case 1 intersections will ocurr
 innerThetas = innerThetas(find(min([a0 a1]) <= innerThetas(:,2) & innerThetas(:,2) <= max([a0 a1])),:);
 
-finalThetas = [innerThetas origWallEndPoints(innerThetas(:,1),:) ones(length(innerThetas),1)];
+innerLineSegs = [repmat([x(3),x(4)],size(innerThetas,1),1) origWallEndPoints(innerThetas(:,1),:)];
+out = lineSegmentIntersect(innerLineSegs, walls(wallIndex,:));
+
+% outerStuff holds the information about the distal segment intersections
+innerThetas(find(out.intAdjacencyMatrix > 0),:) = [];
+
+finalThetas = [innerThetas(:,2) origWallEndPoints(innerThetas(:,1),:)];
 
 %now find the first obstacle and handle appropriately
 finalThetas(:,1) = wrapTo2Pi(finalThetas(:,1));
@@ -46,10 +54,10 @@ a0 = wrapTo2Pi(a0);
 angleDiffs = abs(finalThetas(:,1)-a0);
 angleDiffs = min(angleDiffs,2*pi-angleDiffs);
 
-[minTheta,minThetaIdx] = min(angleDiff(finalThetas(:,1),repmat(a0,size(finalThetas,1),1)));
+[~,minThetaIdx] = min(angleDiffs);
 
 oldLen = RobotLength(xs);
-if(~isempty(minTheta))
+if(~isempty(minThetaIdx))
     intersects = true;
     minTheta = finalThetas(minThetaIdx,1);
     

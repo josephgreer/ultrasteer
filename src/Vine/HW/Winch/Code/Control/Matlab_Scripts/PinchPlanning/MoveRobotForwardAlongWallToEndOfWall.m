@@ -122,13 +122,16 @@ oldDl = dl;
 
 if(opposite)
     [intersects, intersectX, intersectY,obstacleDl,intersectXs] = CheckForCollisionSlidingAlongWallWithKink(oldx,x,y,sign(dtcross(3)),asin(sinb),wallIndex,walls,xs);
-    if(intersects)
-        dl = dl-obstacleDl;
-        xs = intersectXs;
-        [x,y,xs,newState] = MoveRobotForwardAlongWall(intersectX,intersectY,wallIndex,dl,walls,xs);
-        return;
-    end
 else
+    [intersects, intersectX, intersectY,obstacleDl,intersectXs] = CheckForCollisionsSlidingAlongTheWall(oldx,x,y,wallIndex,walls,xs);
+end
+
+if(intersects)
+    dl = dl-obstacleDl;
+    xs = intersectXs;
+    [x,y,xs,newState] = MoveRobotForwardAlongWall(intersectX,intersectY,wallIndex,dl,walls,xs);
+    return;
+end
 
 tipDelta = x(5:6)-x(3:4);
 tipLen = norm(tipDelta);

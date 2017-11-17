@@ -59,7 +59,7 @@ if(proximalObstacle)
     end
 end
 % map = vertcat(map,[-200 -50 200 -50]);
-% map = vertcat(map,[-200 -90 200 -90]);
+map = vertcat(map,[-200 -90 200 -90]);
 
 DrawMap(map);
 
