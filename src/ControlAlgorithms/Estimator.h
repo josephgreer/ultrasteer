@@ -6,6 +6,7 @@
 #include<stdio.h>
 
 #define TIP_LENGTH 15.3
+#define ART_ANG -30.0
  
 //#pragma comment(lib,"ws2_32.lib") //Winsock Library
  
@@ -30,19 +31,15 @@ namespace Nf
 
     vector<double> L;
     vector<unsigned int> ART;
-    vector<double> INS;
-    vector<double> YAW;
     vector<int> IND;
     vector<double> THETA;
+    double StartArt;
 
     
-    double rho_n,rho_a;
+    double rho_n,rho_a,yaw_art;
 
     Matrix33d ROT_base;
     Vec3d off;
-    
-    double prev_l;
-    double prev_th; 
     
     bool firstAdd; 
 
@@ -57,6 +54,7 @@ namespace Nf
     Matrix33d rotx(double roll);
     Matrix33d roty(double pitch);
     Matrix33d rotz(double yaw);
+    Matrix44d simulate1Step(double diff_l,double diff_th,unsigned int a,unsigned int prev_a,Matrix44d prevTIP,double L_n);
     
 
   public: //Methods
@@ -64,16 +62,18 @@ namespace Nf
     vector<Matrix44d> TIP_t;
     Estimator(void);
     ~Estimator(void);
-    void setEstimator(float ins,float appoff,float yaw);
+    void setEstimator(float ins,float appoff,float yaw,unsigned int art);
     void resetEstimator(void);
     bool isInitialized();
-    Matrix44d getCurrentEstimate();
+    Matrix44d getCurrentEstimateTIP();
     void addPOINT(Vec3d p,Vec3d v);
     void updateInput(double m_l, double m_th,unsigned int a);
     void Estimator::saveDataOpt();
     bool WaitAndCorrect();
     void addTIP();
     void resetaddTIP();
+    Matrix44d getCurrentEstimateWRIST();
+    double lastTHETA();
     /*void fullUpdateUKF(Vec3d u, Matrix44d z);
     void processUpdateUKF(Vec3d u);
     void getCurrentStateEstimate(Matrix44d &x_out);

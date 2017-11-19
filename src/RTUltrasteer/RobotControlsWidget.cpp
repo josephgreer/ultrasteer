@@ -271,7 +271,7 @@ namespace Nf
   {
     //m_robot->RotateIncremental(360.0);
     m_robot->SetRotationVelocity(250);
-    m_robot->InsertIncremental(26);
+    m_robot->InsertIncremental(20);
     //Sleep(15000);
     //m_robot->InsertIncremental(-10);
    // m_robot->HomeRoll();

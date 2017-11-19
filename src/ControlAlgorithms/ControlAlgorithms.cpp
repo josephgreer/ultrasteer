@@ -102,7 +102,7 @@ namespace Nf {
     }
 
     if(m_inTaskSpaceControl){ // if we've just started teleoperation
-      m_maxArticulationAngle = m_robot->getArticulationAngle();
+      //m_maxArticulationAngle = m_robot->getArticulationAngle();
       //m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
     }else{
       //m_robot->SetInsertionVelocity(0.0);
@@ -145,8 +145,8 @@ namespace Nf {
   // initialize the Unscented Kalman Filter based on joint values
   void ControlAlgorithms::initializeEstimator()
   {
-    m_EST.setEstimator(m_l,NEEDLE_DEAD_LENGTH+2.0, m_robot->getRollAngle());
-    m_x = m_EST.getCurrentEstimate();
+    m_EST.setEstimator(m_l,NEEDLE_DEAD_LENGTH, m_robot->getRollAngle(),m_robot->getArticulationAngle());
+    m_x = m_EST.getCurrentEstimateTIP();
   }
 
   // toggle the joint-space control state
@@ -295,7 +295,7 @@ namespace Nf {
     Plane pp = m_planeCalibrator->GetSolution();
     Vec3d normal = pp.GetNormalVector();
 
-    Matrix33d R = m_EST.getCurrentEstimate().GetOrientation();
+    Matrix33d R = m_EST.getCurrentEstimateTIP().GetOrientation();
     Vec3d estimatedNormal = R.Col(0);
     f64 angle = abs(acos(estimatedNormal.dot(normal)/(estimatedNormal.magnitude()*normal.magnitude())));
 
@@ -333,7 +333,7 @@ namespace Nf {
       arma::mat centerPoint = arma::mean(points, 0);
       Vec3d center = Vec3d(centerPoint(0,0), centerPoint(0,1), centerPoint(0,2));
 
-      Matrix33d R = m_EST.getCurrentEstimate().GetOrientation();
+      Matrix33d R = m_EST.getCurrentEstimateTIP().GetOrientation();
       axis1 = pp.ProjectPointOntoPlane(center+R.Col(1)*100.0)-center;
       axis2 = pp.ProjectPointOntoPlane(center+R.Col(2)*100.0)-center;
       corner1 = center-axis1-axis2;
@@ -405,10 +405,17 @@ namespace Nf {
       if( m_robot && m_robot->isRollInitialized() && m_robot->isInsertionInitialized() ){
         m_th = m_robot->getRollAngle();
         m_l = m_robot->getInsMM();
+        m_maxArticulationAngle = m_robot->getArticulationAngle();
+           
         if (m_EST.isInitialized())
         {
-            m_EST.updateInput(m_l, m_th,0);
-            m_x =  m_EST.getCurrentEstimate();
+           if (m_maxArticulationAngle>8)
+              m_EST.updateInput(m_l, m_th,1);
+           else
+              m_EST.updateInput(m_l, m_th,0);
+
+           m_x =  m_EST.getCurrentEstimateTIP();
+
         }
             
       }
@@ -426,7 +433,8 @@ namespace Nf {
     	    m_robot->SetInsertionVelocity(0.0);
           m_robot->SetRotationVelocity(0.0);
           condition=true;
-          m_EST.addTIP();
+          if ((m_maxArticulationAngle<8)||(!m_robot->isArticulationInitialized()))
+              m_EST.addTIP();
 
       }
       if ((!QuickandDirty)&&(!condition))
@@ -435,10 +443,12 @@ namespace Nf {
     else
     {  
       QuickandDirty=false;
+       //m_insertionMMatLastManualScan = m_l;
       if (m_l>20)
         m_insertionMMatLastManualScan = m_l;
       else
         m_insertionMMatLastManualScan = 0;
+      
       if ((CountCommand<10)&&(m_EST.isInitialized()))
         {
             m_robot->SetInsertionVelocity(0.0);
@@ -519,6 +529,7 @@ namespace Nf {
   {
     Vec3d W = m_x.GetPosition();
     Matrix33d R = m_x.GetOrientation();
+    return false;
 
     // Track of the Wrist
     Vec3d ux = R.Col(0);
@@ -815,7 +826,9 @@ namespace Nf {
     
     mmToNextScan = MAX(MAX_OPEN_LOOP_INSERTION-insertionSinceLastManualScan(),0.0);
     targetDepthReached = CheckCompletion();
-
+    
+    R = m_x.GetOrientation();
+    p = m_x.GetPosition();
     Nf::Vec3d e = (m_t - p);
     Nf::Vec3d e_v = e/e.magnitude();
     Nf::Vec3d ze=R.Col(2);
@@ -997,11 +1010,13 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
 	Nf::ControlAlgorithms* C=(Nf::ControlAlgorithms*) lpParam;
 	// timer
   int count=0;
-  int STATE=2;
-  double prev_ins=0;
+  int STATE=0;
+  double InsArtRetr=0;
+  bool disableSM = false;
+  double alpha_e;
   
   double prevalpha_e=1000;
-  int countder;
+  int countder = 0;
   bool Sliding=false;
 
   // salvo il tempo
@@ -1009,7 +1024,10 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
   myfile.open("timeTHREAD.txt");
 
   s32 dt = 25;
-	
+  
+	bool EstimatorisAble = true;
+  double sign = 1;
+
   while(1)
 	{
 
@@ -1026,33 +1044,50 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
 		if (C->QuickandDirty)
 		{
       count++;
+      C->m_EST.resetaddTIP();
       C->m_th = C->m_robot->getRollAngle();
       C->m_l = C->m_robot->getInsMM();
-      C->m_EST.updateInput(C->m_l, C->m_th,0);
-      C->m_EST.resetaddTIP();
-      C->m_x =  C->m_EST.getCurrentEstimate() ;
+      C->m_maxArticulationAngle = C->m_robot->getArticulationAngle();
+      
+      
+     
+      if (EstimatorisAble)
+      {  
+        if ((C->m_maxArticulationAngle>8)&&(C->m_robot->isArticulationInitialized()))
+              C->m_EST.updateInput(C->m_l, C->m_th,1);
+        else
+              C->m_EST.updateInput(C->m_l, C->m_th,0);
+
+        C->m_x = C->m_EST.getCurrentEstimateTIP();
+      }
       
 			if (C->m_t.magnitude() > 1e-3) // if the target is defined
 			{
 			  // Get current tip frame estimate
-			  Nf::Vec3d W = C->m_x.GetPosition();
+			  Nf::Vec3d p = C->m_x.GetPosition();
 			  Nf::Matrix33d R = C->m_x.GetOrientation();
-        Nf::Vec3d uz = R.Col(2);  
-        //Nf::Vec3d p=W+uz*15.3; TIP CHANGE 123
-        Nf::Vec3d p = wristToTip(R,W);
 			  // Get relative error in the current tip frame
 			  Nf::Vec3d e = R.Inverse()*(C->m_t - p);
-        
+        f32 d_th = atan2(-e.x, e.y);
+
         Nf::Vec3d e_0 = (C->m_t - p);
         Nf::Vec3d e_v = e_0/e_0.magnitude();
         Nf::Vec3d ze=R.Col(2);
         double alpha_e=(acos(ze.dot(e_v)))*(180/PI);
-        alpha_e = abs(alpha_e);
+        
+        // Error for articulatrion
+        /*Nf::Vec3d e_pro(0,e.y,e.z);
+        e_pro= e_pro/e_pro.magnitude();
+        double e_art=(acos(e_pro.z))*(180/PI);
+        e_art = abs(e_art);*/
+        
 			  // verificare convenzioni
-			  f32 d_th = atan2(-e.x, e.y);
+			  
+        float trans_disp_back = 5.0;
+        float trans_disp_forw = TIP_LENGTH;
+     
 
-
-        if ( R.Col(2).dot(C->m_t-p) < 0)
+        if ((C->m_maxArticulationAngle<8) && ( R.Col(2).dot(C->m_t-p) < 0))
         {
           C->m_robot->SetInsertionVelocity(0.0);
           C->m_robot->SetRotationVelocity(0.0);
@@ -1060,83 +1095,110 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
         }
         else
         {
-          switch(STATE)
+          if ((C->m_maxArticulationAngle>8)||(disableSM))
           {
-          case 0:
-                 C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
-                 C->m_robot->SetRotationVelocity(0);
-               
-                 if ((alpha_e-prevalpha_e)>0)
-                 {
-                    countder++;
-                 }
-                 else
-                    countder=0;
-               
-                 if (countder > 500)
-			            {
-				             C->m_robot->SetInsertionVelocity(0);
-				             C->m_robot->SetArticulationAngle(0);
-                     //Sleep(2000);
-                     C->m_robot->InsertIncremental(-10);
-                     STATE=1; 
-			            }
-                  prevalpha_e = alpha_e;
-            break;
-           case 1:
-                 C->m_robot->SetRotationVelocity(0);
-                 //Sleep(4000);
-                 STATE=2;
-             break;
-           case 2:
-                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0.5);         
+            switch(STATE)
+            {
+              case 0:
+                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0.75);
+                
                 if (d_th<0)
-                  C->m_robot->SetRotationVelocity(-350*0.75);
+                    C->m_robot->SetRotationVelocity(-350*0.75);
                 else
                   C->m_robot->SetRotationVelocity(350*0.75);
-             break;
-            case 3:
-                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0);
-                if (d_th<0)
-                  d_th=d_th+2*PI;
 
-                C->m_robot->RotateIncremental(d_th*(180/PI));
-                STATE=4;
-                break;
-            case 4:
-                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0);
-                if (abs(d_th)<0.1)
-                  STATE = 5;
-             break;
-            case 5:
-                C->m_robot->InsertIncremental(-3.0);
-                prev_ins = C->m_l;
-                STATE = 6;
-                break;
-            case 6:
-                if (abs(prev_ins - 3.0 - C->m_l)< 0.01)
-                  STATE = 7;
-            break;
-            case 7:
-                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
-                // Vibration
-                if (alpha_e<1.0)
+                if ((alpha_e-prevalpha_e>0)&&(d_th<20)) 
+                      countder++;
+                else
+                    countder=0;
+               
+                prevalpha_e=d_th;
+                if (abs(alpha_e)<0.5)
                 {
-                    STATE = 8;
+                  EstimatorisAble = false;
+                  STATE=1;
                 }
-                if (abs(d_th)>2)
-                   STATE = 3;
-            break;
-            case 8:
-                C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED);
-                C->m_robot->SetRotationVelocity(350);
-                if (alpha_e>2)
-                {
-                    STATE = 3;
-                }
-            break;
 
+                
+                break;
+              case 1:
+                disableSM = true;
+                EstimatorisAble = false;
+                C->m_robot->SetArticulationAngle(0);
+                C->m_robot->SetRotationVelocity(0);
+                C->m_robot->InsertIncremental(-trans_disp_back);
+                InsArtRetr = C->m_l;
+                count=0;
+                STATE=2;
+              case 10:
+                 C->m_insertionMMatLastManualScan = C->m_l;
+                /*if (count>40)
+                {
+                  C->m_robot->RotateIncremental(-90*0);*/
+                  STATE=2;
+                //}
+                break;
+              case 2:
+                C->m_insertionMMatLastManualScan = C->m_l;
+                if (abs(C->m_l+trans_disp_back-InsArtRetr)<0.01)
+                  STATE = 3;
+                break;
+              case 3:
+                C->m_EST.updateInput(C->m_l, C->m_th,1);
+                C->m_EST.updateInput(C->m_l, C->m_th,0);
+                EstimatorisAble = true;
+                C->m_insertionMMatLastManualScan = C->m_l;
+                C->m_robot->SetRotationVelocity(350*0.75);
+                C->m_robot->InsertIncremental(trans_disp_forw);
+                InsArtRetr = C->m_l;
+                STATE = 4;
+                break;
+              case 4:
+                C->m_insertionMMatLastManualScan = C->m_l;
+                if (abs(C->m_l-(trans_disp_forw)-InsArtRetr)<0.01)
+                {
+                  C->m_insertionMMatLastManualScan = C->m_l-15;
+                  disableSM = false;
+                  EstimatorisAble = true;
+                  STATE=0;
+                }
+                break;
+              case 5:
+                if (abs(C->m_l-trans_disp_forw-InsArtRetr)<0.01)
+                {
+                  count=0;
+                  C->m_robot->SetRotationVelocity(0);
+                  C->m_robot->SetInsertionVelocity(0);
+                  C->m_insertionMMatLastManualScan = C->m_l-15;
+                  disableSM = false;
+                  EstimatorisAble = true;
+                  STATE=0;
+                }
+                break;
+              case 6:
+                if (count > 40*5)
+                {
+                  C->m_robot->SetRotationVelocity(0);                  
+                  C->m_insertionMMatLastManualScan = C->m_l-15;
+                  disableSM = false;
+                  C->m_EST.updateInput(C->m_l, C->m_EST.lastTHETA(),0);
+                  C->m_EST.updateInput(C->m_l, C->m_th,0);
+                  EstimatorisAble = true;
+                  STATE = 0;
+                }
+                break;
+
+            }
           }
+          else
+          {
+              C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0.5);         
+              if (d_th<0)
+                C->m_robot->SetRotationVelocity(-350*0.75);
+              else
+                C->m_robot->SetRotationVelocity(350*0.75);
+          }
+          
         }
       }
     }
