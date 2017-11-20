@@ -45,7 +45,7 @@ innerThetas = [possibleInnerIntersections(:,1)...
 % innerThetas are the angles at which case 1 intersections will ocurr
 innerThetas = innerThetas(find(min([a0 a1]) <= innerThetas(:,2) & innerThetas(:,2) <= max([a0 a1])),:);
 
-finalThetas = [innerThetas origWallEndPoints(innerThetas(:,1),:) ones(size(innerThetas,1),1)];
+finalThetas = [innerThetas(:,2) origWallEndPoints(innerThetas(:,1),:) ones(size(innerThetas,1),1)];
 
 % check for case 2
 possibleOuterInteractions = wallEndPoints(find(l1Sq < distSq & distSq <= l3Sq),:);
@@ -91,9 +91,9 @@ out = lineSegmentIntersect(outerLineSegs, walls(wallIndex,:));
 outerStuff(find(out.intAdjacencyMatrix > 0),:) = [];
 
 outers = [outerStuff(:,2) origWallEndPoints(outerStuff(:,1),:) 2*ones(size(outerStuff,1),1)];
-if(size(finalThetas,1) > 0)
+if(size(outers,1) > 0 && size(finalThetas,1) > 0)
     finalThetas = vertcat(finalThetas,outers);
-else
+elseif(size(outers,1) > 0)
     finalThetas = outers;
 end
 
@@ -118,9 +118,9 @@ if(any(validIdxs))
     % this holds the information about the elbow point intersections
     validIdxs = find(values > 0);
     elbows = [elbowThetas(validIdxs) validElbowPoints(validIdxs, :) 2*ones(length(validIdxs),1)];
-    if(size(finalThetas,1) > 0)
+    if(size(elbows,1) > 0 && size(finalThetas,1) > 0)
         finalThetas = vertcat(finalThetas,elbows);
-    else
+    elseif(size(elbows,1) > 0)
         finalThetas = elbows;
     end
 end
