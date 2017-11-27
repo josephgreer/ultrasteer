@@ -7,16 +7,18 @@ runThetas = cumsum(thetas);
 rls = cumsum(ls);
 
 
-maxIdx = find(rls < len);
-if(isempty(maxIdx))
-    fl = len;
-    ls = [fl];
-    runThetas = runThetas(1);
-else
-    maxIdx = max(maxIdx);
-    fl = len-rls(maxIdx);
-    ls = [ls(1:maxIdx);fl];
-    runThetas = runThetas(1:maxIdx+1);
+if(len > 0)
+    maxIdx = find(rls < len);
+    if(isempty(maxIdx))
+        fl = len;
+        ls = [fl];
+        runThetas = runThetas(1);
+    else
+        maxIdx = max(maxIdx);
+        fl = len-rls(maxIdx);
+        ls = [ls(1:maxIdx);fl];
+        runThetas = runThetas(1:maxIdx+1);
+    end
 end
 
 deltas = [cos(runThetas) sin(runThetas)].*repmat(ls(1:end),1,2);

@@ -20,13 +20,11 @@
 % thetas \in R^{mx2} (first column represents lengths at which the thetas
 % happen
 % len is the length of the robot
-% lastWallIndex is the last wall index the robot tip was in contact with
+% wallIndex is the last wall index the robot tip was in contact with
 % xs reperesent the segments of the robot
 % otherwise the opposite
-function [x, y, xs, newState] = MoveRobotByDl(x, y, dl, walls, thetas, len, lastWallIndex, xs)
-tipTangent = x(5:6)-x(3:4); distalLength = norm(tipTangent);
-tipTangent = tipTangent/distalLength;
-
+function [x, y, xs,wallIndex] = MoveRobotByDl(x, y, dl, walls, thetas, len, wallIndex, xs)
+tipTangent = x(5:6)-x(3:4); tipTangent = tipTangent/norm(tipTangent);
 
 thetaIdx = find(thetas(:,1) == len);
 if(~isempty(thetaIdx))
@@ -34,28 +32,33 @@ if(~isempty(thetaIdx))
     tipTangent = PlaneRotation(theta)*tipTangent;
 end
 
-oldX = x;
-oldY = y;
-
-% check if extending intersects wall
-proximalPoint = x(3:4);
-if(y(5) == 2 || y(5) == 3)
-    proximalPoint = y(1:2);
+while(dl > 0)
+    if(wallIndex <= 0)
+        tipPoint = x(5:6)+tipTangent*dl;
+        proxPoint = x(5:6)-1e-3*tipTangent;
+        [wallIndex, ix, iy] = FindNextWall(walls,proxPoint,tipPoint,tipTangent);
+    end
+    
+    if(wallIndex > 0)
+        dl = dl-(norm([ix;iy]-x(3:4)) - norm(x(5:6)-x(3:4)));
+        x(5:6) = [ix; iy];
+        
+        [x, y, xs, travel, eow] = MoveRobotForwardAlongWall(x, y, wallIndex, dl, walls, xs);
+        
+        if(eow)
+            wallIndex = -1;
+        end
+        
+        dl = dl-travel;
+        if(dl > 0)
+            tipTangent = x(5:6)-x(3:4);
+            tipTangent = tipTangent/norm(tipTangent);
+        end
+    else
+        x(5:6) = tipPoint;
+        xs(end,:) = tipPoint.';
+        return;
+    end
 end
-
-tipPoint = proximalPoint+tipTangent*dl;
-
-out = lineSegmentIntersect([proximalPoint(1) proximalPoint(2) tipPoint(1) tipPoint(2)],...
-    walls);
-
-if(lastWallIndex > 0)
-    out.intAdjacencyMatrix(lastWallIndex) = 0;
-end
-
-intersectingWalls = find(out.intAdjacencyMatrix > 0);
-
-intersectionPoints = [out.intPointsX(intersectingWalls) out.intPointsY(intersectingWalls)];
-
-
 
 end

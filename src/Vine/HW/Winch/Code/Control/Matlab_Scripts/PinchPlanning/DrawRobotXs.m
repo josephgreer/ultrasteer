@@ -6,13 +6,16 @@ deltas = xs(2:end,:)-xs(1:end-1,:);
 ls = sqrt(sum(deltas.^2,2));
 rls = cumsum(ls);
 
-maxIdx = find(rls < len-1e-3);
-if(isempty(maxIdx))
-    xx = [xs(1,:); xs(1,:) + len*deltas(1,:)/ls(1)];
-else
-    maxIdx = max(maxIdx);
-    fl = len-rls(maxIdx);
-    xx = [xs(1:maxIdx+1,:); xs(maxIdx+1,:)+fl*deltas(maxIdx+1,:)/ls(maxIdx+1)];
+xx = xs;
+if(len >= 0)
+    maxIdx = find(rls < len-1e-3);
+    if(isempty(maxIdx))
+        xx = [xs(1,:); xs(1,:) + len*deltas(1,:)/ls(1)];
+    else
+        maxIdx = max(maxIdx);
+        fl = len-rls(maxIdx);
+        xx = [xs(1:maxIdx+1,:); xs(maxIdx+1,:)+fl*deltas(maxIdx+1,:)/ls(maxIdx+1)];
+    end
 end
 
 if(isempty(handles.robot))

@@ -88,7 +88,7 @@ outerLineSegs = [l1Vecs l3Vecs];
 out = lineSegmentIntersect(outerLineSegs, walls(wallIndex,:));
 
 % outerStuff holds the information about the distal segment intersections
-outerStuff(find(out.intAdjacencyMatrix > 0),:) = [];
+outerStuff(out.intAdjacencyMatrix > 0,:) = [];
 
 outers = [outerStuff(:,2) origWallEndPoints(outerStuff(:,1),:) 2*ones(size(outerStuff,1),1)];
 if(size(outers,1) > 0 && size(finalThetas,1) > 0)

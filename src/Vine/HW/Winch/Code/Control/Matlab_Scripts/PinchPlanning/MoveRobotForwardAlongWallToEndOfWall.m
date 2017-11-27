@@ -12,7 +12,7 @@
 % y(5) corresponds to C
 % wall = [p1_x p2_x; p1_y p2_y] \in R^{2 x 2}
 % otherwise the opposite
-function [x, y, xs, newState] = MoveRobotForwardAlongWallToEndOfWall(x, y, wallIndex, point, dl, walls, xs)
+function [x, y, xs, travel] = MoveRobotForwardAlongWallToEndOfWall(x, y, wallIndex, point, dl, walls, xs)
 % wall tangent
 wall = [walls(wallIndex,1) walls(wallIndex,3); walls(wallIndex,2) walls(wallIndex,4)];
 wallTangent = wall(:,2)-wall(:,1); wallTangent = wallTangent/norm(wallTangent);
@@ -129,18 +129,13 @@ end
 if(intersects)
     dl = dl-obstacleDl;
     xs = intersectXs;
-    [x,y,xs,newState] = MoveRobotForwardAlongWall(intersectX,intersectY,wallIndex,dl,walls,xs);
+    [x,y,xs,dl] = MoveRobotForwardAlongWall(intersectX,intersectY,wallIndex,dl,walls,xs);
     return;
 end
 
 tipDelta = x(5:6)-x(3:4);
 tipLen = norm(tipDelta);
-dl = dl-(tipLen-distalLength);
-if(dl > 0)
-    x(5:6) = x(5:6)+dl*tipDelta/tipLen;
-else
-    assert(0);
-end
+travel = (tipLen-distalLength);
 
 if(newState)
     xs(end,:) = [y(1) y(2)];
