@@ -30,25 +30,12 @@ if(dot(tipTangent, wallTangent) < 0)
     wallTangent = -wallTangent;
 end
 
-intersection = FindIntersectionOfTwoLines(x(5:6),x(3:4),...
-    wall(:,1),wall(:,2));
-
 newState = false; 
-
-addedLengthToIntersection = norm(intersection-x(5:6));
-dl = dl-addedLengthToIntersection;
-if(dl < 0)
-    dl = dl+addedLengthToIntersection;
-    x(5:6) = x(5:6)+dl*tipTangent;
-    
-    xs(end,:) = [x(5) x(6)];
-    return;
-end
-x(5:6) = intersection;
 
 dtcross = cross([tipTangent;0], [wallTangent;0]);
 
 if((sign(dtcross(3)) == 1 && y(5) == 3) || (sign(dtcross(3)) == -1 && y(5) == 2))
+    % moving away from a proximal intersection so forget about it
     y(5) = y(4);
     y(4) = y(3);
 end
@@ -58,12 +45,23 @@ oldy = y;
 
 opposite = false;
 
-if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -1 && (y(5) == 1 || y(5) == 3)))
+if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -1 && (y(5) == 1 || y(5) == 3)) || proxLength < 1e-3)
     % wall is turning us in the direction of the most distal turn point
     % now we're solving a SSA triangle
     
     % we're turning in the direction of the most distal obstacle, so reset
     % the contact point
+    
+    if(proxLength < 1e-3)
+        if(sign(dtcross(3)) == 1)
+            y(5) = 0;
+            y(4) = 1;
+        else
+            y(5) = 1;
+            y(4) = 0;
+        end
+    end
+        
     
     % if a left turn glancing contact becomes active
     if(y(5) == 2 || y(5) == 3)

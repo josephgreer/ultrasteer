@@ -54,6 +54,9 @@ while(dl > 0)
             tipTangent = x(5:6)-x(3:4);
             tipTangent = tipTangent/norm(tipTangent);
         end
+    elseif(wallIndex <= -2)
+        display('Youre done, son');
+        return;
     else
         x(5:6) = tipPoint;
         xs(end,:) = tipPoint.';

@@ -1,6 +1,6 @@
 clear; clc; close all;
 
-initTheta = deg2rad(60);
+initTheta = deg2rad(20);
 x = [0;0;0;0;cos(initTheta);sin(initTheta)];
 y = [0;0;0;0;1];
 xs = [x(3) x(4); x(5) x(6)];
@@ -26,9 +26,9 @@ lastWallIndex = -1;
 thetas = zeros(0,2);
 ls = [];
 len = 0;
-dl = 10;
+dl = 20;
 for i=1:100
-    [x, y, xs,lastWallIndex] = MoveRobotByDl(x, y, dl, map, thetas, len, lastWallIndex, xs);
+    [x, y, xs,wallIndex] = MoveRobotByDl(x, y, dl, map, thetas, len, lastWallIndex, xs);
     len = RobotLength(xs)
     handles = DrawRobotXs(xs,-1,handles);
     pause(0.1);

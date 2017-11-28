@@ -11,6 +11,7 @@ numWalls = sum(out.intAdjacencyMatrix);
 
 if(numWalls == 0)
     return;
+end
 
 pts = [find(out.intAdjacencyMatrix).' out.intMatrixX(out.intAdjacencyMatrix).'...
     out.intMatrixY(out.intAdjacencyMatrix).'];
@@ -25,18 +26,19 @@ if(size(pts,1) > 1)
 end
 
 vectors = vertcat([pts(:,1) walls(pts(:,1),1:2)-pts(:,2:3)],...
-    [pts(:,1) walls(pts(:,1),2:3)-pts(:,2:3)]);
+    [pts(:,1) walls(pts(:,1),3:4)-pts(:,2:3)]);
 
 
 norms = sqrt(sum(vectors(:,2:3).^2,2));
 
 vectors(norms < 1e-3,:) = [];
+norms(norms < 1e-3)  = [];
 
 % normalize
 vectors(:,2:3) = vectors(:,2:3)./repmat(norms,1,2);
 
 angleDiffs = angleDiffSigns([vectors(:,2:3) zeros(size(vectors,1),1)],...
-    repmat([-tipTangent.' 0],1,size(vectors,1)));
+    repmat([-tipTangent.' 0],size(vectors,1),1));
 
 [maxDiff, maxIdx] = max(angleDiffs);
 [minDiff, minIdx] = min(angleDiffs);
@@ -53,7 +55,7 @@ else
     dirA = vectors(maxIdx,2:3); dirB = vectors(minIdx,2:3);
     if(sum(abs(dirA+dirB)) > 1e-3)
         % we're trapped
-        assert(0);
+        wallIndex = -100;
         return;
     else
         if(dot(tipTangent,dirA) > 0)
@@ -61,8 +63,8 @@ else
         else
             wallIndex = vectors(minIdx,1);
         end
-        intersectX = pts(maxIdx,2);
-        intersectY = pts(maxIdx,3);
+        intersectX = out.intMatrixX(vectors(maxIdx,1));
+        intersectY = out.intMatrixY(vectors(maxIdx,1));
         return;
     end
 end
