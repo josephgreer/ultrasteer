@@ -143,7 +143,7 @@ end
 
 [eow, point] = CheckEndOfWall(wall,x);
 if(eow)
-    [x, y, xs,travel] = MoveRobotForwardAlongWallToEndOfWall(oldx,oldy,wallIndex,point,dl,walls,xs);
+    [x, y, xs,travel,eow] = MoveRobotForwardAlongWallToEndOfWall(oldx,oldy,wallIndex,point,dl,walls,xs);
     return;
 end
 

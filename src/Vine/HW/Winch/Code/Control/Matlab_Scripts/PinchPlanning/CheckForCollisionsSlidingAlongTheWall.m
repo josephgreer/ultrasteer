@@ -37,7 +37,8 @@ innerThetas = [possibleInnerIntersections(:,1)...
     wrapTo2Pi(atan2(possibleInnerIntersections(:,3), possibleInnerIntersections(:,2)))];
 
 % innerThetas are the angles at which case 1 intersections will ocurr
-innerThetas = innerThetas(find(min([a0 a1]) <= innerThetas(:,2) & innerThetas(:,2) <= max([a0 a1])),:);
+% innerThetas = innerThetas(find(min([a0 a1]) <= innerThetas(:,2) & innerThetas(:,2) <= max([a0 a1])),:);
+innerThetas = innerThetas(CheckAngleBetween(a0,a1,innerThetas(:,2)),:);
 
 innerLineSegs = [repmat([x(3),x(4)],size(innerThetas,1),1) origWallEndPoints(innerThetas(:,1),:)];
 out = lineSegmentIntersect(innerLineSegs, walls(wallIndex,:));

@@ -10,7 +10,6 @@ function [intersects,x,y,dl,xs] = CheckForCollisionSlidingAlongWallWithKink(xsta
 x = xstart;
 
 intersects = false;
-y = y;
 dl = 0;
 
 l3Sq = xend(5:6)-xend(1:2);
@@ -43,7 +42,8 @@ innerThetas = [possibleInnerIntersections(:,1)...
     wrapTo2Pi(atan2(possibleInnerIntersections(:,3), possibleInnerIntersections(:,2)))];
 
 % innerThetas are the angles at which case 1 intersections will ocurr
-innerThetas = innerThetas(find(min([a0 a1]) <= innerThetas(:,2) & innerThetas(:,2) <= max([a0 a1])),:);
+% innerThetas = innerThetas(find(min([a0 a1]) <= innerThetas(:,2) & innerThetas(:,2) <= max([a0 a1])),:);
+innerThetas = innerThetas(CheckAngleBetween(a0,a1,innerThetas(:,2)),:);
 
 finalThetas = [innerThetas(:,2) origWallEndPoints(innerThetas(:,1),:) ones(size(innerThetas,1),1)];
 
@@ -66,7 +66,8 @@ end
 outerThetas = wrapTo2Pi(outerThetas);
 
 outerStuff = [possibleOuterInteractions(:,1) outerThetas l3s as];
-outerStuff = outerStuff(find(min([a0 a1]) <= outerStuff(:,2) & outerStuff(:,2) <= max([a0 a1])),:);
+% outerStuff = outerStuff(find(min([a0 a1]) <= outerStuff(:,2) & outerStuff(:,2) <= max([a0 a1])),:);
+outerStuff = outerStuff(CheckAngleBetween(a0,a1,outerStuff(:,2)),:);
 
 sinas = sin(outerStuff(:,4));
 
@@ -109,7 +110,8 @@ if(any(validIdxs))
     elbowThetas = wrapTo2Pi(atan2(shiftedElbowPoints(:,2),shiftedElbowPoints(:,1)));
     
     validPoints = linspace(1,size(elbowThetas,1),size(elbowThetas,1)).';
-    validPoints = find(min([a0 a1]) <= elbowThetas & elbowThetas <= max([a0 a1]));
+%     validPoints = find(min([a0 a1]) <= elbowThetas & elbowThetas <= max([a0 a1]));
+    validPoints = find(CheckAngleBetween(a0,a1,elbowThetas));
     validElbowPoints = validElbowPoints(validPoints,:);
     validIdxs = validIdxs(validPoints);
     

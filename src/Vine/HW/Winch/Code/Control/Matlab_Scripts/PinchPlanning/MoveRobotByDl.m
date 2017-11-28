@@ -26,10 +26,20 @@
 function [x, y, xs,wallIndex] = MoveRobotByDl(x, y, dl, walls, thetas, len, wallIndex, xs)
 tipTangent = x(5:6)-x(3:4); tipTangent = tipTangent/norm(tipTangent);
 
-thetaIdx = find(thetas(:,1) == len);
+thetaIdx = find(abs(thetas(:,1)-len) < 1e-3);
 if(~isempty(thetaIdx))
     theta = thetas(thetaIdx,2);
     tipTangent = PlaneRotation(theta)*tipTangent;
+    
+    x(3:4) = x(5:6);
+    y(4) = y(5);
+    if(theta > 0)
+        y(5) = 0;
+    else
+        y(5) = 1;
+    end
+    
+    xs = vertcat(xs,xs(end,:));
 end
 
 while(dl > 0)
@@ -37,6 +47,8 @@ while(dl > 0)
         tipPoint = x(5:6)+tipTangent*dl;
         proxPoint = x(5:6)-1e-3*tipTangent;
         [wallIndex, ix, iy] = FindNextWall(walls,proxPoint,tipPoint,tipTangent);
+    else
+        ix = x(5); iy = x(6);
     end
     
     if(wallIndex > 0)

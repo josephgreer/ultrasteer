@@ -12,7 +12,8 @@
 % y(5) corresponds to C
 % wall = [p1_x p2_x; p1_y p2_y] \in R^{2 x 2}
 % otherwise the opposite
-function [x, y, xs, travel] = MoveRobotForwardAlongWallToEndOfWall(x, y, wallIndex, point, dl, walls, xs)
+function [x, y, xs, travel, eow] = MoveRobotForwardAlongWallToEndOfWall(x, y, wallIndex, point, dl, walls, xs)
+eow = true;
 % wall tangent
 wall = [walls(wallIndex,1) walls(wallIndex,3); walls(wallIndex,2) walls(wallIndex,4)];
 wallTangent = wall(:,2)-wall(:,1); wallTangent = wallTangent/norm(wallTangent);
@@ -44,12 +45,21 @@ oldy = y;
 
 xs(end,:) = [x(5) x(6)];
 
-if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -1 && (y(5) == 1 || y(5) == 3)))
+if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -1 && (y(5) == 1 || y(5) == 3)) || proxLength < 1e-3)
     % wall is turning us in the direction of the most distal turn point
     % now we're solving a SSA triangle
     
     % we're turning in the direction of the most distal obstacle, so reset
     % the contact point
+    if(proxLength < 1e-3)
+        if(sign(dtcross(3)) == 1)
+            y(5) = 0;
+            y(4) = 1;
+        else
+            y(5) = 1;
+            y(4) = 0;
+        end
+    end
     
     % if a left turn glancing contact becomes active
     if(y(5) == 2 || y(5) == 3)
@@ -117,6 +127,7 @@ else
     % use law of cosines
 end
 
+
 oldTip = x(5:6);
 oldDl = dl;
 
@@ -129,8 +140,19 @@ end
 if(intersects)
     dl = dl-obstacleDl;
     xs = intersectXs;
-    [x,y,xs,dl] = MoveRobotForwardAlongWall(intersectX,intersectY,wallIndex,dl,walls,xs);
+    [x,y,xs,travel,eow] = MoveRobotForwardAlongWall(intersectX,intersectY,wallIndex,dl,walls,xs);
+    travel = travel+obstacleDl;
     return;
+end
+
+y(1:2) = point;
+y(3) = y(4);
+y(4) = y(5);
+
+if(sign(dtcross(3)) == 1)
+    y(5) = 3;
+else
+    y(5) = 2;
 end
 
 tipDelta = x(5:6)-x(3:4);
