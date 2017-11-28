@@ -57,7 +57,6 @@ angleDiffs = min(angleDiffs,2*pi-angleDiffs);
 
 [~,minThetaIdx] = min(angleDiffs);
 
-oldLen = RobotLength(xs);
 if(~isempty(minThetaIdx))
     intersects = true;
     minTheta = finalThetas(minThetaIdx,1);
@@ -72,8 +71,7 @@ if(~isempty(minThetaIdx))
     xs(end,:) = [x(3) x(4)];
     xs = vertcat(xs,[x(5) x(6)]);
     
-    newLen = RobotLength(xs);
-    dl = newLen-oldLen;
+    dl = norm(x(5:6)-x(1:2))-norm(xstart(5:6)-xstart(3:4));
 end
 
 end

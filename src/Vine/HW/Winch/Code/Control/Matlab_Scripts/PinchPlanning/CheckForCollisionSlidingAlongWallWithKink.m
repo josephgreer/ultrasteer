@@ -136,7 +136,6 @@ angleDiffs = min(angleDiffs,2*pi-angleDiffs);
 
 [~,minThetaIdx] = min(angleDiffs);
 
-oldLen = RobotLength(xs);
 if(~isempty(minThetaIdx))
     intersects = true;
     minTheta = finalThetas(minThetaIdx,1);
@@ -166,8 +165,6 @@ if(~isempty(minThetaIdx))
             y(5) = 1;
             y(4) = 0;
         end
-        xs(end,:) = [x(3) x(4)];
-        xs = vertcat(xs,[x(5) x(6)]);
     else
         % proximal intersection
         x(1:2) = finalThetas(minThetaIdx,2:3);
@@ -178,12 +175,12 @@ if(~isempty(minThetaIdx))
             y(4) = 1;
             y(5) = 0;
         end
-        xs(end-1,:) = [x(1) x(2)];
-        xs(end, :) = [x(3) x(4)];
-        xs = vertcat(xs, [x(5) x(6)]);
     end
-    newLen = RobotLength(xs);
-    dl = newLen - oldLen;    
+    xs(end-1,:) = [x(1) x(2)];
+    xs(end, :) = [x(3) x(4)];
+    xs = vertcat(xs, [x(5) x(6)]);
+    
+    dl = norm(x(5:6)-x(1:2))-norm(xstart(5:6)-xstart(3:4));
 end
 
 end

@@ -52,7 +52,8 @@ if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -
     % we're turning in the direction of the most distal obstacle, so reset
     % the contact point
     
-    if(proxLength < 1e-3)
+    if(proxLength < 1e-3 && ~((y(5) == 2 && sign(dtcross(3)) == 1)...
+            || (y(5) == 3 && sign(dtcross(3)) == -1)))
         if(sign(dtcross(3)) == 1)
             y(5) = 0;
             y(4) = 1;

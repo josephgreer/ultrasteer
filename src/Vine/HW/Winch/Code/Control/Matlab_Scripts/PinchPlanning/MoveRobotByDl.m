@@ -32,7 +32,9 @@ if(~isempty(thetaIdx))
     tipTangent = PlaneRotation(theta)*tipTangent;
     
     x(3:4) = x(5:6);
-    y(4) = y(5);
+    if(y(5) ~= 2 && y(5) ~= 3)
+        y(4) = y(5);
+    end
     if(theta > 0)
         y(5) = 0;
     else
@@ -52,6 +54,9 @@ while(dl > 0)
     end
     
     if(wallIndex > 0)
+        if(abs(ix-y(1))+abs(iy-y(2)) < 1e-3)
+            y(5) = y(4); y(4) = y(3);
+        end
         dl = dl-(norm([ix;iy]-x(3:4)) - norm(x(5:6)-x(3:4)));
         x(5:6) = [ix; iy];
         
