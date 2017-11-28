@@ -63,19 +63,17 @@ if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -
     
     % if a left turn glancing contact becomes active
     if(y(5) == 2 || y(5) == 3)
-        % if most proximal point is a left turn, shift turns down
-        if(y(3) == 0 || y(3) == 1)
+        % shift turns down if need be
+        if((y(3) == 0 && y(5) == 2) || (y(3) == 1 && y(5) == 3))
             x(1:2) = x(3:4);
         end
         x(3:4) = y(1:2);
         if(y(5) == 2)
-            y(5) = 3;
-            y(4) = 0;
-            y(3) = 1;
-        else
-            y(5) = 2
+            y(5) = 0;
             y(4) = 1;
-            y(3) = 0;
+        else
+            y(5) = 1;
+            y(4) = 0;
         end
         newState = true;
     end
@@ -148,19 +146,22 @@ end
 y(1:2) = point;
 y(3) = y(4);
 y(4) = y(5);
-
 if(sign(dtcross(3)) == 1)
     y(5) = 3;
 else
     y(5) = 2;
 end
 
-tipDelta = x(5:6)-x(3:4);
-tipLen = norm(tipDelta);
+if(newState)
+    tipLen = norm(x(5:6)-x(3:4))+norm(x(3:4)-x(1:2));
+else
+    tipDelta = x(5:6)-x(3:4);
+    tipLen = norm(tipDelta);
+end
 travel = (tipLen-distalLength);
 
 if(newState)
-    xs(end,:) = [y(1) y(2)];
+    xs(end,:) = [x(3) x(4)];
     xs = vertcat(xs, [x(5) x(6)]);
 else
     xs(end-1:end,:) = reshape(x(3:6),2,2).';

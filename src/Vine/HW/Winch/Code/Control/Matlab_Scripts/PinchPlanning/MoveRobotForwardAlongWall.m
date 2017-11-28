@@ -65,8 +65,8 @@ if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -
     
     % if a left turn glancing contact becomes active
     if(y(5) == 2 || y(5) == 3)
-        % if most proximal point is a left turn, shift turns down
-        if(y(3) == 0 || y(3) == 1)
+        % shift turns down if need be
+        if((y(3) == 0 && y(5) == 2) || (y(3) == 1 && y(5) == 3))
             x(1:2) = x(3:4);
         end
         x(3:4) = y(1:2);
@@ -157,13 +157,14 @@ if(intersects)
     dl = dl-obstacleDl;
     xs = intersectXs;
     [x,y,xs,travel,eow] = MoveRobotForwardAlongWall(intersectX,intersectY,wallIndex,dl,walls,xs);
+    travel = travel+obstacleDl;
     return;
 end
 
 travel = dl;
 
 if(newState)
-    xs(end,:) = [y(1) y(2)];
+    xs(end,:) = [x(3) x(4)];
     xs = vertcat(xs, [x(5) x(6)]);
 else
     xs(end-1:end,:) = reshape(x(3:6),2,2).';
