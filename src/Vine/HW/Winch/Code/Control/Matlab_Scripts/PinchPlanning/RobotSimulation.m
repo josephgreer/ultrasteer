@@ -1,13 +1,13 @@
 clear; clc; close all;
 
-initTheta = deg2rad(-20);
+initTheta = deg2rad(45);
 x = [0;0;0;0;cos(initTheta);sin(initTheta)];
 y = [0;0;0;1;0];
 xs = [x(3) x(4); x(5) x(6)];
 
-thetas = [101 -80];
-thetas = zeros(0,2);
-% thetas(:,2) = deg2rad(thetas(:,2));
+thetas = [101 -80; 301 140];
+% thetas = zeros(0,2);
+thetas(:,2) = deg2rad(thetas(:,2));
 
 figure;
 grid on;

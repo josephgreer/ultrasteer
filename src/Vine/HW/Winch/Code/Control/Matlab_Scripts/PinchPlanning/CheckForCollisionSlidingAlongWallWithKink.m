@@ -1,4 +1,4 @@
-function [intersects,x,y,dl,xs] = CheckForCollisionSlidingAlongWallWithKink(xstart,xend,y,dir,b,wallIndex,walls,xs)
+function [intersects,x,y,dl,xs] = CheckForCollisionSlidingAlongWallWithKink(xstart,xend,oldy,y,dir,b,wallIndex,walls,xs)
 % in this case we're sliding along a wall with in the opposite direction of
 % the most distal turn
 
@@ -27,9 +27,7 @@ a0 = wrapTo2Pi(atan2(xstart(4)-xstart(2),xstart(3)-xstart(1)));
 wallEndPoints = vertcat(walls(:,1:2), walls(:,3:4));
 wallEndPoints(wallEndPoints(:,1) == walls(wallIndex,1) & wallEndPoints(:,2) == walls(wallIndex,2),:) = [];
 wallEndPoints(wallEndPoints(:,1) == walls(wallIndex,3) & wallEndPoints(:,2) == walls(wallIndex,4),:) = [];
-if(oldy(5) == 2 || oldy(5) == 3)
-    wallEndPoints(wallEndPoints(:,1) == oldy(1) & wallEndPoints(:,2) == oldy(2),:) = [];
-end
+wallEndPoints(wallEndPoints(:,1) == oldy(1) & wallEndPoints(:,2) == oldy(2),:) = [];
 
 origWallEndPoints = wallEndPoints;
 

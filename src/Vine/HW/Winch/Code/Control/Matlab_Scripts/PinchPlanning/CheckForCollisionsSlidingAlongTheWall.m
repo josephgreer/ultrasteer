@@ -22,9 +22,7 @@ a0 = wrapTo2Pi(atan2(xstart(6)-xstart(4),xstart(5)-xstart(3)));
 wallEndPoints = vertcat(walls(:,1:2), walls(:,3:4));
 wallEndPoints(wallEndPoints(:,1) == walls(wallIndex,1) & wallEndPoints(:,2) == walls(wallIndex,2),:) = [];
 wallEndPoints(wallEndPoints(:,1) == walls(wallIndex,3) & wallEndPoints(:,2) == walls(wallIndex,4),:) = [];
-if(oldy(5) == 2 || oldy(5) == 3)
-    wallEndPoints(wallEndPoints(:,1) == oldy(1) & wallEndPoints(:,2) == oldy(2),:) = [];
-end
+wallEndPoints(wallEndPoints(:,1) == oldy(1) & wallEndPoints(:,2) == oldy(2),:) = [];
 
 origWallEndPoints = wallEndPoints;
 
