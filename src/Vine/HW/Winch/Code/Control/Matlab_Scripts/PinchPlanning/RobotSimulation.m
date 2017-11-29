@@ -1,11 +1,11 @@
 clear; clc; close all;
 
-initTheta = deg2rad(45);
+initTheta = deg2rad(-50);
 x = [0;0;0;0;cos(initTheta);sin(initTheta)];
 y = [0;0;0;1;0];
 xs = [x(3) x(4); x(5) x(6)];
 
-thetas = [101 40; 301 -30];% 301 140];
+thetas = [131 -45; 301 60];
 % thetas = zeros(0,2);
 thetas(:,2) = deg2rad(thetas(:,2));
 

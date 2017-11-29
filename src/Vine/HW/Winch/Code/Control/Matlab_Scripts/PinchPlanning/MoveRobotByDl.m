@@ -33,13 +33,39 @@ if(~isempty(thetaIdx))
     theta = thetas(thetaIdx,2);
     tipTangent = PlaneRotation(theta)*tipTangent;
     
-    x(3:4) = x(5:6);
-    if(y(5) ~= 2 && y(5) ~= 3)
-        y(4) = y(5);
-    end
+    % patch up the metadata and state
     if(theta > 0)
+        % left turn
+        
+        if(y(5) == 0 || y(5) == 2)
+            % if most distal turn is a left turn, repalce it
+            x(3:4) = x(5:6);
+        elseif(y(5) == 3)
+            % if most distal "turn" is a right contact, drop it down
+            x(1:2) = y(1:2);
+            x(3:4) = x(5:6);
+        else
+            % otherwise most distal turn is a right turn so slide down
+            x(1:2) = x(3:4);
+            x(3:4) = x(5:6);
+        end
+        y(4) = 1;
         y(5) = 0;
     else
+        % right turn
+        if(y(5) == 1 || y(5) == 3)
+            % if most distal turn is a right turn, replace it
+            x(3:4) = x(5:6);
+        elseif(y(5) == 2)
+            % if most distal "turn" is a left contact, drop it down
+            x(1:2) = y(1:2);
+            x(3:4) = x(5:6);
+        else
+            % otherwise most distal turn is a left turn so slide down
+            x(1:2) = x(3:4);
+            x(3:4) = x(5:6);
+        end
+        y(4) = 0;
         y(5) = 1;
     end
     
@@ -51,12 +77,6 @@ if(~isempty(thetaIdx))
             [oldTipTangent' 0; tipTangent.' 0]);
         
         if(sign(angleDiffs(1)) ~= sign(angleDiffs(2)))
-            % this means that we turned away from the wall
-            if(theta > 0)
-                y(4) = 1;
-            else
-                y(4) = 0;
-            end
             x(1:2) = x(3:4);
             ignoreWall = wallIndex;
             wallIndex = -1;
