@@ -51,6 +51,13 @@ if(~isempty(thetaIdx))
             [oldTipTangent' 0; tipTangent.' 0]);
         
         if(sign(angleDiffs(1)) ~= sign(angleDiffs(2)))
+            % this means that we turned away from the wall
+            if(theta > 0)
+                y(4) = 1;
+            else
+                y(4) = 0;
+            end
+            x(1:2) = x(3:4);
             ignoreWall = wallIndex;
             wallIndex = -1;
         end

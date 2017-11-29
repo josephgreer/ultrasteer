@@ -32,6 +32,11 @@ if(dot(tipTangent, wallTangent) < 0)
 end
 
 dtcross = cross([tipTangent;0], [wallTangent;0]);
+if(norm(dtcross) < 1e-3) 
+    tempTangent = x(5:6)-x(1:2);
+    tempTangent = tempTangent/norm(tipTangent);
+    dtcross = cross([tempTangent; 0], [wallTangent; 0]);
+end
 
 newState = false;
 opposite = false;

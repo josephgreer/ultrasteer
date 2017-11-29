@@ -100,7 +100,11 @@ elseif(size(outers,1) > 0)
 end
 
 % check case 3
-lines = [walls(:,1:2) walls(:,3:4)-walls(:,1:2)];
+currWalls = walls; currWalls(wallIndex,:) = [];
+currWalls((currWalls(:,1) == oldy(1) & currWalls(:,2) == oldy(2)) |...
+    (currWalls(:,3) == oldy(1) & currWalls(:,4) == oldy(2)),:) = [];
+
+lines = [currWalls(:,1:2) currWalls(:,3:4)-currWalls(:,1:2)];
 circles = repmat([p0(1) p0(2) l1], size(lines,1),1);
 [validElbowPoints,validIdxs] = intersectLineCircle(lines,circles);
 if(any(validIdxs))
@@ -116,7 +120,9 @@ if(any(validIdxs))
     validIdxs = validIdxs(validPoints);
     elbowThetas = elbowThetas(validPoints,:);
     
-    values = CheckPointsBetweenLineSegments(validElbowPoints,walls(validIdxs,:));
+    % check that the elbow actually intersects in between the line
+    % endpoints
+    values = CheckPointsBetweenLineSegments(validElbowPoints,currWalls(validIdxs,:));
     
     % this holds the information about the elbow point intersections
     elbows = [elbowThetas(values) validElbowPoints(values, :) 2*ones(sum(values),1)];

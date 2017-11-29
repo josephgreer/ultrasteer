@@ -33,6 +33,11 @@ end
 newState = false; 
 
 dtcross = cross([tipTangent;0], [wallTangent;0]);
+if(norm(dtcross) < 1e-3) 
+    tempTangent = x(5:6)-x(1:2);
+    tempTangent = tempTangent/norm(tipTangent);
+    dtcross = cross([tempTangent; 0], [wallTangent; 0]);
+end
 
 if((sign(dtcross(3)) == 1 && y(5) == 3) || (sign(dtcross(3)) == -1 && y(5) == 2))
     % moving away from a proximal intersection so forget about it
