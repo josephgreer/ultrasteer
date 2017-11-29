@@ -12,15 +12,15 @@
 % y(5) corresponds to C
 % wall = [p1_x p2_x; p1_y p2_y] \in R^{2 x 2}
 % otherwise the opposite
-function [x, y, xs, travel,eow] = MoveRobotForwardAlongWall(x, y, wallIndex, dl, walls, xs)
+function [x, y, xs, travel,eow] = MoveRobotForwardAlongWall(x, y, tipTangent, wallIndex, dl, walls, xs)
+oldx = x;
+oldy = y;
 
 % wall tangent
 wall = [walls(wallIndex,1) walls(wallIndex,3); walls(wallIndex,2) walls(wallIndex,4)];
 wallTangent = wall(:,2)-wall(:,1); wallTangent = wallTangent/norm(wallTangent);
 
-tipTangent = x(5:6)-x(3:4);
-distalLength = norm(tipTangent);
-tipTangent = tipTangent/distalLength;
+oldTipTangent = tipTangent;
 
 proxTangent = x(3:4)-x(1:2);
 proxLength = norm(proxTangent); proxTangent = proxTangent/proxLength;
@@ -39,9 +39,6 @@ if((sign(dtcross(3)) == 1 && y(5) == 3) || (sign(dtcross(3)) == -1 && y(5) == 2)
     y(5) = y(4);
     y(4) = y(3);
 end
-
-oldx = x;
-oldy = y;
 
 opposite = false;
 
@@ -144,20 +141,23 @@ end
 
 [eow, point] = CheckEndOfWall(wall,x);
 if(eow)
-    [x, y, xs,travel,eow] = MoveRobotForwardAlongWallToEndOfWall(oldx,oldy,wallIndex,point,dl,walls,xs);
+    [x, y, xs,travel,eow] = MoveRobotForwardAlongWallToEndOfWall(oldx,oldy,oldTipTangent,wallIndex,point,dl,walls,xs);
     return;
 end
 
 if(opposite)
-    [intersects, intersectX, intersectY,obstacleDl,intersectXs] = CheckForCollisionSlidingAlongWallWithKink(oldx,x,y,sign(dtcross(3)),asin(sinb),wallIndex,walls,xs);
+    [intersects, intersectX, intersectY,obstacleDl,intersectXs] = CheckForCollisionSlidingAlongWallWithKink(oldx,x,oldy,y,sign(dtcross(3)),asin(sinb),wallIndex,walls,xs);
 else
-    [intersects, intersectX, intersectY,obstacleDl,intersectXs] = CheckForCollisionsSlidingAlongTheWall(oldx,x,y,wallIndex,walls,xs);
+    [intersects, intersectX, intersectY,obstacleDl,intersectXs] = CheckForCollisionsSlidingAlongTheWall(oldx,x,oldy,y,wallIndex,walls,xs);
 end
 
 if(intersects)
     dl = dl-obstacleDl;
     xs = intersectXs;
-    [x,y,xs,travel,eow] = MoveRobotForwardAlongWall(intersectX,intersectY,wallIndex,dl,walls,xs);
+    intersectTipTangent = intersectX(5:6)-intersectX(3:4);
+    intersectTipTangent = intersectTipTangent/norm(intersectTipTangent);
+    
+    [x,y,xs,travel,eow] = MoveRobotForwardAlongWall(intersectX,intersectY,intersectTipTangent,wallIndex,dl,walls,xs);
     travel = travel+obstacleDl;
     return;
 end

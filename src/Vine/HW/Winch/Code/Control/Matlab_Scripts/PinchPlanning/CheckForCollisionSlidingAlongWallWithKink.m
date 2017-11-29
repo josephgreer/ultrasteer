@@ -27,6 +27,9 @@ a0 = wrapTo2Pi(atan2(xstart(4)-xstart(2),xstart(3)-xstart(1)));
 wallEndPoints = vertcat(walls(:,1:2), walls(:,3:4));
 wallEndPoints(wallEndPoints(:,1) == walls(wallIndex,1) & wallEndPoints(:,2) == walls(wallIndex,2),:) = [];
 wallEndPoints(wallEndPoints(:,1) == walls(wallIndex,3) & wallEndPoints(:,2) == walls(wallIndex,4),:) = [];
+if(oldy(5) == 2 || oldy(5) == 3)
+    wallEndPoints(wallEndPoints(:,1) == oldy(1) & wallEndPoints(:,2) == oldy(2),:) = [];
+end
 
 origWallEndPoints = wallEndPoints;
 
@@ -109,17 +112,16 @@ if(any(validIdxs))
     
     elbowThetas = wrapTo2Pi(atan2(shiftedElbowPoints(:,2),shiftedElbowPoints(:,1)));
     
-    validPoints = linspace(1,size(elbowThetas,1),size(elbowThetas,1)).';
 %     validPoints = find(min([a0 a1]) <= elbowThetas & elbowThetas <= max([a0 a1]));
-    validPoints = find(CheckAngleBetween(a0,a1,elbowThetas));
+    validPoints = CheckAngleBetween(a0,a1,elbowThetas);
     validElbowPoints = validElbowPoints(validPoints,:);
     validIdxs = validIdxs(validPoints);
+    elbowThetas = elbowThetas(validPoints,:);
     
     values = CheckPointsBetweenLineSegments(validElbowPoints,walls(validIdxs,:));
     
     % this holds the information about the elbow point intersections
-    validIdxs = find(values > 0);
-    elbows = [elbowThetas(validIdxs) validElbowPoints(validIdxs, :) 2*ones(length(validIdxs),1)];
+    elbows = [elbowThetas(values) validElbowPoints(values, :) 2*ones(sum(values),1)];
     if(size(elbows,1) > 0 && size(finalThetas,1) > 0)
         finalThetas = vertcat(finalThetas,elbows);
     elseif(size(elbows,1) > 0)

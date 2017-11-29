@@ -27,6 +27,8 @@ function [x, y, xs,wallIndex] = MoveRobotByDl(x, y, dl, walls, thetas, len, wall
 tipTangent = x(5:6)-x(3:4); tipTangent = tipTangent/norm(tipTangent);
 
 thetaIdx = find(abs(thetas(:,1)-len) < 1e-3);
+oldTipTangent = tipTangent;
+ignoreWall = -1;
 if(~isempty(thetaIdx))
     theta = thetas(thetaIdx,2);
     tipTangent = PlaneRotation(theta)*tipTangent;
@@ -41,26 +43,42 @@ if(~isempty(thetaIdx))
         y(5) = 1;
     end
     
+    if(wallIndex > 0)
+        wallTangent = walls(wallIndex,3:4)-walls(wallIndex,1:2);
+        wallTangent = wallTangent/norm(wallTangent);
+        
+        angleDiffs = angleDiffSigns([repmat(wallTangent,2,1) zeros(2,1)],...
+            [oldTipTangent' 0; tipTangent.' 0]);
+        
+        if(sign(angleDiffs(1)) ~= sign(angleDiffs(2)))
+            ignoreWall = wallIndex;
+            wallIndex = -1;
+        end
+    end
+    
     xs = vertcat(xs,xs(end,:));
 end
 
 while(dl > 0)
     if(wallIndex <= 0)
         tipPoint = x(5:6)+tipTangent*dl;
-        proxPoint = x(5:6)-1e-3*tipTangent;
-        [wallIndex, ix, iy] = FindNextWall(walls,proxPoint,tipPoint,tipTangent);
+        proxPoint = x(5:6);
+        [wallIndex, ix, iy] = FindNextWall(walls,ignoreWall,proxPoint,tipPoint,tipTangent);
+        ignoreWall = -1;
     else
         ix = x(5); iy = x(6);
     end
     
     if(wallIndex > 0)
-        if(abs(ix-y(1))+abs(iy-y(2)) < 1e-3)
+        % if we're at a straight-wall junction -0-, reset glancing wall
+        % contact
+        if(abs(ix-y(1))+abs(iy-y(2)) < 1e-3 && (y(5) == 2 || y(5) == 3))
             y(5) = y(4); y(4) = y(3);
         end
         dl = dl-(norm([ix;iy]-x(3:4)) - norm(x(5:6)-x(3:4)));
         x(5:6) = [ix; iy];
         
-        [x, y, xs, travel, eow] = MoveRobotForwardAlongWall(x, y, wallIndex, dl, walls, xs);
+        [x, y, xs, travel, eow] = MoveRobotForwardAlongWall(x, y, tipTangent, wallIndex, dl, walls, xs);
         
         if(eow)
             wallIndex = -1;
