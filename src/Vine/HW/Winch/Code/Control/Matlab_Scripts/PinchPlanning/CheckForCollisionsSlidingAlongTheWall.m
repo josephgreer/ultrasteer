@@ -62,6 +62,8 @@ if(~isempty(minThetaIdx))
     intersects = true;
     minTheta = finalThetas(minThetaIdx,1);
     
+    oldPoint = x(3:4);
+    
     x(3:4) = finalThetas(minThetaIdx, 2:3).';
     x(5:6) = x(3:4)+[cos(minTheta);sin(minTheta)]*1e7;
     
@@ -72,7 +74,7 @@ if(~isempty(minThetaIdx))
     xs(end,:) = [x(3) x(4)];
     xs = vertcat(xs,[x(5) x(6)]);
     
-    dl = norm(x(5:6)-x(1:2))-norm(xstart(5:6)-xstart(3:4));
+    dl = norm(x(5:6)-oldPoint)-norm(xstart(5:6)-xstart(3:4));
 end
 
 end
