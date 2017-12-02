@@ -1,6 +1,6 @@
 #include "Estimator.h"
 using namespace arma;
-
+#define INTR_LENGTH 15
 
 namespace Nf
 {
@@ -71,9 +71,10 @@ namespace Nf
     ROT_base = Matrix33d::I();
     off = Vec3d(0,0,appoff+ins);
     
-    rho_n = 85; //mm 
+    rho_n = 60; //mm 
     rho_a = 35; //mm
     yaw_art = 0;
+    ART_ANG= - 0 * (PI/180.0);
 
     firstAdd = true;
 
@@ -105,12 +106,14 @@ namespace Nf
      Vec3d v_z= TIP_t.back().GetOrientation().Col(2);
      Matrix33d appROT = TIP_t.back().GetOrientation();
 
-     if (!ART.empty())
-       if (ART.back()==1)
-       {
-         appROT = TIP_t.back().GetOrientation()*rotx(ART_ANG*(PI/180));
-         v_z= appROT.Col(2);
-       }
+    /*if (!ART.empty())
+      if (ART.back()==1)
+      {
+        appROT = TIP_t.back().GetOrientation();
+        appROT = AxisAngle(appROT.Col(0),ART_ANG) * appROT;
+        v_z= appROT.Col(2);
+      }
+    */
     app_tip = app_tip  + (v_z)*TIP_LENGTH;
     return Matrix44d::FromOrientationAndTranslation(appROT, app_tip);
   }
@@ -178,14 +181,17 @@ namespace Nf
 
     if ((a == 1) && ( prev_a == 0))
     {  
-        ROT_t = ROT_t * rotz(yaw_art);
-        StartArt = L_n;
+      ROT_t =  AxisAngle(ROT_t.Col(2),yaw_art) * ROT_t;
+      StartArt = L_n;
     }
 
     if ((a == 0) && ( prev_a == 1))
-      ROT_t = ROT_t * rotz(-yaw_art);
+    {
+      ROT_t =  AxisAngle(ROT_t.Col(0),ART_ANG) * ROT_t;
+      ROT_t =  AxisAngle(ROT_t.Col(2),-yaw_art) * ROT_t;
+    }
             
-    if ((a==1) && ((L_n-StartArt)>10.0))
+    if ((a==1))
     {
       rho = rho_a;
       //ROT_art=rotz(yaw_art);
@@ -193,13 +199,23 @@ namespace Nf
     else
       rho = rho_n;
 
+    if((L_n)<(INTR_LENGTH))
+    {
+       rho = 1000;
+    }
+
+    if((L_n-StartArt)<(TIP_LENGTH))
+    {
+       rho = 1000;
+    }
+
         
     app_d = Vec3d(0,rho*(1-cos(diff_l/rho)),rho*sin(diff_l/rho));
     tip_mm_t = tip_mm_t + ROT_t * rotz(diff_th*(PI/180)) * app_d;
     ROT_t = ROT_t * rotz(diff_th*(PI/180)) * rotx(-(diff_l/rho));
 
-    if ((a == 0) && ( prev_a == 1))
-      ROT_t = ROT_t * rotx(ART_ANG*(PI/180));
+   
+      
 
     return Matrix44d::FromOrientationAndTranslation(ROT_t, tip_mm_t);
   }
@@ -232,24 +248,24 @@ namespace Nf
            if (L.empty())
              break;
            
-           if ((m_l<L.back()))
+           if ((m_l<L.back())&&(L.size()>1))
            {  
               L.pop_back();
               TIP_t.pop_back();
               THETA.pop_back();
               ART.pop_back();
                 
-              for (int i=0;i<IND.size();i++)
+              /*for (int i=0;i<IND.size();i++)
               {
                 // Allungato
-                  if (L.size()<IND[i]+TIP_LENGTH*100)
+                  if ((L.size()+TIP_LENGTH*100)<IND[i])
                   {
                     OBS.erase(OBS.begin()+i);
                     VER.erase(VER.begin()+i);
                     IND.erase(IND.begin()+i);
                   }
 
-              }
+              }*/
            }
            else
            {  // rotation along z di // voglio solo tornare indietro. Non devo ruotare per l'articolazione! PENSARCI
@@ -284,10 +300,12 @@ namespace Nf
     mat mrho_n = zeros(1,1);
     mat mrho_a = zeros(1,1);
     mat myaw_art = zeros(1,1);
+    mat mART_ANG = zeros(1,1);
 
     mrho_n(0,0)=rho_n;
     mrho_a(0,0)=rho_a;
     myaw_art(0,0)=yaw_art;
+    mART_ANG = ART_ANG;
     
     for (int i=0;i<L.size();i++)
     {
@@ -349,8 +367,12 @@ namespace Nf
     mrho_a.save(path, raw_ascii);
     sprintf(path, "%sART.dat", basePath);
     dart.save(path, raw_ascii);
-    sprintf(path, "%YAW_ART.dat", basePath);
+    sprintf(path, "%sYAW_ART.dat", basePath);
     myaw_art.save(path, raw_ascii);
+
+    sprintf(path, "%sART_ANG.dat", basePath);
+    mART_ANG.save(path, raw_ascii);
+
 
     
     //now reply the client with the same data
@@ -398,7 +420,7 @@ namespace Nf
       return false;
    
     
-    mat res = zeros(6,1);
+    mat res = zeros(7,1);
     //mat PointInd = zeros(OBS.size(),1);
     mat PointInd,POINT_NEW,VER_NEW;
     char basePath[150];
@@ -447,7 +469,8 @@ namespace Nf
     ROT_t = ROT_base;
     rho_n = rho_n + res(3,0); //mm
     rho_a = rho_a + res(4,0);
-    yaw_art = yaw_art+res(5,0);
+    yaw_art = yaw_art + res(5,0);
+    ART_ANG = ART_ANG + res(6,0); 
     TIP_t.clear();
     TIP_t.push_back(Matrix44d::FromOrientationAndTranslation(ROT_t, tip_mm_t));
     
@@ -483,7 +506,8 @@ namespace Nf
     if (!ART.empty())
       if (ART.back())
       {
-        appROT = TIP_t.back().GetOrientation()*rotx(-50*(PI/180));
+        appROT = TIP_t.back().GetOrientation();
+        appROT = AxisAngle(appROT.Col(0),ART_ANG) * appROT;
         v_z= appROT.Col(2);
       }
 
@@ -499,5 +523,64 @@ namespace Nf
   {
     firstAdd = true;
   }
+
+
+
+Matrix33d Estimator::AxisAngle(Vec3d axis,double angle)
+{
+    double c;
+    double s;
+    double t;
+
+    s = sin(angle);
+    c = cos(angle);
+    t = 1 - c;
+
+    double x,y,z;
+
+    axis.normalized();
+    x = axis.x;
+    y = axis.y;
+    z = axis.z;
+
+    return Matrix33d(t*x*x + c, t*x*y - s*z,t*x*z + s*y, t*x*y + s*z, t*y*y + c, t*y*z - s*x, t*x*z - s*y, t*y*z + s*x, t*z*z + c );
+    //return Matrix33d(1,0,0,0,ct,-st,0,st,ct);
 }
 
+bool Estimator::testArt(double L_n)
+{
+  if((L_n-StartArt)<(TIP_LENGTH))
+    return false;
+  return true;
+}
+
+Matrix44d Estimator::getCurrentEstimateTIP_trans(float horizon)
+{
+    Matrix44d appTIP = TIP_t.back();
+    double stepL = 0.01;
+
+    double ins = L.back()+stepL; 
+    appTIP = simulate1Step(stepL,0,0,ART.back(),appTIP,ins);
+
+    while (ins<=(horizon+L.back()))
+    {
+      ins = ins + stepL;
+      appTIP = simulate1Step(stepL,0,0,0,appTIP,ins);
+    }
+     
+    return appTIP;
+}
+/*
+n = sl3dnormalize(r(1:3), epsilon);
+
+x = n(1);
+y = n(2);
+z = n(3);
+m = [ ...
+     t*x*x + c,    t*x*y - s*z,  t*x*z + s*y; ...
+     t*x*y + s*z,  t*y*y + c,    t*y*z - s*x; ...
+     t*x*z - s*y,  t*y*z + s*x,  t*z*z + c ...
+    ];
+
+    */
+}

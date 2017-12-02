@@ -167,12 +167,12 @@ namespace Nf
 
   void RobotControlsWidget::InsertPosInc(void)
   {
-    m_robot->InsertIncremental(17);
+    m_robot->InsertIncremental(10);
   }
 
   void RobotControlsWidget::InsertNegInc(void)
   {
-    m_robot->InsertIncremental(-17);
+    m_robot->InsertIncremental(-10);
   }
 
   void RobotControlsWidget::InsertPosVel(void)
@@ -280,7 +280,7 @@ namespace Nf
 
   void RobotControlsWidget::RotNegIncSmall(void)
   {
-    m_robot->InsertIncremental(-15.3);
+    //m_robot->InsertIncremental(-15.3);
      // Sleep(4000);
    // m_robot->RotateIncremental(-30);
     // Sleep(3000);
@@ -290,9 +290,15 @@ namespace Nf
     //Sleep(3000);
     //m_robot->RotateIncremental(-30);
     //Sleep(4000);
-    m_robot->RotateIncremental(-90);
+    //m_robot->RotateIncremental(-90);
     //m_robot->SetRotationVelocity(300);
    // m_robot->SetInsertionVelocity(1);
+    m_robot->SetRotationVelocity(300);
+    m_robot->InsertIncremental(21);
+    Sleep(22000);
+    m_robot->HomeRoll();
+    Sleep(4000);
+     m_robot->InsertIncremental(-4);
   }
   
 }

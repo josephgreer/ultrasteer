@@ -6,7 +6,7 @@
 #include<stdio.h>
 
 #define TIP_LENGTH 15.3
-#define ART_ANG -30.0
+
  
 //#pragma comment(lib,"ws2_32.lib") //Winsock Library
  
@@ -34,6 +34,7 @@ namespace Nf
     vector<int> IND;
     vector<double> THETA;
     double StartArt;
+    double ART_ANG;
 
     
     double rho_n,rho_a,yaw_art;
@@ -42,6 +43,7 @@ namespace Nf
     Vec3d off;
     
     bool firstAdd; 
+    
 
     SOCKET s;
     struct sockaddr_in server, si_other;
@@ -54,6 +56,7 @@ namespace Nf
     Matrix33d rotx(double roll);
     Matrix33d roty(double pitch);
     Matrix33d rotz(double yaw);
+    Matrix33d AxisAngle(Vec3d axis,double angle);
     Matrix44d simulate1Step(double diff_l,double diff_th,unsigned int a,unsigned int prev_a,Matrix44d prevTIP,double L_n);
     
 
@@ -74,6 +77,8 @@ namespace Nf
     void resetaddTIP();
     Matrix44d getCurrentEstimateWRIST();
     double lastTHETA();
+    bool testArt(double L_n);
+    Matrix44d getCurrentEstimateTIP_trans(float horizon);
     /*void fullUpdateUKF(Vec3d u, Matrix44d z);
     void processUpdateUKF(Vec3d u);
     void getCurrentStateEstimate(Matrix44d &x_out);

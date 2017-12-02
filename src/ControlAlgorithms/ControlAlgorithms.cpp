@@ -1,6 +1,9 @@
 #include "ControlAlgorithms.h"
 #include "math.h"
 #include <time.h>
+#define TH_ART_MOT 95.0
+#define ART_SLIDING 45
+
 
 namespace Nf {
 
@@ -50,6 +53,9 @@ namespace Nf {
     ArticulationAngle=0;
     NPoint=0;
     CountCommand=0;
+    STATE_ART = 0;
+    SEG_REQ = true;
+
 
     m_planeCalibrator = std::tr1::shared_ptr < PlaneCalibrator > (new PlaneCalibrator());
   }
@@ -152,16 +158,22 @@ namespace Nf {
   // toggle the joint-space control state
   bool ControlAlgorithms::startStopJointSpaceControl()
   {
+    //m_insertionMMatLastManualScan = m_l-20;
+    SEG_REQ = true;
+    return false;
     if(m_EST.isInitialized()){ //don't change the state if UKF is not initialized
       m_inJointSpaceControl = !m_inJointSpaceControl;
     }
 
-    if(!m_inJointSpaceControl){
+    /*if(!m_inJointSpaceControl){
       m_robot->SetInsertionVelocity(0.0);
       m_robot->SetRotationVelocity(0.0);
     }
 
-    return m_inJointSpaceControl;
+    return m_inJointSpaceControl;*/
+    m_insertionMMatLastManualScan = m_l-20;
+    return false;
+
   }
 
   // set the robot velocity based on input from 3D mouse
@@ -409,7 +421,7 @@ namespace Nf {
            
         if (m_EST.isInitialized())
         {
-           if (m_maxArticulationAngle>8)
+           if (m_maxArticulationAngle>TH_ART_MOT)
               m_EST.updateInput(m_l, m_th,1);
            else
               m_EST.updateInput(m_l, m_th,0);
@@ -428,26 +440,38 @@ namespace Nf {
     	bool condition=false; 
       if( insertionSinceLastManualScan() >= MAX_OPEN_LOOP_INSERTION )
       { // if we need a new scan
-    
+          
     	    QuickandDirty=false;
     	    m_robot->SetInsertionVelocity(0.0);
           m_robot->SetRotationVelocity(0.0);
           condition=true;
-          if ((m_maxArticulationAngle<8)||(!m_robot->isArticulationInitialized()))
+          if ((m_maxArticulationAngle<TH_ART_MOT)||(!m_robot->isArticulationInitialized()))
+          {   
+              m_robot->SetArticulationAngle(0); 
               m_EST.addTIP();
+          }
 
       }
       if ((!QuickandDirty)&&(!condition))
-    		 QuickandDirty=true;
+    	{	 
+        QuickandDirty=true;
+        STATE_ART=0;
+        SEG_REQ = false;
+      }
     }
     else
     {  
       QuickandDirty=false;
+      STATE_ART=0;
        //m_insertionMMatLastManualScan = m_l;
-      if (m_l>20)
+      //if (m_l>20)
         m_insertionMMatLastManualScan = m_l;
-      else
-        m_insertionMMatLastManualScan = 0;
+      //else
+      //  m_insertionMMatLastManualScan = 0;
+      
+      if (SEG_REQ)
+         m_insertionMMatLastManualScan = 0;
+
       
       if ((CountCommand<10)&&(m_EST.isInitialized()))
         {
@@ -527,33 +551,40 @@ namespace Nf {
 
   bool ControlAlgorithms::CheckCompletion(void)
   {
-    Vec3d W = m_x.GetPosition();
-    Matrix33d R = m_x.GetOrientation();
-    return false;
+    //Vec3d W = m_x.GetPosition();
+    //Matrix33d R = m_x.GetOrientation();
+    //return false;
 
     // Track of the Wrist
-    Vec3d ux = R.Col(0);
-    Vec3d uz = R.Col(2);
+    //Vec3d ux = R.Col(0);
+    //Vec3d uz = R.Col(2);
     
     Vec3d v,p;
-    double a=0;
-    if( ArticulationAngle > 5)
-      a=-45*(PI/180);    
+    //double a=0;
+    //if( ArticulationAngle > 5)
+    //  a=-45*(PI/180);    
 
     //Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
     // check transpose?
     //v=Rx*uz;
     
     //p=W+uz*15.3; TIP CHANGE 123
-    p = wristToTip(R, W);
+    if (m_EST.isInitialized())
+    {
+    p = m_EST.getCurrentEstimateTIP().GetPosition();
+    Matrix33d R = m_EST.getCurrentEstimateTIP().GetOrientation();
 
     //Vec3d tipOffset = R.Transpose()*(m_t-p);
     if( R.Col(2).dot(m_t-p) < 0 )
     {
+      m_robot->SetArticulationAngle(0);
       return true;
     }else{
       return false;
     }
+    }
+    else
+      return false;
   }
 
   void ControlAlgorithms::GetTarget(Vec3d &t)
@@ -727,8 +758,8 @@ namespace Nf {
     
     Vec3d v,p;
     double a=0;
-    if( ArticulationAngle > 5)
-        a=-45*(PI/180);
+    //if( ArticulationAngle > 5)
+    //    a=-45*(PI/180);
 
     Matrix33d Rx=Matrix33d(cos(a)+(ux.x)*(ux.x)*(1-cos(a)), (ux.y)*(ux.x)*(1-cos(a))-(ux.z)*sin(a), (ux.z)*(ux.x)*(1-cos(a))+(ux.y)*sin(a), (ux.y)*(ux.x)*(1-cos(a))+(ux.z)*sin(a), cos(a)+(ux.y)*(ux.y)*(1-cos(a)), (ux.z)*(ux.y)*(1-cos(a))-(ux.x)*sin(a), (ux.z)*(ux.x)*(1-cos(a))-(ux.y)*sin(a), (ux.z)*(ux.y)*(1-cos(a))+(ux.x)*sin(a), cos(a)+(ux.z)*(ux.z)*(1-cos(a)));
     // check transpose?
@@ -830,6 +861,7 @@ namespace Nf {
     R = m_x.GetOrientation();
     p = m_x.GetPosition();
     Nf::Vec3d e = (m_t - p);
+    //alpha_e = e.y;
     Nf::Vec3d e_v = e/e.magnitude();
     Nf::Vec3d ze=R.Col(2);
     alpha_e=(acos(ze.dot(e_v)))*(180/PI);
@@ -1011,12 +1043,17 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
 	// timer
   int count=0;
   int STATE=0;
-  double InsArtRetr=0;
+
+  double InsArtRetr = 0;
+  double InsSliding = 0;
   bool disableSM = false;
   double alpha_e;
+  double prev_sum_alpha_e = 1000;
+  double sum_alpha = 0;
+  int count_sum=0;
+  int count_tran=0;
   
-  double prevalpha_e=1000;
-  int countder = 0;
+  
   bool Sliding=false;
 
   // salvo il tempo
@@ -1027,6 +1064,10 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
   
 	bool EstimatorisAble = true;
   double sign = 1;
+  double roll_slid = 0;
+  bool CheckTrans = true;
+  bool NoArt = false;
+  float trans_disp_forw = 5;
 
   while(1)
 	{
@@ -1053,12 +1094,19 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
      
       if (EstimatorisAble)
       {  
-        if ((C->m_maxArticulationAngle>8)&&(C->m_robot->isArticulationInitialized()))
-              C->m_EST.updateInput(C->m_l, C->m_th,1);
+        if ((C->m_maxArticulationAngle>TH_ART_MOT)&&(C->m_robot->isArticulationInitialized()))
+        {      
+          C->m_EST.updateInput(C->m_l, C->m_th,1);
+          C->m_x = C->m_EST.getCurrentEstimateTIP_trans(trans_disp_forw);
+        }
         else
-              C->m_EST.updateInput(C->m_l, C->m_th,0);
+        {      
+          C->m_EST.updateInput(C->m_l, C->m_th,0);
+          C->m_x = C->m_EST.getCurrentEstimateTIP();
 
-        C->m_x = C->m_EST.getCurrentEstimateTIP();
+        }
+
+        
       }
       
 			if (C->m_t.magnitude() > 1e-3) // if the target is defined
@@ -1083,11 +1131,11 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
         
 			  // verificare convenzioni
 			  
-        float trans_disp_back = 5.0;
-        float trans_disp_forw = TIP_LENGTH;
+        //float trans_disp_back = 10.0;
+       
      
 
-        if ((C->m_maxArticulationAngle<8) && ( R.Col(2).dot(C->m_t-p) < 0))
+        if ((C->m_maxArticulationAngle<TH_ART_MOT) && ( R.Col(2).dot(C->m_t-p) < 0))
         {
           C->m_robot->SetInsertionVelocity(0.0);
           C->m_robot->SetRotationVelocity(0.0);
@@ -1095,27 +1143,57 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
         }
         else
         {
-          if ((C->m_maxArticulationAngle>8)||(disableSM))
+          if ((C->m_maxArticulationAngle>TH_ART_MOT)||(disableSM))
           {
             switch(STATE)
             {
               case 0:
                 C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0.75);
                 
-                if (d_th<0)
+                /*if (d_th<0)
                     C->m_robot->SetRotationVelocity(-350*0.75);
                 else
                   C->m_robot->SetRotationVelocity(350*0.75);
+                */
+                /*if ((e.y<1) && (CheckTrans))
+                {
+                  C->m_insertionMMatLastManualScan = C->m_l-15;
+                  CheckTrans = false;
+                }
 
-                if ((alpha_e-prevalpha_e>0)&&(d_th<20)) 
-                      countder++;
-                else
-                    countder=0;
-               
-                prevalpha_e=d_th;
-                if (abs(alpha_e)<0.5)
+                if (e.y<0)
                 {
                   EstimatorisAble = false;
+                  STATE=1;
+                }*/
+
+
+                sum_alpha = sum_alpha + abs(alpha_e);
+                count_sum++;
+
+                if (count_sum == 10)
+                {
+                   sum_alpha = sum_alpha/10;
+                  
+                   if ((sum_alpha>prev_sum_alpha_e)&&( C->m_EST.testArt(C->m_l)))
+                   {
+                     count_tran++;
+                   }
+                   else
+                   {
+                      count_tran=0;
+                      
+                   }
+                   prev_sum_alpha_e = sum_alpha;
+                   count_sum = 0;
+                   sum_alpha=0;                  
+
+                }
+        
+                if (count_tran == 3)
+                {
+                  prev_sum_alpha_e=1000;  
+                  count_tran==0;
                   STATE=1;
                 }
 
@@ -1123,44 +1201,51 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
                 break;
               case 1:
                 disableSM = true;
-                EstimatorisAble = false;
-                C->m_robot->SetArticulationAngle(0);
+                //EstimatorisAble = false;
+                C->m_robot->SetArticulationAngle(ART_SLIDING);
                 C->m_robot->SetRotationVelocity(0);
-                C->m_robot->InsertIncremental(-trans_disp_back);
+                C->m_EST.updateInput(C->m_l, C->m_th,0);
+                C->m_robot->InsertIncremental(trans_disp_forw);
                 InsArtRetr = C->m_l;
                 count=0;
                 STATE=2;
-              case 10:
-                 C->m_insertionMMatLastManualScan = C->m_l;
-                /*if (count>40)
-                {
-                  C->m_robot->RotateIncremental(-90*0);*/
-                  STATE=2;
-                //}
-                break;
               case 2:
                 C->m_insertionMMatLastManualScan = C->m_l;
-                if (abs(C->m_l+trans_disp_back-InsArtRetr)<0.01)
+                if (abs(C->m_l-trans_disp_forw-InsArtRetr)<0.01)
+                {
+                  roll_slid = (360*2*0 + C->m_th);
+                  C->m_robot->RotateIncremental(360*2*0);
                   STATE = 3;
+                }
                 break;
               case 3:
-                C->m_EST.updateInput(C->m_l, C->m_th,1);
-                C->m_EST.updateInput(C->m_l, C->m_th,0);
-                EstimatorisAble = true;
-                C->m_insertionMMatLastManualScan = C->m_l;
+                //C->m_EST.updateInput(C->m_l, C->m_th,1);
+                //C->m_EST.updateInput(C->m_l, C->m_th,0);
+                //EstimatorisAble = true;
+                if (abs(C->m_th - roll_slid)<0.1)
+                {
+                 C->m_insertionMMatLastManualScan = C->m_l-20;
+                 C->m_robot->SetRotationVelocity(0);
+                 C->m_robot->SetInsertionVelocity(0);
+                 disableSM = false;
+                 STATE=0;
+                }
+                /*C->m_insertionMMatLastManualScan = C->m_l;
                 C->m_robot->SetRotationVelocity(350*0.75);
                 C->m_robot->InsertIncremental(trans_disp_forw);
                 InsArtRetr = C->m_l;
-                STATE = 4;
+                STATE = 4;*/
                 break;
               case 4:
                 C->m_insertionMMatLastManualScan = C->m_l;
                 if (abs(C->m_l-(trans_disp_forw)-InsArtRetr)<0.01)
                 {
-                  C->m_insertionMMatLastManualScan = C->m_l-15;
-                  disableSM = false;
-                  EstimatorisAble = true;
-                  STATE=0;
+                   C->m_insertionMMatLastManualScan = C->m_l-20;
+                   C->m_robot->SetRotationVelocity(0);
+                   C->m_robot->SetInsertionVelocity(0);
+                   disableSM = false;
+                   EstimatorisAble = true;
+                   STATE=0;
                 }
                 break;
               case 5:
@@ -1192,11 +1277,65 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
           }
           else
           {
-              C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0.5);         
-              if (d_th<0)
-                C->m_robot->SetRotationVelocity(-350*0.75);
-              else
-                C->m_robot->SetRotationVelocity(350*0.75);
+            float art_back = 10.0;
+            switch(C->STATE_ART)
+            {
+                case 0:
+                EstimatorisAble = false;
+                NoArt = false;
+                //C->m_robot->SetArticulationAngle(0);
+                roll_slid = (d_th*(180/PI) + C->m_th);
+                //roll_slid= fmod(roll_slid, 360.0);
+                C->m_robot->RotateIncremental(d_th*(180/PI));
+                C->STATE_ART=101;
+                case 101:
+                   if (abs(C->m_th - roll_slid)<0.1)
+                   {
+                      C->m_robot->InsertIncremental(-art_back);
+                      InsSliding = C->m_l;
+                      C->STATE_ART=1;
+                   }
+                  break;
+
+              case 1:
+                if (abs(C->m_l+art_back-InsSliding)<0.01)
+                {
+                  C->m_robot->InsertIncremental(art_back+0.02);
+                  InsSliding = C->m_l;
+                  C->STATE_ART = 2;
+                  
+                }
+                break;
+              case 2:
+                if (abs(C->m_l-(art_back+0.02)-InsSliding)<0.01)
+                {
+                   C->m_EST.updateInput(C->m_l, C->m_th,0);
+                   EstimatorisAble = true;
+                   C->STATE_ART = 3;
+                   //C->m_robot->SetArticulationAngle(ART_SLIDING);
+                }
+                break;
+              case 3:
+                  C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0.5);         
+                  if (d_th<0)
+                    C->m_robot->SetRotationVelocity(-350*0.75);
+                  else
+                    C->m_robot->SetRotationVelocity(350*0.75);
+
+                  if (abs(alpha_e)<1.0)
+                  {  
+                    C->m_robot->SetArticulationAngle(0);
+                    NoArt = true;
+                  }
+
+                  if ((abs(alpha_e)>4.0)&&(!NoArt))
+                    C->m_robot->SetArticulationAngle(ART_SLIDING);
+                  
+
+                  break;
+             }
+              
+              
           }
           
         }

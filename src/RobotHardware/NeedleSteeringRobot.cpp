@@ -154,12 +154,14 @@ double NeedleSteeringRobot::getRollAngle(void)
 {
 	// Returns the current angle of the needle
   RollAngle=m_RollDevice.GetAngle();
-	return fmod(RollAngle, 360.0);
+  return RollAngle;
+	//return fmod(RollAngle, 360.0);
 }
 
 double NeedleSteeringRobot::getRollAngle2()
 {
-  return fmod(RollAngle, 360.0);
+   return RollAngle;
+  //return fmod(RollAngle, 360.0);
 }
 
 double NeedleSteeringRobot::getArticulationAngle(void)
