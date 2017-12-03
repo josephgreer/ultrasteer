@@ -33,17 +33,23 @@ if(~isempty(thetaIdx))
     theta = thetas(thetaIdx,2);
     tipTangent = PlaneRotation(theta)*tipTangent;
     
+    proxTangent = x(3:4)-x(1:2);
+    proxTangent = proxTangent/norm(proxTangent);
+    
     % patch up the metadata and state
     if(theta > 0)
         % left turn
         
-        if(y(5) == 0 || y(5) == 2)
+        if(y(5) == 0 || (y(5) == 2 && y(4) == 0))
             % if most distal turn is a left turn, repalce it
             x(3:4) = x(5:6);
         elseif(y(5) == 3)
             % if most distal "turn" is a right contact, drop it down
             x(1:2) = y(1:2);
             x(3:4) = x(5:6);
+            
+            xs(end,:) = [x(1) x(2)];
+            xs = vertcat(xs,[x(5) x(6)]);
         else
             % otherwise most distal turn is a right turn so slide down
             x(1:2) = x(3:4);
@@ -53,13 +59,16 @@ if(~isempty(thetaIdx))
         y(5) = 0;
     else
         % right turn
-        if(y(5) == 1 || y(5) == 3)
+        if(y(5) == 1 || (y(5) == 3 && y(4) == 1))
             % if most distal turn is a right turn, replace it
             x(3:4) = x(5:6);
         elseif(y(5) == 2)
             % if most distal "turn" is a left contact, drop it down
             x(1:2) = y(1:2);
             x(3:4) = x(5:6);
+            
+            xs(end,:) = [x(1) x(2)];
+            xs = vertcat(xs,[x(5) x(6)]);
         else
             % otherwise most distal turn is a left turn so slide down
             x(1:2) = x(3:4);
@@ -75,6 +84,11 @@ if(~isempty(thetaIdx))
         
         angleDiffs = angleDiffSigns([repmat(wallTangent,2,1) zeros(2,1)],...
             [oldTipTangent' 0; tipTangent.' 0]);
+        
+        if(abs(angleDiffs(1)) < 1e-3)
+            angleDiffs = angleDiffSigns([repmat(wallTangent,2,1) zeros(2,1)],...
+                [proxTangent' 0; tipTangent.' 0]);
+        end
         
         if(sign(angleDiffs(1)) ~= sign(angleDiffs(2)) && min(abs(angleDiffs)) > 1e-3)
             x(1:2) = x(3:4);

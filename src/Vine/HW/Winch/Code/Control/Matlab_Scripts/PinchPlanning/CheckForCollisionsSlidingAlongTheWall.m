@@ -22,7 +22,10 @@ a0 = wrapTo2Pi(atan2(xstart(6)-xstart(4),xstart(5)-xstart(3)));
 wallEndPoints = vertcat(walls(:,1:2), walls(:,3:4));
 wallEndPoints(wallEndPoints(:,1) == walls(wallIndex,1) & wallEndPoints(:,2) == walls(wallIndex,2),:) = [];
 wallEndPoints(wallEndPoints(:,1) == walls(wallIndex,3) & wallEndPoints(:,2) == walls(wallIndex,4),:) = [];
-wallEndPoints(wallEndPoints(:,1) == oldy(1) & wallEndPoints(:,2) == oldy(2),:) = [];
+wallEndPoints(wallEndPoints(:,1) == p0(1) & wallEndPoints(:,2) == p0(2),:) = [];
+if(oldy(5) == 2 || oldy(5) == 3)
+    wallEndPoints(wallEndPoints(:,1) == oldy(1) & wallEndPoints(:,2) == oldy(2),:) = [];
+end
 
 origWallEndPoints = wallEndPoints;
 
@@ -39,7 +42,7 @@ innerThetas = [possibleInnerIntersections(:,1)...
 
 % innerThetas are the angles at which case 1 intersections will ocurr
 % innerThetas = innerThetas(find(min([a0 a1]) <= innerThetas(:,2) & innerThetas(:,2) <= max([a0 a1])),:);
-innerThetas = innerThetas(CheckAngleBetween(a0,a1,innerThetas(:,2)),:);
+innerThetas = innerThetas(CheckAngleBetweenIgnoreStartPoint(a0,a1,innerThetas(:,2)),:);
 
 innerLineSegs = [repmat([x(3),x(4)],size(innerThetas,1),1) origWallEndPoints(innerThetas(:,1),:)];
 out = lineSegmentIntersect(innerLineSegs, walls(wallIndex,:));

@@ -110,7 +110,7 @@ else
         baseDelta = point-x(1:2); l3 = norm(baseDelta);
         baseDelta = baseDelta/l3;
         
-        cosb = dot(proxTangent, -tipTangent);
+        cosb = dot(proxTangent, -tipTangent);  cosb = sign(cosb)*min(max(abs(cosb),0),1);
         sinb = sqrt(1-cosb^2);
         
         sinc = l1/l3*sinb;

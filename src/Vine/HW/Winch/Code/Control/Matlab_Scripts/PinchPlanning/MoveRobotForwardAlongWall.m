@@ -85,6 +85,8 @@ if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -
     distalLength = norm(x(5:6)-x(3:4));
     
     cospia = dot(tipTangent,wallTangent);
+    cospia = sign(cospia)*min(max(abs(cospia),0),1);
+    
     sina = sqrt(1-cospia^2);
     sinb = (distalLength)*sina/(dl+distalLength);
     c = pi-(pi-asin(sina))-asin(sinb);
@@ -116,6 +118,7 @@ else
     l1 = proxLength;
     l2 = norm(x(5:6)-x(3:4))+dl;
     cosb = dot(proxTangent, -tipTangent);
+    cosb = sign(cosb)*min(max(abs(cosb),0),1);
     sinb = sqrt(1-cosb^2);
     
     l3 = sqrt(l1^2+l2^2-2*l1*l2*cosb);
@@ -124,7 +127,8 @@ else
     
     l5dir = x(5:6)-x(1:2); l5 = norm(l5dir); l5dir = l5dir/l5;
     
-    cospif = dot(l5dir,wallTangent); sinf = sqrt(1-cospif^2);
+    cospif = dot(l5dir,wallTangent); cospif = sign(cospif)*min(max(abs(cospif),0),1);
+    sinf = sqrt(1-cospif^2);
     sine = l5/l3*sinf;
     
     f = pi-acos(cospif); e = asin(sine);

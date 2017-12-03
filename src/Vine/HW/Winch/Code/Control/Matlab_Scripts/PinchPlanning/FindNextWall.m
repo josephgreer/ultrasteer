@@ -7,11 +7,25 @@ intersectY = -1;
 out = lineSegmentIntersect([proximalPoint(1) proximalPoint(2) tipPoint(1) tipPoint(2)],...
     walls);
 
+out.intAdjacencyMatrix = out.intAdjacencyMatrix | out.coincAdjacencyMatrix;
+cIndices = find(out.coincAdjacencyMatrix);
+
 if(ignoreWall > 0)
     out.intAdjacencyMatrix(ignoreWall) = 0;
 end
 
 numWalls = sum(out.intAdjacencyMatrix);
+
+% If we're only coincident to a wall, check if tip is in-between wall end points
+if(numWalls == 1 && sum(out.coincAdjacencyMatrix) > 0)
+    values = CheckPointsBetweenLineSegments(tipPoint.',walls(find(out.coincAdjacencyMatrix),:));
+    if(sum(values) > 0)
+        wallIndex = min(find(values));
+        intersectX = x(5);
+        intersectY = x(6);
+    end
+    return;
+end
 
 while(numWalls > 0)
     pts = [find(out.intAdjacencyMatrix).' out.intMatrixX(out.intAdjacencyMatrix).'...
@@ -21,8 +35,16 @@ while(numWalls > 0)
         dists = [pts(:,2)-proximalPoint(1) pts(:,3)-proximalPoint(2)];
         dists = sum(dists.^2,2);
         
-        minDist = min(dists);
+        [minDist,minIdx] = min(dists);
+        
+        if(~isempty(cIndices))
+            coincidentIdx = ismember(pts(:,1),cIndices);
+            dists(coincidentIdx) = minDist;
+            pts(coincidentIdx,2:3) = repmat(pts(minIdx,2:3),length(cIndices),1);
+        end
+        
         wallIndices = abs(dists-minDist) < 1e-3;
+        
         pts = pts(wallIndices,:);
     end
     
@@ -55,6 +77,11 @@ while(numWalls > 0)
     else
         minAngle = max(angleDiffs(angleDiffs < 0));
         maxAngle = min(angleDiffs(angleDiffs > 0));
+        if(isempty(maxAngle))
+            maxAngle = 0;
+        elseif(isempty(minAngle))
+            minAngle = 0;
+        end
         
         [~, minIdx] = min(abs(angleDiffs-minAngle));
         [~, maxIdx] = min(abs(angleDiffs-maxAngle));
