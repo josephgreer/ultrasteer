@@ -71,6 +71,7 @@ if(~isempty(minThetaIdx))
     x(5:6) = x(3:4)+[cos(minTheta);sin(minTheta)]*1e7;
     
     out = lineSegmentIntersect([x(3:6).'], walls(wallIndex,:));
+    assert(out.intAdjacencyMatrix > 0);
     x(5) = out.intMatrixX;
     x(6) = out.intMatrixY;
     

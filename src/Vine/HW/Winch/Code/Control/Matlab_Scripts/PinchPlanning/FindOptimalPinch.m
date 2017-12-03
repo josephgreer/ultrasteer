@@ -27,7 +27,7 @@ for turnMag = turnMags.'
             
             initTheta = deg2rad(unifrnd(0,360));
             
-%             if(ii == 15)
+%             if(ii == 93)
 %                 save('currState','map','turnMag','turnSpacing', 'initTheta');
 %             end
             
@@ -36,7 +36,7 @@ for turnMag = turnMags.'
             xs = [x(3) x(4); x(5) x(6)];
             
             if(drawStuff)
-                figure;
+                figure(1);
                 grid on;
                 hold on;
                 
@@ -85,8 +85,11 @@ for turnMag = turnMags.'
             
             endTheta = atan2(x(6),x(5));
             currResult.angleErrors(trial) = rad2deg(angleDiff(initTheta,endTheta));
+            
+            if(drawStuff)
+                close(1);
+            end
         end
-        
         save(['Results/result',num2str(ii)],'currResult');
         ii = ii+1;
     end

@@ -19,6 +19,7 @@ src/Vine/HW/Winch/UI/.idea/*
 src/Vine/HW/Winch/UI/....idea
 src/Vine/HW/Winch/UI/....idea/*
 src/Vine/HW/Winch/Code/Control/Matlab_Scripts/PinchPlanning/Geom2d/*
+src/Vine/HW/Winch/Code/Control/Matlab_Scripts/PinchPlanning/Results/*
 *.DS_Store
 ._*
 *~*

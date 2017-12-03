@@ -33,9 +33,9 @@ end
 newState = false; 
 
 dtcross = cross([tipTangent;0], [wallTangent;0]);
-if(norm(dtcross) < 1e-3) 
+if(norm(dtcross) < 0.0175) 
     tempTangent = x(5:6)-x(1:2);
-    tempTangent = tempTangent/norm(tipTangent);
+    tempTangent = tempTangent/norm(tempTangent);
     dtcross = cross([tempTangent; 0], [wallTangent; 0]);
 end
 
@@ -89,6 +89,8 @@ if((sign(dtcross(3)) == 1 && (y(5) == 0 || y(5) == 2)) || (sign(dtcross(3)) == -
     
     sina = sqrt(1-cospia^2);
     sinb = (distalLength)*sina/(dl+distalLength);
+    sinb = sign(sinb)*min(max(abs(sinb),0),1);
+    
     c = pi-(pi-asin(sina))-asin(sinb);
    
     if(sign(dtcross(3)) == -1)
@@ -123,6 +125,7 @@ else
     
     l3 = sqrt(l1^2+l2^2-2*l1*l2*cosb);
     sina = l2/l3*sinb;
+    sina = sign(sina)*min(max(abs(sina),0),1);
     a = asin(sina);
     
     l5dir = x(5:6)-x(1:2); l5 = norm(l5dir); l5dir = l5dir/l5;
@@ -130,9 +133,17 @@ else
     cospif = dot(l5dir,wallTangent); cospif = sign(cospif)*min(max(abs(cospif),0),1);
     sinf = sqrt(1-cospif^2);
     sine = l5/l3*sinf;
+    sine = sign(sine)*min(max(abs(sine),0),1);
+    
     
     f = pi-acos(cospif); e = asin(sine);
     g = pi-f-e;
+    
+    dirShoulder = x(1:2)-ProjectPointOntoLine(wall(:,1),wall(:,2),x(1:2));
+    dirElbow = x(3:4)-ProjectPointOntoLine(wall(:,1),wall(:,2),x(3:4));
+    if(dot(dirElbow,dirShoulder) < 0)
+        g = -g;
+    end
     
     if(sign(dtcross(3)) == 1)
         proxTangent = PlaneRotation(g+a)*l5dir;

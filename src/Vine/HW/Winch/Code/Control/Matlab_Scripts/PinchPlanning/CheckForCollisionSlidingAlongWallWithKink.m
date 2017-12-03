@@ -120,7 +120,7 @@ if(any(validIdxs))
     elbowThetas = wrapTo2Pi(atan2(shiftedElbowPoints(:,2),shiftedElbowPoints(:,1)));
     
 %     validPoints = find(min([a0 a1]) <= elbowThetas & elbowThetas <= max([a0 a1]));
-    validPoints = CheckAngleBetween(a0,a1,elbowThetas);
+    validPoints = CheckAngleBetweenIgnoreStartPoint(a0,a1,elbowThetas);
     validElbowPoints = validElbowPoints(validPoints,:);
     validIdxs = validIdxs(validPoints);
     elbowThetas = elbowThetas(validPoints,:);
@@ -164,6 +164,7 @@ if(~isempty(minThetaIdx))
     x(3:4) = l1Vec;
     x(5) = out.intMatrixX;
     x(6) = out.intMatrixY;
+    assert(out.intAdjacencyMatrix > 0);
     
     if(finalThetas(minThetaIdx,end) == 2)
         % distal intersection

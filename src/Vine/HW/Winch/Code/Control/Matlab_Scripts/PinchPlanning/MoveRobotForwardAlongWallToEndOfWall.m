@@ -32,7 +32,7 @@ if(dot(tipTangent, wallTangent) < 0)
 end
 
 dtcross = cross([tipTangent;0], [wallTangent;0]);
-if(norm(dtcross) < 1e-3) 
+if(norm(dtcross) < 0.0175) 
     tempTangent = x(5:6)-x(1:2);
     tempTangent = tempTangent/norm(tipTangent);
     dtcross = cross([tempTangent; 0], [wallTangent; 0]);
@@ -114,6 +114,8 @@ else
         sinb = sqrt(1-cosb^2);
         
         sinc = l1/l3*sinb;
+        sinc = sign(sinc)*min(max(abs(sinc),0),1);
+        
         b = acos(cosb); c = asin(sinc);
         
         a = pi-b-c;
