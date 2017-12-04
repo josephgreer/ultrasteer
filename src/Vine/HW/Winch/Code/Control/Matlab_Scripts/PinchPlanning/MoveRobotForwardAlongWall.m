@@ -139,9 +139,12 @@ else
     f = pi-acos(cospif); e = asin(sine);
     g = pi-f-e;
     
-    dirShoulder = x(1:2)-ProjectPointOntoLine(wall(:,1),wall(:,2),x(1:2));
-    dirElbow = x(3:4)-ProjectPointOntoLine(wall(:,1),wall(:,2),x(3:4));
-    if(dot(dirElbow,dirShoulder) < 0)
+    wallDelta = wall(:,2)-wall(:,1);
+    projShoulder = wall(:,1) + dot(x(1:2)-wall(:,1),wall(:,2)-wall(:,1)) / dot(wallDelta,wallDelta) * wallDelta;
+    projElbow = wall(:,1) + dot(x(3:4)-wall(:,1),wall(:,2)-wall(:,1)) / dot(wallDelta,wallDelta) * wallDelta;
+    dirShoulder = x(1:2)-projShoulder;
+    dirElbow = x(3:4)-projElbow;
+    if(norm(dirElbow) > 1e-3 && dot(dirElbow,dirShoulder) < 0)
         g = -g;
     end
     

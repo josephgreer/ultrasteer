@@ -27,9 +27,10 @@ for turnMag = turnMags.'
             
             initTheta = deg2rad(unifrnd(0,360));
             
-%             if(ii == 93)
+%             if(ii == 15)
 %                 save('currState','map','turnMag','turnSpacing', 'initTheta');
 %             end
+%             load currState
             
             x = [0;0;0;0;cos(initTheta);sin(initTheta)];
             y = [0;0;0;1;0];
