@@ -3,12 +3,12 @@ clear; clc; close all;
 addpath(genpath('Geom2d'));
 
 initTheta = deg2rad(unifrnd(0,360));
-x = [0;0;0;0;cos(initTheta);sin(initTheta)];
+x = [-150;-150;-150;-150;-150+cos(initTheta);-150+sin(initTheta)];
 y = [0;0;0;1;0];
 xs = [x(3) x(4); x(5) x(6)];
 
 thetas = [51 -30; 101 30; 151 -30; 201 30; 251 -30];
-% thetas = zeros(0,2);
+thetas = zeros(0,2);
 thetas(:,2) = deg2rad(thetas(:,2));
 
 figure;
@@ -23,14 +23,16 @@ daspect([1 1 1]);
 grid on;
 hold on;
 
-load map;
-map(7,:) = [];
-map = vertcat(map, [-300 -200 300 -200]);
-map = vertcat(map, [50 -175 350 -175]);
-map = vertcat(map, [400 400 400 -200]);
-map = vertcat(map, [400 -200 400 -400]);
-map(1:4,[1 3]) = map(1:4,[1 3])*2.5;
-map = GenerateForestMap(12);
+load Maps/map1
+% load map;
+% map(7,:) = [];
+% map = vertcat(map, [-300 -200 300 -200]);
+% map = vertcat(map, [50 -175 350 -175]);
+% map = vertcat(map, [400 400 400 -200]);
+% map = vertcat(map, [400 -200 400 -400]);
+% map(1:4,[1 3]) = map(1:4,[1 3])*2.5;
+% map = GenerateForestMap(12);
+map = map*1.75;
 DrawMap(map);
 
 handles = DrawRobotXs(xs,-1,handles);
