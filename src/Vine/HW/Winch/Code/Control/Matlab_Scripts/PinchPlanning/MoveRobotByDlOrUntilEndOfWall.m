@@ -16,13 +16,13 @@
 % walls \in R^{nx4}
 % happen
 % otherwise the opposite
-function [x, y] = MoveRobotByDlOrUntilEndOfWall(x, y, walls)
+function [x, y] = MoveRobotByDlOrUntilEndOfWall(x, y, walls, ignoreWalls)
 tipTangent = x(5:6)-x(3:4); tipTangent = tipTangent/norm(tipTangent);
 
-dl = 1e6;
+dl = 1e4;
 tipPoint = x(5:6)+tipTangent*dl;
 proxPoint = x(5:6);
-[wallIndex, ix, iy] = FindNextWall(walls,ignoreWall,proxPoint,tipPoint,tipTangent);
+[wallIndex, ix, iy] = FindNextWall(walls,ignoreWalls,proxPoint,tipPoint,tipTangent);
 
 if(wallIndex > 0)
     % if we're at a straight-wall junction -0-, reset glancing wall
@@ -33,10 +33,14 @@ if(wallIndex > 0)
     dl = dl-(norm([ix;iy]-x(3:4)) - norm(x(5:6)-x(3:4)));
     x(5:6) = [ix; iy];
     
-    [x, y, ~, ~, eow] = MoveRobotForwardAlongWall(x, y, tipTangent, wallIndex, dl, walls, []);
+    xs = [x(1:2).'; x(5:6).'];
+    [x, y, ~, ~, eow] = MoveRobotForwardAlongWall(x, y, tipTangent, wallIndex, dl, walls, xs);
     if(~eow)
         assert(0);
     end
+elseif(wallIndex < -1)
+    x(5:6) = [1e10; 1e10];
+    return;
 else
     x(5:6) = tipPoint;
     return;

@@ -12,6 +12,7 @@ cIndices = find(out.coincAdjacencyMatrix);
 
 if(ignoreWall > 0)
     out.intAdjacencyMatrix(ignoreWall) = 0;
+    cIndices(ismember(cIndices,ignoreWall)) = [];
 end
 
 numWalls = sum(out.intAdjacencyMatrix);

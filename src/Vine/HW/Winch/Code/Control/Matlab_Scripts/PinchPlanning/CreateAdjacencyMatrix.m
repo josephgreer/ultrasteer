@@ -42,8 +42,10 @@ for i=1:nNodes
     else
         dists = DistanceToLines(map(:,1:2), map(:,3:4), nodes(i,:));
         [minDist, minIdx] = min(dists);
-        if(minDist < 1e-3)
-            nodeTypes(i,:) = [2 minIdx];
+        
+        lineIdx = FindLineSegmentIndex(map(:,1:2), map(:,3:4), nodes(i,:));
+        if(lineIdx > 0)
+            nodeTypes(i,:) = [2 lineIdx];
         else
             nodeTypes(i,:) = [3 -1];
         end
@@ -53,7 +55,7 @@ end
 % show the different types of nodes
 for i=1:3
     currIs = nodeTypes(:,1) == i;
-    scatter(nodes(currIs,1),nodes(currIs,2));
+    scatter(nodes(currIs,1),nodes(currIs,2), 'LineWidth',2);
 end
 
 interiorNodes = find(nodeTypes(:,1) == 3);
@@ -61,6 +63,7 @@ nInteriorNodes = size(interiorNodes,1);
 
 destinations = zeros(nNodes*nAngles,1);
 thetas = linspace(0,2*pi,nAngles).';
+thetas = thetas(1:end-1); nAngles = nAngles-1;
 for i=1:nNodes
     % first figure out which interior nodes we have line-of-site to 
     % and at what angle
@@ -149,7 +152,7 @@ for i=1:nNodes
                 
                 otherNodeIdx = NodePosToIdx(otherNode, nodes);
                 srcIdxs = NodeAngleToIdx(i*ones(length(angles),1), angles, nAngles); 
-                destinations(srcIdxs) = NodeAngleToIdx(otherNodeIdx, otherAngle, nAngles);
+                destinations(srcIdxs) = -1;%NodeAngleToIdx(otherNodeIdx, otherAngle, nAngles);
             else
                 % mid point node
                 
@@ -187,8 +190,38 @@ for i=1:nNodes
         end
     end
     
-    % HERE WE ARE
-    for j=1:nAngles
+    indices = NodeAngleToIdx(i*ones(nAngles,1),thetas,nAngles);
+    indices = find(destinations(indices) == 0);
+    [~,aa] = IndexToNodeAngle(indices,nAngles,thetas);
+    
+    xx = zeros(6,1);
+    yy = zeros(5,1);
+    for j=1:size(aa,1)
+        xx = [nodes(i,:).'; nodes(i,:).';...
+            nodes(i,:).'+[cos(aa(j)); sin(aa(j))]];
+        yy = [0; 0; 0; 0; 1];
+        
+        ignoreWalls = -1;
+        if(size(nodeWalls,1) > 0)
+            ignoreWalls = nodeWalls(:,1);
+        end
+        
+        display(j)
+        [xx,yy] = MoveRobotByDlOrUntilEndOfWall(xx,yy, map, ignoreWalls);
+        
+        nodeIdx = NodePosToIdx(xx(5:6).',nodes);
+        if(nodeIdx == i)
+            assert(0);
+        end
+        
+        tipTangent = xx(5:6)-xx(3:4); tipTangent = tipTangent/norm(tipTangent);
+        tipAngle = wrapTo2Pi(atan2(tipTangent(2),tipTangent(1)));
+        
+        if(nodeIdx > 0)
+            destinations(indices(j)) = NodeAngleToIdx(i,tipAngle,nAngles);
+        else
+            destinations(indices(j)) = -1;
+        end
     end
 end
 
