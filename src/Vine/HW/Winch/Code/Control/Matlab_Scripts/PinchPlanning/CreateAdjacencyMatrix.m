@@ -238,45 +238,51 @@ allowableAngleRange = deg2rad(45);
 nVertices = 2*nNodes*nAngles;
 A = sparse(nVertices+2,nVertices+2);
 
+for j=1:length(thetas)
+    display(sprintf('Theta %d of %d', j, length(thetas)));
+    thetaUp = thetas(j) + allowableAngleRange;
+    thetaDown = thetas(j) - allowableAngleRange;
+    
+    if(thetaUp > 2*pi)
+        allowableThetas = [thetas(j:end);thetas(thetas < thetaUp-2*pi)];
+    else
+        allowableThetas = thetas(thetas(j) <= thetas & thetas < thetaUp);
+    end
+    
+    if(thetaDown < 0)
+        allowableThetas = [allowableThetas; thetas(1:j); thetas(thetas > 2*pi+thetaDown)];
+    else
+        allowableThetas = [allowableThetas; thetas(thetaDown < thetas & thetas <= thetas(j))];
+    end
+    
+    for ii=1:nNodes
+        allowableIndices = NodeAngleToIdx((ii + nNodes)*ones(size(allowableThetas)), allowableThetas, nAngles);
+        index = NodeAngleToIdx(ii,thetas(j),nAngles);
+        A(index, allowableIndices) = connectionAngleChange;
+    end
+    
+end
+
 % now create the adjacency matrix
 for i=1:nNodes
     display(sprintf('Adjacency Matrix node %d of %d nodes', i, nNodes));
     indices = NodeAngleToIdx(i*ones(nAngles,1),thetas,nAngles);
     indexZ = indices(1);
-    interestingIndices = find(destinations(indices) ~= -1)+indexZ-1;
-    
-    % first link up angle change indices
-    for j=1:length(indices)
-        thetaUp = thetas(j) + allowableAngleRange;
-        thetaDown = thetas(j) - allowableAngleRange;
-        
-        if(thetaUp > 2*pi)
-            allowableThetas = [thetas(j:end);thetas(thetas < thetaUp-2*pi)];
-        else
-            allowableThetas = thetas(thetas(j) <= thetas & thetas < thetaUp);
-        end
-        
-        if(thetaDown < 0)
-            allowableThetas = [allowableThetas; thetas(1:j); thetas(thetas > 2*pi+thetaDown)];
-        else
-            allowableThetas = [allowableThetas; thetas(thetaDown < thetas & thetas <= thetas(j))];
-        end
-        
-        allowableIndices = NodeAngleToIdx(i*ones(length(allowableThetas),1), allowableThetas, nAngles);
-        allowableIndices = intersect(allowableIndices,interestingIndices);
-        
-        
-        A(indices, allowableIndices) = connectionAngleChange;
-        A(allowableIndices, indices) = connectionAngleChange;
-    end
     
     normalConnectionIndices = find(destinations(indices) > 0 & weights(indices) == connectionNormal)+indexZ-1;
+    [nn,aa] = IndexToNodeAngle(normalConnectionIndices,nAngles,nNodes,thetas);
+    
     A(normalConnectionIndices,destinations(normalConnectionIndices)) = connectionNormal;
-    A(destinations(normalConnectionIndices),normalConnectionIndices) = connectionNormal;
+    turnedIndices = NodeAngleToIdx(nn+nNodes,aa,nAngles);
+    A(turnedIndices,destinations(normalConnectionIndices)) = connectionNormal;
+    
     
     interiorConnectionIndices = find(destinations(indices) > 0 & weights(indices) == connectionInteriorNode)+indexZ-1;
+    [nn,aa] = IndexToNodeAngle(interiorConnectionIndices,nAngles,nNodes,thetas);
+    
     A(interiorConnectionIndices, destinations(interiorConnectionIndices)) = connectionInteriorNode;
-    A(destinations(interiorConnectionIndices), interiorConnectionIndices) = connectionInteriorNode;
+    turnedIndices = NodeAngleToIdx(nn+nNodes,aa,nAngles);
+    A(turnedIndices,destinations(normalConnectionIndices)) = connectionNormal;
 end
 
 % source node
