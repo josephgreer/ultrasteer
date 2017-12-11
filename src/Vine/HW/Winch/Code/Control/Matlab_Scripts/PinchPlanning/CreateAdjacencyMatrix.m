@@ -21,7 +21,11 @@ hold on;
 DrawMap(map);
 
 nNodes = size(nodes,1);
-nAngles = 360;
+nAngles = 359;
+
+connectionNormal = 1;
+connectionInteriorNode = 2;
+connectionAngleChange = 10;
 
 % nodeType 1 = wall corner
 %          2 = wall midpoint
@@ -62,15 +66,18 @@ interiorNodes = find(nodeTypes(:,1) == 3);
 nInteriorNodes = size(interiorNodes,1);
 
 destinations = zeros(nNodes*nAngles,1);
-thetas = linspace(0,2*pi,nAngles).';
-thetas = thetas(1:end-1); nAngles = nAngles-1;
+weights = ones(nNodes*nAngles,1)*connectionNormal;
+
+thetas = linspace(0,2*pi,nAngles+1).';
+thetas = thetas(1:end-1);
 for i=1:nNodes
+    display(sprintf('%d of %d nodes',i,nNodes));
     % first figure out which interior nodes we have line-of-site to 
     % and at what angle
     deltas = nodes(interiorNodes,:)-repmat(nodes(i,:),nInteriorNodes,1);
     
     closestThetas = wrapTo2Pi(atan2(deltas(:,2),deltas(:,1)));
-    closestThetas = closestThetas*(nAngles-1)/(2*pi);
+    closestThetas = closestThetas*(nAngles)/(2*pi);
     closestThetas = round(closestThetas)+1;
     
     out = lineSegmentIntersect([repmat(nodes(i,:),nInteriorNodes,1) nodes(interiorNodes,:)],...
@@ -105,7 +112,7 @@ for i=1:nNodes
     
     srcIdxs = (i-1)*nAngles+closestThetas;
     destinations(srcIdxs) = (cInteriorNodes-1)*nAngles+closestThetas;
-    
+    weights(srcIdxs) = connectionInteriorNode;
     
     % first handle wall nodes with tip angles that point into the wall
     if(nodeTypes(i,1) == 1 || nodeTypes(i,1) == 2)
@@ -167,8 +174,8 @@ for i=1:nNodes
                 end
                 otherNode = map(nodeWalls(j,1),3:4);
                 otherNodeIdx = NodePosToIdx(otherNode, nodes);
-                srcIdxs = NodeAngleToIdx(i*ones(length(angles,1)), angles, nAngles); 
-                destinations(srcIdxs) = NodeAngleToIdx(otherNodeIdx, wallAngle);
+                srcIdxs = NodeAngleToIdx(i*ones(length(angles),1), angles, nAngles); 
+                destinations(srcIdxs) = NodeAngleToIdx(otherNodeIdx, wallAngle, nAngles);
                 
                 % now we will handle angles that push you toward first node
                 % in wall
@@ -183,16 +190,16 @@ for i=1:nNodes
                 end
                 otherNode = map(nodeWalls(j,1),1:2);
                 otherNodeIdx = NodePosToIdx(otherNode, nodes);
-                srcIdxs = NodeAngleToIdx(i*ones(length(angles,1)), angles, nAngles); 
-                destinations(srcIdxs) = NodeAngleToIdx(otherNodeIdx, wallAngle);
-                
+                srcIdxs = NodeAngleToIdx(i*ones(length(angles),1), angles, nAngles); 
+                destinations(srcIdxs) = NodeAngleToIdx(otherNodeIdx, wallAngle, nAngles);
             end
         end
     end
     
     indices = NodeAngleToIdx(i*ones(nAngles,1),thetas,nAngles);
-    indices = find(destinations(indices) == 0);
-    [~,aa] = IndexToNodeAngle(indices,nAngles,thetas);
+    indexZ = indices(1);
+    indices = find(destinations(indices) == 0)+(indexZ-1);
+    [~,aa] = IndexToNodeAngle(indices,nAngles,nNodes,thetas);
     
     xx = zeros(6,1);
     yy = zeros(5,1);
@@ -206,7 +213,6 @@ for i=1:nNodes
             ignoreWalls = nodeWalls(:,1);
         end
         
-        display(j)
         [xx,yy] = MoveRobotByDlOrUntilEndOfWall(xx,yy, map, ignoreWalls);
         
         nodeIdx = NodePosToIdx(xx(5:6).',nodes);
@@ -225,14 +231,81 @@ for i=1:nNodes
     end
 end
 
-%%
-% check that the handedness is right
-h1 = scatter(0,0,'k');
-h2 = scatter(0,0,'r');
-% now let's figure out where each node goes
-for i=1:size(map,1)
-    display(i);
-    set(h1,'XData',map(i,1), 'YData', map(i,2));
-    set(h2,'XData',map(i,3), 'YData', map(i,4));
-    pause(0.5);
+startNode = 34;
+endNode = 31;
+allowableAngleRange = deg2rad(45);
+
+nVertices = 2*nNodes*nAngles;
+A = sparse(nVertices+2,nVertices+2);
+
+% now create the adjacency matrix
+for i=1:nNodes
+    display(sprintf('Adjacency Matrix node %d of %d nodes', i, nNodes));
+    indices = NodeAngleToIdx(i*ones(nAngles,1),thetas,nAngles);
+    indexZ = indices(1);
+    interestingIndices = find(destinations(indices) ~= -1)+indexZ-1;
+    
+    % first link up angle change indices
+    for j=1:length(indices)
+        thetaUp = thetas(j) + allowableAngleRange;
+        thetaDown = thetas(j) - allowableAngleRange;
+        
+        if(thetaUp > 2*pi)
+            allowableThetas = [thetas(j:end);thetas(thetas < thetaUp-2*pi)];
+        else
+            allowableThetas = thetas(thetas(j) <= thetas & thetas < thetaUp);
+        end
+        
+        if(thetaDown < 0)
+            allowableThetas = [allowableThetas; thetas(1:j); thetas(thetas > 2*pi+thetaDown)];
+        else
+            allowableThetas = [allowableThetas; thetas(thetaDown < thetas & thetas <= thetas(j))];
+        end
+        
+        allowableIndices = NodeAngleToIdx(i*ones(length(allowableThetas),1), allowableThetas, nAngles);
+        allowableIndices = intersect(allowableIndices,interestingIndices);
+        
+        
+        A(indices, allowableIndices) = connectionAngleChange;
+        A(allowableIndices, indices) = connectionAngleChange;
+    end
+    
+    normalConnectionIndices = find(destinations(indices) > 0 & weights(indices) == connectionNormal)+indexZ-1;
+    A(normalConnectionIndices,destinations(normalConnectionIndices)) = connectionNormal;
+    A(destinations(normalConnectionIndices),normalConnectionIndices) = connectionNormal;
+    
+    interiorConnectionIndices = find(destinations(indices) > 0 & weights(indices) == connectionInteriorNode)+indexZ-1;
+    A(interiorConnectionIndices, destinations(interiorConnectionIndices)) = connectionInteriorNode;
+    A(destinations(interiorConnectionIndices), interiorConnectionIndices) = connectionInteriorNode;
 end
+
+% source node
+startIndices = NodeAngleToIdx(startNode*ones(nAngles,1),thetas,nAngles);
+A(nVertices+1,startIndices) = 1;
+A(startIndices,nVertices+1) = 1;
+
+% end node
+endIndices = NodeAngleToIdx(endNode*ones(nAngles,1),thetas,nAngles);
+A(nVertices+2,endIndices) = 1;
+A(endIndices,nVertices+2) = 1;
+
+display('Calculating shortest path');
+[dist, path] = graphshortestpath(A,nVertices+1,nVertices+2);
+
+for i=2:length(path)-2
+    [ns,as] = IndexToNodeAngle(path(i:i+1),nAngles,nNodes,thetas)
+    ns = nodes(ns,:);
+    plot(ns(:,1),ns(:,2));
+end
+
+% %%
+% % check that the handedness is right
+% h1 = scatter(0,0,'k');
+% h2 = scatter(0,0,'r');
+% % now let's figure out where each node goes
+% for i=1:size(map,1)
+%     display(i);
+%     set(h1,'XData',map(i,1), 'YData', map(i,2));
+%     set(h2,'XData',map(i,3), 'YData', map(i,4));
+%     pause(0.5);
+% end
