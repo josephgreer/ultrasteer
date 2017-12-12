@@ -23,12 +23,12 @@ DrawMap(map);
 nNodes = size(nodes,1);
 nAngles = 359;
 
-connectionNormal = 1;
-connectionInteriorNode = 2;
+connectionNormal = 0.01;
+connectionInteriorNode = 1;
 connectionAngleChange = 5;
 
 startNode = 34;
-endNode = 19;
+endNode = 31;
 allowableAngleRange = deg2rad(45);
 
 nVertices = nNodes*nAngles;
@@ -201,7 +201,22 @@ for i=1:nNodes
             end
         end
     end
-    
+end
+
+% make a new map with vertices with mid points
+newMap = map;
+midNodes = find(nodeTypes(:,1) == 2);
+newMap(unique(nodeTypes(midNodes,2)),:) = [];
+
+for i=1:length(midNodes)
+    newMap = vertcat(newMap, [map(nodeTypes(midNodes(i),2),1:2) nodes(midNodes(i),:)]);
+    newMap = vertcat(newMap, [nodes(midNodes(i),:) map(nodeTypes(midNodes(i),2),3:4)]);
+end
+
+newWallEndPoints = [linspace(1,size(newMap,1),size(newMap,1)).'  newMap(:,1:2) ones(size(newMap,1),1);...
+    linspace(1,size(newMap,1),size(newMap,1)).' newMap(:,3:4) 2*ones(size(newMap,1),1)];
+for i=1:nNodes
+    display(sprintf('%d of %d nodes',i,nNodes));
     indices = NodeAngleToIdx(i*ones(nAngles,1),thetas,nAngles);
     indexZ = indices(1);
     indices = find(destinations(indices) == 0)+(indexZ-1);
@@ -214,12 +229,19 @@ for i=1:nNodes
             nodes(i,:).'+[cos(aa(j)); sin(aa(j))]];
         yy = [0; 0; 0; 0; 1];
         
+        nodeWalls = [];
+        if(nodeTypes(i,1) == 1 || nodeTypes(i,1) == 2)
+            wallDeltas = repmat(nodes(i,:),size(newWallEndPoints,1),1)-newWallEndPoints(:,2:3);
+            dists = sqrt(sum(wallDeltas.^2,2));
+            nodeWalls = newWallEndPoints(dists < 1e-3,[1,4]);
+        end
+        
         ignoreWalls = -1;
         if(size(nodeWalls,1) > 0)
             ignoreWalls = nodeWalls(:,1);
         end
         
-        [xx,yy] = MoveRobotByDlOrUntilEndOfWall(xx,yy, map, ignoreWalls);
+        [xx,yy] = MoveRobotByDlOrUntilEndOfWall(xx,yy, newMap, ignoreWalls);
         
         nodeIdx = NodePosToIdx(xx(5:6).',nodes);
         if(nodeIdx == i)
@@ -237,7 +259,8 @@ for i=1:nNodes
     end
 end
 
-A = sparse([],[],[],nVertices+2,nVertices+2,(nVertices+2)*2*nAngles);
+rowColVal = zeros((nVertices+2)*2*nAngles,3);
+nVals = 0;
 
 for j=1:length(thetas)
     display(sprintf('Theta %d of %d', j, length(thetas)));
@@ -259,7 +282,11 @@ for j=1:length(thetas)
     for ii=1:nNodes
         allowableIndices = NodeAngleToIdx((ii)*ones(size(allowableThetas)), allowableThetas, nAngles);
         index = NodeAngleToIdx(ii,thetas(j),nAngles);
-        A(index, allowableIndices) = connectionAngleChange;
+        
+        rowColVal(nVals+1:nVals+length(allowableIndices),:) =...
+            [repmat(index,length(allowableIndices),1) allowableIndices...
+            repmat(connectionAngleChange,length(allowableIndices),1)];
+        nVals = nVals + length(allowableIndices);
     end
 end
 
@@ -270,20 +297,30 @@ for i=1:nNodes
     indexZ = indices(1);
     
     normalConnectionIndices = find(destinations(indices) > 0 & weights(indices) == connectionNormal)+indexZ-1;
+    rowColVal(nVals+1:nVals+length(normalConnectionIndices),:) =...
+        [normalConnectionIndices destinations(normalConnectionIndices)...
+        repmat(connectionNormal,length(normalConnectionIndices),1)];
+    nVals = nVals + length(normalConnectionIndices);
 %     [nn,aa] = IndexToNodeAngle(normalConnectionIndices,nAngles,nNodes,thetas);
     
-    A(normalConnectionIndices,destinations(normalConnectionIndices)) = connectionNormal;
+%     A(sub2ind(size(A),normalConnectionIndices,destinations(normalConnectionIndices))) = connectionNormal;
 %     turnedIndices = NodeAngleToIdx(nn+nNodes,aa,nAngles);
 %     A(turnedIndices,destinations(normalConnectionIndices)) = connectionNormal;
     
     
     interiorConnectionIndices = find(destinations(indices) > 0 & weights(indices) == connectionInteriorNode)+indexZ-1;
 %     [nn,aa] = IndexToNodeAngle(interiorConnectionIndices,nAngles,nNodes,thetas);
+    rowColVal(nVals+1:nVals+length(interiorConnectionIndices),:) =...
+        [interiorConnectionIndices destinations(interiorConnectionIndices)...
+        repmat(connectionInteriorNode,length(interiorConnectionIndices),1)];
+    nVals = nVals + length(interiorConnectionIndices);
     
-    A(interiorConnectionIndices, destinations(interiorConnectionIndices)) = connectionInteriorNode;
+%     A(sub2ind(size(A),interiorConnectionIndices, destinations(interiorConnectionIndices))) = connectionInteriorNode;
 %     turnedIndices = NodeAngleToIdx(nn+nNodes,aa,nAngles);
 %     A(turnedIndices,destinations(normalConnectionIndices)) = connectionNormal;
 end
+
+A = sparse(rowColVal(1:nVals,1),rowColVal(1:nVals,2),rowColVal(1:nVals,3),nVertices+2,nVertices+2);
 
 % source node
 startIndices = NodeAngleToIdx(startNode*ones(nAngles,1),thetas,nAngles);
@@ -299,10 +336,16 @@ display('Calculating shortest path');
 [dist, path] = graphshortestpath(A,nVertices+1,nVertices+2);
 
 for i=2:length(path)-2
-    [ns,as] = IndexToNodeAngle(path(i:i+1),nAngles,nNodes,thetas)
+    [ns,as] = IndexToNodeAngle(path(i:i+1),nAngles,nNodes,thetas);
     ns = nodes(ns,:);
     plot(ns(:,1),ns(:,2));
 end
+
+for i=2:length(path)-1
+    [ns,as] = IndexToNodeAngle(path(i),nAngles,nNodes,thetas);
+    display(sprintf('node %d exit angel %f', ns(1), rad2deg(as(1))));
+end
+
 
 % %%
 % % check that the handedness is right
