@@ -25,7 +25,13 @@ nAngles = 359;
 
 connectionNormal = 1;
 connectionInteriorNode = 2;
-connectionAngleChange = 10;
+connectionAngleChange = 5;
+
+startNode = 34;
+endNode = 19;
+allowableAngleRange = deg2rad(45);
+
+nVertices = nNodes*nAngles;
 
 % nodeType 1 = wall corner
 %          2 = wall midpoint
@@ -224,19 +230,14 @@ for i=1:nNodes
         tipAngle = wrapTo2Pi(atan2(tipTangent(2),tipTangent(1)));
         
         if(nodeIdx > 0)
-            destinations(indices(j)) = NodeAngleToIdx(i,tipAngle,nAngles);
+            destinations(indices(j)) = NodeAngleToIdx(nodeIdx,tipAngle,nAngles);
         else
             destinations(indices(j)) = -1;
         end
     end
 end
 
-startNode = 34;
-endNode = 31;
-allowableAngleRange = deg2rad(45);
-
-nVertices = 2*nNodes*nAngles;
-A = sparse(nVertices+2,nVertices+2);
+A = sparse([],[],[],nVertices+2,nVertices+2,(nVertices+2)*2*nAngles);
 
 for j=1:length(thetas)
     display(sprintf('Theta %d of %d', j, length(thetas)));
@@ -256,11 +257,10 @@ for j=1:length(thetas)
     end
     
     for ii=1:nNodes
-        allowableIndices = NodeAngleToIdx((ii + nNodes)*ones(size(allowableThetas)), allowableThetas, nAngles);
+        allowableIndices = NodeAngleToIdx((ii)*ones(size(allowableThetas)), allowableThetas, nAngles);
         index = NodeAngleToIdx(ii,thetas(j),nAngles);
         A(index, allowableIndices) = connectionAngleChange;
     end
-    
 end
 
 % now create the adjacency matrix
@@ -270,19 +270,19 @@ for i=1:nNodes
     indexZ = indices(1);
     
     normalConnectionIndices = find(destinations(indices) > 0 & weights(indices) == connectionNormal)+indexZ-1;
-    [nn,aa] = IndexToNodeAngle(normalConnectionIndices,nAngles,nNodes,thetas);
+%     [nn,aa] = IndexToNodeAngle(normalConnectionIndices,nAngles,nNodes,thetas);
     
     A(normalConnectionIndices,destinations(normalConnectionIndices)) = connectionNormal;
-    turnedIndices = NodeAngleToIdx(nn+nNodes,aa,nAngles);
-    A(turnedIndices,destinations(normalConnectionIndices)) = connectionNormal;
+%     turnedIndices = NodeAngleToIdx(nn+nNodes,aa,nAngles);
+%     A(turnedIndices,destinations(normalConnectionIndices)) = connectionNormal;
     
     
     interiorConnectionIndices = find(destinations(indices) > 0 & weights(indices) == connectionInteriorNode)+indexZ-1;
-    [nn,aa] = IndexToNodeAngle(interiorConnectionIndices,nAngles,nNodes,thetas);
+%     [nn,aa] = IndexToNodeAngle(interiorConnectionIndices,nAngles,nNodes,thetas);
     
     A(interiorConnectionIndices, destinations(interiorConnectionIndices)) = connectionInteriorNode;
-    turnedIndices = NodeAngleToIdx(nn+nNodes,aa,nAngles);
-    A(turnedIndices,destinations(normalConnectionIndices)) = connectionNormal;
+%     turnedIndices = NodeAngleToIdx(nn+nNodes,aa,nAngles);
+%     A(turnedIndices,destinations(normalConnectionIndices)) = connectionNormal;
 end
 
 % source node
