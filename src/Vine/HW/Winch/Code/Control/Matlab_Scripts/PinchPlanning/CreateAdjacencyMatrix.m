@@ -24,11 +24,11 @@ nNodes = size(nodes,1);
 nAngles = 359;
 
 connectionNormal = 0.01;
-connectionInteriorNode = 1;
+connectionInteriorNode = 0.01;
 connectionAngleChange = 5;
 
 startNode = 34;
-endNode = 31;
+endNode = 30;
 allowableAngleRange = deg2rad(45);
 
 nVertices = nNodes*nAngles;
@@ -341,11 +341,47 @@ for i=2:length(path)-2
     plot(ns(:,1),ns(:,2));
 end
 
+nodeList = zeros(length(path)-2,1);
 for i=2:length(path)-1
     [ns,as] = IndexToNodeAngle(path(i),nAngles,nNodes,thetas);
-    display(sprintf('node %d exit angel %f', ns(1), rad2deg(as(1))));
+    nodeList(i-1) = ns;
+    display(sprintf('node %d exit angle %f', ns(1), rad2deg(as(1))));
 end
 
+% this contains the list of nodes we will visit on our way to a destination
+nodeList = unique(nodeList,'stable');
+
+% this contains the list of possible states we can hit along our way to the
+% destination. nodeInformation{i} contains every possible state vector at
+% each node
+nodeInformation = {};
+
+% start off the first node
+xx = [nodes(i,:).'; nodes(i,:).';...
+    nodes(i,:).'];
+yy = [0; 0; 0; 0; 1];
+
+nodeInformation{1}.xs = {xx};
+nodeInformation{1}.ys = {yy};
+
+for i=1:length(nodeList)-1
+    % current starting node
+    ci = nodeList(i);
+    
+    nodeWalls = [];
+    if(nodeTypes(i,1) == 1 || nodeTypes(i,1) == 2)
+        wallDeltas = repmat(nodes(ci,:),size(wallEndPoints,1),1)-wallEndPoints(:,2:3);
+        dists = sqrt(sum(wallDeltas.^2,2));
+        nodeWalls = wallEndPoints(dists < 1e-3,[1,4]);
+    end
+    
+    ignoreWalls = -1;
+    if(size(nodeWalls,1) > 0)
+        ignoreWalls = nodeWalls(:,1);
+    end
+    
+    [xx,yy] = MoveRobotByDlOrUntilEndOfWall(xx,yy, newMap, ignoreWalls);
+end
 
 % %%
 % % check that the handedness is right
