@@ -16,34 +16,55 @@
 % walls \in R^{nx4}
 % happen
 % otherwise the opposite
-function [x, y] = MoveRobotUntilNodeEncountered(x, y, walls, ignoreWalls)
+function [x, y, xs,wallIndex] = MoveRobotUntilNodeEncountered(x, y, walls, theta, nodes, desNode)
 tipTangent = x(5:6)-x(3:4); tipTangent = tipTangent/norm(tipTangent);
 
-dl = 1e4;
-tipPoint = x(5:6)+tipTangent*dl;
-proxPoint = x(5:6);
-[wallIndex, ix, iy] = FindNextWall(walls,ignoreWalls,proxPoint,tipPoint,tipTangent);
-
-if(wallIndex > 0)
-    % if we're at a straight-wall junction -0-, reset glancing wall
-    % contact
-    if(abs(ix-y(1))+abs(iy-y(2)) < 1e-3 && (y(5) == 2 || y(5) == 3))
-        y(5) = y(4); y(4) = y(3);
-    end
-    dl = dl-(norm([ix;iy]-x(3:4)) - norm(x(5:6)-x(3:4)));
-    x(5:6) = [ix; iy];
+if(abs(theta) > 0)
+    tipTangent = PlaneRotation(theta)*tipTangent;
     
-    xs = [x(1:2).'; x(5:6).'];
-    [x, y, ~, ~, eow] = MoveRobotForwardAlongWall(x, y, tipTangent, wallIndex, dl, walls, xs);
-    if(~eow)
+    [x,y,xs] = AdjustStateMetdataForTurn(theta,x,y,xs);
+end
+
+dl = 1e4;
+node = -1;
+ignoreWall = -1;
+wallIndex = -1;
+
+while(node ~= desNode)
+    if(wallIndex <= 0)
+        tipPoint = x(5:6)+tipTangent*dl;
+        proxPoint = x(5:6);
+        [wallIndex, ix, iy] = FindNextWall(walls,ignoreWall,proxPoint,tipPoint,tipTangent);
+        ignoreWall = -1;
+    else
+        ix = x(5); iy = x(6);
+    end
+    
+    if(wallIndex > 0)
+        % if we're at a straight-wall junction -0-, reset glancing wall
+        % contact
+        if(abs(ix-y(1))+abs(iy-y(2)) < 1e-3 && (y(5) == 2 || y(5) == 3))
+            y(5) = y(4); y(4) = y(3);
+        end
+        dl = dl-(norm([ix;iy]-x(3:4)) - norm(x(5:6)-x(3:4)));
+        x(5:6) = [ix; iy];
+        
+        [x, y, xs, travel, eow] = MoveRobotForwardAlongWall(x, y, tipTangent, wallIndex, dl, walls, xs);
+        
+        if(eow)
+            wallIndex = -1;
+        end
+        
+        node = NodePosToIdx(x(5:6).',nodes);
+        
+        tipTangent = x(5:6)-x(3:4);
+        tipTangent = tipTangent/norm(tipTangent);
+    elseif(wallIndex <= -2)
+        y(5) = 1e6;
+        return;
+    else
         assert(0);
     end
-elseif(wallIndex < -1)
-    x(5:6) = [1e10; 1e10];
-    return;
-else
-    x(5:6) = tipPoint;
-    return;
 end
 
 end
