@@ -16,19 +16,13 @@
 % walls \in R^{nx4}
 % happen
 % otherwise the opposite
-function [x, y, xs,wallIndex] = MoveRobotUntilNodeEncountered(x, y, walls, theta, nodes, desNode)
-tipTangent = x(5:6)-x(3:4); tipTangent = tipTangent/norm(tipTangent);
-
-if(abs(theta) > 0)
-    tipTangent = PlaneRotation(theta)*tipTangent;
-    
-    [x,y,xs] = AdjustStateMetdataForTurn(theta,x,y,xs);
-end
-
+function [x, y, xs,wallIndex] = MoveRobotUntilNodeEncountered(x, y, tipTangent, walls, nodes, desNode)
 dl = 1e4;
 node = -1;
 ignoreWall = -1;
 wallIndex = -1;
+
+xs = [x(1:2).'; x(3:4).'; x(5:6).'];
 
 while(node ~= desNode)
     if(wallIndex <= 0)

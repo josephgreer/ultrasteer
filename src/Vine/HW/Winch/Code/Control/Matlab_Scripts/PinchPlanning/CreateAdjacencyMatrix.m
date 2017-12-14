@@ -28,7 +28,7 @@ connectionInteriorNode = 0.01;
 connectionAngleChange = 5;
 
 startNode = 34;
-endNode = 30;
+endNode = 31;
 allowableAngleRange = deg2rad(45);
 
 nVertices = nNodes*nAngles;
@@ -356,31 +356,76 @@ nodeList = unique(nodeList,'stable');
 % each node
 nodeInformation = {};
 
-% start off the first node
-xx = [nodes(i,:).'; nodes(i,:).';...
-    nodes(i,:).'];
-yy = [0; 0; 0; 0; 1];
+nodeInformation{1}.xs = {[nodes(nodeList(1),:).'; nodes(nodeList(1),:).';...
+    nodes(nodeList(1),:).'];};
+nodeInformation{1}.ys = {[0; 0; 0; 0; 1]};
+nodeInformation{1}.n = 1;
+cumN = 1;
 
-nodeInformation{1}.xs = {xx};
-nodeInformation{1}.ys = {yy};
+
+validThetas = thetas(thetas < allowableAngleRange |...
+    2*pi-allowableAngleRange < thetas);
+
 
 for i=1:length(nodeList)-1
-    % current starting node
-    ci = nodeList(i);
+    desNode = nodeList(i+1);
     
-    nodeWalls = [];
-    if(nodeTypes(i,1) == 1 || nodeTypes(i,1) == 2)
-        wallDeltas = repmat(nodes(ci,:),size(wallEndPoints,1),1)-wallEndPoints(:,2:3);
-        dists = sqrt(sum(wallDeltas.^2,2));
-        nodeWalls = wallEndPoints(dists < 1e-3,[1,4]);
+    cValidThetas = validThetas;
+    if(i == 1)
+        cValidThetas = thetas;
     end
     
-    ignoreWalls = -1;
-    if(size(nodeWalls,1) > 0)
-        ignoreWalls = nodeWalls(:,1);
-    end
+    nodeInformation{i+1}.xs = {};
+    nodeInformation{i+1}.ys = {};
+    nodeInformation{i+1}.n = [];
     
-    [xx,yy] = MoveRobotByDlOrUntilEndOfWall(xx,yy, newMap, ignoreWalls);
+    % for starting node i
+    % for each state configuration in i
+    for j=1:length(nodeInformation{i}.xs)        
+        % for each angle turn
+        for k = 1:length(validThetas)
+            theta = validThetas(k);
+            x = nodeInformation{i}.xs{j};
+            y = nodeInformation{i}.ys{j};
+            
+            tipTangent = x(5:6)-x(3:4); 
+            if(norm(tipTangent) > 1e-3)
+                tipTangent = tipTangent/norm(tipTangent);
+            else
+                tipTangent = [1; 0];
+            end
+            if(abs(theta) > 0)
+                tipTangent = PlaneRotation(theta)*tipTangent;
+                
+                xs = [x(1:2:end) x(2:2:end)];
+                [x,y,xs] = AdjustStateMetdataForTurn(theta,x,y,xs);
+            end
+            
+            % find all configurations that end at node nodeList(i+1)
+            
+            [xx,yy] = MoveRobotUntilNodeEncountered(x,y,tipTangent,newMap,nodes,desNode);
+            if(yy(5) ~= 1e6)
+                
+                found = false;
+                
+                %check if it's in the
+                for l = 1:length(nodeInformation{i+1}.xs)
+                    if(norm(xx-nodeInformation{i+1}.xs{l}) < 1e-3)
+                        found = true;
+                        break;
+                    end
+                end
+                
+                if(~found)
+                    cumN = cumN+1;
+                    nodeInformation{i+1}.xs = vertcat(nodeInformation{i+1}.xs, xx);
+                    nodeInformation{i+1}.ys = vertcat(nodeInformation{i+1}.ys, yy);
+                    nodeInformation{i+1}.n = vertcat(nodeInformation{i+1}.n, cumN);
+                end
+            end
+        end
+        blah = 0;
+    end
 end
 
 % %%
