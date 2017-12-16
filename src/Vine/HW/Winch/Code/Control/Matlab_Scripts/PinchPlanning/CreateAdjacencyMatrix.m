@@ -351,23 +351,29 @@ end
 % this contains the list of nodes we will visit on our way to a destination
 nodeList = unique(nodeList,'stable');
 
-% this contains the list of possible states we can hit along our way to the
-% destination. nodeInformation{i} contains every possible state vector at
-% each node
-nodeInformation = {};
+angleNoise = 5; % in degree uniform distribution
+lengthNoise = 10; % in physical units
+nSamples = 1000; % number of samples used to calculate monte carlo prboabilities
+nAngles = 100;
 
-nodeInformation{1}.xs = {[nodes(nodeList(1),:).'; nodes(nodeList(1),:).';...
-    nodes(nodeList(1),:).'];};
-nodeInformation{1}.ys = {[0; 0; 0; 0; 1]};
-nodeInformation{1}.n = 1;
-cumN = 1;
+thetas = linspace(0,2*pi,nAngles+1).';
+thetas = thetas(1:end-1);
 
+lengthPadding = 5;
 
 validThetas = thetas(thetas < allowableAngleRange |...
     2*pi-allowableAngleRange < thetas);
 
+rx = {[nodes(nodeList(1),:).'; nodes(nodeList(1),:).';...
+    nodes(nodeList(1),:).']};
+ry = {[0; 0; 0; 0; 1]};
+rxs = {[rx{1}(1:2:end) rx{1}(2:2:end)]};
+
+designLs = [];
+designThetas = [];
 
 for i=1:length(nodeList)-1
+    preNode = nodeList(i);
     desNode = nodeList(i+1);
     
     cValidThetas = validThetas;
@@ -375,57 +381,156 @@ for i=1:length(nodeList)-1
         cValidThetas = thetas;
     end
     
-    nodeInformation{i+1}.xs = {};
-    nodeInformation{i+1}.ys = {};
-    nodeInformation{i+1}.n = [];
     
-    % for starting node i
-    % for each state configuration in i
-    for j=1:length(nodeInformation{i}.xs)        
+    % find optimal angle
+    if(nodeTypes(preNode,1) == 2)
+        % we're at a midpoint node so just turn a little in the direction
+        % of desNode
+        
+        rrx = cell2mat(rx);
+        
+        rrb = rrx(3:4,:);
+        rrx = rrx(5:6,:);
+        
+        deltas = repmat(nodes(desNode,:).',1,size(rrx,2))-rrx;
+        delta = mean(deltas,2); delta = delta/norm(delta);
+        desAngle = wrapTo2Pi(atan2(delta(2),delta(1)));
+        
+        tipTangent = mean(rrx-rrb,2);
+        currAngle = atan2(tipTangent(2),tipTangent(1));
+        
+        desTheta = angleDiffSigns(currAngle,desAngle);
+        if(desTheta > 0)
+            optimalTheta = deg2rad(10);
+        else
+            optimalTheta = wrapTo2Pi(deg2rad(-10));
+        end
+        
+        cls = zeros(length(rx),1);
+        for k=1:length(rx)
+            rxs{k}(end,:) = rx{k}(5:6).';
+            rxs{k} = vertcat(rxs{k},nodes(desNode,:));
+            cls(k) = RobotLength(rxs{k});
+        end
+        
+        designThetas = vertcat(designThetas,optimalTheta);
+        designLs = vertcat(designLs,max(cls)+lengthPadding);
+    elseif(nodeTypes(desNode,1) == 1 || nodeTypes(desNode,1) == 2)
+        % holds success/fail (1 = success, 0 = fail) for each theta and each
+        % sample at arriving at next node
+        success = zeros(length(cValidThetas),length(rx));
+        
+        lens = zeros(lenegth(cValidThetas), length(rx));
+    
         % for each angle turn
-        for k = 1:length(validThetas)
+        for j = 1:length(cValidThetas)
             theta = validThetas(k);
-            x = nodeInformation{i}.xs{j};
-            y = nodeInformation{i}.ys{j};
             
-            tipTangent = x(5:6)-x(3:4); 
-            if(norm(tipTangent) > 1e-3)
-                tipTangent = tipTangent/norm(tipTangent);
-            else
-                tipTangent = [1; 0];
-            end
-            if(abs(theta) > 0)
-                tipTangent = PlaneRotation(theta)*tipTangent;
+            for k = 1:length(rx)
+                x = rx{k};
+                y = ry{k};
+                xs = rxs{k};
                 
-                xs = [x(1:2:end) x(2:2:end)];
-                [x,y,xs] = AdjustStateMetdataForTurn(theta,x,y,xs);
-            end
-            
-            % find all configurations that end at node nodeList(i+1)
-            
-            [xx,yy] = MoveRobotUntilNodeEncountered(x,y,tipTangent,newMap,nodes,desNode);
-            if(yy(5) ~= 1e6)
-                
-                found = false;
-                
-                %check if it's in the
-                for l = 1:length(nodeInformation{i+1}.xs)
-                    if(norm(xx-nodeInformation{i+1}.xs{l}) < 1e-3)
-                        found = true;
-                        break;
-                    end
+                tipTangent = x(5:6)-x(3:4);
+                if(norm(tipTangent) > 1e-3)
+                    tipTangent = tipTangent/norm(tipTangent);
+                else
+                    tipTangent = [1; 0];
+                end
+                if(abs(theta) > 0)
+                    tipTangent = PlaneRotation(theta)*tipTangent;
+                    
+                    xs = [x(1:2:end) x(2:2:end)];
+                    [x,y,xs] = AdjustStateMetdataForTurn(theta,x,y,xs);
                 end
                 
-                if(~found)
-                    cumN = cumN+1;
-                    nodeInformation{i+1}.xs = vertcat(nodeInformation{i+1}.xs, xx);
-                    nodeInformation{i+1}.ys = vertcat(nodeInformation{i+1}.ys, yy);
-                    nodeInformation{i+1}.n = vertcat(nodeInformation{i+1}.n, cumN);
+                % find all configurations that end at node nodeList(i+1)
+                [xx,yy,xxs] = MoveRobotUntilNodeEncountered(x,y,xs,tipTangent,newMap,nodes,desNode);
+                if(yy(5) ~= 1e6)
+                    % we arrived at the right place
+                    % j is angle, k is sample
+                    success(j,k) = 1;
+                    lens(j,k) = RobotLength(xxs);
                 end
             end
         end
-        blah = 0;
+        
+        % probability of success for each angle  (marignalized over
+        % samples)
+        successProb = mean(success,2);
+        
+        % success of each sample but also taking into account other thetas
+        successProbWithUncertaintiy = zeros(nAngles,1);
+        
+        % lens
+        lensWithUncertainty = zeros(nAngles,1);
+        
+        % now find probability when including other angles into the mix
+        for j=1:length(cValidThetas)
+            relevantProbs = [];
+            
+            if(cValidThetas(j) == 0)
+                % there is no added uncertainty if we are not turning
+                continue;
+            end
+            
+            if(cValidThetas(j) > pi) 
+                % right turn, never going to accidentally get a left turn
+                lowerLim = max(pi,cValidThetas(j)-angleNoise);
+                upperLim = min(cValidThetas(j)+angleNoise,2*pi);
+            else
+                % left turn, never going to accidentally get a right turn
+                lowerLim = max(0,cValidThetas(j)-angleNoise);
+                upperLim = min(cValidThetas(j)+angleNoise,pi);
+            end
+            sumIdxs = find(lowerLim < cValidThetas & cValidThetas < upperLim);
+            
+            % assumes uniform angular uncertainty
+            lensWithUncertainty(j) = max(max(lens(sumIdxs,:)));
+            successProbWithUncertaintiy(j) = mean(successProb(sumIdxs,:));
+        end
+        
+        % best angle is arg_max successProbWithUncertainty
+        [~, optJ] = max(successProbWithUncertaintiy);
+        if(abs(thetas(optJ)) > 0)
+            designThetas = vertcat(designThetas, thetas(optJ));
+            designLs = vertcat(designLs, lensWithUncertainty(optJ)+lengthPadding);
+        end
+    elseif(nodeTypes(desNode,1) == 3)
+        % interior node. for each sample, check if there is an unobstructed
+        % ray to destination node
+        
+        rrx = cell2mat(rx);
+        
+        rrx = rrx(5:6,:);
+        
+        deltas = repmat(nodes(desNode,:).',1,size(rrx,2))-rrx;
+        rls = sqrt(sum(deltas.^2,1));
+        delta = mean(deltas,2);
+        
+        designThetas = vertcat(designThetas,wrapTo2Pi(atan2(delta(2),delta(1))));
+        designLs = vertcat(designLs,max(rls)+lengthPadding);
     end
+    
+    % now simulate a bunch of paths using this angle
+        
+    thetaRight = find(designThetas > pi);
+    thetaLeft = find(designThetas <= pi);
+    for k=1:nSamples
+        cls = designLs+unifrnd(-lengthNoise,lengthNoise,length(designLs),1);
+        cls = max(cls,0);
+        
+        thetaPerturb = unifrnd(-thetaNoise,thetaNoise,length(designThetas),1);
+        cts = designThetas+thetaPerturb;
+        cts(thetaRight) = min(cts(thetaRight),2*pi);
+        cts(thetaRight) = max(cts(thetaRight),pi);
+        cts(thetaLeft) = min(cts(thetaLeft),pi);
+        cts(thetaRight)=  max(cts(thetaRight),1e-3);
+        
+        % now simulate it
+        HERE I AM RIGHT NOW
+    end
+    
 end
 
 % %%

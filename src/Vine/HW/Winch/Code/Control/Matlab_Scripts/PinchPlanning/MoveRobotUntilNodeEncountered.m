@@ -16,13 +16,11 @@
 % walls \in R^{nx4}
 % happen
 % otherwise the opposite
-function [x, y, xs,wallIndex] = MoveRobotUntilNodeEncountered(x, y, tipTangent, walls, nodes, desNode)
+function [x, y, xs, wallIndex] = MoveRobotUntilNodeEncountered(x, y, xs, tipTangent, walls, nodes, desNode)
 dl = 1e4;
 node = -1;
 ignoreWall = -1;
 wallIndex = -1;
-
-xs = [x(1:2).'; x(3:4).'; x(5:6).'];
 
 while(node ~= desNode)
     if(wallIndex <= 0)
