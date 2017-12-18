@@ -3,6 +3,8 @@ clear; clc; close all;
 load 'Maps/map1'
 load 'Maps/nodes1'
 
+rng(1);
+
 
 addpath(genpath('Geom2d'));
 
@@ -351,7 +353,7 @@ end
 % this contains the list of nodes we will visit on our way to a destination
 nodeList = unique(nodeList,'stable');
 
-angleNoise = 5; % in degree uniform distribution
+angleNoise = deg2rad(5); % in degree uniform distribution
 lengthNoise = 10; % in physical units
 nSamples = 1000; % number of samples used to calculate monte carlo prboabilities
 nAngles = 100;
@@ -369,7 +371,7 @@ rx = {[nodes(nodeList(1),:).'; nodes(nodeList(1),:).';...
 ry = {[0; 0; 0; 0; 1]};
 rxs = {[rx{1}(1:2:end) rx{1}(2:2:end)]};
 
-designLs = [];
+designLs = [0];
 designThetas = [];
 
 for i=1:length(nodeList)-1
@@ -420,16 +422,21 @@ for i=1:length(nodeList)-1
         % sample at arriving at next node
         success = zeros(length(cValidThetas),length(rx));
         
-        lens = zeros(lenegth(cValidThetas), length(rx));
+        lens = zeros(length(cValidThetas), length(rx));
     
         % for each angle turn
         for j = 1:length(cValidThetas)
-            theta = validThetas(k);
+            theta = cValidThetas(j);
+            display(j);
             
             for k = 1:length(rx)
                 x = rx{k};
                 y = ry{k};
                 xs = rxs{k};
+                
+                if(j == 18 && k == 4)
+                    display(k)
+                end
                 
                 tipTangent = x(5:6)-x(3:4);
                 if(norm(tipTangent) > 1e-3)
@@ -440,7 +447,6 @@ for i=1:length(nodeList)-1
                 if(abs(theta) > 0)
                     tipTangent = PlaneRotation(theta)*tipTangent;
                     
-                    xs = [x(1:2:end) x(2:2:end)];
                     [x,y,xs] = AdjustStateMetdataForTurn(theta,x,y,xs);
                 end
                 
@@ -469,21 +475,40 @@ for i=1:length(nodeList)-1
         for j=1:length(cValidThetas)
             relevantProbs = [];
             
-            if(cValidThetas(j) == 0)
-                % there is no added uncertainty if we are not turning
-                continue;
-            end
-            
-            if(cValidThetas(j) > pi) 
-                % right turn, never going to accidentally get a left turn
-                lowerLim = max(pi,cValidThetas(j)-angleNoise);
-                upperLim = min(cValidThetas(j)+angleNoise,2*pi);
+            if(i > 1)
+                if(cValidThetas(j) == 0)
+                    % there is no added uncertainty if we are not turning
+                    continue;
+                end
+                
+                if(cValidThetas(j) > pi)
+                    % right turn, never going to accidentally get a left turn
+                    lowerLim = max(pi,cValidThetas(j)-angleNoise);
+                    upperLim = min(cValidThetas(j)+angleNoise,2*pi);
+                else
+                    % left turn, never going to accidentally get a right turn
+                    lowerLim = max(0,cValidThetas(j)-angleNoise);
+                    upperLim = min(cValidThetas(j)+angleNoise,pi);
+                end
+                sumIdxs = find(lowerLim < cValidThetas & cValidThetas < upperLim);
             else
-                % left turn, never going to accidentally get a right turn
-                lowerLim = max(0,cValidThetas(j)-angleNoise);
-                upperLim = min(cValidThetas(j)+angleNoise,pi);
+                lowerLim = cValidThetas(j)-angleNoise;
+                if(lowerLim < 0)
+                    sumIdxs = find(cValidThetas <= cValidThetas(j));
+                    sumIdxs = vertcat(sumIdxs, find(2*pi+lowerLim < cValidThetas));
+                else
+                    sumIdxs = find(lowerLim <= cValidThetas & cValidThetas <= cValidThetas(j));
+                end
+                
+                upperLim = cValidThetas(j)+angleNoise;
+                if(upperLim > 2*pi)
+                    sumIdxs = vertcat(sumIdxs,find(cValidThetas(j) <= cValidThetas));
+                    sumIdxs = vertcat(sumIdxs,find(cValidThetas <= upperLim-2*pi));
+                else
+                    sumIdxs = vertcat(sumIdxs,find(cValidThetas(j) <= cValidThetas & cValidThetas <= upperLim));
+                end
             end
-            sumIdxs = find(lowerLim < cValidThetas & cValidThetas < upperLim);
+            sumIdxs = unique(sumIdxs);
             
             % assumes uniform angular uncertainty
             lensWithUncertainty(j) = max(max(lens(sumIdxs,:)));
@@ -492,7 +517,7 @@ for i=1:length(nodeList)-1
         
         % best angle is arg_max successProbWithUncertainty
         [~, optJ] = max(successProbWithUncertaintiy);
-        if(abs(thetas(optJ)) > 0)
+        if(abs(cValidThetas(optJ)) > 0)
             designThetas = vertcat(designThetas, thetas(optJ));
             designLs = vertcat(designLs, lensWithUncertainty(optJ)+lengthPadding);
         end
@@ -516,19 +541,49 @@ for i=1:length(nodeList)-1
         
     thetaRight = find(designThetas > pi);
     thetaLeft = find(designThetas <= pi);
-    for k=1:nSamples
+    
+    k = 1;
+    while(k < nSamples)
         cls = designLs+unifrnd(-lengthNoise,lengthNoise,length(designLs),1);
-        cls = max(cls,0);
+        cls = max(cls,1e-3);
+        cls(1) = 0;
         
-        thetaPerturb = unifrnd(-thetaNoise,thetaNoise,length(designThetas),1);
+        thetaPerturb = unifrnd(-angleNoise,angleNoise,length(designThetas),1);
         cts = designThetas+thetaPerturb;
         cts(thetaRight) = min(cts(thetaRight),2*pi);
         cts(thetaRight) = max(cts(thetaRight),pi);
         cts(thetaLeft) = min(cts(thetaLeft),pi);
         cts(thetaRight)=  max(cts(thetaRight),1e-3);
         
-        % now simulate it
-        HERE I AM RIGHT NOW
+        
+        cx = [nodes(nodeList(1),:).'; nodes(nodeList(1),:).';...
+            nodes(nodeList(1),:).'];
+        cy = [0; 0; 0; 0; 1];
+        cxs = [cx(1:2:end) cx(2:2:end)];
+        
+        clen = 0;
+        cdls = cls(2:end)-cls(1:end-1);
+        cthetas = [cls(1:end-1) cts];
+        wallIndex = -1;
+        for ll=1:length(cdls)
+            [cx, cy, cxs,wallIndex] = MoveRobotByDl(cx,cy,cdls(ll),newMap,cthetas,clen,wallIndex,cxs);
+            
+            clen = clen+cdls(ll);
+        end
+        
+        if(nodeTypes(desNode,1) == 1 || nodeTypes(desNode,1) == 2)
+            if(norm(cy(1:2)-nodes(desNode,:).') < 1e-3)
+                rx{k} = cx;
+                ry{k} = cy;
+                rxs{k} = cxs;
+                k = k+1;
+            end
+        else
+            rx{k} = cx;
+            ry{k} = cy;
+            rxs{k} = cxs;
+            k = k+1;
+        end
     end
     
 end

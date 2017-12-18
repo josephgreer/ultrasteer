@@ -24,7 +24,12 @@
 % xs reperesent the segments of the robot
 % otherwise the opposite
 function [x, y, xs,wallIndex] = MoveRobotByDl(x, y, dl, walls, thetas, len, wallIndex, xs)
-tipTangent = x(5:6)-x(3:4); tipTangent = tipTangent/norm(tipTangent);
+tipTangent = x(5:6)-x(3:4);
+if(norm(tipTangent) > 0)
+    tipTangent = tipTangent/norm(tipTangent);
+else
+    tipTangent = [1;0];
+end
 
 thetaIdx = find(abs(thetas(:,1)-len) < 1e-3);
 oldTipTangent = tipTangent;
