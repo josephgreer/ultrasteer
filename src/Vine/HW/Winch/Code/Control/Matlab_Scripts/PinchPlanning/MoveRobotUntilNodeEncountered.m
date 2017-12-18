@@ -17,7 +17,7 @@
 % happen
 % otherwise the opposite
 function [x, y, xs, wallIndex] = MoveRobotUntilNodeEncountered(x, y, xs, tipTangent, walls, nodes, desNode)
-dl = 1e4;
+dl = 3e3;
 node = -1;
 ignoreWall = -1;
 wallIndex = -1;

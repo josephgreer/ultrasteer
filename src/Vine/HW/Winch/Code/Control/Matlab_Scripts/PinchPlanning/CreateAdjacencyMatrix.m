@@ -31,7 +31,7 @@ connectionAngleChange = 5;
 
 startNode = 34;
 endNode = 31;
-allowableAngleRange = deg2rad(45);
+allowableAngleRange = deg2rad(40);
 
 nVertices = nNodes*nAngles;
 
@@ -353,6 +353,7 @@ end
 % this contains the list of nodes we will visit on our way to a destination
 nodeList = unique(nodeList,'stable');
 
+allowableAngleRange = deg2rad(45);
 angleNoise = deg2rad(5); % in degree uniform distribution
 lengthNoise = 10; % in physical units
 nSamples = 1000; % number of samples used to calculate monte carlo prboabilities
@@ -360,11 +361,11 @@ nAngles = 100;
 
 thetas = linspace(0,2*pi,nAngles+1).';
 thetas = thetas(1:end-1);
+thetas = wrapToPi(thetas);
 
-lengthPadding = 5;
+lengthPadding = 20;
 
-validThetas = thetas(thetas < allowableAngleRange |...
-    2*pi-allowableAngleRange < thetas);
+validThetas = thetas(abs(thetas) < allowableAngleRange);
 
 rx = {[nodes(nodeList(1),:).'; nodes(nodeList(1),:).';...
     nodes(nodeList(1),:).']};
@@ -377,6 +378,13 @@ designThetas = [];
 for i=1:length(nodeList)-1
     preNode = nodeList(i);
     desNode = nodeList(i+1);
+    
+    nodeWalls = [];
+    if(nodeTypes(preNode,1) == 1 || nodeTypes(preNode,1) == 2)
+        wallDeltas = repmat(nodes(i,:),size(newWallEndPoints,1),1)-newWallEndPoints(:,2:3);
+        dists = sqrt(sum(wallDeltas.^2,2));
+        nodeWalls = newWallEndPoints(dists < 1e-3,[1,4]);
+    end
     
     cValidThetas = validThetas;
     if(i == 1)
@@ -396,16 +404,14 @@ for i=1:length(nodeList)-1
         
         deltas = repmat(nodes(desNode,:).',1,size(rrx,2))-rrx;
         delta = mean(deltas,2); delta = delta/norm(delta);
-        desAngle = wrapTo2Pi(atan2(delta(2),delta(1)));
         
         tipTangent = mean(rrx-rrb,2);
-        currAngle = atan2(tipTangent(2),tipTangent(1));
         
-        desTheta = angleDiffSigns(currAngle,desAngle);
+        desTheta = angleDiffSigns(delta,tipTangent);
         if(desTheta > 0)
             optimalTheta = deg2rad(10);
         else
-            optimalTheta = wrapTo2Pi(deg2rad(-10));
+            optimalTheta = deg2rad(-10);
         end
         
         cls = zeros(length(rx),1);
@@ -434,7 +440,7 @@ for i=1:length(nodeList)-1
                 y = ry{k};
                 xs = rxs{k};
                 
-                if(j == 18 && k == 4)
+                if(j == 20 && k == 2 )
                     display(k)
                 end
                 
@@ -466,34 +472,35 @@ for i=1:length(nodeList)-1
         successProb = mean(success,2);
         
         % success of each sample but also taking into account other thetas
-        successProbWithUncertaintiy = zeros(nAngles,1);
+        successProbWithUncertaintiy = zeros(length(cValidThetas),1);
         
         % lens
-        lensWithUncertainty = zeros(nAngles,1);
+        lensWithUncertainty = zeros(length(cValidThetas),1);
         
         % now find probability when including other angles into the mix
         for j=1:length(cValidThetas)
             relevantProbs = [];
             
+            sumIdxs = [];
             if(i > 1)
                 if(cValidThetas(j) == 0)
                     % there is no added uncertainty if we are not turning
                     continue;
                 end
                 
-                if(cValidThetas(j) > pi)
+                if(cValidThetas(j) < 0)
                     % right turn, never going to accidentally get a left turn
-                    lowerLim = max(pi,cValidThetas(j)-angleNoise);
-                    upperLim = min(cValidThetas(j)+angleNoise,2*pi);
+                    lowerLim = cValidThetas(j)-angleNoise;
+                    upperLim = min(cValidThetas(j)+angleNoise,0);
                 else
                     % left turn, never going to accidentally get a right turn
-                    lowerLim = max(0,cValidThetas(j)-angleNoise);
-                    upperLim = min(cValidThetas(j)+angleNoise,pi);
+                    lowerLim = max(cValidThetas(j)-angleNoise,0);
+                    upperLim = cValidThetas(j)+angleNoise;
                 end
                 sumIdxs = find(lowerLim < cValidThetas & cValidThetas < upperLim);
             else
                 lowerLim = cValidThetas(j)-angleNoise;
-                if(lowerLim < 0)
+                if(lowerLim < -pi)
                     sumIdxs = find(cValidThetas <= cValidThetas(j));
                     sumIdxs = vertcat(sumIdxs, find(2*pi+lowerLim < cValidThetas));
                 else
@@ -501,7 +508,7 @@ for i=1:length(nodeList)-1
                 end
                 
                 upperLim = cValidThetas(j)+angleNoise;
-                if(upperLim > 2*pi)
+                if(upperLim > pi)
                     sumIdxs = vertcat(sumIdxs,find(cValidThetas(j) <= cValidThetas));
                     sumIdxs = vertcat(sumIdxs,find(cValidThetas <= upperLim-2*pi));
                 else
@@ -527,20 +534,25 @@ for i=1:length(nodeList)-1
         
         rrx = cell2mat(rx);
         
-        rrx = rrx(5:6,:);
+        rrx = rrx(3:6,:);
         
-        deltas = repmat(nodes(desNode,:).',1,size(rrx,2))-rrx;
+        proxTangent = rrx(5:6,:)-rrx(3:4,:);
+        proxTangent = mean(proxTangent,2);
+        
+        deltas = repmat(nodes(desNode,:).',1,size(rrx,2))-rrx(5:6,:);
         rls = sqrt(sum(deltas.^2,1));
         delta = mean(deltas,2);
         
-        designThetas = vertcat(designThetas,wrapTo2Pi(atan2(delta(2),delta(1))));
+        ctheta = angleDiffSigns([proxTangent;0].',[delta;0].');
+        
+        designThetas = vertcat(designThetas,ctheta);
         designLs = vertcat(designLs,max(rls)+lengthPadding);
     end
     
     % now simulate a bunch of paths using this angle
         
-    thetaRight = find(designThetas > pi);
-    thetaLeft = find(designThetas <= pi);
+    thetaRight = find(designThetas < 0);
+    thetaLeft = find(designThetas >= 0);
     
     k = 1;
     while(k < nSamples)
@@ -550,10 +562,8 @@ for i=1:length(nodeList)-1
         
         thetaPerturb = unifrnd(-angleNoise,angleNoise,length(designThetas),1);
         cts = designThetas+thetaPerturb;
-        cts(thetaRight) = min(cts(thetaRight),2*pi);
-        cts(thetaRight) = max(cts(thetaRight),pi);
-        cts(thetaLeft) = min(cts(thetaLeft),pi);
-        cts(thetaRight)=  max(cts(thetaRight),1e-3);
+        cts(thetaRight) = min(cts(thetaRight),-1e-3);
+        cts(thetaLeft) = max(cts(thetaLeft),1e-3);
         
         
         cx = [nodes(nodeList(1),:).'; nodes(nodeList(1),:).';...
