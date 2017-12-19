@@ -16,11 +16,48 @@
 % walls \in R^{nx4}
 % happen
 % otherwise the opposite
-function [x, y, xs, wallIndex] = MoveRobotUntilNodeEncountered(x, y, xs, tipTangent, walls, nodes, desNode)
-dl = 3e3;
+function [x, y, xs, wallIndex] = MoveRobotUntilNodeEncountered(x, y, xs, wallIndex, walls, theta, nodes, desNode)
+dl = 5e2;
 node = -1;
+
+tipTangent = x(5:6)-x(3:4);
+if(norm(tipTangent) > 0)
+    tipTangent = tipTangent/norm(tipTangent);
+else
+    tipTangent = [1;0];
+end
+
+oldTipTangent = tipTangent;
 ignoreWall = -1;
-wallIndex = -1;
+if(abs(theta) > 0)
+    tipTangent = PlaneRotation(theta)*tipTangent;
+    
+    proxTangent = x(3:4)-x(1:2);
+    proxTangent = proxTangent/norm(proxTangent);
+    
+    [x,y,xs] = AdjustStateMetdataForTurn(theta,x,y,xs);
+    
+    if(wallIndex > 0)
+        wallTangent = walls(wallIndex,3:4)-walls(wallIndex,1:2);
+        wallTangent = wallTangent/norm(wallTangent);
+        
+        angleDiffs = angleDiffSigns([repmat(wallTangent,2,1) zeros(2,1)],...
+            [oldTipTangent' 0; tipTangent.' 0]);
+        
+        if(abs(angleDiffs(1)) < 1e-3)
+            angleDiffs = angleDiffSigns([repmat(wallTangent,2,1) zeros(2,1)],...
+                [proxTangent' 0; tipTangent.' 0]);
+        end
+        
+        if(sign(angleDiffs(1)) ~= sign(angleDiffs(2)) && min(abs(angleDiffs)) > 1e-3)
+            x(1:2) = x(3:4);
+            ignoreWall = wallIndex;
+            wallIndex = -1;
+        end
+    end
+    
+    xs = vertcat(xs,xs(end,:));
+end
 
 while(node ~= desNode)
     if(wallIndex <= 0)
@@ -55,7 +92,8 @@ while(node ~= desNode)
         y(5) = 1e6;
         return;
     else
-        assert(0);
+        x(5:6) = tipPoint;
+        xs(end,:) = tipPoint.';
     end
 end
 

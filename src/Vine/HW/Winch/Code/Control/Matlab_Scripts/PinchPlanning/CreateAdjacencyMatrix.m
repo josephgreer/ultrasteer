@@ -9,8 +9,6 @@ rng(1);
 addpath(genpath('Geom2d'));
 
 figure;
-grid on;
-hold on;
 
 handles.robot = [];
 
@@ -19,15 +17,18 @@ ylim([-500 500]);
 daspect([1 1 1]);
 grid on;
 hold on;
+box on;
+hold on;
 
 DrawMap(map);
 
 nNodes = size(nodes,1);
 nAngles = 359;
 
-connectionNormal = 0.01;
-connectionInteriorNode = 0.01;
-connectionAngleChange = 5;
+connectionNormal = 1e-6;
+connectionInteriorNode = 3;
+connectionAngleChange = 1;
+useMidPointNodes = true;
 
 startNode = 34;
 endNode = 31;
@@ -43,9 +44,7 @@ nVertices = nNodes*nAngles;
 nodeTypes = zeros(nNodes,2);
 wallEndPoints = [linspace(1,size(map,1),size(map,1)).'  map(:,1:2) ones(size(map,1),1);...
     linspace(1,size(map,1),size(map,1)).' map(:,3:4) 2*ones(size(map,1),1)];
-h = scatter(0,0);
 for i=1:nNodes
-    set(h,'XData',nodes(i,1),'YData',nodes(i,2));
     deltas = repmat(nodes(i,:),size(wallEndPoints,1),1)-wallEndPoints(:,2:3);
     dists = sqrt(sum(deltas.^2,2));
     [minDist, minIdx] = min(dists);
@@ -64,16 +63,22 @@ for i=1:nNodes
     end
 end
 
+scatter(nodes([startNode,endNode],1),nodes([startNode,endNode],2),'LineWidth',2);
+
 % show the different types of nodes
 for i=1:3
     currIs = nodeTypes(:,1) == i;
-    scatter(nodes(currIs,1),nodes(currIs,2), 'LineWidth',2);
+    if(useMidPointNodes || i ~= 2) 
+        scatter(nodes(currIs,1),nodes(currIs,2), 'LineWidth',2);
+    end
 end
 
 interiorNodes = find(nodeTypes(:,1) == 3);
 nInteriorNodes = size(interiorNodes,1);
 
 destinations = zeros(nNodes*nAngles,1);
+% this is for extending past midpoint ndoe
+secondaryDestinations = -1*ones(nNodes*nAngles,1);
 weights = ones(nNodes*nAngles,1)*connectionNormal;
 
 thetas = linspace(0,2*pi,nAngles+1).';
@@ -207,12 +212,14 @@ end
 
 % make a new map with vertices with mid points
 newMap = map;
-midNodes = find(nodeTypes(:,1) == 2);
-newMap(unique(nodeTypes(midNodes,2)),:) = [];
-
-for i=1:length(midNodes)
-    newMap = vertcat(newMap, [map(nodeTypes(midNodes(i),2),1:2) nodes(midNodes(i),:)]);
-    newMap = vertcat(newMap, [nodes(midNodes(i),:) map(nodeTypes(midNodes(i),2),3:4)]);
+if(useMidPointNodes)
+    midNodes = find(nodeTypes(:,1) == 2);
+    newMap(unique(nodeTypes(midNodes,2)),:) = [];
+    
+    for i=1:length(midNodes)
+        newMap = vertcat(newMap, [map(nodeTypes(midNodes(i),2),1:2) nodes(midNodes(i),:)]);
+        newMap = vertcat(newMap, [nodes(midNodes(i),:) map(nodeTypes(midNodes(i),2),3:4)]);
+    end
 end
 
 newWallEndPoints = [linspace(1,size(newMap,1),size(newMap,1)).'  newMap(:,1:2) ones(size(newMap,1),1);...
@@ -258,6 +265,19 @@ for i=1:nNodes
         else
             destinations(indices(j)) = -1;
         end
+        
+        if(nodeIdx > 0 && nodeTypes(nodeIdx,1) == 2)
+            % lets handle the case here figure out what to do
+            [xx,yy] = MoveRobotByDlOrUntilEndOfWall(xx,yy, newMap, ignoreWalls);
+        
+            tipTangent = xx(5:6)-xx(3:4); tipTangent = tipTangent/norm(tipTangent);
+            tipAngle = wrapTo2Pi(atan2(tipTangent(2),tipTangent(1)));
+            
+            nodeIdx = NodePosToIdx(xx(5:6).',nodes);
+            if(nodeIdx > 0)
+                secondaryDestinations(indices(j)) = NodeAngleToIdx(nodeIdx,tipAngle,nAngles);
+            end
+        end
     end
 end
 
@@ -281,13 +301,15 @@ for j=1:length(thetas)
         allowableThetas = [allowableThetas; thetas(thetaDown < thetas & thetas <= thetas(j))];
     end
     
+    angleDiffs = angleAbsDiff(repmat(thetas(j),size(allowableThetas,1),1),allowableThetas);
+    
     for ii=1:nNodes
         allowableIndices = NodeAngleToIdx((ii)*ones(size(allowableThetas)), allowableThetas, nAngles);
         index = NodeAngleToIdx(ii,thetas(j),nAngles);
         
         rowColVal(nVals+1:nVals+length(allowableIndices),:) =...
             [repmat(index,length(allowableIndices),1) allowableIndices...
-            repmat(connectionAngleChange,length(allowableIndices),1)];
+            repmat(connectionAngleChange,length(allowableIndices),1)+angleDiffs];
         nVals = nVals + length(allowableIndices);
     end
 end
@@ -303,6 +325,13 @@ for i=1:nNodes
         [normalConnectionIndices destinations(normalConnectionIndices)...
         repmat(connectionNormal,length(normalConnectionIndices),1)];
     nVals = nVals + length(normalConnectionIndices);
+    
+    secondaryConnectionIndices = find(secondaryDestinations(indices) > 0)+indexZ-1;
+    rowColVal(nVals+1:nVals+length(secondaryConnectionIndices),:) =...
+        [secondaryConnectionIndices secondaryDestinations(secondaryConnectionIndices)...
+        repmat(connectionNormal,length(secondaryConnectionIndices),1)];
+    nVals = nVals + length(secondaryConnectionIndices);
+
 %     [nn,aa] = IndexToNodeAngle(normalConnectionIndices,nAngles,nNodes,thetas);
     
 %     A(sub2ind(size(A),normalConnectionIndices,destinations(normalConnectionIndices))) = connectionNormal;
@@ -356,7 +385,7 @@ nodeList = unique(nodeList,'stable');
 allowableAngleRange = deg2rad(45);
 angleNoise = deg2rad(5); % in degree uniform distribution
 lengthNoise = 10; % in physical units
-nSamples = 1000; % number of samples used to calculate monte carlo prboabilities
+nSamples = 100; % number of samples used to calculate monte carlo prboabilities
 nAngles = 100;
 
 thetas = linspace(0,2*pi,nAngles+1).';
@@ -371,6 +400,7 @@ rx = {[nodes(nodeList(1),:).'; nodes(nodeList(1),:).';...
     nodes(nodeList(1),:).']};
 ry = {[0; 0; 0; 0; 1]};
 rxs = {[rx{1}(1:2:end) rx{1}(2:2:end)]};
+rwi = {-1};
 
 designLs = [0];
 designThetas = [];
@@ -381,7 +411,7 @@ for i=1:length(nodeList)-1
     
     nodeWalls = [];
     if(nodeTypes(preNode,1) == 1 || nodeTypes(preNode,1) == 2)
-        wallDeltas = repmat(nodes(i,:),size(newWallEndPoints,1),1)-newWallEndPoints(:,2:3);
+        wallDeltas = repmat(nodes(preNode,:),size(newWallEndPoints,1),1)-newWallEndPoints(:,2:3);
         dists = sqrt(sum(wallDeltas.^2,2));
         nodeWalls = newWallEndPoints(dists < 1e-3,[1,4]);
     end
@@ -390,40 +420,8 @@ for i=1:length(nodeList)-1
     if(i == 1)
         cValidThetas = thetas;
     end
-    
-    
-    % find optimal angle
-    if(nodeTypes(preNode,1) == 2)
-        % we're at a midpoint node so just turn a little in the direction
-        % of desNode
         
-        rrx = cell2mat(rx);
-        
-        rrb = rrx(3:4,:);
-        rrx = rrx(5:6,:);
-        
-        deltas = repmat(nodes(desNode,:).',1,size(rrx,2))-rrx;
-        delta = mean(deltas,2); delta = delta/norm(delta);
-        
-        tipTangent = mean(rrx-rrb,2);
-        
-        desTheta = angleDiffSigns(delta,tipTangent);
-        if(desTheta > 0)
-            optimalTheta = deg2rad(10);
-        else
-            optimalTheta = deg2rad(-10);
-        end
-        
-        cls = zeros(length(rx),1);
-        for k=1:length(rx)
-            rxs{k}(end,:) = rx{k}(5:6).';
-            rxs{k} = vertcat(rxs{k},nodes(desNode,:));
-            cls(k) = RobotLength(rxs{k});
-        end
-        
-        designThetas = vertcat(designThetas,optimalTheta);
-        designLs = vertcat(designLs,max(cls)+lengthPadding);
-    elseif(nodeTypes(desNode,1) == 1 || nodeTypes(desNode,1) == 2)
+    if(nodeTypes(desNode,1) == 1 || nodeTypes(desNode,1) == 2)
         % holds success/fail (1 = success, 0 = fail) for each theta and each
         % sample at arriving at next node
         success = zeros(length(cValidThetas),length(rx));
@@ -433,31 +431,16 @@ for i=1:length(nodeList)-1
         % for each angle turn
         for j = 1:length(cValidThetas)
             theta = cValidThetas(j);
-            display(j);
+            display(sprintf('Landmark %d, Angle %d of %d',i,j,length(cValidThetas)));
             
             for k = 1:length(rx)
                 x = rx{k};
                 y = ry{k};
                 xs = rxs{k};
-                
-                if(j == 20 && k == 2 )
-                    display(k)
-                end
-                
-                tipTangent = x(5:6)-x(3:4);
-                if(norm(tipTangent) > 1e-3)
-                    tipTangent = tipTangent/norm(tipTangent);
-                else
-                    tipTangent = [1; 0];
-                end
-                if(abs(theta) > 0)
-                    tipTangent = PlaneRotation(theta)*tipTangent;
-                    
-                    [x,y,xs] = AdjustStateMetdataForTurn(theta,x,y,xs);
-                end
+                wi = rwi{k};
                 
                 % find all configurations that end at node nodeList(i+1)
-                [xx,yy,xxs] = MoveRobotUntilNodeEncountered(x,y,xs,tipTangent,newMap,nodes,desNode);
+                [xx,yy,xxs,wi] = MoveRobotUntilNodeEncountered(x,y,xs,wi,newMap,theta,nodes,desNode);
                 if(yy(5) ~= 1e6)
                     % we arrived at the right place
                     % j is angle, k is sample
@@ -484,6 +467,8 @@ for i=1:length(nodeList)-1
             sumIdxs = [];
             if(i > 1)
                 if(cValidThetas(j) == 0)
+                    successProbWithUncertaintiy(j) = successProb(j);
+                    lensWithUncertainty(j) = max(max(lens(j,:)));
                     % there is no added uncertainty if we are not turning
                     continue;
                 end
@@ -525,8 +510,10 @@ for i=1:length(nodeList)-1
         % best angle is arg_max successProbWithUncertainty
         [~, optJ] = max(successProbWithUncertaintiy);
         if(abs(cValidThetas(optJ)) > 0)
-            designThetas = vertcat(designThetas, thetas(optJ));
+            designThetas = vertcat(designThetas, cValidThetas(optJ));
             designLs = vertcat(designLs, lensWithUncertainty(optJ)+lengthPadding);
+        else
+            designLs(end) = lensWithUncertainty(optJ)+lengthPadding;
         end
     elseif(nodeTypes(desNode,1) == 3)
         % interior node. for each sample, check if there is an unobstructed
@@ -534,19 +521,19 @@ for i=1:length(nodeList)-1
         
         rrx = cell2mat(rx);
         
-        rrx = rrx(3:6,:);
-        
         proxTangent = rrx(5:6,:)-rrx(3:4,:);
         proxTangent = mean(proxTangent,2);
+        proxTangent = proxTangent/norm(proxTangent);
         
         deltas = repmat(nodes(desNode,:).',1,size(rrx,2))-rrx(5:6,:);
         rls = sqrt(sum(deltas.^2,1));
         delta = mean(deltas,2);
+        delta = delta/norm(delta);
         
         ctheta = angleDiffSigns([proxTangent;0].',[delta;0].');
         
         designThetas = vertcat(designThetas,ctheta);
-        designLs = vertcat(designLs,max(rls)+lengthPadding);
+        designLs = vertcat(designLs,mean(rls)+designLs(end));
     end
     
     % now simulate a bunch of paths using this angle
@@ -582,20 +569,23 @@ for i=1:length(nodeList)-1
         end
         
         if(nodeTypes(desNode,1) == 1 || nodeTypes(desNode,1) == 2)
-            if(norm(cy(1:2)-nodes(desNode,:).') < 1e-3)
+            if(norm(cy(1:2)-nodes(desNode,:).') < 1e-3 || norm(cx(5:6) - nodes(desNode,:).') < 50)
                 rx{k} = cx;
                 ry{k} = cy;
                 rxs{k} = cxs;
+                rwi{k} = wallIndex;
                 k = k+1;
             end
-        else
-            rx{k} = cx;
-            ry{k} = cy;
-            rxs{k} = cxs;
-            k = k+1;
+        else 
+            if(norm(cx(5:6) - nodes(desNode,:).') < 60)
+                rx{k} = cx;
+                ry{k} = cy;
+                rxs{k} = cxs;
+                rwi{k} = wallIndex;
+                k = k+1;
+            end
         end
     end
-    
 end
 
 % %%
