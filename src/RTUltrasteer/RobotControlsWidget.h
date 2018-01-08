@@ -21,6 +21,8 @@ namespace Nf
     void setRobot(NeedleSteeringRobot*);
 
     Ui::RobotControlsWidgetClass ui;
+    //giada STEP
+    //void SetStepInsertion(int);
 
   private:
     NeedleSteeringRobot *m_robot;

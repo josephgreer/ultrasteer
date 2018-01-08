@@ -57,6 +57,9 @@ namespace Nf
 
     connect(ui.articulationScrollBar, SIGNAL(valueChanged(int)), this, SLOT(SetArticulationAngle(int)));
     connect(&m_DisplayQueryTimer, SIGNAL(timeout()), this, SLOT(onDisplayQuery()));
+
+    //giada
+    // connect(ui.InsStepScrollBar, SIGNAL(valueChanged(int)), this, SLOT(SetStepInsertion(int)));
   
   }
   
@@ -135,6 +138,9 @@ namespace Nf
       float angle = m_robot->getArticulationAngle2();
       ui.articulation_pos->display(fmodf(angle,360));
     }
+    //ui.stepvalue->setEnabled(true);
+    //  float step = m_robot->getArticulationAngle2();
+    //  ui.stepvalue->display(step);
   }
 
   void RobotControlsWidget::DCInsert()
@@ -204,14 +210,14 @@ namespace Nf
 
   void RobotControlsWidget::RotPosInc(void)
   {
-    m_robot->RotateIncremental(90);
+    m_robot->RotateIncremental(30);
     //m_robot->RotateIncremental(2);
     //m_robot->SetRotationVelocity(100);
   }
 
   void RobotControlsWidget::RotNegInc(void)
   {
-    m_robot->RotateIncremental(-90);
+    m_robot->RotateIncremental(-30);
     //m_robot->RotateIncremental(-2);
    // m_robot->SetRotationVelocity(-100);
   }
@@ -219,10 +225,10 @@ namespace Nf
   void RobotControlsWidget::FullPosRot(void)
   {
     //m_robot->RotateIncremental(360.0);
-    //m_robot->SetRotationVelocity(300);
-   m_robot->InsertIncremental(-14);
-   Sleep(3000);
-   m_robot->HomeRoll();
+    m_robot->SetRotationVelocity(300);
+  // m_robot->InsertIncremental(-14);
+  // Sleep(3000);
+  // m_robot->HomeRoll();
    //Sleep(5500);
 
    /*
@@ -241,7 +247,7 @@ namespace Nf
   void RobotControlsWidget::FullNegRot(void)
   {
     //m_robot->RotateIncremental(-360.0);
-     m_robot->SetRotationVelocity(300);
+     m_robot->SetRotationVelocity(-300);
    
   }
 
@@ -300,6 +306,12 @@ namespace Nf
     Sleep(4000);
      m_robot->InsertIncremental(-4);
   }
+
+  //giada
+ // void RobotControlsWidget::SetStepInsertion(int step)
+  //{
+  //  set step
+  //}
   
 }
 

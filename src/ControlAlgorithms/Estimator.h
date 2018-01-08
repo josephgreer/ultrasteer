@@ -28,16 +28,17 @@ namespace Nf
     bool Init;
     vector<Vec3d> OBS;
     vector<Vec3d> VER;
+    vector<Vec3d> TARGET;
 
     vector<double> L;
     vector<unsigned int> ART;
     vector<int> IND;
     vector<double> THETA;
     double StartArt;
-    double ART_ANG;
+    //double ART_ANG;
 
     
-    double rho_n,rho_a,yaw_art;
+    double rho_n,rho_a;//,yaw_art;
 
     Matrix33d ROT_base;
     Vec3d off;
@@ -79,6 +80,7 @@ namespace Nf
     double lastTHETA();
     bool testArt(double L_n);
     Matrix44d getCurrentEstimateTIP_trans(float horizon);
+    void addTarget(Vec3d);
     /*void fullUpdateUKF(Vec3d u, Matrix44d z);
     void processUpdateUKF(Vec3d u);
     void getCurrentStateEstimate(Matrix44d &x_out);

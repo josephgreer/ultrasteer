@@ -71,10 +71,10 @@ namespace Nf
     ROT_base = Matrix33d::I();
     off = Vec3d(0,0,appoff+ins);
     
-    rho_n = 60; //mm 
-    rho_a = 35; //mm
-    yaw_art = 0;
-    ART_ANG= - 0 * (PI/180.0);
+    rho_n = 155; //mm 
+    rho_a = 40; //mm
+    //yaw_art = 0;
+    //ART_ANG= - 0 * (PI/180.0);
 
     firstAdd = true;
 
@@ -89,6 +89,8 @@ namespace Nf
     ART.push_back(art);
 
     TIP_t.push_back(simulate1Step(0,th,art,ART.back(),TIP_t.back(),ins));
+
+    TARGET.clear();
     // Aggiungere TIP
     
   }
@@ -179,7 +181,7 @@ namespace Nf
     tip_mm_t = prevTIP.GetPosition();
     ROT_t = prevTIP.GetOrientation();
 
-    if ((a == 1) && ( prev_a == 0))
+    /*if ((a == 1) && ( prev_a == 0))
     {  
       ROT_t =  AxisAngle(ROT_t.Col(2),yaw_art) * ROT_t;
       StartArt = L_n;
@@ -189,7 +191,7 @@ namespace Nf
     {
       ROT_t =  AxisAngle(ROT_t.Col(0),ART_ANG) * ROT_t;
       ROT_t =  AxisAngle(ROT_t.Col(2),-yaw_art) * ROT_t;
-    }
+    }*/
             
     if ((a==1))
     {
@@ -204,10 +206,10 @@ namespace Nf
        rho = 1000;
     }
 
-    if((L_n-StartArt)<(TIP_LENGTH))
+    /*if((L_n-StartArt)<(TIP_LENGTH))
     {
        rho = 1000;
-    }
+    }*/
 
         
     app_d = Vec3d(0,rho*(1-cos(diff_l/rho)),rho*sin(diff_l/rho));
@@ -304,8 +306,8 @@ namespace Nf
 
     mrho_n(0,0)=rho_n;
     mrho_a(0,0)=rho_a;
-    myaw_art(0,0)=yaw_art;
-    mART_ANG = ART_ANG;
+    //myaw_art(0,0)=yaw_art;
+    //mART_ANG = ART_ANG;
     
     for (int i=0;i<L.size();i++)
     {
@@ -367,11 +369,12 @@ namespace Nf
     mrho_a.save(path, raw_ascii);
     sprintf(path, "%sART.dat", basePath);
     dart.save(path, raw_ascii);
-    sprintf(path, "%sYAW_ART.dat", basePath);
+    
+    /*sprintf(path, "%sYAW_ART.dat", basePath);
     myaw_art.save(path, raw_ascii);
 
     sprintf(path, "%sART_ANG.dat", basePath);
-    mART_ANG.save(path, raw_ascii);
+    mART_ANG.save(path, raw_ascii);*/
 
 
     
@@ -420,7 +423,7 @@ namespace Nf
       return false;
    
     
-    mat res = zeros(7,1);
+    mat res = zeros(5,1);
     //mat PointInd = zeros(OBS.size(),1);
     mat PointInd,POINT_NEW,VER_NEW;
     char basePath[150];
@@ -467,10 +470,11 @@ namespace Nf
     ROT_base = ROT_base * rotx(res(0,0)) *  roty(res(1,0)) *  rotz(res(2,0));
     tip_mm_t = ROT_base*off;
     ROT_t = ROT_base;
-    rho_n = rho_n + res(3,0); //mm
+    //rho_n = rho_n + res(3,0); //mm
     rho_a = rho_a + res(4,0);
-    yaw_art = yaw_art + res(5,0);
-    ART_ANG = ART_ANG + res(6,0); 
+    //yaw_art = yaw_art + res(5,0);
+    //ART_ANG = ART_ANG + res(6,0); 
+    
     TIP_t.clear();
     TIP_t.push_back(Matrix44d::FromOrientationAndTranslation(ROT_t, tip_mm_t));
     
@@ -507,7 +511,7 @@ namespace Nf
       if (ART.back())
       {
         appROT = TIP_t.back().GetOrientation();
-        appROT = AxisAngle(appROT.Col(0),ART_ANG) * appROT;
+        //appROT = AxisAngle(appROT.Col(0),ART_ANG) * appROT;
         v_z= appROT.Col(2);
       }
 
@@ -569,6 +573,11 @@ Matrix44d Estimator::getCurrentEstimateTIP_trans(float horizon)
     }
      
     return appTIP;
+}
+
+void Estimator::addTarget(Vec3d t)
+{
+  TARGET.push_back(t);
 }
 /*
 n = sl3dnormalize(r(1:3), epsilon);
