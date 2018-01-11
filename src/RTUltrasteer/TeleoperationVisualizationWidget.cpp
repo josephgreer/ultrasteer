@@ -12,6 +12,8 @@ namespace Nf
     m_control = control;
 
     // create layout
+
+
     m_layout = new QGridLayout(parent);
     this->setLayout(m_layout);
 

@@ -5,6 +5,7 @@
 #include "ui_RobotControlsWidget.h"
 #include "UICore.h"
 #include "NeedleSteeringRobot.h"
+#include "ControlAlgorithms.h"
 
 namespace Nf
 {
@@ -21,11 +22,11 @@ namespace Nf
     void setRobot(NeedleSteeringRobot*);
 
     Ui::RobotControlsWidgetClass ui;
-    //giada STEP
-    //void SetStepInsertion(int);
+ 
 
   private:
     NeedleSteeringRobot *m_robot;
+  //  ControlAlgorithms *m_control;  //giada 8 gen
     bool m_displayTimerOn;
     bool m_rollInit;
     bool m_insInit;
@@ -68,6 +69,8 @@ namespace Nf
       bool isArticulationInitialized(void) { return m_robot->isArticulationInitialized(); }
 
       void SetArticulationAngle(int);
+
+     // void SetStepInsertion(int);  //giada 8 gen
 
       void onDisplayQuery(void);
 

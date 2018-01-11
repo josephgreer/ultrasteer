@@ -2,7 +2,7 @@
 #include "math.h"
 #include <time.h>
 #define TH_ART_MOT 34.0
-#define ART_SLIDING 44
+#define ART_SLIDING 47
 
 
 
@@ -53,7 +53,7 @@ namespace Nf {
     m_insTrigger->setThresholds(0.01);
     m_rotTrigger->setThresholds(0.01);
 	  QuickandDirty=false;
-    stepL=NEEDLE_DEAD_LENGTH;
+    stepL=MAX_OPEN_LOOP_INSERTION;
     myfile.open("timeUS.txt");
     ArticulationAngle=0;
     NPoint=0;
@@ -273,7 +273,7 @@ namespace Nf {
 
        
 
-      if ((NPoint < 3)&& (insertionSinceLastManualScan() >= MAX_OPEN_LOOP_INSERTION))
+      if ((NPoint < 3)&& (insertionSinceLastManualScan() >= stepL))
       {
            // show distance point, if the user confirm, add point
            Vec3d p = ImagePtToRobotPt(p_im);
@@ -445,7 +445,7 @@ namespace Nf {
     {
       CountCommand=0;
     	bool condition=false; 
-      if( insertionSinceLastManualScan() >= MAX_OPEN_LOOP_INSERTION )
+      if( insertionSinceLastManualScan() >= stepL )
       { // if we need a new scan
           
     	    QuickandDirty=false;
@@ -784,7 +784,7 @@ namespace Nf {
     Vec3d py_world = p + R*Vec3d(0.0,5.0,0.0);
     pz_img = RobotPtToImagePt(pz_world);
     py_img = RobotPtToImagePt(py_world);
-    mmToNextScan = MAX(MAX_OPEN_LOOP_INSERTION-insertionSinceLastManualScan(),0.0);
+    mmToNextScan = MAX(stepL-insertionSinceLastManualScan(),0.0);
     targetDepthReached = CheckCompletion();
 
     Nf::Vec3d e = (m_t - p);
@@ -855,7 +855,6 @@ namespace Nf {
         if (fabs(appp_img.z) < minZ)
         {
            x =  appx;
-
            p_img = appp_img;
            pz_world = p + R*Vec3d(0.0,0.0,0.1);
            py_world = p + R*Vec3d(0.0,5.0,0.0);
@@ -866,7 +865,7 @@ namespace Nf {
       
       }
     
-    mmToNextScan = MAX(MAX_OPEN_LOOP_INSERTION-insertionSinceLastManualScan(),0.0);
+    mmToNextScan = MAX(stepL-insertionSinceLastManualScan(),0.0);
     targetDepthReached = CheckCompletion();
     
     R = m_x.GetOrientation();

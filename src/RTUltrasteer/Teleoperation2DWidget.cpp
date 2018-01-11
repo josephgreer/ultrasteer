@@ -40,6 +40,17 @@ namespace Nf
     m_jointControlButton->setFixedWidth(300);
     connect(m_jointControlButton, SIGNAL(clicked()), this, SLOT(onStartStopJointSpaceControl()));
 
+    m_insLengthSlider = new QSlider(Qt::Orientation::Horizontal);
+    m_insLengthSlider->setFixedWidth(300);
+    m_insLengthSlider->setSliderPosition(15);
+    m_insLengthSlider->setMinimum(1);
+    m_insLengthSlider->setMaximum(30);
+   // m_insValue = new QLCDNumber();
+    connect(m_insLengthSlider, SIGNAL(valueChanged(int)), this, SLOT(onInsLengthSliderMoved(int)));
+
+
+    
+
     m_robotStatusWidget = new RobotStatusWidget(parent, m_robot);
 
     m_leftSubLayout = new QHBoxLayout(parent);
@@ -49,6 +60,7 @@ namespace Nf
     m_buttonLayout->addWidget(m_scanButton);
     m_buttonLayout->addWidget(m_taskControlButton);
     m_buttonLayout->addWidget(m_jointControlButton);
+    m_buttonLayout->addWidget(m_insLengthSlider);
     m_buttonLayout->setMargin(0);
     m_buttonLayout->setContentsMargins(QMargins(0,0,0,0));
     m_buttonLayout->setSpacing(0);
@@ -164,6 +176,12 @@ namespace Nf
       m_imageViewer->SetInCountdownToManualScan(true);
       m_imageViewer->SetInstructionText(str);
     }
+  }
+
+ void Teleoperation2DWidget::onInsLengthSliderMoved(int step)
+  {
+    //NTrace("FIRE");
+    m_control->setStepLength(step);
   }
 
   void Teleoperation2DWidget::onManualTimeout()

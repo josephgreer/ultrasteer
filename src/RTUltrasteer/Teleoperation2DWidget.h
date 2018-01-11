@@ -6,6 +6,7 @@
 #include <QGridLayout>
 #include <QElapsedTimer>
 #include <QPushButton>
+#include <QSlider>
 #include "Resizable.h"
 #include "ImageViewerWidget.h"
 #include "RPFileReader.h"
@@ -73,6 +74,8 @@ namespace Nf
     QPushButton *m_scanButton;
     QPushButton *m_taskControlButton;
     QPushButton *m_jointControlButton;
+    QSlider *m_insLengthSlider;
+   // QLCDNumber *m_insValue;
     std::tr1::shared_ptr < QTimer > m_preScanTimer;
     QElapsedTimer m_scanTimer;
     
@@ -102,6 +105,7 @@ namespace Nf
     void onStartStopJointSpaceControl();
     void onManualTimeout();
     void OnMove(std::vector<float>& motionData);
+    void onInsLengthSliderMoved(int);
   };
 
   class Teleoperation2DFileWidget : public Teleoperation2DWidget

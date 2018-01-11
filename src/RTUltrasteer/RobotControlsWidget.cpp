@@ -58,8 +58,8 @@ namespace Nf
     connect(ui.articulationScrollBar, SIGNAL(valueChanged(int)), this, SLOT(SetArticulationAngle(int)));
     connect(&m_DisplayQueryTimer, SIGNAL(timeout()), this, SLOT(onDisplayQuery()));
 
-    //giada
-    // connect(ui.InsStepScrollBar, SIGNAL(valueChanged(int)), this, SLOT(SetStepInsertion(int)));
+    //connect(ui.InsStepScrollBar, SIGNAL(valueChanged(int)), this, SLOT(SetStepInsertion(int))); //giada 8 gen
+  
   
   }
   
@@ -307,11 +307,12 @@ namespace Nf
      m_robot->InsertIncremental(-4);
   }
 
-  //giada
+  //giada Gen 8
  // void RobotControlsWidget::SetStepInsertion(int step)
-  //{
-  //  set step
-  //}
+ // {
+    //ui.stepvalueLCD->display(step);
+    //m_control->setStepLength(step);
+ // }
   
 }
 
