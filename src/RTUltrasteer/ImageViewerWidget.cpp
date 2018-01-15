@@ -524,7 +524,7 @@ namespace Nf
     cvZero(m_mask);
 
     // get current values for overlaying
-    Vec3d p_img, pz_img, py_img;
+    Vec3d p_img, pz_img, py_img,p_imgS;
     Matrix44d x, z;
     Vec3d t_img, t;
     Vec3d Sxyz;
@@ -532,7 +532,7 @@ namespace Nf
     double alpha;
     bool insertionDepthReached;
     m_control->getOverlayValues2(x, p_img, pz_img, py_img,
-      z, Sxyz, t_img, t, mmToNextScan, insertionDepthReached,alpha);
+      z, Sxyz, t_img, t, mmToNextScan, insertionDepthReached,alpha,p_imgS);
 
     // update target
     if( !t.isZero() ){
@@ -545,7 +545,7 @@ namespace Nf
       // update estimate
       if( !x.isZero() ){
         SetEstimateText(x,Sxyz);
-        DrawTipIcon(p_img, pz_img, py_img);
+        DrawTipIcon(p_img, p_imgS);
       }
 
       // update measurement
@@ -652,7 +652,7 @@ namespace Nf
     }
   }
 
-  void ImageViewer2DTeleoperationWidget::DrawTipIcon(Vec3d p, Vec3d pz, Vec3d py)
+  void ImageViewer2DTeleoperationWidget::DrawTipIcon(Vec3d p, Vec3d s)
   {
 
     /*if( fabs(p.z) < 1.0 ){ // if the tip estimate is within 10 mm of the image plane (now is 1 mm!)
@@ -673,6 +673,16 @@ namespace Nf
       // Update the VTK rendering
       //this->repaint();
     }
+
+    if(fabs(s.z) < 1.0) // If we have a circle to draw
+    {
+     // cvCircle(m_mask,cvPoint(s.x,s.y),r,cvScalar(1.0),thick,CV_AA);
+     cvCircle(m_mask,cvPoint(s.x,s.y),r,cvScalar(1,0,1,1),thick,CV_AA);
+
+      // Update the VTK rendering
+      //this->repaint();
+    }
+
      m_maskImporter->Update();
      m_maskImporter->Modified();
   }

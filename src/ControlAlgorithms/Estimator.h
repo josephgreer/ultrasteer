@@ -3,7 +3,7 @@
 
 #include "RTCore.h"
 #include <vector>
-#include<stdio.h>
+#include <stdio.h>
 
 #define TIP_LENGTH 15.3
 
@@ -19,6 +19,10 @@
 ///
 ///	author:		Alessandro Diodato
 ///	date:		  May 14, 2015
+
+
+
+
 
 namespace Nf
 {
@@ -52,6 +56,9 @@ namespace Nf
     char buf[BUFLEN];
     WSADATA wsa;
 
+    HANDLE ghMutex; 
+
+
 
   private:
     Matrix33d rotx(double roll);
@@ -64,6 +71,7 @@ namespace Nf
   public: //Methods
 
     vector<Matrix44d> TIP_t;
+    vector<Matrix44d> SIMULATE_TIP;
     Estimator(void);
     ~Estimator(void);
     void setEstimator(float ins,float appoff,float yaw,unsigned int art);
@@ -81,6 +89,7 @@ namespace Nf
     bool testArt(double L_n);
     Matrix44d getCurrentEstimateTIP_trans(float horizon);
     void addTarget(Vec3d);
+    void simulateTask();
     /*void fullUpdateUKF(Vec3d u, Matrix44d z);
     void processUpdateUKF(Vec3d u);
     void getCurrentStateEstimate(Matrix44d &x_out);

@@ -2,6 +2,10 @@
 using namespace arma;
 #define INTR_LENGTH 15
 
+#define FAULHABER_ONE_ROTATION1	400						//# of encoder ticks in one full rotation (without factoring in the gear ratio) 
+#define SPUR_GEAR_RATIO1			(1539.0/65.0*4.0/0.5)	//Gear ratio for the maxon motor gearhead + pinion gears
+
+
 namespace Nf
 {
   /// \brief		Constructor: Initializes filter	
@@ -14,6 +18,11 @@ namespace Nf
     IND.clear();
     THETA.clear();
 
+    ghMutex = CreateMutex( 
+        NULL,              // default security attributes
+        FALSE,             // initially not owned
+        NULL);             // unnamed mutex
+    
     StartArt =0;
 
     slen = sizeof(si_other) ;
@@ -104,6 +113,8 @@ namespace Nf
   }
   Matrix44d Estimator::getCurrentEstimateTIP()
   {
+    WaitForSingleObject(ghMutex,INFINITE);  
+
      Vec3d app_tip = TIP_t.back().GetPosition();     
      Vec3d v_z= TIP_t.back().GetOrientation().Col(2);
      Matrix33d appROT = TIP_t.back().GetOrientation();
@@ -117,6 +128,8 @@ namespace Nf
       }
     */
     app_tip = app_tip  + (v_z)*TIP_LENGTH;
+    ReleaseMutex(ghMutex);
+
     return Matrix44d::FromOrientationAndTranslation(appROT, app_tip);
   }
   Matrix44d Estimator::getCurrentEstimateWRIST()
@@ -224,7 +237,8 @@ namespace Nf
 
   void Estimator::updateInput(double m_l, double m_th,unsigned int a)
   {
-    
+   
+   WaitForSingleObject(ghMutex,INFINITE);
    double diff_l,diff_th;
    unsigned int prev_art;
     
@@ -286,7 +300,7 @@ namespace Nf
 
 
     }
-    
+    ReleaseMutex(ghMutex);
   }
 
   void Estimator::saveDataOpt()
@@ -577,7 +591,63 @@ Matrix44d Estimator::getCurrentEstimateTIP_trans(float horizon)
 
 void Estimator::addTarget(Vec3d t)
 {
+  TARGET.clear();
   TARGET.push_back(t);
+}
+
+void Estimator::simulateTask()
+{
+    if(!firstAdd)
+      return;
+
+    SIMULATE_TIP.clear();
+
+    /*for (int i=0;i<L.size();i++)
+    {
+      SIMULATE_TIP.push_back(TIP_t[i]);
+    }*/
+
+    if (TIP_t.empty())
+      return;
+
+    SIMULATE_TIP.push_back(TIP_t.back());
+
+    double disp = 0.01;
+    Matrix44d Wrist; 
+    
+    double L_sim=L.back();
+    double diff_th=0;
+    Nf::Vec3d e,p,tar;
+    Nf::Matrix33d R;
+    double dt = 0.025;
+    dt = dt*60;
+
+  
+
+
+    while(1)
+    {
+
+     Wrist = SIMULATE_TIP.back();
+     p = Wrist.GetPosition();
+     R = Wrist.GetOrientation();
+
+     e = R.Inverse()*(TARGET.back() - p);
+     
+     if (e.z<0)
+       break;
+     
+     f32 d_th = atan2(-e.x, e.y);
+     if (d_th<0)
+         diff_th=( -350.0 * 360.0 * dt) / ( (float)FAULHABER_ONE_ROTATION1 * (float)SPUR_GEAR_RATIO1);
+     else
+        diff_th= ( 350.0 * 360.0 * dt) / ( (float)FAULHABER_ONE_ROTATION1 * (float)SPUR_GEAR_RATIO1);
+      
+      L_sim = L_sim + disp;
+      SIMULATE_TIP.push_back(simulate1Step(disp,diff_th,1,1,SIMULATE_TIP.back(),L_sim));
+    }
+
+
 }
 /*
 n = sl3dnormalize(r(1:3), epsilon);

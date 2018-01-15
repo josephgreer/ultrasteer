@@ -2,7 +2,7 @@
 #include "math.h"
 #include <time.h>
 #define TH_ART_MOT 34.0
-#define ART_SLIDING 47
+#define ART_SLIDING 42
 
 
 
@@ -454,8 +454,9 @@ namespace Nf {
           condition=true;
           m_robot->SetArticulationAngle(0); 
           // scommentare questa riga
+          m_EST.simulateTask();
           m_EST.addTIP();
-          
+         
 
       }
       if ((!QuickandDirty)&&(!condition))
@@ -801,7 +802,7 @@ namespace Nf {
                                            Matrix44d &z,
                                            Vec3d &Sxyz,
                                            Vec3d &t_img, Vec3d &t,
-                                           double &mmToNextScan, bool &targetDepthReached, double& alpha_e)
+                                           double &mmToNextScan, bool &targetDepthReached, double& alpha_e, Vec3d &p_imgS)
   {
     // target  
     t_img = RobotPtToImagePt(m_t);
@@ -831,9 +832,12 @@ namespace Nf {
     //p = wristToTip(R,W);
     double minZ=1000;
     Vec3d pz_world;
+    Vec3d simulateP;
     Vec3d py_world,appp_img;
     Matrix44d appx;
     int Step = ceil((float)m_EST.TIP_t.size()/250);
+    int StepS = ceil((float)m_EST.SIMULATE_TIP.size()/250);
+
     if (QuickandDirty)
     {
        x = m_x;
@@ -846,6 +850,7 @@ namespace Nf {
        py_img = RobotPtToImagePt(py_world);
     }
     else
+    { 
       for (int i=0;i<m_EST.TIP_t.size();i = i +Step)
       {
         appx =  m_EST.TIP_t[i];
@@ -860,10 +865,25 @@ namespace Nf {
            py_world = p + R*Vec3d(0.0,5.0,0.0);
            pz_img = RobotPtToImagePt(pz_world);
            py_img = RobotPtToImagePt(py_world);
-           minZ = fabs(p_img.z);
+           minZ = fabs(p_img.z);      
         }
-      
       }
+
+        minZ=10000;
+        for (int i=0;i<m_EST.SIMULATE_TIP.size();i = i +StepS)
+        {
+        
+          p = m_EST.SIMULATE_TIP[i].GetPosition();
+          appp_img = RobotPtToImagePt(p);
+          if (fabs(appp_img.z) < minZ)
+          {
+              p_imgS = appp_img;
+              minZ = fabs(p_imgS.z);      
+          }
+
+      }
+
+    }
     
     mmToNextScan = MAX(stepL-insertionSinceLastManualScan(),0.0);
     targetDepthReached = CheckCompletion();
@@ -1164,7 +1184,7 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
         else
         {
 
-          float art_back = 10.0;
+          float art_back = TIP_LENGTH;
             switch(C->STATE_ART)
             {
                 case 0:

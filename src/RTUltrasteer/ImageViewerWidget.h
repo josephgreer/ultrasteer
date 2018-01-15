@@ -148,7 +148,7 @@ namespace Nf
     virtual ~ImageViewer2DTeleoperationWidget();
     void SetImage(const RPData *rp, RP_TYPE type);
     void DrawTargetIcon(Vec3d t);
-    void DrawTipIcon(Vec3d p, Vec3d pz, Vec3d py);
+    void DrawTipIcon(Vec3d p, Vec3d a);
     void SetTargetText(Vec2d px, Vec3d wpt);
     void SetEstimateText(Matrix44d x, Vec3d Sxyz);
     void SetInstructionText(char* str);
