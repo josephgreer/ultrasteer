@@ -8,17 +8,22 @@ rng(1);
 
 addpath(genpath('Geom2d'));
 
-figure;
+h = figure;
 
 handles.robot = [];
 
 xlim([-500 500]);
-ylim([-500 500]);
+ylim([-400 400]);
 daspect([1 1 1]);
 grid on;
 hold on;
 box on;
 hold on;
+xlabel('x (cm)');
+ylabel('y (cm)');
+set(gca,'FontSize',12,'FontName','Times New Roman');
+set(h, 'Position', [0 0 300 240]);
+
 
 DrawMap(map);
 
@@ -32,7 +37,8 @@ useMidPointNodes = true;
 
 startNode = 34;
 endNode = 31;
-allowableAngleRange = deg2rad(40);
+% endNode = 30;
+allowableAngleRange = deg2rad(50);
 
 nVertices = nNodes*nAngles;
 
@@ -65,13 +71,13 @@ end
 
 scatter(nodes([startNode,endNode],1),nodes([startNode,endNode],2),'LineWidth',2);
 
-% show the different types of nodes
-for i=1:3
-    currIs = nodeTypes(:,1) == i;
-    if(useMidPointNodes || i ~= 2) 
-        scatter(nodes(currIs,1),nodes(currIs,2), 'LineWidth',2);
-    end
-end
+% % show the different types of nodes
+% for i=1:3
+%     currIs = nodeTypes(:,1) == i;
+%     if(useMidPointNodes || i ~= 2) 
+%         scatter(nodes(currIs,1),nodes(currIs,2), 'LineWidth',2);
+%     end
+% end
 
 interiorNodes = find(nodeTypes(:,1) == 3);
 nInteriorNodes = size(interiorNodes,1);
@@ -382,8 +388,8 @@ end
 % this contains the list of nodes we will visit on our way to a destination
 nodeList = unique(nodeList,'stable');
 
-allowableAngleRange = deg2rad(45);
-angleNoise = deg2rad(5); % in degree uniform distribution
+allowableAngleRange = deg2rad(50);
+angleNoise = deg2rad(10); % in degree uniform distribution
 lengthNoise = 10; % in physical units
 nSamples = 100; % number of samples used to calculate monte carlo prboabilities
 nAngles = 100;
@@ -542,6 +548,8 @@ for i=1:length(nodeList)-1
     thetaLeft = find(designThetas >= 0);
     
     k = 1;
+    nsucc = 0;
+    nfail = 0;
     while(k < nSamples)
         cls = designLs+unifrnd(-lengthNoise,lengthNoise,length(designLs),1);
         cls = max(cls,1e-3);
@@ -575,6 +583,9 @@ for i=1:length(nodeList)-1
                 rxs{k} = cxs;
                 rwi{k} = wallIndex;
                 k = k+1;
+                nsucc = nsucc+1;
+            else
+                nfail = nfail+1;
             end
         else 
             if(norm(cx(5:6) - nodes(desNode,:).') < 60)
@@ -582,11 +593,172 @@ for i=1:length(nodeList)-1
                 ry{k} = cy;
                 rxs{k} = cxs;
                 rwi{k} = wallIndex;
+                nsucc = nsucc+1;
                 k = k+1;
+            else
+                nfail = nfail+1;
             end
         end
     end
+    display(sprintf('Success estimate at landmark %d is %f', i, nsucc/(nfail+nsucc)));
 end
+
+
+angleNoises = deg2rad(linspace(0,25,12));
+successProbsOptimalDesign = zeros(length(angleNoises),1);
+for kk = 7:7
+    nTries = 1000;
+    
+    handles.robot = [];
+    nfail = 0;
+    nsucc = 0;
+    thetaRight = find(designThetas < 0);
+    thetaLeft = find(designThetas >= 0);
+    
+    
+    tipLocations = zeros(nTries,2);
+    
+    angleNoise = angleNoises(kk);
+    for jj=1:nTries
+        cls = designLs+unifrnd(-lengthNoise,lengthNoise,length(designLs),1);
+        cls = max(cls,1e-3);
+        cls(1) = 0;
+        
+        thetaPerturb = unifrnd(-angleNoise,angleNoise,length(designThetas),1);
+        cts = designThetas+thetaPerturb;
+        cts(thetaRight) = min(cts(thetaRight),-1e-3);
+        cts(thetaLeft) = max(cts(thetaLeft),1e-3);
+        
+        thetas = [cls(1:end-1) cts];
+        
+        xx = [nodes(startNode,:).'; nodes(startNode,:).';...
+            nodes(startNode,:).'];
+        yy = [0; 0; 0; 0; 1];
+        xxs = [xx(1:2:end) xx(2:2:end)];
+        
+        dls = cls(2:end)-cls(1:end-1);
+        
+        wallIndex = -1;
+        if(kk == 1 && jj == 1)
+            cmap = zeros(0,4);
+        else
+            cmap = map;
+        end
+        for i=1:length(dls)
+            [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i), cmap, thetas, RobotLength(xxs), wallIndex, xxs);
+            %         handles = DrawRobotXs(xxs,-1,handles);
+            %         pause(1);
+        end
+        if(kk == 1 && (jj == 1 || jj == 2))
+            handles = DrawRobotXs(xxs, -1, handles);
+        end
+        if(norm(xx(5:6) - nodes(endNode,:).') < 60)
+            nsucc = nsucc+1;
+        else
+            nfail = nfail+1;
+        end
+        tipLocations(jj,:) = xx(5:6).';
+    end
+    
+    scatter(tipLocations(:,1),tipLocations(:,2));
+    
+    successProb = nsucc/(nsucc+nfail);
+    successProbsOptimalDesign(kk) = successProb;
+    display(sprintf('Optimal Design Prob Success %f AngleNoise %f', successProb, rad2deg(angleNoise)));
+end
+
+load('Maps/NominalDesign1');
+
+successProbsNominalDesign = zeros(length(angleNoises),1);
+
+for kk = 4:4
+    nTries = 1000;
+    
+    handles.robot = [];
+    nfail = 0;
+    nsucc = 0;
+    thetaRight = find(designThetas < 0);
+    thetaLeft = find(designThetas >= 0);
+    
+    
+    tipLocations = zeros(nTries,2);
+    
+    
+    angleNoise = angleNoises(kk);
+    for jj=1:nTries
+        cls = designLs+unifrnd(-lengthNoise,lengthNoise,length(designLs),1);
+        cls = max(cls,1e-3);
+        cls(1) = 0;
+        
+        thetaPerturb = unifrnd(-angleNoise,angleNoise,length(designThetas),1);
+        cts = designThetas+thetaPerturb;
+        cts(thetaRight) = min(cts(thetaRight),-1e-3);
+        cts(thetaLeft) = max(cts(thetaLeft),1e-3);
+        
+        thetas = [cls(1:end-1) cts];
+        
+        xx = [nodes(startNode,:).'; nodes(startNode,:).';...
+            nodes(startNode,:).'];
+        yy = [0; 0; 0; 0; 1];
+        xxs = [xx(1:2:end) xx(2:2:end)];
+        
+        dls = cls(2:end)-cls(1:end-1);
+        
+        
+        if(false)%kk == 1 && jj == 1)
+            cmap = zeros(0,4);
+        else
+            cmap = map;
+        end
+        
+        
+        
+        wallIndex = -1;
+        badOne = false;
+        for i=1:length(dls)
+            try
+                [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i), cmap, thetas, RobotLength(xxs), wallIndex, xxs);
+            catch
+                badOne = true;
+                break;
+            end
+            if(jj == 184)
+                handles = DrawRobotXs(xxs,-1,handles);
+                pause(1);
+            end
+        end
+        tipLocations(jj,:) = xx(5:6).';
+        if(badOne)
+            nfail = nfail+1;
+%             DrawRobotXs(xxs,-1,handles);
+            continue;
+        end
+        if(kk == 1 && (jj == 1 || jj == 2))
+            handles = DrawRobotXs(xxs, -1, handles);
+        end
+        
+        if(norm(xx(5:6) - nodes(endNode,:).') < 60)
+            nsucc = nsucc+1;
+        else
+            nfail = nfail+1;
+        end
+    end
+    successProb = nsucc/(nsucc+nfail);
+    successProbsNominalDesign(kk) = successProb;
+    display(sprintf('Nominal Design Prob Success %f Angle Noise %f', successProb, rad2deg(angleNoise)));
+end
+
+h = figure;
+set(gca,'FontSize',12,'FontName','Times New Roman');
+set(h, 'Position',[0 0 400 210]);
+hold all;
+box on;
+grid on;
+plot(rad2deg(angleNoises), successProbsOptimalDesign, '-o', 'LineWidth',2);
+plot(rad2deg(angleNoises), successProbsNominalDesign, '-o', 'LineWidth', 2);
+xlabel('Angular Uncertainty (\circ)');
+ylabel('Probability of Success');
+legend('Optimal Design', 'Nominal Design');
 
 % %%
 % % check that the handedness is right

@@ -96,7 +96,7 @@ while(dl > 0)
             tipTangent = tipTangent/norm(tipTangent);
         end
     elseif(wallIndex <= -2)
-        display('Trapped');
+%         display('Trapped');
         return;
     else
         x(5:6) = tipPoint;

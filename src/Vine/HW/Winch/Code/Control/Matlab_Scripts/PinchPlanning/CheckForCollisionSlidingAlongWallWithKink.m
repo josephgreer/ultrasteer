@@ -164,6 +164,11 @@ if(~isempty(minThetaIdx))
     x(3:4) = l1Vec;
     x(5) = out.intMatrixX;
     x(6) = out.intMatrixY;
+    if(out.intAdjacencyMatrix <= 0)
+        msgID = 'Didnt intersect';
+        msg = 'Didnt intersect';
+        throw(MException(msgID,msg));
+    end
     assert(out.intAdjacencyMatrix > 0);
     
     if(finalThetas(minThetaIdx,end) == 2)
