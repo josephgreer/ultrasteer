@@ -1,7 +1,21 @@
 clear; clc; close all;
 
+% load 'Maps/map'
+% load 'Maps/nodes'
+% 
+% startNode = 47;
+% endNode = 52;
+% 
+% % 
+% map = map/8;
+% nodes = nodes/8;
+
+
 load 'Maps/map1'
 load 'Maps/nodes1'
+
+startNode = 34;
+endNode = 31;
 
 rng(1);
 
@@ -12,8 +26,8 @@ h = figure;
 
 handles.robot = [];
 
-xlim([-500 500]);
-ylim([-400 400]);
+% xlim([-500 500]);
+% ylim([-400 400]);
 daspect([1 1 1]);
 grid on;
 hold on;
@@ -22,7 +36,7 @@ hold on;
 xlabel('x (cm)');
 ylabel('y (cm)');
 set(gca,'FontSize',12,'FontName','Times New Roman');
-set(h, 'Position', [0 0 300 240]);
+set(h, 'Position', [0 0 600 480]);
 
 
 DrawMap(map);
@@ -35,8 +49,6 @@ connectionInteriorNode = 3;
 connectionAngleChange = 1;
 useMidPointNodes = true;
 
-startNode = 34;
-endNode = 31;
 % endNode = 30;
 allowableAngleRange = deg2rad(50);
 
@@ -71,13 +83,13 @@ end
 
 scatter(nodes([startNode,endNode],1),nodes([startNode,endNode],2),'LineWidth',2);
 
-% % show the different types of nodes
-% for i=1:3
-%     currIs = nodeTypes(:,1) == i;
-%     if(useMidPointNodes || i ~= 2) 
-%         scatter(nodes(currIs,1),nodes(currIs,2), 'LineWidth',2);
-%     end
-% end
+% show the different types of nodes
+for i=1:3
+    currIs = nodeTypes(:,1) == i;
+    if(useMidPointNodes || i ~= 2) 
+        scatter(nodes(currIs,1),nodes(currIs,2), 'LineWidth',2);
+    end
+end
 
 interiorNodes = find(nodeTypes(:,1) == 3);
 nInteriorNodes = size(interiorNodes,1);
@@ -446,7 +458,12 @@ for i=1:length(nodeList)-1
                 wi = rwi{k};
                 
                 % find all configurations that end at node nodeList(i+1)
-                [xx,yy,xxs,wi] = MoveRobotUntilNodeEncountered(x,y,xs,wi,newMap,theta,nodes,desNode);
+                try
+                    [xx,yy,xxs,wi] = MoveRobotUntilNodeEncountered(x,y,xs,wi,newMap,theta,nodes,desNode);
+                catch
+                    display('you suck');
+                    yy(5) = 1e6;
+                end
                 if(yy(5) ~= 1e6)
                     % we arrived at the right place
                     % j is angle, k is sample
@@ -606,7 +623,7 @@ end
 
 angleNoises = deg2rad(linspace(0,25,12));
 successProbsOptimalDesign = zeros(length(angleNoises),1);
-for kk = 7:7
+for kk = 1:length(angleNoises)
     nTries = 1000;
     
     handles.robot = [];
@@ -652,7 +669,7 @@ for kk = 7:7
         if(kk == 1 && (jj == 1 || jj == 2))
             handles = DrawRobotXs(xxs, -1, handles);
         end
-        if(norm(xx(5:6) - nodes(endNode,:).') < 60)
+        if(norm(xx(5:6) - nodes(endNode,:).') < 20)
             nsucc = nsucc+1;
         else
             nfail = nfail+1;
@@ -660,7 +677,7 @@ for kk = 7:7
         tipLocations(jj,:) = xx(5:6).';
     end
     
-    scatter(tipLocations(:,1),tipLocations(:,2));
+%     scatter(tipLocations(:,1),tipLocations(:,2));
     
     successProb = nsucc/(nsucc+nfail);
     successProbsOptimalDesign(kk) = successProb;
@@ -671,7 +688,7 @@ load('Maps/NominalDesign1');
 
 successProbsNominalDesign = zeros(length(angleNoises),1);
 
-for kk = 4:4
+for kk = 1:length(angleNoises)
     nTries = 1000;
     
     handles.robot = [];
@@ -722,16 +739,14 @@ for kk = 4:4
                 badOne = true;
                 break;
             end
-            if(jj == 184)
-                handles = DrawRobotXs(xxs,-1,handles);
-                pause(1);
-            end
         end
-        tipLocations(jj,:) = xx(5:6).';
         if(badOne)
             nfail = nfail+1;
+            tipLocations(jj,:) = [0 0];
 %             DrawRobotXs(xxs,-1,handles);
             continue;
+        else
+            tipLocations(jj,:) = xx(5:6).';
         end
         if(kk == 1 && (jj == 1 || jj == 2))
             handles = DrawRobotXs(xxs, -1, handles);

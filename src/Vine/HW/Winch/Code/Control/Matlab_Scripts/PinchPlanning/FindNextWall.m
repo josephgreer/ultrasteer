@@ -34,7 +34,7 @@ while(numWalls > 0)
     
     if(size(pts,1) > 1)
         dists = [pts(:,2)-proximalPoint(1) pts(:,3)-proximalPoint(2)];
-        dists = sum(dists.^2,2);
+        dists = sqrt(sum(dists.^2,2));
         
         [minDist,minIdx] = min(dists);
         
@@ -55,8 +55,8 @@ while(numWalls > 0)
     
     norms = sqrt(sum(vectors(:,2:3).^2,2));
     
-    vectors(norms < 1e-3,:) = [];
-    norms(norms < 1e-3)  = [];
+    vectors(norms < 1e-6,:) = [];
+    norms(norms < 1e-6)  = [];
     
     % normalize
     vectors(:,2:3) = vectors(:,2:3)./repmat(norms,1,2);

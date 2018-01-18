@@ -1,21 +1,22 @@
 clear; clc; close all;
 
-imName = '~/Desktop/AR0712SR.jpg';
+imName = '~/Desktop/NewMap.png';
 
 imshow(imread(imName));
 
+nodes = load('Maps/nodes');
+nodes = nodes.nodes;
 [x y] = ginput();
+nodes = vertcat(nodes,[x y]);
 
 
-for i=1:length(x)
-    distsX = abs(x-x(i));
-    distsY = abs(y-y(i));
+for i=1:size(nodes,1)
+    distsX = abs(nodes(:,1)-nodes(i,1));
+    distsY = abs(nodes(:,2)-nodes(i,2));
     
-    nodes(distsX < 45) = x(i);
-    y(distsY < 45) = y(i);
+    nodes(distsX < 0.1,1) = nodes(i,1);
+    nodes(distsY < 0.1,2) = nodes(i,2);
 end
-
-nodes = [x y];
 
 scatter(nodes(:,1), nodes(:,2));
 
@@ -26,7 +27,7 @@ close all;
 
 load('Maps/nodes');
 
-imName = '~/Desktop/AR0712SR.jpg';
+imName = '~/Desktop/NewMap.png';
 
 imshow(imread(imName));
 hold on;
@@ -39,17 +40,16 @@ for i=1:length(x)
     distsX = abs(x-x(i));
     distsY = abs(y-y(i));
     
-    nodes(distsX < 15) = x(i);
-    nodes(distsY < 15) = y(i);
+    nodes(distsX < 60,1) = x(i);
+    nodes(distsY < 60,2) = y(i);
 end
 
 %%
 clear; clc; close all;
-
 load('Maps/nodes');
 load('Maps/map');
 
-imName = '~/Desktop/AR0712SR.jpg';
+imName = '~/Desktop/NewMap.png';
 
 imshow(imread(imName));
 hold on;
@@ -75,6 +75,31 @@ while(true)
     DrawMap(map);
 end
 save('Maps/map','map');
+
+%%
+clear; clc; close all;
+load('Maps/nodes');
+load('Maps/map');
+
+figure;
+hold on;
+
+h = scatter(nodes(:,1), nodes(:,2));
+DrawMap(map);
+
+while(true)
+    [x y] = ginput(1);
+    
+    deltas1 = [nodes(:,1)-x(1) nodes(:,2)-y(1)];
+    
+    deltas1 = sum(deltas1.^2,2);
+    
+    [~,i1] = min(deltas1);
+    
+    nodes(i1,:) = [];
+    
+    set(h,'XData',nodes(:,1),'YData',nodes(:,2));
+end
 
 %%
 load('Maps/map1');
