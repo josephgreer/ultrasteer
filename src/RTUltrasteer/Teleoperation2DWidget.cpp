@@ -42,9 +42,9 @@ namespace Nf
 
     m_insLengthSlider = new QSlider(Qt::Orientation::Horizontal);
     m_insLengthSlider->setFixedWidth(300);
-    m_insLengthSlider->setSliderPosition(15);
+    m_insLengthSlider->setSliderPosition(10);
     m_insLengthSlider->setMinimum(1);
-    m_insLengthSlider->setMaximum(30);
+    m_insLengthSlider->setMaximum(20);
    // m_insValue = new QLCDNumber();
     connect(m_insLengthSlider, SIGNAL(valueChanged(int)), this, SLOT(onInsLengthSliderMoved(int)));
 

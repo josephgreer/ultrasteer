@@ -591,13 +591,23 @@ Matrix44d Estimator::getCurrentEstimateTIP_trans(float horizon)
 
 void Estimator::addTarget(Vec3d t)
 {
+  //TARGET.clear();
+  TARGET.push_front(t);
+}
+
+void Estimator::resetTarget()
+{
   TARGET.clear();
-  TARGET.push_back(t);
 }
 
 void Estimator::simulateTask()
 {
     if(!firstAdd)
+      return;
+
+    if (TIP_t.empty())
+      return;
+    if (TARGET.empty())
       return;
 
     SIMULATE_TIP.clear();
@@ -607,9 +617,9 @@ void Estimator::simulateTask()
       SIMULATE_TIP.push_back(TIP_t[i]);
     }*/
 
-    if (TIP_t.empty())
-      return;
+   
 
+    firstAdd = false;
     SIMULATE_TIP.push_back(TIP_t.back());
 
     double disp = 0.01;
@@ -622,8 +632,10 @@ void Estimator::simulateTask()
     double dt = 0.025;
     dt = dt*60;
 
-  
+    list <Vec3d> TARGET_app;
 
+    TARGET_app = TARGET;
+    tar = TARGET_app.front();
 
     while(1)
     {
@@ -632,10 +644,21 @@ void Estimator::simulateTask()
      p = Wrist.GetPosition();
      R = Wrist.GetOrientation();
 
-     e = R.Inverse()*(TARGET.back() - p);
+     e = R.Inverse()*(tar - p);
      
-     if (e.z<0)
-       break;
+      if (e.z<0)
+      {
+        
+        TARGET_app.pop_front();
+        if (TARGET_app.empty())
+        {
+            break;
+        }
+        else
+        {
+          tar = TARGET_app.front();
+        }
+      }
      
      f32 d_th = atan2(-e.x, e.y);
      if (d_th<0)
@@ -648,6 +671,13 @@ void Estimator::simulateTask()
     }
 
 
+}
+
+void Estimator::removeTarget()
+{
+    if (TARGET.empty())
+        return;
+    TARGET.pop_front();
 }
 /*
 n = sl3dnormalize(r(1:3), epsilon);

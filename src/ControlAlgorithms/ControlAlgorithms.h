@@ -29,7 +29,7 @@
 #define   INS_SPEED               20.0    // insertion speed during joint-space teleoperation (mm/s) 
 #define   ROT_SPEED               200.0   // rotation speed during joint-space teleoperation (RPM)
 #define   NEEDLE_DEAD_LENGTH      143.0-TIP_LENGTH+1.0   // offset of needle tip at zero insertion due to extra needle length 
-#define   MAX_OPEN_LOOP_INSERTION 15.0    // maximum open-loop insertion distance before a new scan is needed (mm)
+#define   MAX_OPEN_LOOP_INSERTION 10.0    // maximum open-loop insertion distance before a new scan is needed (mm)
 #define   PI                      3.14159265359
 #define   NEEDLE_GPS_OFFSET       0.0    // x-axis distance from GPS transducer to needle "tip" point (mm)
 #define   INTRODUCER_LENGTH       5.0    // insertion length where the tip is inside the introducer (mm)
@@ -75,7 +75,7 @@ namespace Nf {
     void setStepLength(float SL);
 
     void getOverlayValues(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Matrix44d &z, Vec3d &Sxyz, Vec3d &t_img, Vec3d &t, double &mmToNextScan, bool &targetDepthReached,double& alpha_e);
-    void getOverlayValues2(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Matrix44d &z, Vec3d &Sxyz, Vec3d &t_img, Vec3d &t, double &mmToNextScan, bool &targetDepthReached,double& alpha_e,Vec3d &p_imgS);
+    void getOverlayValues2(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Matrix44d &z, Vec3d &Sxyz, vector<Vec3d> &t_img, Vec3d &t, double &mmToNextScan, bool &targetDepthReached,double& alpha_e,Vec3d &p_imgS);
     
     void getVisualizerValues(Vec3d &t, Matrix44d &x, Matrix44d &z, Matrix44d &Tref2robot,
                                               Matrix44d &Ttrans2robot, s32 &transducerType, Cubed &frameBoundaries, Matrix44d &Tem2robot, Matrix44d &Tneedletip2robot);
@@ -85,13 +85,14 @@ namespace Nf {
     bool CheckCompletion();
     double insertionSinceLastManualScan();
     void recordDataPoint(Matrix44d x_est, Matrix44d x_act, Matrix44d z, Vec3d t, Vec3d u, Matrix66d K, Matrix66d P); 
-
+    int maxNTarget;
     
     std::tr1::shared_ptr < PlaneCalibrator > m_planeCalibrator;
     bool m_calibratingPlaneOffest;
 
   private:
     float stepL;
+    
     Matrix44d m_z;
     Matrix44d m_usCalibrationMatrix;
     Matrix44d m_Tref2robot;
@@ -133,8 +134,11 @@ namespace Nf {
 	HANDLE  hThreadArray;
   std::ofstream myfile;
   int NPoint;
+  
+
   public:
     bool QuickandDirty;
+    std::list<Vec3d> Planning;
     int STATE_ART;
     Vec3d m_t;
     Matrix44d m_x;
@@ -156,7 +160,7 @@ namespace Nf {
     void ClearPlaneCalibrationPoints() { m_planeCalibrator->ClearPoints(); m_planeCalibrator->ResetSolution(); }
     void DoPlaneCalibration();
     void GetPlaneCalibration(Vec3d &corner1, Vec3d &axis1, Vec3d &axis2, Vec3d &corner2, Vec3d &axis3, Vec3d &axis4);
-
+    void resetTarget();
     void StartControlThread();
   };
 

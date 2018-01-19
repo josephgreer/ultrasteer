@@ -2,6 +2,7 @@
 #define ESTIMATOR_H
 
 #include "RTCore.h"
+#include <list>
 #include <vector>
 #include <stdio.h>
 
@@ -32,7 +33,7 @@ namespace Nf
     bool Init;
     vector<Vec3d> OBS;
     vector<Vec3d> VER;
-    vector<Vec3d> TARGET;
+    list<Vec3d> TARGET;
 
     vector<double> L;
     vector<unsigned int> ART;
@@ -70,7 +71,9 @@ namespace Nf
 
   public: //Methods
 
+    // Sono questi i punti senza tip. Il tip è lungo la direzione z dell'ultima matrice di rotazione (del wrist)
     vector<Matrix44d> TIP_t;
+
     vector<Matrix44d> SIMULATE_TIP;
     Estimator(void);
     ~Estimator(void);
@@ -90,6 +93,8 @@ namespace Nf
     Matrix44d getCurrentEstimateTIP_trans(float horizon);
     void addTarget(Vec3d);
     void simulateTask();
+    void resetTarget();
+    void removeTarget();
     /*void fullUpdateUKF(Vec3d u, Matrix44d z);
     void processUpdateUKF(Vec3d u);
     void getCurrentStateEstimate(Matrix44d &x_out);

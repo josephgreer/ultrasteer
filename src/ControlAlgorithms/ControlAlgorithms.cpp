@@ -59,7 +59,10 @@ namespace Nf {
     NPoint=0;
     CountCommand=0;
     STATE_ART = 0;
+    maxNTarget = 0;
     SEG_REQ = true;
+   
+    Planning.clear();
 
 
     m_planeCalibrator = std::tr1::shared_ptr < PlaneCalibrator > (new PlaneCalibrator());
@@ -219,6 +222,17 @@ namespace Nf {
     
     m_t = ImagePtToRobotPt(t_im);
     m_EST.addTarget(m_t);
+    Planning.push_front(m_t);
+    m_EST.resetaddTIP();
+  }
+
+  void ControlAlgorithms::resetTarget()
+  {
+    Planning.clear();
+    m_EST.resetTarget();
+    m_t = Vec3d(0,0,0);
+    maxNTarget = 0;
+    
   }
 
   void ControlAlgorithms::ManualNeedleTipSelection(Vec2d p_im)
@@ -309,7 +323,7 @@ namespace Nf {
   */
   void ControlAlgorithms::DoPlaneCalibration()
   {
-    m_planeCalibrator->DoCalibration();
+    /*m_planeCalibrator->DoCalibration();
 
     Plane pp = m_planeCalibrator->GetSolution();
     Vec3d normal = pp.GetNormalVector();
@@ -328,7 +342,8 @@ namespace Nf {
     //Sleep(2000);
     // Now we need to not have the estimator "know" that this happened
     m_th = m_robot->getRollAngle();
-    m_lastRollDeg = m_th;
+    m_lastRollDeg = m_th;*/
+    resetTarget();
   }
 
   std::vector < Vec3d > ControlAlgorithms::GetPlanarCalibrationPoints()
@@ -449,13 +464,14 @@ namespace Nf {
       { // if we need a new scan
           
     	    QuickandDirty=false;
+          
     	    m_robot->SetInsertionVelocity(0.0);
           m_robot->SetRotationVelocity(0.0);
           condition=true;
           m_robot->SetArticulationAngle(0); 
           // scommentare questa riga
           m_EST.simulateTask();
-          m_EST.addTIP();
+          //m_EST.addTIP();
          
 
       }
@@ -801,12 +817,25 @@ namespace Nf {
   void ControlAlgorithms::getOverlayValues2(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img,
                                            Matrix44d &z,
                                            Vec3d &Sxyz,
-                                           Vec3d &t_img, Vec3d &t,
+                                           vector<Vec3d> &t_img, Vec3d &t,
                                            double &mmToNextScan, bool &targetDepthReached, double& alpha_e, Vec3d &p_imgS)
   {
-    // target  
-    t_img = RobotPtToImagePt(m_t);
+    // target
+
+    list<Vec3d>::iterator it;
+    t_img.clear();
+
+
+    if (!Planning.empty())
+      for (it=Planning.begin(); it != Planning.end(); ++it)
+      {
+        t_img.push_back(RobotPtToImagePt(*it));
+      }
     t = m_t;
+   
+    
+    
+    
       
     //Sxyz = m_UKF.getCurrentXYZVariance();
     // measurement
@@ -929,17 +958,29 @@ namespace Nf {
   
   void ControlAlgorithms::saveTarget()
   {
-    arma::mat offset = arma::zeros(3,1);
-    offset(0,0) = m_t.x;
-    offset(1,0) = m_t.y;
-    offset(2,0) = m_t.z;
+    if (maxNTarget!=0)
+      return;
+
+    maxNTarget = Planning.size();
+    arma::mat point = arma::zeros(3,Planning.size());
+    
+    std::vector<Vec3d> appv(std::begin(Planning), std::end(Planning));
+
+    Vec3d app;
+    for (int i=0;i<appv.size();i++)
+    {
+       app = appv[i];
+       point(0,i) = app.x;
+       point(1,i) = app.y;
+       point(2,i) = app.z;
+    }
     
     char basePath[150];
     char path[150];
     strcpy (basePath , "./"); 
 
     sprintf(path, "%sTARGET.dat", basePath);
-    offset.save(path, arma::raw_ascii);
+    point.save(path, arma::raw_ascii);
   }
 
   /// ----------------------------------------------------
@@ -1177,9 +1218,21 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
 
         if (( R.Col(2).dot(C->m_t-p) < 0))
         {
-          C->m_robot->SetInsertionVelocity(0.0);
-          C->m_robot->SetRotationVelocity(0.0);
-          C->QuickandDirty=false;
+         
+          if (C->Planning.size()>1)
+          {
+            C->Planning.pop_front();
+            C->m_EST.removeTarget();
+            C->m_t = C->Planning.front();
+            C->m_insertionMMatLastManualScan = -1;
+          }
+          else
+          {
+            C->m_robot->SetInsertionVelocity(0.0);
+            C->m_robot->SetRotationVelocity(0.0);
+            C->QuickandDirty=false;
+          }
+
         }
         else
         {

@@ -435,7 +435,8 @@ namespace Nf
       m_lookUpTable->SetNumberOfTableValues(2);
       m_lookUpTable->SetRange(0.0,1.0);
       m_lookUpTable->SetTableValue( 0.0, 0.0, 0.0, 0.0, 0.0 ); //label 0 is transparent
-      m_lookUpTable->SetTableValue( 1.0, 0.0, 0.0, 1.0, 1.0 ); //label 1 is opaque and blue
+      m_lookUpTable->SetTableValue( 1.0, 0.0, 0.0, 1.0, 1.0 ); //label 1 is opaque and blue   
+      //m_lookUpTable->SetTableValue( 0.5, 0.0, 1.0, 1.0, 1.0 ); 
       m_lookUpTable->Build();
 
       // Map the image values to transparencies
@@ -526,7 +527,8 @@ namespace Nf
     // get current values for overlaying
     Vec3d p_img, pz_img, py_img,p_imgS;
     Matrix44d x, z;
-    Vec3d t_img, t;
+    Vec3d t;
+    vector<Vec3d> t_img;
     Vec3d Sxyz;
     double mmToNextScan;
     double alpha;
@@ -536,10 +538,8 @@ namespace Nf
 
     // update target
     if( !t.isZero() ){
-      SetTargetText(Vec2d(t_img.x,t_img.y), t);      
-      if( fabs(t_img.z) < 10.0 ) {
-        DrawTargetIcon(t_img);
-      }
+      SetTargetText(Vec2d(t_img[0].x,t_img[0].y), t);      
+      DrawTargetIcon(t_img);
     }
 
       // update estimate
@@ -637,19 +637,27 @@ namespace Nf
     
   }
 
-  void ImageViewer2DTeleoperationWidget::DrawTargetIcon(Vec3d t)
+  void ImageViewer2DTeleoperationWidget::DrawTargetIcon(vector<Vec3d> t)
   {
-    int r = 40-t.z;
-
-    if( r > -1 ) // If we have a circle to draw
+    int r;
+    if (t.empty())
+      return;
+    for (int i=0;i<t.size();i++)
     {
-      cvCircle(m_mask,cvPoint(t.x,t.y),r,cvScalar(1.0),3,CV_AA);
-
-      // Update the VTK rendering
-      m_maskImporter->Update();
-      m_maskImporter->Modified();
-      //this->repaint();
+        if( fabs(t[i].z) < 10.0 ) 
+        {
+          r= 40-t[i].z;
+          if( r > -1 ) // If we have a circle to draw
+          {
+            cvCircle(m_mask,cvPoint(t[i].x,t[i].y),r,cvScalar(1.0),3,CV_AA);
+          }
+        }
     }
+
+    // Update the VTK rendering
+    m_maskImporter->Update();
+    m_maskImporter->Modified();
+    //this->repaint();
   }
 
   void ImageViewer2DTeleoperationWidget::DrawTipIcon(Vec3d p, Vec3d s)
@@ -668,7 +676,7 @@ namespace Nf
     int thick = 1;
     if(fabs(p.z) < 1.0) // If we have a circle to draw
     {
-      cvCircle(m_mask,cvPoint(p.x,p.y),r,cvScalar(1.0),thick,CV_AA);
+      cvCircle(m_mask,cvPoint(p.x,p.y),r*2,cvScalar(1.0),thick,CV_AA);
 
       // Update the VTK rendering
       //this->repaint();
@@ -676,8 +684,8 @@ namespace Nf
 
     if(fabs(s.z) < 1.0) // If we have a circle to draw
     {
-     // cvCircle(m_mask,cvPoint(s.x,s.y),r,cvScalar(1.0),thick,CV_AA);
-     cvCircle(m_mask,cvPoint(s.x,s.y),r,cvScalar(1,0,1,1),thick,CV_AA);
+     cvCircle(m_mask,cvPoint(s.x,s.y),r,cvScalar(1.0),thick,CV_AA);
+     //cvCircle(m_mask,cvPoint(s.x,s.y),r,cvScalar(0.5),thick,CV_AA);
 
       // Update the VTK rendering
       //this->repaint();
