@@ -2,7 +2,7 @@
 #include "math.h"
 #include <time.h>
 #define TH_ART_MOT 34.0
-#define ART_SLIDING 42
+#define ART_SLIDING 41
 
 
 
@@ -449,7 +449,7 @@ namespace Nf {
               m_EST.updateInput(m_l, m_th,0);
 
            m_x =  m_EST.getCurrentEstimateTIP();
-
+           
         }
             
       }
@@ -915,7 +915,14 @@ namespace Nf {
     }
     
     mmToNextScan = MAX(stepL-insertionSinceLastManualScan(),0.0);
-    targetDepthReached = CheckCompletion();
+    
+    // versione nuova
+    if (m_inTaskSpaceControl)
+      targetDepthReached = CheckCompletion();
+    else
+      targetDepthReached = false;
+    // versione vecchia
+    //targetDepthReached = CheckCompletion();
     
     R = m_x.GetOrientation();
     p = m_x.GetPosition();
@@ -958,7 +965,7 @@ namespace Nf {
   
   void ControlAlgorithms::saveTarget()
   {
-    if (maxNTarget!=0)
+    if (Planning.size()<=maxNTarget)
       return;
 
     maxNTarget = Planning.size();
@@ -1236,8 +1243,9 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
         }
         else
         {
-
+          // modificare qui per quanto andare indietro...
           float art_back = TIP_LENGTH;
+          art_back = 8;
             switch(C->STATE_ART)
             {
                 case 0:
@@ -1263,7 +1271,7 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
                   C->m_robot->InsertIncremental(art_back+0.02);
                   InsSliding = C->m_l;
                   C->STATE_ART = 2;
-                  
+                 
                 }
                 break;
               case 2:
@@ -1279,7 +1287,7 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
                 }
                 break;
               case 3:
-                  C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*0.75);         
+                  C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED);         
                   if (d_th<0)
                     C->m_robot->SetRotationVelocity(-350);
                   else

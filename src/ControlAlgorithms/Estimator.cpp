@@ -271,17 +271,17 @@ namespace Nf
               THETA.pop_back();
               ART.pop_back();
                 
-              /*for (int i=0;i<IND.size();i++)
+              for (int i=0;i<IND.size();i++)
               {
                 // Allungato
-                  if ((L.size()+TIP_LENGTH*100)<IND[i])
+                  if (L.size()<IND[i])
                   {
                     OBS.erase(OBS.begin()+i);
                     VER.erase(VER.begin()+i);
                     IND.erase(IND.begin()+i);
                   }
 
-              }*/
+              }
            }
            else
            {  // rotation along z di // voglio solo tornare indietro. Non devo ruotare per l'articolazione! PENSARCI
@@ -463,9 +463,14 @@ namespace Nf
     OBS.clear();
     VER.clear();
     Vec3d app_v;
+    int app_ind = 0;
     for (int i=0;i<PointInd.size();i++)
     {
-       IND.push_back(PointInd(i,0));
+       app_ind = PointInd(i,0);
+       if (app_ind > L.size())
+         app_ind = L.size();
+
+       IND.push_back(app_ind);
        app_v.x = POINT_NEW(0,i);
        app_v.y = POINT_NEW(1,i);
        app_v.z = POINT_NEW(2,i);
@@ -495,6 +500,7 @@ namespace Nf
     double diff_l,diff_th;
     Vec3d app_d; 
     double rho;
+    WaitForSingleObject(ghMutex,INFINITE);
     for (int i=1;i<L.size();i++)
     {
       diff_l = L[i]-L[i-1];
@@ -503,6 +509,7 @@ namespace Nf
       TIP_t.push_back(simulate1Step(diff_l,diff_th,ART[i],ART[i-1],TIP_t.back(),L[i]));
 
     }
+    ReleaseMutex(ghMutex);
     return true;
   }
 

@@ -435,7 +435,8 @@ namespace Nf
       m_lookUpTable->SetNumberOfTableValues(2);
       m_lookUpTable->SetRange(0.0,1.0);
       m_lookUpTable->SetTableValue( 0.0, 0.0, 0.0, 0.0, 0.0 ); //label 0 is transparent
-      m_lookUpTable->SetTableValue( 1.0, 0.0, 0.0, 1.0, 1.0 ); //label 1 is opaque and blue   
+      //m_lookUpTable->SetTableValue( 1.0, 0.0, 0.0, 1.0, 1.0 ); //label 1 is opaque and blue   
+       m_lookUpTable->SetTableValue( 1.0, 0.0, 1.0, 1.0, 1.0 ); //label 1 is opaque and blue   
       //m_lookUpTable->SetTableValue( 0.5, 0.0, 1.0, 1.0, 1.0 ); 
       m_lookUpTable->Build();
 
