@@ -1,21 +1,21 @@
 clear; clc; close all;
 
-% load 'Maps/map'
-% load 'Maps/nodes'
+load 'Maps/map2'
+load 'Maps/nodes2'
+
+startNode = 47;
+endNode = 59;
+
 % 
-% startNode = 47;
-% endNode = 52;
+map = map/8;
+nodes = nodes/8;
+
+
+% load 'Maps/map1'
+% load 'Maps/nodes1'
 % 
-% % 
-% map = map/8;
-% nodes = nodes/8;
-
-
-load 'Maps/map1'
-load 'Maps/nodes1'
-
-startNode = 34;
-endNode = 31;
+% startNode = 34;
+% endNode = 30;
 
 rng(1);
 
@@ -27,7 +27,7 @@ h = figure;
 handles.robot = [];
 
 % xlim([-500 500]);
-% ylim([-400 400]);
+ylim([-35 400]);
 daspect([1 1 1]);
 grid on;
 hold on;
@@ -36,7 +36,7 @@ hold on;
 xlabel('x (cm)');
 ylabel('y (cm)');
 set(gca,'FontSize',12,'FontName','Times New Roman');
-set(h, 'Position', [0 0 600 480]);
+set(h, 'Position', 0.65*[0 0 550 480]);
 
 
 DrawMap(map);
@@ -84,12 +84,12 @@ end
 scatter(nodes([startNode,endNode],1),nodes([startNode,endNode],2),'LineWidth',2);
 
 % show the different types of nodes
-for i=1:3
-    currIs = nodeTypes(:,1) == i;
-    if(useMidPointNodes || i ~= 2) 
-        scatter(nodes(currIs,1),nodes(currIs,2), 'LineWidth',2);
-    end
-end
+% for i=1:3
+%     currIs = nodeTypes(:,1) == i;
+%     if(useMidPointNodes || i ~= 2) 
+%         scatter(nodes(currIs,1),nodes(currIs,2), 'LineWidth',2);
+%     end
+% end
 
 interiorNodes = find(nodeTypes(:,1) == 3);
 nInteriorNodes = size(interiorNodes,1);
@@ -384,11 +384,11 @@ A(endIndices,nVertices+2) = 1;
 display('Calculating shortest path');
 [dist, path] = graphshortestpath(A,nVertices+1,nVertices+2);
 
-for i=2:length(path)-2
-    [ns,as] = IndexToNodeAngle(path(i:i+1),nAngles,nNodes,thetas);
-    ns = nodes(ns,:);
-    plot(ns(:,1),ns(:,2));
-end
+% for i=2:length(path)-2
+%     [ns,as] = IndexToNodeAngle(path(i:i+1),nAngles,nNodes,thetas);
+%     ns = nodes(ns,:);
+%     plot(ns(:,1),ns(:,2));
+% end
 
 nodeList = zeros(length(path)-2,1);
 for i=2:length(path)-1
@@ -662,11 +662,18 @@ for kk = 1:length(angleNoises)
             cmap = map;
         end
         for i=1:length(dls)
-            [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i), cmap, thetas, RobotLength(xxs), wallIndex, xxs);
-            %         handles = DrawRobotXs(xxs,-1,handles);
-            %         pause(1);
+            if(jj == 1 || jj == 2)
+                for j=1:10
+                    [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i)/10, cmap, thetas, RobotLength(xxs), wallIndex, xxs);
+                    handles = DrawRobotXs(xxs,-1,handles);
+                    pause(0.25);
+                end
+            else
+                [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i), cmap, thetas, RobotLength(xxs), wallIndex, xxs);
+            end
         end
         if(kk == 1 && (jj == 1 || jj == 2))
+            ScaleDataPlot(8/90*2.54);
             handles = DrawRobotXs(xxs, -1, handles);
         end
         if(norm(xx(5:6) - nodes(endNode,:).') < 20)
@@ -684,7 +691,7 @@ for kk = 1:length(angleNoises)
     display(sprintf('Optimal Design Prob Success %f AngleNoise %f', successProb, rad2deg(angleNoise)));
 end
 
-load('Maps/NominalDesign1');
+load('Maps/NominalDesign2');
 
 successProbsNominalDesign = zeros(length(angleNoises),1);
 
@@ -728,8 +735,6 @@ for kk = 1:length(angleNoises)
             cmap = map;
         end
         
-        
-        
         wallIndex = -1;
         badOne = false;
         for i=1:length(dls)
@@ -750,9 +755,11 @@ for kk = 1:length(angleNoises)
         end
         if(kk == 1 && (jj == 1 || jj == 2))
             handles = DrawRobotXs(xxs, -1, handles);
+            ScaleDataPlot(8/90*2.54);
+            break;
         end
         
-        if(norm(xx(5:6) - nodes(endNode,:).') < 60)
+        if(norm(xx(5:6) - nodes(endNode,:).') < 20)
             nsucc = nsucc+1;
         else
             nfail = nfail+1;

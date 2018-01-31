@@ -1,7 +1,10 @@
 clear; clc; close all;
 
-load 'Maps/map1'
-load 'Maps/nodes1'
+load 'Maps/map'
+load 'Maps/nodes'
+
+map = map/8;
+nodes = nodes/8;
 
 rng(1);
 
@@ -12,8 +15,7 @@ figure;
 
 handles.robot = [];
 
-xlim([-500 500]);
-ylim([-500 500]);
+
 daspect([1 1 1]);
 grid on;
 hold on;
@@ -67,7 +69,7 @@ unitVectors = [1 0; unitVectors];
 designThetas = angleDiffSigns([unitVectors(1:end-1,:) zeros(size(unitVectors,1)-1,1)],...
     [unitVectors(2:end,:), zeros(size(unitVectors,1)-1,1)]);
 
-designLs = [0; lengths];
+designLs = [0; cumsum(lengths)];
 
-save('Maps/NominalDesign1','designLs','designThetas');
+save('Maps/NominalDesign2','designLs','designThetas');
 

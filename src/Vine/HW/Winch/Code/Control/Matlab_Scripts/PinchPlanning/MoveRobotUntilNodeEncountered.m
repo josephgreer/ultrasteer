@@ -92,6 +92,8 @@ while(node ~= desNode)
         y(5) = 1e6;
         return;
     else
+        y(5) = 1e6;
+        return;
         x(5:6) = tipPoint;
         xs(end,:) = tipPoint.';
     end
