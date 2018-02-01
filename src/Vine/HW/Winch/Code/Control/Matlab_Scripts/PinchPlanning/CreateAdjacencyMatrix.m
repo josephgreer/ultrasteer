@@ -1,7 +1,7 @@
 clear; clc; close all;
 
-load 'Maps/map2'
-load 'Maps/nodes2'
+load 'Maps/map'
+load 'Maps/nodes'
 
 startNode = 47;
 endNode = 59;
@@ -620,10 +620,23 @@ for i=1:length(nodeList)-1
     display(sprintf('Success estimate at landmark %d is %f', i, nsucc/(nfail+nsucc)));
 end
 
+display(designThetas)
 
-angleNoises = deg2rad(linspace(0,25,12));
-successProbsOptimalDesign = zeros(length(angleNoises),1);
-for kk = 1:length(angleNoises)
+%%
+angleNoise = deg2rad(5);
+lengthNoise = 5;
+aaaa = false;
+perturbMap = true;
+
+if(perturbMap)
+    mapNoises = linspace(0,20,5);
+else
+    mapNoises = linspace(1,0,5);
+    mapNoises = mapNoises(1:end-1);
+end
+
+successProbsOptimalDesign = zeros(length(mapNoises),1);
+for kk = 1:length(mapNoises)
     nTries = 1000;
     
     handles.robot = [];
@@ -635,7 +648,6 @@ for kk = 1:length(angleNoises)
     
     tipLocations = zeros(nTries,2);
     
-    angleNoise = angleNoises(kk);
     for jj=1:nTries
         cls = designLs+unifrnd(-lengthNoise,lengthNoise,length(designLs),1);
         cls = max(cls,1e-3);
@@ -656,29 +668,47 @@ for kk = 1:length(angleNoises)
         dls = cls(2:end)-cls(1:end-1);
         
         wallIndex = -1;
-        if(kk == 1 && jj == 1)
-            cmap = zeros(0,4);
+%         if(kk == 1 && jj == 1)
+%             cmap = zeros(0,4);
+%         else
+%             cmap = map;
+        %         end
+        if(perturbMap)
+            cmap = PerturbMap(map, mapNoises(kk));
         else
-            cmap = map;
+            cmap = MessWithChokePoint(map,mapNoises(kk));
         end
         for i=1:length(dls)
-            if(jj == 1 || jj == 2)
-                for j=1:10
-                    [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i)/10, cmap, thetas, RobotLength(xxs), wallIndex, xxs);
-                    handles = DrawRobotXs(xxs,-1,handles);
-                    pause(0.25);
-                end
-            else
+%             if(kk == 5 && (jj == 1 || jj == 2))
+%                 for j=1:10
+%                     [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i)/10, cmap, thetas, RobotLength(xxs), wallIndex, xxs);
+%                     handles = DrawRobotXs(xxs,-1,handles);
+%                     pause(0.25);
+%                 end
+%             else
                 [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i), cmap, thetas, RobotLength(xxs), wallIndex, xxs);
-            end
+%             end
         end
-        if(kk == 1 && (jj == 1 || jj == 2))
-            ScaleDataPlot(8/90*2.54);
-            handles = DrawRobotXs(xxs, -1, handles);
-        end
+%         if(kk == 1 && (jj == 1 || jj == 2))
+%             ScaleDataPlot(8/90*2.54);
+%             handles = DrawRobotXs(xxs, -1, handles);
+%         end
         if(norm(xx(5:6) - nodes(endNode,:).') < 20)
             nsucc = nsucc+1;
         else
+            if(aaaa)
+                xx = [nodes(startNode,:).'; nodes(startNode,:).';...
+                    nodes(startNode,:).'];
+                yy = [0; 0; 0; 0; 1];
+                xxs = [xx(1:2:end) xx(2:2:end)];
+                for i=1:length(dls)
+                    for j=1:10
+                        [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i)/10, cmap, thetas, RobotLength(xxs), wallIndex, xxs);
+                        handles = DrawRobotXs(xxs,-1,handles);
+                        pause(0.25);
+                    end
+                end
+            end
             nfail = nfail+1;
         end
         tipLocations(jj,:) = xx(5:6).';
@@ -688,14 +718,14 @@ for kk = 1:length(angleNoises)
     
     successProb = nsucc/(nsucc+nfail);
     successProbsOptimalDesign(kk) = successProb;
-    display(sprintf('Optimal Design Prob Success %f AngleNoise %f', successProb, rad2deg(angleNoise)));
+    display(sprintf('Optimal Design Prob Success %f AngleNoise %f', successProb, mapNoises(kk)));
 end
 
 load('Maps/NominalDesign2');
 
-successProbsNominalDesign = zeros(length(angleNoises),1);
+successProbsNominalDesign = zeros(length(mapNoises),1);
 
-for kk = 1:length(angleNoises)
+for kk = 1:length(mapNoises)
     nTries = 1000;
     
     handles.robot = [];
@@ -708,7 +738,6 @@ for kk = 1:length(angleNoises)
     tipLocations = zeros(nTries,2);
     
     
-    angleNoise = angleNoises(kk);
     for jj=1:nTries
         cls = designLs+unifrnd(-lengthNoise,lengthNoise,length(designLs),1);
         cls = max(cls,1e-3);
@@ -728,11 +757,10 @@ for kk = 1:length(angleNoises)
         
         dls = cls(2:end)-cls(1:end-1);
         
-        
-        if(false)%kk == 1 && jj == 1)
-            cmap = zeros(0,4);
+        if(perturbMap)
+            cmap = PerturbMap(map, mapNoises(kk));
         else
-            cmap = map;
+            cmap = MessWithChokePoint(map,mapNoises(kk));
         end
         
         wallIndex = -1;
@@ -753,11 +781,11 @@ for kk = 1:length(angleNoises)
         else
             tipLocations(jj,:) = xx(5:6).';
         end
-        if(kk == 1 && (jj == 1 || jj == 2))
-            handles = DrawRobotXs(xxs, -1, handles);
-            ScaleDataPlot(8/90*2.54);
-            break;
-        end
+%         if(kk == 1 && (jj == 1 || jj == 2))
+%             handles = DrawRobotXs(xxs, -1, handles);
+%             ScaleDataPlot(8/90*2.54);
+%             break;
+%         end
         
         if(norm(xx(5:6) - nodes(endNode,:).') < 20)
             nsucc = nsucc+1;
@@ -767,7 +795,7 @@ for kk = 1:length(angleNoises)
     end
     successProb = nsucc/(nsucc+nfail);
     successProbsNominalDesign(kk) = successProb;
-    display(sprintf('Nominal Design Prob Success %f Angle Noise %f', successProb, rad2deg(angleNoise)));
+    display(sprintf('Nominal Design Prob Success %f Angle Noise %f', successProb, mapNoises(kk)));
 end
 
 h = figure;
@@ -776,9 +804,9 @@ set(h, 'Position',[0 0 400 210]);
 hold all;
 box on;
 grid on;
-plot(rad2deg(angleNoises), successProbsOptimalDesign, '-o', 'LineWidth',2);
-plot(rad2deg(angleNoises), successProbsNominalDesign, '-o', 'LineWidth', 2);
-xlabel('Angular Uncertainty (\circ)');
+plot(mapNoises, successProbsOptimalDesign, '-o', 'LineWidth',2);
+plot(mapNoises, successProbsNominalDesign, '-o', 'LineWidth', 2);
+xlabel('Map Noise');
 ylabel('Probability of Success');
 legend('Optimal Design', 'Nominal Design');
 
