@@ -3,10 +3,9 @@ clear; clc; close all;
 load 'Maps/map'
 load 'Maps/nodes'
 
-startNode = 47;%46;
+startNode = 47;
 endNode = 59;
 
-% nodes = vertcat(nodes,map(23,3:4));
 map = map/8;
 nodes = nodes/8;
 
@@ -83,13 +82,13 @@ end
 
 scatter(nodes([startNode,endNode],1),nodes([startNode,endNode],2),'LineWidth',2);
 
-%show the different types of nodes
-for i=1:3
-    currIs = nodeTypes(:,1) == i;
-    if(useMidPointNodes || i ~= 2) 
-        scatter(nodes(currIs,1),nodes(currIs,2), 'LineWidth',2);
-    end
-end
+% %show the different types of nodes
+% for i=1:3
+%     currIs = nodeTypes(:,1) == i;
+%     if(useMidPointNodes || i ~= 2) 
+%         scatter(nodes(currIs,1),nodes(currIs,2), 'LineWidth',2);
+%     end
+% end
 
 interiorNodes = find(nodeTypes(:,1) == 3);
 nInteriorNodes = size(interiorNodes,1);
@@ -384,11 +383,11 @@ A(endIndices,nVertices+2) = 1;
 display('Calculating shortest path');
 [dist, path] = graphshortestpath(A,nVertices+1,nVertices+2);
 
-for i=2:length(path)-2
-    [ns,as] = IndexToNodeAngle(path(i:i+1),nAngles,nNodes,thetas);
-    ns = nodes(ns,:);
-    plot(ns(:,1),ns(:,2));
-end
+% for i=2:length(path)-2
+%     [ns,as] = IndexToNodeAngle(path(i:i+1),nAngles,nNodes,thetas);
+%     ns = nodes(ns,:);
+%     plot(ns(:,1),ns(:,2));
+% end
 
 nodeList = zeros(length(path)-2,1);
 for i=2:length(path)-1
@@ -401,17 +400,16 @@ end
 nodeList = unique(nodeList,'stable');
 
 allowableAngleRange = deg2rad(50);
-angleNoise = deg2rad(5); % in degree uniform distribution
-lengthNoise = 0; % in physical units
+angleNoise = deg2rad(10); % in degree uniform distribution
+lengthNoise = 10; % in physical units
 nSamples = 100; % number of samples used to calculate monte carlo prboabilities
 nAngles = 100;
-successThresh = 10;
 
 thetas = linspace(0,2*pi,nAngles+1).';
 thetas = thetas(1:end-1);
 thetas = wrapToPi(thetas);
 
-lengthPadding = 3;
+lengthPadding = 20;
 
 validThetas = thetas(abs(thetas) < allowableAngleRange);
 
@@ -439,31 +437,8 @@ for i=1:length(nodeList)-1
     if(i == 1)
         cValidThetas = thetas;
     end
-    
-    
-    if(nodeTypes(preNode,1) == 2)
-      % coming from a midpoint node
-      desiredDirection = nodes(desNode,:)-nodes(preNode,:);
-      normDir = norm(desiredDirection);
-      desiredDirection = desiredDirection.'/normDir;
-     
-      
-      preDirection = rx{1}(5:6)-rx{1}(3:4);
-      if(norm(preDirection) == 0)
-          preDirection = rx{1}(5:6)-rx{1}(1:2);
-      end
-      preDirection = preDirection/norm(preDirection);
-      turnDir = cross([preDirection;0],[desiredDirection;0]);
-      turnDir = sign(turnDir(3));
-      
-      len = 0;
-      for kk=1:length(rx)
-          len = max(len,RobotLength(rxs{kk}));
-      end
-      
-      designThetas = vertcat(designThetas,turnDir*deg2rad(5));
-      designLs = vertcat(designLs,len+normDir+lengthPadding);
-    elseif(nodeTypes(desNode,1) == 1 || nodeTypes(desNode,1) == 2)
+        
+    if(nodeTypes(desNode,1) == 1 || nodeTypes(desNode,1) == 2)
         % holds success/fail (1 = success, 0 = fail) for each theta and each
         % sample at arriving at next node
         success = zeros(length(cValidThetas),length(rx));
@@ -550,7 +525,7 @@ for i=1:length(nodeList)-1
             sumIdxs = unique(sumIdxs);
             
             % assumes uniform angular uncertainty
-            lensWithUncertainty(j) = mean(mean(lens(sumIdxs,:)));
+            lensWithUncertainty(j) = max(max(lens(sumIdxs,:)));
             successProbWithUncertaintiy(j) = mean(successProb(sumIdxs,:));
         end
         
@@ -581,22 +556,6 @@ for i=1:length(nodeList)-1
         
         designThetas = vertcat(designThetas,ctheta);
         designLs = vertcat(designLs,mean(rls)+designLs(end));
-    end
-    
-    % check for two turns in a row. if there is one, put a buckle point
-    % between them that is opposite direction
-    changed = true;
-    while(changed)
-        changed = false;
-        for kk=1:length(designThetas)-1
-            if(sign(designThetas(kk)) == sign(designThetas(kk+1)))
-                designThetas = [designThetas(1:kk); -sign(designThetas(kk))*1e-8; designThetas(kk+1:end)];
-                designLs(kk) = designLs(kk)/2;
-                designLs = [designLs(1:kk) designLs(kk) designLs(kk+1:end)];
-                changed = true;
-                break;
-            end
-        end
     end
     
     % now simulate a bunch of paths using this angle
@@ -634,7 +593,7 @@ for i=1:length(nodeList)-1
         end
         
         if(nodeTypes(desNode,1) == 1 || nodeTypes(desNode,1) == 2)
-            if(norm(cy(1:2)-nodes(desNode,:).') < 1e-3 || norm(cx(5:6) - nodes(desNode,:).') < 15)
+            if(norm(cy(1:2)-nodes(desNode,:).') < 1e-3 || norm(cx(5:6) - nodes(desNode,:).') < 50)
                 rx{k} = cx;
                 ry{k} = cy;
                 rxs{k} = cxs;

@@ -72,8 +72,8 @@ if(~isempty(minThetaIdx))
     
     out = lineSegmentIntersect([x(3:6).'], walls(wallIndex,:));
     if(out.intAdjacencyMatrix <= 0)
-        msgID = 'Didnt intersect';
-        msg = 'Didnt intersect';
+        msgID = '';
+        msg = '';
         throw(MException(msgID,msg));
     end
     assert(out.intAdjacencyMatrix > 0);

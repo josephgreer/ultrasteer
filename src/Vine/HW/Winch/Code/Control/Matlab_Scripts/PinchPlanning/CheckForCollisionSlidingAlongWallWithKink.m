@@ -165,8 +165,8 @@ if(~isempty(minThetaIdx))
     x(5) = out.intMatrixX;
     x(6) = out.intMatrixY;
     if(out.intAdjacencyMatrix <= 0)
-        msgID = 'Didnt intersect';
-        msg = 'Didnt intersect';
+        msgID = '';
+        msg = '';
         throw(MException(msgID,msg));
     end
     assert(out.intAdjacencyMatrix > 0);
