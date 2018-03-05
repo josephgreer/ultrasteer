@@ -1,4 +1,4 @@
-function [wallIndex, intersectX, intersectY] = FindNextWall(walls, ignoreWall, proximalPoint, tipPoint, tipTangent)    
+function [wallIndex, intersectX, intersectY] = FindNextWall(walls, ignoreWalls, proximalPoint, tipPoint, tipTangent)    
 
 wallIndex = -1;
 intersectX = -1;
@@ -10,9 +10,9 @@ out = lineSegmentIntersect([proximalPoint(1) proximalPoint(2) tipPoint(1) tipPoi
 out.intAdjacencyMatrix = out.intAdjacencyMatrix | out.coincAdjacencyMatrix;
 cIndices = find(out.coincAdjacencyMatrix);
 
-if(ignoreWall > 0)
-    out.intAdjacencyMatrix(ignoreWall) = 0;
-    cIndices(ismember(cIndices,ignoreWall)) = [];
+if(ignoreWalls(1) > 0)
+    out.intAdjacencyMatrix(ignoreWalls) = 0;
+    cIndices(ismember(cIndices,ignoreWalls)) = [];
 end
 
 numWalls = sum(out.intAdjacencyMatrix);

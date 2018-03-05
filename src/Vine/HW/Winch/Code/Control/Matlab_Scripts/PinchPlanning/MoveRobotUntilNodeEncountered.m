@@ -16,7 +16,7 @@
 % walls \in R^{nx4}
 % happen
 % otherwise the opposite
-function [x, y, xs, wallIndex] = MoveRobotUntilNodeEncountered(x, y, xs, wallIndex, walls, theta, nodes, desNode)
+function [x, y, xs, wallIndex] = MoveRobotUntilNodeEncountered(x, y, xs, wallIndex, walls, theta, ignoreWall, nodes, desNode)
 dl = 1e3;
 node = -1;
 
@@ -28,7 +28,6 @@ else
 end
 
 oldTipTangent = tipTangent;
-ignoreWall = -1;
 if(abs(theta) > 0)
     tipTangent = PlaneRotation(theta)*tipTangent;
     

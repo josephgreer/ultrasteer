@@ -23,7 +23,7 @@
 % wallIndex is the last wall index the robot tip was in contact with
 % xs reperesent the segments of the robot
 % otherwise the opposite
-function [x, y, xs,wallIndex] = MoveRobotByDl(x, y, dl, walls, thetas, len, wallIndex, xs)
+function [x, y, xs,wallIndex] = MoveRobotByDl(x, y, dl, walls, thetas, len, wallIndex, ignoreWall, xs)
 tipTangent = x(5:6)-x(3:4);
 if(norm(tipTangent) > 0)
     tipTangent = tipTangent/norm(tipTangent);
@@ -33,7 +33,6 @@ end
 
 thetaIdx = find(abs(thetas(:,1)-len) < 1e-3);
 oldTipTangent = tipTangent;
-ignoreWall = -1;
 if(~isempty(thetaIdx))
     theta = thetas(thetaIdx,2);
     tipTangent = PlaneRotation(theta)*tipTangent;

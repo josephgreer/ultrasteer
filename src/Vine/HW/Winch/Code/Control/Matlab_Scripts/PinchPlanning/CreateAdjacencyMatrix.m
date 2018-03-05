@@ -429,10 +429,15 @@ for i=1:length(nodeList)-1
     desNode = nodeList(i+1);
     
     nodeWalls = [];
-    if(nodeTypes(preNode,1) == 1 || nodeTypes(preNode,1) == 2)
+    if(nodeTypes(preNode,1) == 1)
         wallDeltas = repmat(nodes(preNode,:),size(newWallEndPoints,1),1)-newWallEndPoints(:,2:3);
         dists = sqrt(sum(wallDeltas.^2,2));
         nodeWalls = newWallEndPoints(dists < 1e-3,[1,4]);
+    end
+    
+    ignoreWalls = -1;
+    if(size(nodeWalls,1) > 0)
+        ignoreWalls = nodeWalls(:,1);
     end
     
     cValidThetas = validThetas;
@@ -483,7 +488,7 @@ for i=1:length(nodeList)-1
                 
                 % find all configurations that end at node nodeList(i+1)
                 try
-                    [xx,yy,xxs,wi] = MoveRobotUntilNodeEncountered(x,y,xs,wi,newMap,theta,nodes,desNode);
+                    [xx,yy,xxs,wi] = MoveRobotUntilNodeEncountered(x,y,xs,wi,newMap,theta,ignoreWalls,nodes,desNode);
                 catch
                     display('you suck');
                     yy(5) = 1e6;
@@ -585,19 +590,18 @@ for i=1:length(nodeList)-1
     
     % check for two turns in a row. if there is one, put a buckle point
     % between them that is opposite direction
-    changed = true;
-    while(changed)
-        changed = false;
-        for kk=1:length(designThetas)-1
-            if(sign(designThetas(kk)) == sign(designThetas(kk+1)))
-                designThetas = [designThetas(1:kk); -sign(designThetas(kk))*1e-8; designThetas(kk+1:end)];
-                designLs(kk) = designLs(kk)/2;
-                designLs = [designLs(1:kk) designLs(kk) designLs(kk+1:end)];
-                changed = true;
-                break;
-            end
-        end
-    end
+%     changed = true;
+%     while(changed)
+%         changed = false;
+%         for kk=1:length(designThetas)-1
+%             if(sign(designThetas(kk)) == sign(designThetas(kk+1)))
+%                 designThetas = [designThetas(1:kk); -sign(designThetas(kk))*1e-8; designThetas(kk+1:end)];
+%                 designLs = [designLs(1:kk); (designLs(kk)+designLs(kk+1))/2; designLs(kk+1:end)];
+%                 changed = true;
+%                 break;
+%             end
+%         end
+%     end
     
     % now simulate a bunch of paths using this angle
         
@@ -628,7 +632,7 @@ for i=1:length(nodeList)-1
         cthetas = [cls(1:end-1) cts];
         wallIndex = -1;
         for ll=1:length(cdls)
-            [cx, cy, cxs,wallIndex] = MoveRobotByDl(cx,cy,cdls(ll),newMap,cthetas,clen,wallIndex,cxs);
+            [cx, cy, cxs,wallIndex] = MoveRobotByDl(cx,cy,cdls(ll),newMap,cthetas,clen,wallIndex,ignoreWalls,cxs);
             
             clen = clen+cdls(ll);
         end
@@ -693,6 +697,7 @@ for kk = 1:length(angleNoises)
             nodes(startNode,:).'];
         yy = [0; 0; 0; 0; 1];
         xxs = [xx(1:2:end) xx(2:2:end)];
+        ignoreWall = -1;
         
         dls = cls(2:end)-cls(1:end-1);
         
@@ -703,14 +708,25 @@ for kk = 1:length(angleNoises)
             cmap = map;
         end
         for i=1:length(dls)
+            nodeWalls = [];
+            if(nodeTypes(nodeList(i),1) == 1 || nodeTypes(nodeList(i),1) == 2)
+                wallDeltas = repmat(nodes(preNode,:),size(newWallEndPoints,1),1)-newWallEndPoints(:,2:3);
+                dists = sqrt(sum(wallDeltas.^2,2));
+                nodeWalls = newWallEndPoints(dists < 1e-3,[1,4]);
+            end
+            
+            ignoreWalls = -1;
+            if(size(nodeWalls,1) > 0)
+                ignoreWalls = nodeWalls(:,1);
+            end
             if(false)%jj == 1 || jj == 2)
                 for j=1:10
-                    [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i)/10, cmap, thetas, RobotLength(xxs), wallIndex, xxs);
+                    [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i)/10, cmap, thetas, RobotLength(xxs), wallIndex, ignoreWalls, xxs);
                     handles = DrawRobotXs(xxs,-1,handles);
                     pause(0.25);
                 end
             else
-                [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i), cmap, thetas, RobotLength(xxs), wallIndex, xxs);
+                [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i), cmap, thetas, RobotLength(xxs), wallIndex, ignoreWalls, xxs);
             end
         end
         if(false)%kk == 1 && (jj == 1 || jj == 2))
@@ -779,8 +795,19 @@ for kk = 1:length(angleNoises)
         wallIndex = -1;
         badOne = false;
         for i=1:length(dls)
+            nodeWalls = [];
+            if(nodeTypes(nodeList(i),1) == 1 || nodeTypes(nodeList(i),1) == 2)
+                wallDeltas = repmat(nodes(preNode,:),size(newWallEndPoints,1),1)-newWallEndPoints(:,2:3);
+                dists = sqrt(sum(wallDeltas.^2,2));
+                nodeWalls = newWallEndPoints(dists < 1e-3,[1,4]);
+            end
+            
+            ignoreWalls = -1;
+            if(size(nodeWalls,1) > 0)
+                ignoreWalls = nodeWalls(:,1);
+            end
             try
-                [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i), cmap, thetas, RobotLength(xxs), wallIndex, xxs);
+                [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i), cmap, thetas, RobotLength(xxs), wallIndex, ignoreWalls, xxs);
             catch
                 badOne = true;
                 break;
