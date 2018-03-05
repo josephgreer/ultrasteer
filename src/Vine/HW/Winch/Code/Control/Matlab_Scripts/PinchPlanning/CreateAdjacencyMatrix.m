@@ -632,6 +632,18 @@ for i=1:length(nodeList)-1
         cthetas = [cls(1:end-1) cts];
         wallIndex = -1;
         for ll=1:length(cdls)
+            nodeWalls = [];
+            if(nodeTypes(nodeList(ll),1) == 1)
+                wallDeltas = repmat(nodes(nodeList(ll),:),size(newWallEndPoints,1),1)-newWallEndPoints(:,2:3);
+                dists = sqrt(sum(wallDeltas.^2,2));
+                nodeWalls = newWallEndPoints(dists < 1e-3,[1,4]);
+            end
+            
+            ignoreWalls = -1;
+            if(size(nodeWalls,1) > 0)
+                ignoreWalls = nodeWalls(:,1);
+            end
+            
             [cx, cy, cxs,wallIndex] = MoveRobotByDl(cx,cy,cdls(ll),newMap,cthetas,clen,wallIndex,ignoreWalls,cxs);
             
             clen = clen+cdls(ll);
@@ -709,8 +721,8 @@ for kk = 1:length(angleNoises)
         end
         for i=1:length(dls)
             nodeWalls = [];
-            if(nodeTypes(nodeList(i),1) == 1 || nodeTypes(nodeList(i),1) == 2)
-                wallDeltas = repmat(nodes(preNode,:),size(newWallEndPoints,1),1)-newWallEndPoints(:,2:3);
+            if(nodeTypes(nodeList(i),1) == 1)
+                wallDeltas = repmat(nodes(nodeList(i),:),size(newWallEndPoints,1),1)-newWallEndPoints(:,2:3);
                 dists = sqrt(sum(wallDeltas.^2,2));
                 nodeWalls = newWallEndPoints(dists < 1e-3,[1,4]);
             end
@@ -796,8 +808,8 @@ for kk = 1:length(angleNoises)
         badOne = false;
         for i=1:length(dls)
             nodeWalls = [];
-            if(nodeTypes(nodeList(i),1) == 1 || nodeTypes(nodeList(i),1) == 2)
-                wallDeltas = repmat(nodes(preNode,:),size(newWallEndPoints,1),1)-newWallEndPoints(:,2:3);
+            if(nodeTypes(nodeList(i),1) == 1)
+                wallDeltas = repmat(nodes(nodeList(i),:),size(newWallEndPoints,1),1)-newWallEndPoints(:,2:3);
                 dists = sqrt(sum(wallDeltas.^2,2));
                 nodeWalls = newWallEndPoints(dists < 1e-3,[1,4]);
             end
