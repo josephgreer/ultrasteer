@@ -2,7 +2,8 @@
 #include "math.h"
 #include <time.h>
 #define TH_ART_MOT 34.0
-#define ART_SLIDING 41
+#define ART_SLIDING 43
+
 
 
 

@@ -72,6 +72,7 @@ namespace Nf
   public: //Methods
 
     // Sono questi i punti senza tip. Il tip è lungo la direzione z dell'ultima matrice di rotazione (del wrist)
+    // This is the list of points that represent the needle
     vector<Matrix44d> TIP_t;
 
     vector<Matrix44d> SIMULATE_TIP;
@@ -84,6 +85,7 @@ namespace Nf
     void addPOINT(Vec3d p,Vec3d v);
     void updateInput(double m_l, double m_th,unsigned int a);
     void Estimator::saveDataOpt();
+    // questa
     bool WaitAndCorrect();
     void addTIP();
     void resetaddTIP();
