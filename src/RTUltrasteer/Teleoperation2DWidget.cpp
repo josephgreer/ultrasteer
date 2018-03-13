@@ -285,6 +285,7 @@ namespace Nf
 
   void Teleoperation2DWidget::updateTeleoperationVisualization()
   {
+    m_teleoperationVisualizer->SetNeedlePoints(m_control->GetTipPoints());
     m_teleoperationVisualizer->onUpdateVisualization();
     m_imageViewer->onUpdateOverlay();
   }

@@ -84,6 +84,7 @@ namespace Nf
     std::tr1::shared_ptr < PointCloudVisualizer > m_planeCalibrationPointsVis;
     std::tr1::shared_ptr < PlaneVisualizer > m_planeCalibrationVis;
     std::tr1::shared_ptr < PlaneVisualizer > m_planeEstimatorVis;
+    std::tr1::shared_ptr < PointCloudVisualizer > m_tipPointVis;
 
   public:
     TeleoperationVisualizationWidget(QWidget *parent, ControlAlgorithms* control);
@@ -93,6 +94,7 @@ namespace Nf
     std::vector < QVTKWidget * > GetChildWidgets();
     void onUpdateVisualization();
     void SetPlaneCalibrationPointVisVisible(bool vis) { m_planeCalibrationPointsVis->GetActor()->SetVisibility(vis); }
+    void SetNeedlePoints(std::vector < Vec3d > &points);
 
   private:
     void initViewport();

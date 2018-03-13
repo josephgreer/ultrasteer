@@ -54,6 +54,9 @@ namespace Nf
     m_planeCalibrationPointsVis = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(5, Vec3d(1, 0, 0)));
     m_planeCalibrationVis->GetActor()->SetVisibility(false);
 
+    m_tipPointVis = std::tr1::shared_ptr < PointCloudVisualizer > (new PointCloudVisualizer(5, Vec3d(0, 1, 0)));
+    m_tipPointVis->GetActor()->SetVisibility(true);
+
     // initialize viewport
     initViewport();
 
@@ -71,6 +74,12 @@ namespace Nf
   void TeleoperationVisualizationWidget::UpdateGeometry()
   {
     this->updateGeometry();
+  }
+
+  void TeleoperationVisualizationWidget::SetNeedlePoints(std::vector < Vec3d > &points)
+  {
+    m_tipPointVis->SetPoints(points);
+    NTrace("Number of points %d\n", points.size());
   }
 
   void TeleoperationVisualizationWidget::UpdateSize(QSize sz)
@@ -164,6 +173,7 @@ namespace Nf
       m_renderer->AddActor(m_planeCalibrationVis->GetActor());
       m_renderer->AddActor(m_planeEstimatorVis->GetActor());
       m_renderer->AddActor(m_planeCalibrationPointsVis->GetActor());
+      m_renderer->AddActor(m_tipPointVis->GetActor());
       m_renderer->SetBackground(.3, .3, .3); // Background color blue
 
       onSetViewYZ();

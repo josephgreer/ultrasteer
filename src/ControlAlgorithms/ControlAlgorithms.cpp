@@ -2,7 +2,7 @@
 #include "math.h"
 #include <time.h>
 #define TH_ART_MOT 34.0
-#define ART_SLIDING 43
+#define ART_SLIDING 47
 
 
 
@@ -345,6 +345,23 @@ namespace Nf {
     m_th = m_robot->getRollAngle();
     m_lastRollDeg = m_th;*/
     resetTarget();
+  }
+
+  std::vector < Vec3d > ControlAlgorithms::GetTipPoints()
+  {
+    if(m_EST.TIP_t.size() == 0)
+      return std::vector < Vec3d > (0);
+
+    f64 maxPoints = 100;
+
+    f64 scalar = (f64)(m_EST.TIP_t.size()-1)/(f64)maxPoints;
+
+    std::vector < Vec3d > pts((s32)maxPoints);
+    for(s32 i=0; i<maxPoints; i++) {
+      s32 j = MIN((s32)(i*scalar+0.5), m_EST.TIP_t.size()-1);
+      pts[i] = m_EST.TIP_t[j].GetPosition();
+    }
+    return pts;
   }
 
   std::vector < Vec3d > ControlAlgorithms::GetPlanarCalibrationPoints()

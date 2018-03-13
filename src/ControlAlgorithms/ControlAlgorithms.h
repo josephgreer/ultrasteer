@@ -73,6 +73,7 @@ namespace Nf {
     void initializeEstimator();
     void RotateInline();
     void setStepLength(float SL);
+    std::vector < Vec3d > GetTipPoints();
 
     void getOverlayValues(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Matrix44d &z, Vec3d &Sxyz, Vec3d &t_img, Vec3d &t, double &mmToNextScan, bool &targetDepthReached,double& alpha_e);
     void getOverlayValues2(Matrix44d &x, Vec3d &p_img, Vec3d &pz_img, Vec3d &py_img, Matrix44d &z, Vec3d &Sxyz, vector<Vec3d> &t_img, Vec3d &t, double &mmToNextScan, bool &targetDepthReached,double& alpha_e,Vec3d &p_imgS);
