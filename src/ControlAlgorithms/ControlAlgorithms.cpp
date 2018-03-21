@@ -1,8 +1,8 @@
 #include "ControlAlgorithms.h"
-#include "math.h"
+#include <math.h>
 #include <time.h>
-#define TH_ART_MOT 34.0
-#define ART_SLIDING 47
+#define TH_ART_MOT 15.0
+#define ART_SLIDING 45
 
 
 
@@ -38,7 +38,7 @@ namespace Nf {
     , m_Tneedletip2robot(Matrix44d::Zero())
     , m_transducerType(0)
     , m_robot(NULL)
-    , m_insertionMMatLastManualScan(0.0)
+    , m_insertionMMatLastManualScan(-1000.0)
     , m_th(0.0)
     , m_l(0.0)
     , m_maxArticulationAngle(0.0)
@@ -54,7 +54,7 @@ namespace Nf {
     m_insTrigger->setThresholds(0.01);
     m_rotTrigger->setThresholds(0.01);
 	  QuickandDirty=false;
-    stepL=MAX_OPEN_LOOP_INSERTION;
+    stepL=MAX_OPEN_LOOP_INSERTION + 5.3;
     myfile.open("timeUS.txt");
     ArticulationAngle=0;
     NPoint=0;
@@ -158,9 +158,10 @@ namespace Nf {
   }
 
   // initialize the Unscented Kalman Filter based on joint values
+  float off_NDL = 0.0; // mm
   void ControlAlgorithms::initializeEstimator()
   {
-    m_EST.setEstimator(m_l,NEEDLE_DEAD_LENGTH, m_robot->getRollAngle(),m_robot->getArticulationAngle());
+    m_EST.setEstimator(m_l,NEEDLE_DEAD_LENGTH+off_NDL, m_robot->getRollAngle(),m_robot->getArticulationAngle());
     m_x = m_EST.getCurrentEstimateTIP();
   }
 
@@ -180,7 +181,7 @@ namespace Nf {
     }
 
     return m_inJointSpaceControl;*/
-    m_insertionMMatLastManualScan = m_l-20;
+    m_insertionMMatLastManualScan = m_l-200;
     return false;
 
   }
@@ -482,6 +483,7 @@ namespace Nf {
       { // if we need a new scan
           
     	    QuickandDirty=false;
+          m_robot->resetVelocities();
           
     	    m_robot->SetInsertionVelocity(0.0);
           m_robot->SetRotationVelocity(0.0);
@@ -511,7 +513,7 @@ namespace Nf {
       //  m_insertionMMatLastManualScan = 0;
       
       if (SEG_REQ)
-         m_insertionMMatLastManualScan = 0;
+         m_insertionMMatLastManualScan = -1000;
 
       
       if ((CountCommand<10)&&(m_EST.isInitialized()))
@@ -1144,8 +1146,8 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
   double InsSliding = 0;
   bool disableSM = false;
   double alpha_e;
-  double prev_sum_alpha_e = 1000;
-  double sum_alpha = 0;
+  //double prev_sum_alpha_e = 1000;
+  //double sum_alpha = 0;
   int count_sum=0;
   int count_tran=0;
   
@@ -1215,6 +1217,7 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
 			  // Get relative error in the current tip frame
 			  Nf::Vec3d e = R.Inverse()*(C->m_t - p);
         f32 d_th = atan2(-e.x, e.y);
+        
 
         if ((C->m_t-prev_mt).magnitude()!=0)
         {
@@ -1263,7 +1266,7 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
         {
           // modificare qui per quanto andare indietro...
           float art_back = TIP_LENGTH;
-          art_back = 8;
+          art_back = 10;
             switch(C->STATE_ART)
             {
                 case 0:
@@ -1277,17 +1280,35 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
                 case 101:
                    if (abs(C->m_th - roll_slid)<0.1)
                    {
+                     // madonna puttana
+                     if (C->m_l<(C->stepL-5))
+                     {
+                        C->STATE_ART = 3;
+                        EstimatorisAble = true;
+                        if (C->m_l>(0.5*C->stepL))
+                        {
+                          C->m_robot->SetArticulationAngle(ART_SLIDING);
+                        }
+                     }
+                     else
+                     {
+                      
+                      C->m_robot->setInsertionVelocity(150);
                       C->m_robot->InsertIncremental(-art_back);
                       InsSliding = C->m_l;
+                      C->m_robot->SetArticulationAngle(0);
                       C->STATE_ART=1;
+                     }
                    }
                   break;
-
               case 1:
                 if (abs(C->m_l+art_back-InsSliding)<0.01)
                 {
+                  Sleep(3000);
+                  C->m_robot->setInsertionVelocity(200);
                   C->m_robot->InsertIncremental(art_back+0.02);
                   InsSliding = C->m_l;
+                  C->m_robot->SetArticulationAngle(ART_SLIDING);
                   C->STATE_ART = 2;
                  
                 }
@@ -1297,29 +1318,33 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
                 {
                    C->m_EST.updateInput(C->m_l, C->m_th,0);
                    EstimatorisAble = true;
-                   sum_alpha=0;
-                   prev_sum_alpha_e = 1000;
+                   //sum_alpha=0;
+                   //prev_sum_alpha_e = 1000;
                    C->STATE_ART = 3;
+                   //C->m_robot->setRollVelocity(600);
+
                    
                    //C->m_robot->SetArticulationAngle(ART_SLIDING);
                 }
                 break;
               case 3:
-                  C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED);         
-                  if (d_th<0)
-                    C->m_robot->SetRotationVelocity(-350);
-                  else
-                    C->m_robot->SetRotationVelocity(350);
-
-                  
+                  C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*4);         
+                                    
                   
                   if (abs(alpha_e)<1.0)
                   {  
                     C->m_robot->SetArticulationAngle(0);
-                    NoArt = true;
+                    //NoArt = true;
+                    //C->m_robot->SetRotationVelocity(-300*2);
                     //MiddleArt = true;
                   }
-                
+                  
+                  if (d_th<0)
+                      C->m_robot->SetRotationVelocity(-300);
+                   else
+                      C->m_robot->SetRotationVelocity(300);
+                  
+                break;
                  
 
                  // Commenta
@@ -1355,13 +1380,13 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
                 */
                 // qui
 
-                 if ((!NoArt)&&(abs(alpha_e)>4.0))
+                 /*if ((!NoArt)&&(abs(alpha_e)>4.0))
                     if (MiddleArt)
                       C->m_robot->SetArticulationAngle(24);
                     else
                       C->m_robot->SetArticulationAngle(ART_SLIDING);
+                 */ 
                   
-                  break;
              }
         }          
         

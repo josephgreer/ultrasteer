@@ -7,6 +7,8 @@
 #define PI 3.14159265
 #define InsRPM 10.0
 #define ONE_OUTPUT_ROTATION		511 422
+#define MAX_VELOCITY_ROLL			300		//Roll device velocity when it is not moving in no increments mode
+#define MAX_VELOCITY_INS			150		//Insertion device velocity when it is not moving in no increments mode
 
 #define SPUR_GEAR_RATIO_ROLL (1539.0/65.0*4.0/0.5)	//Gear ratio for the maxon motor gearhead + pinion gears
 
@@ -17,6 +19,8 @@ NeedleSteeringRobot::NeedleSteeringRobot() :
 {
 	connect(&polling_timer, SIGNAL(timeout()), this, SLOT(OnPollTimeout()));
 	connect(&dwell_timer, SIGNAL(timeout()), this, SLOT(OnDwellTimeout()));
+
+  resetVelocities();
 }
 
 NeedleSteeringRobot::~NeedleSteeringRobot()
@@ -260,4 +264,28 @@ void NeedleSteeringRobot::cancelDutyCycling(void)
 		dwell_timer.stop();
 
   this->SetInsertionVelocity(0);
+}
+
+void NeedleSteeringRobot::setRollVelocity(int v)
+{
+  if (v==RollVel)
+    return;
+
+  m_RollDevice.ChangeMaxMotorVelocity(v);
+  RollVel = v; 
+}
+
+void NeedleSteeringRobot::setInsertionVelocity(int v)
+{
+  if (v==InsVel)
+    return;
+
+  m_InsertionDevice.ChangeMaxMotorVelocity(v);
+  InsVel = v; 
+}
+
+void NeedleSteeringRobot::resetVelocities()
+{
+  setInsertionVelocity(MAX_VELOCITY_INS);
+  setRollVelocity(MAX_VELOCITY_ROLL);
 }

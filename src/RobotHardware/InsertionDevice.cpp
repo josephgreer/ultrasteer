@@ -12,7 +12,7 @@
 #define MIN_ENCODER_LIMIT		-30000		//Minimum encoder limit that the motor will not be able to travel past
 #define MAX_ENCODER_LIMIT		30000		//Maximum encoder limit that the motor will not be able to travel past
 #define CURRENT_LIMIT			3000		//Faulhaber motor peak current limit of 3000mA 	
-#define MAX_VELOCITY			150		//Insertion device velocity when it is not moving in no increments mode
+#define MAX_VELOCITY			300		//Insertion device velocity when it is not moving in no increments mode
 /**********************************************************************************/
 
 bool InsertionDevice::m_created = false;

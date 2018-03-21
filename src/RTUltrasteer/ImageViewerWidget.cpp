@@ -563,7 +563,7 @@ namespace Nf
         int n = sprintf(str, "%.2f mm to next needle scan and alpha = %.2f",mmToNextScan,alpha);
       }   
       SetInstructionText(str);
-      f32 danger = 1.0 - mmToNextScan/MAX_OPEN_LOOP_INSERTION;
+      f32 danger = 1.0 - mmToNextScan/(MAX_OPEN_LOOP_INSERTION+5.3);
       m_instructionTextActor->GetTextProperty()->SetColor( 1.0,1.0-danger,1.0-danger );
 
       if( insertionDepthReached ){

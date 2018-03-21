@@ -22,6 +22,7 @@ public: //Methods
 	float GetAngle(void);	
 	void SetDefaultVelocity(void);
 	void setVibration(bool);
+
 	
 private:	//Methods
 	void SetLimits(void);
