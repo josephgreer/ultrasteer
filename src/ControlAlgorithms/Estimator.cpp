@@ -24,6 +24,8 @@ namespace Nf
         NULL);             // unnamed mutex
     
     StartArt =0;
+    alpha_rot = 0;
+    theta_start = 0;
 
     slen = sizeof(si_other) ;
      
@@ -181,6 +183,7 @@ namespace Nf
      return Matrix33d(ct,-st,0,st,ct,0,0,0,1);
   }
 
+ 
 
   Matrix44d Estimator::simulate1Step(double diff_l,double diff_th,unsigned int a,unsigned int prev_a, Matrix44d prevTIP,double L_n)
   {
@@ -312,14 +315,19 @@ namespace Nf
     mat R0 = zeros(3,3);
     mat offset = zeros(3,1);
     mat dart = zeros(1,ART.size());
+    
 
     mat mrho_n = zeros(1,1);
     mat mrho_a = zeros(1,1);
     mat myaw_art = zeros(1,1);
     mat mART_ANG = zeros(1,1);
+    mat malpha_rot = zeros(1,1);
+    mat mtheta_start = zeros(1,1);
 
     mrho_n(0,0)=rho_n;
     mrho_a(0,0)=rho_a;
+    malpha_rot(0,0) = alpha_rot;
+    mtheta_start(0,0) = theta_start;
     //myaw_art(0,0)=yaw_art;
     //mART_ANG = ART_ANG;
     
@@ -383,6 +391,11 @@ namespace Nf
     mrho_a.save(path, raw_ascii);
     sprintf(path, "%sART.dat", basePath);
     dart.save(path, raw_ascii);
+    sprintf(path, "%sALPHA_ROT.dat", basePath);
+    malpha_rot.save(path, raw_ascii);
+     sprintf(path, "%sTHETA_START.dat", basePath);
+    mtheta_start.save(path, raw_ascii);
+
     
     /*sprintf(path, "%sYAW_ART.dat", basePath);
     myaw_art.save(path, raw_ascii);
@@ -487,8 +500,15 @@ namespace Nf
     
     StartArt = 0;
     ROT_base = ROT_base * rotx(res(0,0)) *  roty(res(1,0)) *  rotz(res(2,0));
+    
     tip_mm_t = ROT_base*off;
     ROT_t = ROT_base;
+
+    alpha_rot = alpha_rot + res(3,0);
+    Matrix33d appROT = ROT_t * rotz(theta_start);
+    ROT_t = AxisAngle(appROT.Col(0),alpha_rot) * ROT_t;
+
+
     //rho_n = rho_n + res(3,0); //mm
     rho_a = rho_a + res(4,0);
     //yaw_art = yaw_art + res(5,0);
@@ -686,6 +706,12 @@ void Estimator::removeTarget()
         return;
     TARGET.pop_front();
 }
+
+void Estimator::savetheta(double t)
+{
+  theta_start=t;
+}
+
 /*
 n = sl3dnormalize(r(1:3), epsilon);
 

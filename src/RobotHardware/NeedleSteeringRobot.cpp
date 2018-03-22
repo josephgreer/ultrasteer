@@ -20,7 +20,7 @@ NeedleSteeringRobot::NeedleSteeringRobot() :
 	connect(&polling_timer, SIGNAL(timeout()), this, SLOT(OnPollTimeout()));
 	connect(&dwell_timer, SIGNAL(timeout()), this, SLOT(OnDwellTimeout()));
 
-  resetVelocities();
+  resetMaxVelocities();
 }
 
 NeedleSteeringRobot::~NeedleSteeringRobot()
@@ -266,7 +266,7 @@ void NeedleSteeringRobot::cancelDutyCycling(void)
   this->SetInsertionVelocity(0);
 }
 
-void NeedleSteeringRobot::setRollVelocity(int v)
+void NeedleSteeringRobot::setMaxRollVelocity(int v)
 {
   if (v==RollVel)
     return;
@@ -275,7 +275,7 @@ void NeedleSteeringRobot::setRollVelocity(int v)
   RollVel = v; 
 }
 
-void NeedleSteeringRobot::setInsertionVelocity(int v)
+void NeedleSteeringRobot::setMaxInsertionVelocity(int v)
 {
   if (v==InsVel)
     return;
@@ -284,8 +284,8 @@ void NeedleSteeringRobot::setInsertionVelocity(int v)
   InsVel = v; 
 }
 
-void NeedleSteeringRobot::resetVelocities()
+void NeedleSteeringRobot::resetMaxVelocities()
 {
-  setInsertionVelocity(MAX_VELOCITY_INS);
-  setRollVelocity(MAX_VELOCITY_ROLL);
+  setMaxInsertionVelocity(MAX_VELOCITY_INS);
+  setMaxRollVelocity(MAX_VELOCITY_ROLL);
 }

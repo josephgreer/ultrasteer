@@ -12,7 +12,7 @@
 #define MIN_ANGLE_LIMIT			-5.0								//Minimum encoder limit that the motor will not be able to travel past
 #define MAX_ANGLE_LIMIT			90.0								//Maximum encoder limit that the motor will not be able to travel past
 #define CURRENT_LIMIT			2000								//Faulhaber motor peak current limit of 3000mA 	
-#define MAX_VELOCITY				100					//Roll device velocity when it is not moving in no increments mode
+#define MAX_VELOCITY				5					//Roll device velocity when it is not moving in no increments mode
 /**********************************************************************************/
 
 bool ArticulationDevice::m_created = false;

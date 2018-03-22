@@ -483,7 +483,7 @@ namespace Nf {
       { // if we need a new scan
           
     	    QuickandDirty=false;
-          m_robot->resetVelocities();
+          m_robot->resetMaxVelocities();
           
     	    m_robot->SetInsertionVelocity(0.0);
           m_robot->SetRotationVelocity(0.0);
@@ -1242,7 +1242,7 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
 			  
         //float trans_disp_back = 10.0;
        
-     
+        bool Diritto = false;
 
         if (( R.Col(2).dot(C->m_t-p) < 0))
         {
@@ -1284,16 +1284,23 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
                      if (C->m_l<(C->stepL-5))
                      {
                         C->STATE_ART = 3;
+                        Diritto = false;
                         EstimatorisAble = true;
                         if (C->m_l>(0.5*C->stepL))
                         {
                           C->m_robot->SetArticulationAngle(ART_SLIDING);
+                          C->m_EST.savetheta(C->m_th*(PI/180));
+                        }
+                        else
+                        {
+                          // rad
+                          C->m_EST.savetheta(C->m_th*(PI/180));
                         }
                      }
                      else
                      {
                       
-                      C->m_robot->setInsertionVelocity(150);
+                      C->m_robot->setMaxInsertionVelocity(150);
                       C->m_robot->InsertIncremental(-art_back);
                       InsSliding = C->m_l;
                       C->m_robot->SetArticulationAngle(0);
@@ -1305,10 +1312,10 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
                 if (abs(C->m_l+art_back-InsSliding)<0.01)
                 {
                   Sleep(3000);
-                  C->m_robot->setInsertionVelocity(200);
+                  C->m_robot->setMaxInsertionVelocity(150);
                   C->m_robot->InsertIncremental(art_back+0.02);
                   InsSliding = C->m_l;
-                  C->m_robot->SetArticulationAngle(ART_SLIDING);
+                  C->m_robot->SetArticulationAngle(0.5*ART_SLIDING);
                   C->STATE_ART = 2;
                  
                 }
@@ -1321,30 +1328,62 @@ DWORD WINAPI ControlThread (LPVOID lpParam)
                    //sum_alpha=0;
                    //prev_sum_alpha_e = 1000;
                    C->STATE_ART = 3;
+                   Diritto = false;
                    //C->m_robot->setRollVelocity(600);
 
-                   
+                    C->m_robot->SetArticulationAngle(ART_SLIDING);
                    //C->m_robot->SetArticulationAngle(ART_SLIDING);
                 }
                 break;
               case 3:
-                  C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*4);         
+                  
+                  if (!Diritto)
+                  {
+                    C->m_robot->SetInsertionVelocity(INS_AUTO_SPEED*4);         
+                    if (d_th<0)
+                        C->m_robot->SetRotationVelocity(-300);
+                     else
+                        C->m_robot->SetRotationVelocity(300);
                                     
-                  
-                  if (abs(alpha_e)<1.0)
-                  {  
-                    C->m_robot->SetArticulationAngle(0);
-                    //NoArt = true;
-                    //C->m_robot->SetRotationVelocity(-300*2);
-                    //MiddleArt = true;
-                  }
-                  
-                  if (d_th<0)
+                    if (abs(alpha_e)<1.0)
+                    {  
+                      C->m_robot->SetInsertionVelocity(50);
+                      C->m_robot->SetArticulationAngle(0);
                       C->m_robot->SetRotationVelocity(-300);
-                   else
-                      C->m_robot->SetRotationVelocity(300);
+                      Diritto = true;
+                   
+                      //EstimatorisAble=false;
+                      //C->STATE_ART = 5;
+                      //NoArt = true;
+                      //C->m_robot->SetRotationVelocity(-300*2);
+                      //MiddleArt = true;
+                    }
+                  }
+                                   
+                  
                   
                 break;
+
+              /*case 5:
+                     
+                     C->m_robot->InsertIncremental(-art_back*0.5);
+                     InsSliding = C->m_l;
+                     C->m_robot->SetRotationVelocity(300);
+                     C->STATE_ART = 6;
+              break;
+
+              case 6:
+                    if (abs(C->m_l+art_back*0.5-InsSliding)<0.01)
+                    {
+                      C->m_robot->setInsertionVelocity(150);
+                      C->m_robot->InsertIncremental(art_back+0.02);
+                      InsSliding = C->m_l;
+                      C->m_robot->SetArticulationAngle(0.5*ART_SLIDING);
+                      C->STATE_ART = 2;
+                 
+                    }
+                break;*/
+
                  
 
                  // Commenta

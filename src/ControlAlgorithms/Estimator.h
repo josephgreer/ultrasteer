@@ -40,10 +40,14 @@ namespace Nf
     vector<int> IND;
     vector<double> THETA;
     double StartArt;
+    // art
+    double theta_start;
+    double alpha_rot;
     //double ART_ANG;
 
     
     double rho_n,rho_a;//,yaw_art;
+    
 
     Matrix33d ROT_base;
     Vec3d off;
@@ -66,6 +70,7 @@ namespace Nf
     Matrix33d roty(double pitch);
     Matrix33d rotz(double yaw);
     Matrix33d AxisAngle(Vec3d axis,double angle);
+
     Matrix44d simulate1Step(double diff_l,double diff_th,unsigned int a,unsigned int prev_a,Matrix44d prevTIP,double L_n);
     
 
@@ -97,6 +102,7 @@ namespace Nf
     void simulateTask();
     void resetTarget();
     void removeTarget();
+    void savetheta(double);
     /*void fullUpdateUKF(Vec3d u, Matrix44d z);
     void processUpdateUKF(Vec3d u);
     void getCurrentStateEstimate(Matrix44d &x_out);

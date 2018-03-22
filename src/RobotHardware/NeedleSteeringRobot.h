@@ -46,9 +46,9 @@ public:
   bool isArticulationInitialized(void);
 	void cancelDutyCycling(void);
 	void DutyCycleSteer(float DC, float angle, float insDist);
-  void setRollVelocity(int);
-  void setInsertionVelocity(int);
-  void resetVelocities();
+  void setMaxRollVelocity(int);
+  void setMaxInsertionVelocity(int);
+  void resetMaxVelocities();
 
 private:
 	RollDevice m_RollDevice;
