@@ -1,14 +1,19 @@
 clear; clc; close all;
 
-load 'Maps/map'
-load 'Maps/nodes'
+load 'Maps/map2'
+load 'Maps/nodes2'
 
-startNode = 47;%46;
-endNode = 59;
+startNode = 47;%48;
+endNode = 60;
+
+nodes(61,:) = map(11,1:2);
 
 % nodes = vertcat(nodes,map(23,3:4));
 map = map/8;
 nodes = nodes/8;
+
+oldMap = map;
+[map,nodes] = ShrinkMap(map,nodes,90/8*0.95/2);
 
 
 % load 'Maps/map1'
@@ -39,7 +44,7 @@ set(gca,'FontSize',12,'FontName','Times New Roman');
 set(h, 'Position', 0.65*[0 0 550 480]);
 
 
-DrawMap(map);
+hMap = DrawMap(map);
 
 nNodes = size(nodes,1);
 nAngles = 359;
@@ -84,12 +89,12 @@ end
 scatter(nodes([startNode,endNode],1),nodes([startNode,endNode],2),'LineWidth',2);
 
 %show the different types of nodes
-for i=1:3
-    currIs = nodeTypes(:,1) == i;
-    if(useMidPointNodes || i ~= 2) 
-        scatter(nodes(currIs,1),nodes(currIs,2), 'LineWidth',2);
-    end
-end
+% for i=1:3
+%     currIs = nodeTypes(:,1) == i;
+%     if(useMidPointNodes || i ~= 2) 
+%         scatter(nodes(currIs,1),nodes(currIs,2), 'LineWidth',2);
+%     end
+% end
 
 interiorNodes = find(nodeTypes(:,1) == 3);
 nInteriorNodes = size(interiorNodes,1);
@@ -387,7 +392,7 @@ display('Calculating shortest path');
 for i=2:length(path)-2
     [ns,as] = IndexToNodeAngle(path(i:i+1),nAngles,nNodes,thetas);
     ns = nodes(ns,:);
-    plot(ns(:,1),ns(:,2));
+%     plot(ns(:,1),ns(:,2));
 end
 
 nodeList = zeros(length(path)-2,1);
@@ -402,7 +407,7 @@ nodeList = unique(nodeList,'stable');
 
 allowableAngleRange = deg2rad(50);
 angleNoise = deg2rad(5); % in degree uniform distribution
-lengthNoise = 0; % in physical units
+lengthNoise = 2; % in physical units
 nSamples = 100; % number of samples used to calculate monte carlo prboabilities
 nAngles = 100;
 successThresh = 10;
@@ -554,8 +559,15 @@ for i=1:length(nodeList)-1
             end
             sumIdxs = unique(sumIdxs);
             
+            lenPoints = lens(sumIdxs,:);
+            lenPoints = lenPoints(lenPoints > 0);
+            
             % assumes uniform angular uncertainty
-            lensWithUncertainty(j) = mean(mean(lens(sumIdxs,:)));
+            if(nnz(lens(sumIdxs,:)) > 0)
+                lensWithUncertainty(j) = sum(sum(lens(sumIdxs,:)))/nnz(lens(sumIdxs,:));
+            else
+                lensWithUncertainty(j) = 0;
+            end
             successProbWithUncertaintiy(j) = mean(successProb(sumIdxs,:));
         end
         
@@ -617,6 +629,7 @@ for i=1:length(nodeList)-1
         cls(1) = 0;
         
         thetaPerturb = unifrnd(-angleNoise,angleNoise,length(designThetas),1);
+        thetaPerturb(1) = 0;
         cts = designThetas+thetaPerturb;
         cts(thetaRight) = min(cts(thetaRight),-1e-3);
         cts(thetaLeft) = max(cts(thetaLeft),1e-3);
@@ -675,10 +688,12 @@ for i=1:length(nodeList)-1
     end
     display(sprintf('Success estimate at landmark %d is %f', i, nsucc/(nfail+nsucc)));
 end
-
+%%
+DeleteMap(hMap);
+DrawMap(oldMap);
 display(designThetas)
 
-angleNoises = deg2rad(linspace(0,25,12));
+angleNoises = deg2rad(linspace(0,25,5));
 successProbsOptimalDesign = zeros(length(angleNoises),1);
 for kk = 1:length(angleNoises)
     nTries = 1000;
@@ -699,6 +714,7 @@ for kk = 1:length(angleNoises)
         cls(1) = 0;
         
         thetaPerturb = normrnd(0, angleNoise,length(designThetas),1);
+        thetaPerturb(1) = 0;
         cts = designThetas+thetaPerturb;
         cts(thetaRight) = min(cts(thetaRight),-1e-3);
         cts(thetaLeft) = max(cts(thetaLeft),1e-3);
@@ -714,7 +730,7 @@ for kk = 1:length(angleNoises)
         dls = cls(2:end)-cls(1:end-1);
         
         wallIndex = -1;
-        if(kk == 1 && jj == 1)
+        if(false)%kk == 1 && jj == 1)
             cmap = zeros(0,4);
         else
             cmap = map;
@@ -741,9 +757,11 @@ for kk = 1:length(angleNoises)
                 [xx, yy, xxs,wallIndex] = MoveRobotByDl(xx, yy, dls(i), cmap, thetas, RobotLength(xxs), wallIndex, ignoreWalls, xxs);
             end
         end
-        if(false)%kk == 1 && (jj == 1 || jj == 2))
-            ScaleDataPlot(8/90*2.54);
+        if(kk == 1 && (jj == 1 || jj == 2))
             handles = DrawRobotXs(xxs, -1, handles);
+            ScaleDataPlot(8/90*2.54);
+            xlim([0 140]);
+            ylim([-10 90]);
         end
         if(norm(xx(5:6) - nodes(endNode,:).') < 20)
             nsucc = nsucc+1;
@@ -760,7 +778,7 @@ for kk = 1:length(angleNoises)
     display(sprintf('Optimal Design Prob Success %f AngleNoise %f', successProb, rad2deg(angleNoise)));
 end
 
-load('Maps/NominalDesign2');
+load('Maps/NominalDesign3');
 
 successProbsNominalDesign = zeros(length(angleNoises),1);
 
@@ -784,6 +802,7 @@ for kk = 1:length(angleNoises)
         cls(1) = 0;
         
         thetaPerturb = normrnd(0,angleNoise,length(designThetas),1);
+        thetaPerturb(1) = 0;
         cts = designThetas+thetaPerturb;
         cts(thetaRight) = min(cts(thetaRight),-1e-3);
         cts(thetaLeft) = max(cts(thetaLeft),1e-3);

@@ -71,5 +71,5 @@ designThetas = angleDiffSigns([unitVectors(1:end-1,:) zeros(size(unitVectors,1)-
 
 designLs = [0; cumsum(lengths)];
 
-save('Maps/NominalDesign2','designLs','designThetas');
+save('Maps/NominalDesign3','designLs','designThetas');
 
