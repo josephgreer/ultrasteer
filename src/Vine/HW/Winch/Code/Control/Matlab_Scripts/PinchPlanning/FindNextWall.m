@@ -63,52 +63,94 @@ while(numWalls > 0)
     
     if(size(vectors,1) > 0)
         
+        if(size(vectors,1) > 2)
+            assert(false);
+        end
+        
         % normalize
         vectors(:,2:3) = vectors(:,2:3)./repmat(norms,1,2);
         
-        angleDiffs = angleDiffSigns([vectors(:,2:3) zeros(size(vectors,1),1)],...
-            repmat([-tipTangent.' 0],size(vectors,1),1));
-        
-        [maxDiff, maxIdx] = max(angleDiffs);
-        [minDiff, minIdx] = min(angleDiffs);
-        
-        if(sign(maxDiff) == sign(minDiff) || sign(maxDiff) == 0 || sign(minDiff) == 0)
-            % this case corresopnds to multiple walls meeting at node and we don't
-            % we're at the end of the node
-            wallIndex = -1;
-            intersectX = -1;
-            intersectY = -1;
+        if(false)
+            angleDiffs = angleDiffSigns([vectors(:,2:3) zeros(size(vectors,1),1)],...
+                repmat([-tipTangent.' 0],size(vectors,1),1));
             
-            out.intAdjacencyMatrix(vectors(:,1)) = 0;
-            cIndices(ismember(cIndices,vectors(:,1))) = [];
-        else
-            minAngle = max(angleDiffs(angleDiffs < 0));
-            maxAngle = min(angleDiffs(angleDiffs > 0));
-            if(isempty(maxAngle))
-                maxAngle = 0;
-            elseif(isempty(minAngle))
-                minAngle = 0;
+            [maxDiff, maxIdx] = max(angleDiffs);
+            [minDiff, minIdx] = min(angleDiffs);
+            
+            if(sign(maxDiff) == sign(minDiff) || sign(maxDiff) == 0 || sign(minDiff) == 0)
+                % this case corresopnds to multiple walls meeting at node and we don't
+                % we're at the end of the node
+                wallIndex = -1;
+                intersectX = -1;
+                intersectY = -1;
+                
+                out.intAdjacencyMatrix(vectors(:,1)) = 0;
+                cIndices(ismember(cIndices,vectors(:,1))) = [];
+            else
+                minAngle = max(angleDiffs(angleDiffs < 0));
+                maxAngle = min(angleDiffs(angleDiffs > 0));
+                if(isempty(maxAngle))
+                    maxAngle = 0;
+                elseif(isempty(minAngle))
+                    minAngle = 0;
+                end
+                
+                [~, minIdx] = min(abs(angleDiffs-minAngle));
+                [~, maxIdx] = min(abs(angleDiffs-maxAngle));
+                
+                % check if they're the same wall
+                dirA = vectors(maxIdx,2:3); dirB = vectors(minIdx,2:3);
+                if(sum(abs(dirA+dirB)) > 1e-3)
+                    % we're trapped
+                    wallIndex = -100;
+                    return;
+                else
+                    if(dot(tipTangent,dirA) > 0)
+                        wallIndex = vectors(maxIdx,1);
+                    else
+                        wallIndex = vectors(minIdx,1);
+                    end
+                    intersectX = out.intMatrixX(vectors(maxIdx,1));
+                    intersectY = out.intMatrixY(vectors(maxIdx,1));
+                    return;
+                end
             end
+        else % forest fix
+            uniqueIdxs = unique(vectors(:,1));
+            if(length(uniqueIdxs) <= 1)
+                wallIndex = uniqueIdxs(1);
+                intersectX = out.intMatrixX(wallIndex);
+                intersectY = out.intMatrixY(wallIndex);
+                return;
+            end
+            angles = acos(dot([vectors(:,2:3);vectors(1,2:3)],...
+                [repmat(-tipTangent.',2,1);vectors(2,2:3)],2));
             
-            [~, minIdx] = min(abs(angleDiffs-minAngle));
-            [~, maxIdx] = min(abs(angleDiffs-maxAngle));
-            
-            % check if they're the same wall
-            dirA = vectors(maxIdx,2:3); dirB = vectors(minIdx,2:3);
-            if(sum(abs(dirA+dirB)) > 1e-3)
-                % we're trapped
+            if(angles(1)+angles(2) <= angles(3))
+                % trapped
                 wallIndex = -100;
                 return;
-            else
-                if(dot(tipTangent,dirA) > 0)
-                    wallIndex = vectors(maxIdx,1);
+            elseif(abs(sum(angles)-2*pi) < 1e-4)
+                % we're moving onto the next wall
+                dirA = vectors(1,2:3); dirB = vectors(2,2:3);
+                if(dot(dirA,tipTangent) > 0)
+                    wallIndex = vectors(1,1);
                 else
-                    wallIndex = vectors(minIdx,1);
+                    wallIndex = vectors(2,1);
                 end
-                intersectX = out.intMatrixX(vectors(maxIdx,1));
-                intersectY = out.intMatrixY(vectors(maxIdx,1));
-                return;
+                
+                intersectX = out.intMatrixX(wallIndex);
+                intersectY = out.intMatrixY(wallIndex);
+            else
+                % we're just moving past the obstacle
+                wallIndex = -1;
+                intersectX = -1;
+                intersectY = -1;
+                
+                out.intAdjacencyMatrix(vectors(:,1)) = 0;
+                cIndices(ismember(cIndices,vectors(:,1))) = [];
             end
+            
         end
     end
     numWalls = sum(out.intAdjacencyMatrix);
