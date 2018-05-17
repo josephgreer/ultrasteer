@@ -29,14 +29,14 @@ for i=1:length(os)
     currNodes = reshape(o,2,length(o)/2).';
     
     currNodes = cumsum(currNodes,1);
+    currNodes = currNodes(end:-1:1,:);
     
     nodes = vertcat(nodes,currNodes);
     
     map = vertcat(map, [currNodes(1:end-1,:) currNodes(2:end,:)]);
     map = vertcat(map, [currNodes(end,:) currNodes(1,:)]);
     
-    
-    currNodes = vertcat(currNodes,currNodes(1,:));
+    nodes = vertcat(nodes,currNodes(1,:));
     
 %     plot(currNodes(:,1), currNodes(:,2),'LineWidth',5);
 %     

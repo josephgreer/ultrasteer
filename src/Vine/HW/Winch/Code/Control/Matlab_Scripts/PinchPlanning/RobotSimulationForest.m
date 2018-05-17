@@ -4,18 +4,21 @@ addpath(genpath('Geom2d'));
 
 rng(4);
 
-initTheta = deg2rad(60);%deg2rad(348.1292);%deg2rad(unifrnd(0,360));
+imName = '/Users/Joey/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Papers/ObstaclePlanning/Data/VineRobotForest/Perspective_Corrected.jpg';
+
+initTheta = deg2rad(40);%deg2rad(348.1292);%deg2rad(unifrnd(0,360));
 p0 = [0; 0];
 x = [p0;p0;p0(1)+cos(initTheta);p0(2)+sin(initTheta)];
 y = [0;0;0;1;0];
 xs = [x(3) x(4); x(5) x(6)];
 
-thetas = zeros(0,2);%[101 -30]; %101 30; 151 -30; 201 30; 251 -30];
+thetas = [101 -20]; %101 30; 151 -30; 201 30; 251 -30];
 
 % thetas = zeros(0,2);
-% thetas(:,2) = deg2rad(thetas(:,2));
+thetas(:,2) = deg2rad(thetas(:,2));
 
 figure;
+imshow(imresize(imread(imName),401/1820));
 grid on;
 hold on;
 
@@ -47,6 +50,6 @@ for i=1:100
     [x, y, xs,wallIndex] = MoveRobotByDl(x, y, dl, map, thetas, len, wallIndex, -1, xs);
     len = RobotLength(xs)
     handles = DrawRobotXs(xs,-1,handles);
-    pause(0.25);
+    pause(0.1);
 end
     
