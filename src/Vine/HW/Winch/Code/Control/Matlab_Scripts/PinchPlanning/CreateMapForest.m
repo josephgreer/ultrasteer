@@ -46,6 +46,8 @@ for i=1:length(os)
 %     end
 end
 
+nodes = vertcat(nodes, scale*[1672.6691,1784.8888]);
+
 save('Maps/mapForest', 'map');
 save('Maps/nodesForest', 'nodes');
 

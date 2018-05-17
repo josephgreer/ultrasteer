@@ -6,13 +6,13 @@ rng(4);
 
 imName = '/Users/Joey/Dropbox (Stanford CHARM Lab)/Joey Greer Research Folder/Papers/ObstaclePlanning/Data/VineRobotForest/Perspective_Corrected.jpg';
 
-initTheta = deg2rad(40);%deg2rad(348.1292);%deg2rad(unifrnd(0,360));
-p0 = [0; 0];
+initTheta = deg2rad(-40);%deg2rad(348.1292);%deg2rad(unifrnd(0,360));
+p0 = [0; 401];
 x = [p0;p0;p0(1)+cos(initTheta);p0(2)+sin(initTheta)];
 y = [0;0;0;1;0];
 xs = [x(3) x(4); x(5) x(6)];
 
-thetas = [101 -20]; %101 30; 151 -30; 201 30; 251 -30];
+thetas = zeros(0,2);%[131 -30; 301 45]; %101 30; 151 -30; 201 30; 251 -30];
 
 % thetas = zeros(0,2);
 thetas(:,2) = deg2rad(thetas(:,2));
