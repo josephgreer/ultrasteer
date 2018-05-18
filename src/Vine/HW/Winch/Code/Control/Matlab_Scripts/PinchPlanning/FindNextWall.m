@@ -4,6 +4,8 @@ wallIndex = -1;
 intersectX = -1;
 intersectY = -1;
 
+forest = true;
+
 out = lineSegmentIntersect([proximalPoint(1) proximalPoint(2) tipPoint(1) tipPoint(2)],...
     walls);
 
@@ -44,7 +46,7 @@ while(numWalls > 0)
             pts(coincidentIdx,2:3) = repmat(pts(minIdx,2:3),length(cIndices),1);
         end
         
-        wallIndices = abs(dists-minDist) < 1e-3;
+        wallIndices = abs(dists-minDist) < 1e-6;
         
         pts = pts(wallIndices,:);
     end
@@ -70,7 +72,7 @@ while(numWalls > 0)
         % normalize
         vectors(:,2:3) = vectors(:,2:3)./repmat(norms,1,2);
         
-        if(false)
+        if(~forest)
             angleDiffs = angleDiffSigns([vectors(:,2:3) zeros(size(vectors,1),1)],...
                 repmat([-tipTangent.' 0],size(vectors,1),1));
             

@@ -135,86 +135,40 @@ for i=1:nNodes
     destinations(srcIdxs) = (cInteriorNodes-1)*nAngles+closestThetas;
     weights(srcIdxs) = connectionInteriorNode;
     
-    % first handle wall nodes with tip angles that point into the wall
-    if(nodeTypes(i,1) == 1 || nodeTypes(i,1) == 2)
-        for j=1:size(nodeWalls,1)
-            % wall corner or mid-point node
-            wallTangent = map(nodeWalls(j,1),3:4)-map(nodeWalls(j,1),1:2);
-            wallTangent = wallTangent/norm(wallTangent);
-            
-            wallAngle = wrapTo2Pi(atan2(wallTangent(2),wallTangent(1)));
-            
-            if(nodeTypes(i,1) == 1)
-                % corner node
-                if(nodeWalls(j,2) == 1) 
-                    % first node in the wall so left is toward interior
-                    minAngle = wallAngle-pi/2;
-                    if(minAngle > 0)
-                        angles = thetas(minAngle < thetas & thetas < wallAngle);
-                    else
-                        angles = thetas(thetas < wallAngle);
-                        angles = vertcat(angles, thetas(thetas > 2*pi+minAngle));
-                    end
-                else
-                    % second node in the wall so right is toward interior
-                    wallAngle = wrapTo2Pi(wallAngle-pi);
-                    maxAngle = wallAngle+pi/2;
-                    if(maxAngle < 2*pi)
-                        angles = thetas(wallAngle < thetas & thetas < maxAngle);
-                    else
-                        maxAngle = maxAngle-2*pi;
-                        angles = thetas(wallAngle < thetas);
-                        angles = vertcat(angles, thetas(thetas < maxAngle));
-                    end
-                end
-                
-                % now map destination to the other node
-                % so find out what the other node is
-                if(nodeWalls(j,2) == 1)
-                    otherNode = map(nodeWalls(j,1),3:4);
-                    otherAngle = wallAngle;
-                else
-                    otherNode = map(nodeWalls(j,1),1:2);
-                    otherAngle = wallAngle;
-                end
-                
-                otherNodeIdx = NodePosToIdx(otherNode, nodes);
-                srcIdxs = NodeAngleToIdx(i*ones(length(angles),1), angles, nAngles); 
-                destinations(srcIdxs) = -1;%NodeAngleToIdx(otherNodeIdx, otherAngle, nAngles);
+    assert(nodeTypes(i,1) == 1 || nodeTypes(i,1) == 3);
+    
+    if(nodeTypes(i,1) == 1)
+        assert(size(nodeWalls,1) == 2);
+        
+        [~,sidx] = sort(nodeWalls(:,2));
+        nodeWalls = nodeWalls(sidx,:);
+        
+        wt1 = map(nodeWalls(1,1),3:4)-map(nodeWalls(1,1),1:2);
+        wt1 = wt1/norm(wt1);
+        ang1 = wrapTo2Pi(atan2(wt1(2),wt1(1)));
+        
+        wt2 = map(nodeWalls(2,1),1:2)-map(nodeWalls(2,1),3:4);
+        wt2 = wt2/norm(wt2);
+        ang2 = wrapTo2Pi(atan2(wt2(2),wt2(1)));
+        
+        dA = angleDiffSigns([wt1 0], [wt2 0]);
+        
+        if(dA < 0)
+            if(ang1+dA < 0)
+                angles = thetas(thetas < ang1);
+                angles = vertcat(angles, thetas(thetas > ang2));
+            elseif(ang1+dA > 2*pi)
+                angles = thetas(ang1 < thetas);
+                angles = vertcat(angles, thetas(thetas < ang2));
             else
-                % mid point node
-                
-                % first we will handle angles that will push you toward 
-                % second node in wall
-                minAngle = wallAngle-pi/2;
-                if(minAngle > 0)
-                    angles = thetas(minAngle < thetas & thetas < wallAngle);
-                else
-                    angles = thetas(thetas < wallAngle);
-                    angles = vertcat(angles, thetas(thetas > 2*pi+minAngle));
-                end
-                otherNode = map(nodeWalls(j,1),3:4);
-                otherNodeIdx = NodePosToIdx(otherNode, nodes);
-                srcIdxs = NodeAngleToIdx(i*ones(length(angles),1), angles, nAngles); 
-                destinations(srcIdxs) = NodeAngleToIdx(otherNodeIdx, wallAngle, nAngles);
-                
-                % now we will handle angles that push you toward first node
-                % in wall
-                wallAngle = wrapTo2Pi(wallAngle-pi);
-                maxAngle = wallAngle+pi/2;
-                if(maxAngle < 2*pi)
-                    angles = thetas(wallAngle < thetas & thetas < maxAngle);
-                else
-                    maxAngle = maxAngle-2*pi;
-                    angles = thetas(wallAngle < thetas);
-                    angles = vertcat(angles, thetas(thetas < maxAngle));
-                end
-                otherNode = map(nodeWalls(j,1),1:2);
-                otherNodeIdx = NodePosToIdx(otherNode, nodes);
-                srcIdxs = NodeAngleToIdx(i*ones(length(angles),1), angles, nAngles); 
-                destinations(srcIdxs) = NodeAngleToIdx(otherNodeIdx, wallAngle, nAngles);
+                angles = thetas(ang1 < thetas & thetas < ang2);
             end
+        else
+            angles = thetas;
         end
+        srcIdxs = NodeAngleToIdx(i*ones(length(angles),1), angles, nAngles);
+        destinations(srcIdxs) = -1;
+        
     end
 end
 
@@ -377,7 +331,7 @@ display('Calculating shortest path');
 for i=2:length(path)-2
     [ns,as] = IndexToNodeAngle(path(i:i+1),nAngles,nNodes,thetas);
     ns = nodes(ns,:);
-%     plot(ns(:,1),ns(:,2));
+    plot(ns(:,1),ns(:,2));
 end
 
 nodeList = zeros(length(path)-2,1);
