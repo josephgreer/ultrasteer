@@ -92,69 +92,81 @@ set(gca, 'FontSize', 12, 'FontName', 'Times New Roman');
 box on;
 ylim([0 0.5]);
 
-% %%
-% %%%%%%%%%%%%%%%%%%%%%%%% Tube 1
-% clear; clc;
-% addpath('../SysID');
-% files = rdir('../SysID/Data/Stiffness/1_2.0.txt');
-% 
-% for i=1:length(files)
-%     mode = 'pleated';
-%     fname = files(i).name;
-%     display(fname)
-%     pressure = sscanf(fname,'../SysID/Data/Stiffness/%d_%d.%d.txt');
-%     pressure = pressure(2)/10.0+pressure(3)/100.0;      % in psi
-%     pressure = 3*pressure*6894.76;                      % in pascals
-%     
-%     numLinks = 1.5;
-%     R0 = 8/2*1e-3;                                    % in m
-%     L0 = 40*1e-3;                                     % in m
-%     
-%     E = 0.1*1e9;                                      %elastic modulus pascals
-%     s = 2e-3*0.0254;                                  % thickness in meters
-%     A = 2*L0*s;                                       % cross-sectional area in m^2
-%     a = pi*pressure*R0^2/(A*E);
-%     
-%     D0 = numLinks*GetD0(L0,R0,pressure,a,mode);
-%     
-%     maxContraction = 1-(D0/(numLinks*L0));
-%     
-%     contractions = linspace(0.04,maxContraction,5);
-%     forces = zeros(size(contractions));
-%     for i=1:length(contractions)
-%         e = contractions(i);
-%         forces(i) = numLinks*ContractionToForce(e,L0,R0,pressure,a,mode);
-%     end
-% end
-% save PredictedForceData
+%%
+%%%%%%%%%%%%%%%%%%%%%%%% Tube 1
+clear; clc;
+addpath('../SysID');
+files = rdir('../SysID/Data/Stiffness/1_2.0.txt');
+
+for i=1:length(files)
+    mode = 'pleated';
+    fname = files(i).name;
+    display(fname)
+    pressure = sscanf(fname,'../SysID/Data/Stiffness/%d_%d.%d.txt');
+    pressure = pressure(2)/10.0+pressure(3)/100.0;      % in psi
+    pressure = 3*pressure*6894.76;                      % in pascals
+    
+    numLinks = 1.5;
+    R0 = 8/2*1e-3;                                    % in m
+    L0 = 40*1e-3;                                     % in m
+    
+    E = 0.1*1e9;                                      %elastic modulus pascals
+    s = 2e-3*0.0254;                                  % thickness in meters
+    A = 2*L0*s;                                       % cross-sectional area in m^2
+    a = pi*pressure*R0^2/(A*E);
+    
+    D0 = numLinks*GetD0(L0,R0,pressure,a,mode);
+    
+    maxContraction = 1-(D0/(numLinks*L0));
+    
+    contractions = linspace(0.04,maxContraction,20);
+    forces = zeros(size(contractions));
+    for i=1:length(contractions)
+        e = contractions(i);
+        forces(i) = numLinks*ContractionToForce(e,L0,R0,pressure,a,mode);
+    end
+end
+save PredictedForceData
 
 %%
+close all;
+h = figure;
+set(h,'Position',[0 0 250 200]);
 clearvars -except h; clc;
 load PredictedForceData
     
-subplot(1,3,3);
-plot(contractions,forces, 'k--', 'LineWidth',2);
+% subplot(1,3,3);
 hold all;
-for i=1:length(files)
-    data = load(fname);
-    es = zeros(size(data,1),1);
-    forces = zeros(size(es));
-    forcesReturn = zeros(size(es));
-    for i=1:size(data,1)
-        addedLength = 10-data(i,1); % (in cm)
-        addedLength = addedLength*1e-2;
-        len = D0+addedLength;
-        es(i) = 1-(len/(numLinks*L0));
-        forces(i) = data(i,2)*4.4452016; % in newtons
-        forcesReturn(i) = data(i,3)*4.4452016; % in newtons
-    end
-    scatter(es,forces,ones(size(es))*75,'b','LineWidth',2);
-    scatter(es,forcesReturn,ones(size(es))*75,'b','LineWidth',2);
-end
+bi = 1;
+plot(contractions(bi:end),1/4*1/0.6*forces(bi:end), 'LineWidth',2);
+plot(contractions(bi:end),2/4*1/0.6*forces(bi:end), 'LineWidth',2);
+plot(contractions(bi:end),3/4*1/0.6*forces(bi:end), 'LineWidth',2);
+plot(contractions(bi:end),4/4*1/0.6*forces(bi:end), 'LineWidth',2);
+% for i=1:length(files)
+%     data = load(fname);
+%     es = zeros(size(data,1),1);
+%     forces = zeros(size(es));
+%     forcesReturn = zeros(size(es));
+%     for i=1:size(data,1)
+%         addedLength = 10-data(i,1); % (in cm)
+%         addedLength = addedLength*1e-2;
+%         len = D0+addedLength;
+%         es(i) = 1-(len/(numLinks*L0));
+%         forces(i) = data(i,2)*4.4452016; % in newtons
+%         forcesReturn(i) = data(i,3)*4.4452016; % in newtons
+%     end
+%     scatter(es,forces,ones(size(es))*75,'b','LineWidth',2);
+%     scatter(es,forcesReturn,ones(size(es))*75,'b','LineWidth',2);
+% end
 xlabel('Contraction Ratio');
 ylabel('Tension Force (N)');
 set(gca, 'FontSize', 12, 'FontName', 'Times New Roman');
-% xlim([min(es) max(es)]);
+xlim([min(contractions) max(contractions)]);
+ylim([0 17]);
+legend('0.25 PSI', '0.5 PSI', '0.75 PSI', '1 PSI')
+box on;
+grid on;
+tightfig;
 
 %%
 subplot(1,3,2);

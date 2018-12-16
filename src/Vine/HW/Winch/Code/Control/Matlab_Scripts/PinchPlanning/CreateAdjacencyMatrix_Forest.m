@@ -3,8 +3,9 @@ clear; clc; close all;
 load 'Maps/mapForest'
 load 'Maps/nodesForest'
 
-startNode = size(nodes,1);%48;
-endNode = size(nodes,1)-1;
+startNode = 165;%48;
+endNode = 177;%164;
+% nodes = nodes(1:165,:);
 
 oldMap = map;
 [map,nodes] = ShrinkMap(map,nodes,0.318*10);
@@ -35,7 +36,7 @@ nNodes = size(nodes,1);
 nAngles = 359;
 
 connectionNormal = 1e-6;
-connectionInteriorNode = 3;
+connectionInteriorNode = 1;
 connectionAngleChange = 1;
 useMidPointNodes = true;
 
@@ -154,14 +155,17 @@ for i=1:nNodes
         dA = angleDiffSigns([wt1 0], [wt2 0]);
         
         if(dA < 0)
-            if(ang1+dA < 0)
-                angles = thetas(thetas < ang1);
-                angles = vertcat(angles, thetas(thetas > ang2));
-            elseif(ang1+dA > 2*pi)
-                angles = thetas(ang1 < thetas);
-                angles = vertcat(angles, thetas(thetas < ang2));
+            fWall = map(nodeWalls(1,1),3:4)-map(nodeWalls(2,1),1:2);
+            fWall = fWall/norm(fWall);
+            wAng = atan2(fWall(2),fWall(1));
+            wAng = wrapTo2Pi(wAng);
+            
+            minAngle = wAng-pi;
+            if(minAngle > 0)
+                angles = thetas(minAngle < thetas & thetas < wAng);
             else
-                angles = thetas(ang1 < thetas & thetas < ang2);
+                angles = thetas(thetas < wAng);
+                angles = vertcat(angles, thetas(thetas > 2*pi+minAngle));
             end
         else
             angles = thetas;
@@ -344,11 +348,11 @@ end
 % this contains the list of nodes we will visit on our way to a destination
 nodeList = unique(nodeList,'stable');
 
-allowableAngleRange = deg2rad(50);
+allowableAngleRange = deg2rad(60);
 angleNoise = deg2rad(5); % in degree uniform distribution
-lengthNoise = 2; % in physical units
+lengthNoise = 0; % in physical units
 nSamples = 100; % number of samples used to calculate monte carlo prboabilities
-nAngles = 100;
+nAngles = 359;
 successThresh = 10;
 
 thetas = linspace(0,2*pi,nAngles+1).';
@@ -358,6 +362,8 @@ thetas = wrapToPi(thetas);
 lengthPadding = 3;
 
 validThetas = thetas(abs(thetas) < allowableAngleRange);
+[~,sortedIdx] = sort(abs(validThetas));
+validThetas = validThetas(sortedIdx);
 
 rx = {[nodes(nodeList(1),:).'; nodes(nodeList(1),:).';...
     nodes(nodeList(1),:).']};
@@ -511,7 +517,8 @@ for i=1:length(nodeList)-1
         end
         
         % best angle is arg_max successProbWithUncertainty
-        [~, optJ] = max(successProbWithUncertaintiy);
+        [~,optJ] = max(successProbWithUncertaintiy);
+        
         if(abs(cValidThetas(optJ)) > 0)
             designThetas = vertcat(designThetas, cValidThetas(optJ));
             designLs = vertcat(designLs, lensWithUncertainty(optJ)+lengthPadding);
@@ -526,7 +533,11 @@ for i=1:length(nodeList)-1
         
         proxTangent = rrx(5:6,:)-rrx(3:4,:);
         proxTangent = mean(proxTangent,2);
-        proxTangent = proxTangent/norm(proxTangent);
+        if(norm(proxTangent) > 1e-5)
+            proxTangent = proxTangent/norm(proxTangent);
+        else
+            proxTangent = [1;0];
+        end
         
         deltas = repmat(nodes(desNode,:).',1,size(rrx,2))-rrx(5:6,:);
         rls = sqrt(sum(deltas.^2,1));
@@ -628,8 +639,8 @@ for i=1:length(nodeList)-1
     display(sprintf('Success estimate at landmark %d is %f', i, nsucc/(nfail+nsucc)));
 end
 %%
-DeleteMap(hMap);
-DrawMap(oldMap);
+% DeleteMap(hMap);
+% DrawMap(oldMap);
 display(designThetas)
 
 angleNoises = deg2rad(linspace(0,25,5));
